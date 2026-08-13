@@ -1,0 +1,15 @@
+:name: Dali_BlackPill_F411
+:description: Dali OS STM32F411 development simulation using the Renode STM32F4 reference model.
+
+using sysbus
+
+$name?="Dali_BlackPill_F411"
+$bin?=@target/thumbv7em-none-eabihf/debug/dali-kernel
+
+mach create $name
+machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit.repl
+
+cpu PerformanceInMips 100
+sysbus LoadELF $bin
+
+start

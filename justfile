@@ -8,6 +8,7 @@ kernel_package := "dali-kernel"
 kernel_binary := "dali-kernel"
 kernel_elf := "target/" + target + "/debug/" + kernel_binary
 kernel_bin := "target/" + target + "/debug/" + kernel_binary + ".bin"
+renode_script := "simulation/renode/dali_blackpill.resc"
 chip := env_var_or_default("DALI_CHIP", "STM32F411CEUx")
 dfu_device := env_var_or_default("DALI_DFU_DEVICE", "0483:df11")
 flash_address := "0x08000000"
@@ -49,6 +50,10 @@ ci: format-check workspace-check kernel-check test clippy kernel-clippy diff-che
 # Build the embedded kernel ELF.
 build:
     cargo build-kernel
+
+# Run the kernel in Renode. Requires Renode and uses the STM32F4 reference model.
+simulate: build
+    renode --console --disable-gui {{renode_script}}
 
 # Convert the kernel ELF to a raw binary. Requires cargo-binutils and llvm-tools.
 bin: build

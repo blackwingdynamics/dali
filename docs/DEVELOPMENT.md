@@ -166,6 +166,20 @@ This runs `cargo clean` and removes Cargo build artifacts. It does not remove so
 
 Build success alone is not hardware evidence. Record the board, probe, wiring, firmware revision, power source, tool versions, expected output, observed output, and result.
 
+### 8. Run the Renode simulation
+
+Renode is the supported development simulator for the initial kernel bring-up:
+
+```text
+just simulate
+```
+
+The scenario uses the closest available STM32F4 reference platform. It can
+support development checks for boot, linker placement, SysTick progress, and
+selected GPIO behavior. It does not replace physical STM32F411 acceptance
+testing and does not currently expose the kernel's RTT output. See
+`simulation/README.md` for the evidence boundary.
+
 Preview generated release notes locally with:
 
 ```text

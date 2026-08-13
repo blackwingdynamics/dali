@@ -21,6 +21,10 @@ dali-kernel/
 ├── scripts/
 │   ├── check-commit-message.sh  # Conventional Commit validator
 │   └── archive-changelog.sh     # Release changelog archiver
+├── simulation/
+│   ├── README.md                 # Simulator scope and evidence boundary
+│   └── renode/
+│       └── dali_blackpill.resc   # Renode STM32F4 development scenario
 ├── Cargo.toml                 # Virtual workspace metadata
 ├── Cargo.lock                 # Reproducible dependency resolution
 ├── rust-toolchain.toml        # Pinned Rust toolchain and embedded target
