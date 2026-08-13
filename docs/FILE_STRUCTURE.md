@@ -11,6 +11,7 @@ dali-kernel/
 ├── .editorconfig              # Editor formatting defaults
 ├── .gitattributes              # Git text and binary handling
 ├── cliff.toml                 # Automatic changelog configuration
+├── justfile                    # Build, validation, and flashing commands
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml              # Pull request and push validation

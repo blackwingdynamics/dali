@@ -5,10 +5,26 @@
 - Rust toolchain with the embedded target installed;
 - Lefthook 1.7 or newer;
 - `git-cliff` for local changelog previews;
+- `just` for the repository task runner;
 - an SWD programmer/debug probe;
 - a WeAct BlackPill STM32F411 board;
 - a correctly wired 3.3 V SD-card interface;
 - a supported RTT viewer.
+
+## Tool installation
+
+Install the embedded Rust target and required Rust tools:
+
+```text
+rustup target add thumbv7em-none-eabihf
+rustup component add llvm-tools-preview
+cargo install cargo-binutils --locked
+cargo install just --locked
+cargo install lefthook --locked
+cargo install git-cliff --version 2.13.0 --locked
+```
+
+Install `probe-rs` and `dfu-util` using the package-manager or installation method appropriate for the host operating system. The exact hardware flashing tools are host dependencies, not Cargo workspace members.
 
 ## Workspace and Git hooks
 
@@ -27,6 +43,34 @@ Install the Git hooks after cloning:
 lefthook install
 ```
 
+## Just commands
+
+Run `just` or `just --list` to inspect the available commands:
+
+```text
+just ci
+just build
+just bin
+just flash-probe
+just flash-dfu
+just attach
+```
+
+`just bin` requires `cargo-binutils` and the `llvm-tools-preview` Rust component. `just flash-probe` requires `probe-rs`. `just flash-dfu` requires `dfu-util` and appropriate host permissions; it never invokes `sudo` automatically.
+
+Verify the tools before using hardware commands:
+
+```text
+rustc --version
+cargo --version
+just --version
+lefthook version
+git-cliff --version
+rust-objcopy --version
+probe-rs --version
+dfu-util --version
+```
+
 The pre-commit hook runs formatting, workspace checks, Clippy with warnings denied, workspace tests, and staged-diff validation. The commit-msg hook enforces the Conventional Commit format.
 
 ## Continuous integration
@@ -40,17 +84,87 @@ GitHub Actions runs the same validation layers on pushes and pull requests:
 
 The `Formatting`, `Host workspace checks`, `STM32F411 embedded checks`, and `Repository hygiene` jobs must be configured as required status checks in GitHub branch protection before merging is technically blocked.
 
-## Build sequence
+## Kernel build sequence
 
-1. Format and lint the Rust workspace.
-2. Build the kernel for `thumbv7em-none-eabihf`.
-3. Build the demo application for the same target.
-4. Assemble the `.amrn` package using the documented format.
-5. Copy the package to the SD-card root.
-6. Flash the kernel image.
-7. Reset the board and capture the complete log.
+### 1. Run local validation
 
-The exact commands belong here once the workspace layout and runner are finalized. A successful host build alone is not hardware evidence.
+```text
+just ci
+```
+
+This runs formatting, host checks, embedded checks, tests, Clippy, and whitespace validation.
+
+### 2. Build the kernel ELF
+
+```text
+just build
+```
+
+The embedded ELF is created at:
+
+```text
+target/thumbv7em-none-eabihf/debug/dali-kernel
+```
+
+The ELF contains symbols and debug information and is the preferred artifact for probe-based debugging.
+
+### 3. Create the raw binary
+
+```text
+just bin
+```
+
+This runs `cargo objcopy` and creates:
+
+```text
+target/thumbv7em-none-eabihf/debug/dali-kernel.bin
+```
+
+The `.bin` file is a raw firmware image suitable for flashing tools. It is generated output, is ignored by Git, and is not written to the repository root.
+
+### 4. Flash with a debug probe
+
+Connect the SWD probe, power the board safely, and run:
+
+```text
+just flash-probe
+```
+
+This builds the ELF and runs it through `probe-rs` using the configured STM32F411 chip identifier. Use `DALI_CHIP` to override the identifier when the probe reports a different compatible name:
+
+```text
+DALI_CHIP=STM32F411CEUx just flash-probe
+```
+
+### 5. Flash through STM32 DFU mode
+
+Put the board into its STM32 DFU boot mode, connect USB, verify that the host detects the DFU device, and run:
+
+```text
+just flash-dfu
+```
+
+This builds the raw binary and writes it to the documented internal Flash address. Use `DALI_DFU_DEVICE` to override the USB device identifier:
+
+```text
+DALI_DFU_DEVICE=0483:df11 just flash-dfu
+```
+
+The command does not invoke `sudo`. Configure the host's USB permissions separately.
+
+### 6. Observe RTT output
+
+After flashing, reset the board and connect an RTT viewer through the debug probe. The boot log must remain deterministic and include the documented boot events. Capture the complete output for hardware evidence.
+
+### 7. Build cleanup
+
+```text
+just clean
+```
+
+This runs `cargo clean` and removes Cargo build artifacts. It does not remove source files, packages, SD-card contents, or Git history.
+
+Build success alone is not hardware evidence. Record the board, probe, wiring, firmware revision, power source, tool versions, expected output, observed output, and result.
 
 Preview generated release notes locally with:
 
@@ -65,3 +179,43 @@ git-cliff --unreleased
 - never hide SD or loader errors behind a generic panic during bring-up;
 - record the exact package bytes used for an acceptance test;
 - keep application and kernel linker layouts under version control.
+
+## Troubleshooting
+
+### `rust-objcopy: command not found`
+
+Install the Cargo binutils wrapper and LLVM tools:
+
+```text
+cargo install cargo-binutils --locked
+rustup component add llvm-tools-preview
+```
+
+Then retry:
+
+```text
+just bin
+```
+
+### `.bin` file is not created
+
+Run `just build` first and confirm that the ELF exists. Then run `just bin` and inspect:
+
+```text
+target/thumbv7em-none-eabihf/debug/dali-kernel
+target/thumbv7em-none-eabihf/debug/dali-kernel.bin
+```
+
+The `.bin` file is created only after the ELF-to-binary conversion succeeds.
+
+### `probe-rs` cannot find the chip
+
+Confirm the probe connection, power, SWD wiring, and chip identifier. Use `DALI_CHIP` to provide the identifier reported by `probe-rs list`.
+
+### DFU device is not detected
+
+Confirm that the board is in DFU mode, the USB cable supports data, the board is powered, and host USB permissions are configured. Run `dfu-util -l` before retrying `just flash-dfu`.
+
+### Kernel check succeeds but hardware behavior is wrong
+
+Compilation and target checks do not validate wiring, clock behavior, SD electrical levels, or application execution. Record the failure as hardware evidence and follow `docs/MVP_ACCEPTANCE.md`.
