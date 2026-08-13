@@ -43,6 +43,7 @@ kernel/               Embedded kernel and bootstrap
 apps/dali-app-hello/  Independent demo application
 crates/dali-sdk/      Application SDK scaffold
 crates/dali-cli/      Package and device CLI scaffold
+crates/dali-usb/      Hardware-neutral bounded USB delivery primitives and host tests
 docs/                 Architecture and process documentation
 scripts/              Validation and release automation
 .github/              CI, release workflow, and PR policy
@@ -52,7 +53,8 @@ Module ownership:
 
 - `kernel/src/main.rs` — bootstrap orchestration only;
 - `kernel/src/board.rs` — board-specific pins, clocks, and peripheral ownership;
-- `kernel/src/logging.rs` — logging boundary;
+- `kernel/src/logging/` — logging facade and hardware backend boundary;
+- `crates/dali-usb/` — transport-neutral bounded log delivery state and tests;
 - `kernel/src/storage/` — SD and filesystem access;
 - `kernel/src/loader/` — AMRN parsing, CRC32, bounds checks, and execution;
 - `kernel/src/runtime/` — future tasks, scheduling, IPC, services, and watchdogs.

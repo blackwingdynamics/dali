@@ -9,7 +9,6 @@ use crate::{
     drivers::sdio::SdioBlockReader,
     storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader},
 };
-use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
 use stm32f4xx_hal::pac;
 
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
@@ -31,7 +30,6 @@ pub fn run() -> ! {
     }
 
     emit_boot_banner();
-    service_usb_enumeration(&mut board);
 
     // Keep a visible indication active while storage initialization is in progress.
     board::set_status_led(&mut board, true);
@@ -55,15 +53,6 @@ pub fn run() -> ! {
     );
 
     heartbeat::run(board, storage_status);
-}
-
-fn service_usb_enumeration(board: &mut board::Board) {
-    let mut elapsed_ms = 0;
-    while elapsed_ms < status::USB_ENUMERATION_TIMEOUT_MS {
-        logging::poll();
-        board.delay.delay_ms(status::USB_SERVICE_PERIOD_MS);
-        elapsed_ms = elapsed_ms.saturating_add(status::USB_SERVICE_PERIOD_MS);
-    }
 }
 
 fn initialize_logging() {

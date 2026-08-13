@@ -104,6 +104,27 @@ STM32F411 hardware
 
 The first implementation may keep the layers in one repository, but their contracts must remain explicit.
 
+USB CDC logging has two deliberately separate ownership boundaries:
+
+- `crates/dali-usb/` contains only `no_std`, transport-neutral bounded delivery
+  primitives: fixed-size log records, FIFO queueing, partial-write handling,
+  link state, overflow accounting, and host tests;
+- `kernel/src/logging/usb_cdc.rs` owns the `usb-device` backend, STM32 USB
+  resources, endpoint memory, USB identifiers, and device servicing policy.
+
+The production backend services the `usb-device` state machine from the
+STM32F4 `OTG_FS` interrupt. Main-context logging enters a bounded critical
+section only to append a record to the queue; it never polls or writes the USB
+endpoint. This keeps enumeration, CDC control requests, reconnects, and log
+delivery serviceable while SDIO operations are inside HAL busy loops. The
+interrupt strategy is target-checked but remains subject to physical USB
+acceptance evidence.
+
+The shared crate is not a hardware driver, application API, or interrupt
+implementation. It must not depend on an MCU HAL or contain board-specific
+values. The kernel remains the owner of logging policy and USB resource
+ownership.
+
 ## 6. Kernel responsibilities
 
 The kernel owns:

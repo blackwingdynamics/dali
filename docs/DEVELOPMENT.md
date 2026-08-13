@@ -131,12 +131,12 @@ available `/dev/ttyACM*` device. The conventional terminal rate is 115200.
 The recipe automatically waits for the device and reconnects after a board
 reset or USB disconnect. Exit `picocom` with `Ctrl-A`, then `Ctrl-X`.
 
-The USB console is initialized during bootstrap. Before blocking storage
-bring-up, the kernel services USB control traffic during a bounded five-second
-host-enumeration and CDC control-handshake window. The deadline is five
-seconds, after which boot continues even if no host is present. The main loop
-then drains buffered log records when it resumes. It does not require an SWD
-probe. The terminal rate is conventional;
+The USB console is initialized during bootstrap. The STM32F4 `OTG_FS`
+interrupt owns USB control traffic, CDC state, and endpoint writes, so
+enumeration and reconnect handling continue while blocking storage bring-up is
+running. Main-context logging only appends to the bounded queue; it does not
+depend on an enumeration delay or on the main loop resuming. It does not
+require an SWD probe. The terminal rate is conventional;
 USB CDC does not use a physical UART baud clock. RTT remains available when an
 SWD probe is connected.
 
@@ -149,7 +149,14 @@ overflow warning after the queue is writable.
 
 ## Workspace and Git hooks
 
-The repository is a Cargo workspace containing the kernel, the future `dali-sdk`, the future `dali-cli`, and the initial demo-application scaffold. Run workspace commands from the repository root.
+The repository is a Cargo workspace containing the kernel, the hardware-neutral
+`dali-usb` delivery primitives, the future `dali-sdk`, the future `dali-cli`,
+and the initial demo-application scaffold. Run workspace commands from the
+repository root.
+
+`dali-usb` is `no_std` and has no MCU or HAL dependency. It owns only bounded
+delivery mechanics that can be tested on the host. Board USB resources and
+production CDC servicing remain in the kernel logging backend.
 
 The embedded target is selected explicitly for kernel commands so host-side SDK and CLI tooling can be checked normally:
 

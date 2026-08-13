@@ -3,16 +3,25 @@
 use core::fmt::Arguments;
 
 #[cfg(feature = "usb-cdc")]
-mod buffer;
+mod buffer {
+    pub(crate) const LOG_LINE_CAPACITY: usize = 128;
+    pub(crate) const LOG_QUEUE_CAPACITY: usize = 32;
+    pub(crate) type LogLine = dali_usb::LogLine<LOG_LINE_CAPACITY>;
+    pub(crate) type LogQueue = dali_usb::LogQueue<LOG_LINE_CAPACITY, LOG_QUEUE_CAPACITY>;
+}
 mod rtt;
 #[cfg(feature = "usb-cdc")]
 pub(crate) mod usb_cdc;
 
 #[cfg(feature = "usb-cdc")]
-use buffer::{LOG_LINE_CAPACITY, LogLine, LogQueue};
+use buffer::{LogLine, LogQueue};
 
 #[cfg(feature = "usb-cdc")]
 static mut USB_LOG_QUEUE: LogQueue = LogQueue::new();
+
+#[cfg(feature = "usb-cdc")]
+const USB_OVERFLOW_WARNING: &str =
+    "[WARN][LOG] USB log queue overflow; oldest messages were dropped\r\n";
 
 /// Stable subsystem label for bootstrap messages.
 pub const BOOT_SUBSYSTEM: &str = "BOOT";
@@ -55,13 +64,10 @@ pub fn initialize_usb(resources: crate::board::UsbResources) {
     usb_cdc::initialize(resources);
 }
 
-/// Services the optional USB CDC device state machine.
-pub fn poll() {
-    #[cfg(feature = "usb-cdc")]
-    {
-        usb_cdc::poll();
-        drain_usb_queue();
-    }
+/// Services the optional USB CDC device state machine from its interrupt.
+#[cfg(feature = "usb-cdc")]
+pub(crate) fn service_usb_irq() {
+    usb_cdc::service_irq(drain_usb_queue);
 }
 
 /// Writes a structured, allocation-free message to the selected backend.
@@ -69,44 +75,42 @@ pub fn log(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
     rtt::write(level, subsystem, arguments);
     #[cfg(feature = "usb-cdc")]
     {
-        if let Ok(line) = LogLine::format(level, subsystem, arguments) {
-            // SAFETY: The kernel has one execution context and USB logging is
-            // not interrupt-driven. The queue is accessed only by this context.
-            unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).push(line) };
+        if let Ok(line) = LogLine::format(format_args!(
+            "[{}][{}] {}\r\n",
+            level.label(),
+            subsystem,
+            arguments
+        )) {
+            cortex_m::interrupt::free(|_| {
+                // SAFETY: Main-context logging masks OTG_FS while updating the
+                // queue, so the handler cannot observe a partial record.
+                unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).push(line) };
+            });
         }
-        usb_cdc::poll();
-        drain_usb_queue();
     }
 }
 
 #[cfg(feature = "usb-cdc")]
-fn drain_usb_queue() {
-    if !usb_cdc::host_ready() {
-        return;
-    }
-
-    let mut chunk = [0; LOG_LINE_CAPACITY];
-    loop {
-        // SAFETY: The queue is owned by the single kernel execution context.
-        let count = unsafe { (*core::ptr::addr_of!(USB_LOG_QUEUE)).copy_front(&mut chunk) };
-        if count == 0 {
-            break;
-        }
-        let written = usb_cdc::write_bytes(&chunk[..count]);
-        if written == 0 {
-            return;
-        }
-        // SAFETY: The queue remains exclusively owned by this execution context.
-        unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).advance(written) };
-    }
+fn drain_usb_queue(link: dali_usb::LinkState, sink: &mut dyn dali_usb::ByteSink) {
+    // SAFETY: This runs in the OTG_FS handler while main-context queue updates
+    // are masked by the interrupt-free critical section.
+    let dropped =
+        unsafe { dali_usb::drain(&mut *core::ptr::addr_of_mut!(USB_LOG_QUEUE), link, sink) };
 
     // The queue intentionally keeps the newest messages when its fixed capacity
     // is exhausted. Emit a visible diagnostic after the queue becomes writable.
-    let dropped = unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).take_dropped() };
-    if dropped > 0 {
-        let _ = usb_cdc::write_bytes(
-            b"[WARN][LOG] USB log queue overflow; oldest messages were dropped\r\n",
-        );
+    if dropped > 0
+        && let Some(warning) = LogLine::from_bytes(USB_OVERFLOW_WARNING.as_bytes())
+    {
+        // The queue is empty after the first drain, so the warning remains
+        // queued if the endpoint accepts only part of it or disconnects.
+        // SAFETY: This function runs only in the OTG_FS handler; main-context
+        // queue updates are masked while the handler cannot be preempted.
+        unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).push(warning) };
+        // SAFETY: The same OTG_FS ownership invariant applies while the
+        // warning is drained immediately after it is queued.
+        let queue = unsafe { &mut *core::ptr::addr_of_mut!(USB_LOG_QUEUE) };
+        let _ = dali_usb::drain(queue, link, sink);
     }
 }
 

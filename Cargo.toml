@@ -2,6 +2,7 @@
 members = [
     "kernel",
     "apps/dali-app-hello",
+    "crates/dali-usb",
     "crates/dali-sdk",
     "crates/dali-cli",
 ]

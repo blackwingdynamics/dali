@@ -1,5 +1,7 @@
 //! Board-neutral USB CDC serial logging backend.
 
+use core::cell::RefCell;
+use cortex_m::interrupt::{Mutex, free};
 use usb_device::{bus::UsbBusAllocator, class_prelude::*, prelude::*};
 use usbd_serial::SerialPort;
 
@@ -20,8 +22,10 @@ const ENDPOINT_MEMORY_WORDS: usize = 1_024;
 
 static mut ENDPOINT_MEMORY: [u32; ENDPOINT_MEMORY_WORDS] = [0; ENDPOINT_MEMORY_WORDS];
 static mut USB_BUS: Option<UsbBusAllocator<ActiveBus>> = None;
-static mut USB_SERIAL: Option<SerialPort<'static, ActiveBus>> = None;
-static mut USB_DEVICE: Option<UsbDevice<'static, ActiveBus>> = None;
+static USB_SERIAL: Mutex<RefCell<Option<SerialPort<'static, ActiveBus>>>> =
+    Mutex::new(RefCell::new(None));
+static USB_DEVICE: Mutex<RefCell<Option<UsbDevice<'static, ActiveBus>>>> =
+    Mutex::new(RefCell::new(None));
 
 /// Initializes the USB CDC-ACM console.
 pub(super) fn initialize(resources: crate::board::UsbResources) {
@@ -35,58 +39,73 @@ pub(super) fn initialize(resources: crate::board::UsbResources) {
         resources.into_bus(endpoint_memory)
     };
 
-    // SAFETY: USB resources are consumed once during reset bootstrap. The static
-    // objects are only accessed by the single kernel execution context.
+    // SAFETY: USB resources are consumed once during reset bootstrap. The bus
+    // allocator remains alive for the static lifetime required by its endpoints.
     unsafe {
         (*core::ptr::addr_of_mut!(USB_BUS)) = Some(bus);
         let bus = match (*core::ptr::addr_of!(USB_BUS)).as_ref() {
             Some(bus) => bus,
             None => return,
         };
-        USB_SERIAL = Some(SerialPort::new(bus));
-        USB_DEVICE = Some(
-            UsbDeviceBuilder::new(bus, UsbVidPid(USB_VENDOR_ID, USB_PRODUCT_ID))
-                .device_class(usbd_serial::USB_CLASS_CDC)
-                .build(),
-        );
+        free(|cs| {
+            *USB_SERIAL.borrow(cs).borrow_mut() = Some(SerialPort::new(bus));
+            *USB_DEVICE.borrow(cs).borrow_mut() = Some(
+                UsbDeviceBuilder::new(bus, UsbVidPid(USB_VENDOR_ID, USB_PRODUCT_ID))
+                    .device_class(usbd_serial::USB_CLASS_CDC)
+                    .build(),
+            );
+        });
+
+        // SAFETY: USB resources and shared state are initialized before the
+        // OTG_FS handler is unmasked; the handler is the sole USB owner.
+        cortex_m::peripheral::NVIC::unmask(stm32f4xx_hal::pac::Interrupt::OTG_FS);
     }
 }
 
-/// Polls USB control and CDC endpoint state.
-pub(super) fn poll() {
-    // SAFETY: The USB state is initialized once and accessed only by the kernel
-    // main context; no interrupt-driven USB access is enabled in the MVP.
+/// Services USB control and CDC endpoint state from the OTG_FS interrupt.
+pub(super) fn service_irq<F>(drain: F)
+where
+    F: FnOnce(dali_usb::LinkState, &mut dyn dali_usb::ByteSink),
+{
+    static mut USB_SERIAL_ISR: Option<SerialPort<'static, ActiveBus>> = None;
+    static mut USB_DEVICE_ISR: Option<UsbDevice<'static, ActiveBus>> = None;
+
+    // SAFETY: OTG_FS is the only caller after initialization. The bootstrap
+    // critical section transfers each object here exactly once, after which
+    // these ISR-local statics are the sole USB owner.
     unsafe {
-        let device = match (*core::ptr::addr_of_mut!(USB_DEVICE)).as_mut() {
-            Some(device) => device,
-            None => return,
-        };
-        let serial = match (*core::ptr::addr_of_mut!(USB_SERIAL)).as_mut() {
-            Some(serial) => serial,
-            None => return,
+        if (*core::ptr::addr_of!(USB_DEVICE_ISR)).is_none() {
+            let Some(device) = free(|cs| USB_DEVICE.borrow(cs).replace(None)) else {
+                return;
+            };
+            (*core::ptr::addr_of_mut!(USB_DEVICE_ISR)) = Some(device);
+        }
+        if (*core::ptr::addr_of!(USB_SERIAL_ISR)).is_none() {
+            let Some(serial) = free(|cs| USB_SERIAL.borrow(cs).replace(None)) else {
+                return;
+            };
+            (*core::ptr::addr_of_mut!(USB_SERIAL_ISR)) = Some(serial);
+        }
+
+        let (Some(device), Some(serial)) = (
+            (*core::ptr::addr_of_mut!(USB_DEVICE_ISR)).as_mut(),
+            (*core::ptr::addr_of_mut!(USB_SERIAL_ISR)).as_mut(),
+        ) else {
+            return;
         };
         let _ = device.poll(&mut [serial]);
+        let link =
+            dali_usb::LinkState::from_configured(device.state() == UsbDeviceState::Configured);
+        drain(link, &mut UsbSink { serial });
     }
 }
 
-/// Writes bytes to the USB CDC endpoint when it accepts them.
-pub(super) fn write_bytes(bytes: &[u8]) -> usize {
-    // SAFETY: USB state ownership is restricted to the kernel main context.
-    unsafe {
-        let serial = match (*core::ptr::addr_of_mut!(USB_SERIAL)).as_mut() {
-            Some(serial) => serial,
-            None => return 0,
-        };
-        serial.write(bytes).map_or(0, |written| written)
-    }
+struct UsbSink<'a> {
+    serial: &'a mut SerialPort<'static, ActiveBus>,
 }
 
-/// Returns whether the USB host has completed device configuration.
-pub(super) fn host_ready() -> bool {
-    // SAFETY: USB state ownership is restricted to the kernel main context.
-    unsafe {
-        (*core::ptr::addr_of!(USB_DEVICE))
-            .as_ref()
-            .is_some_and(|device| device.state() == UsbDeviceState::Configured)
+impl dali_usb::ByteSink for UsbSink<'_> {
+    fn write(&mut self, bytes: &[u8]) -> usize {
+        self.serial.write(bytes).map_or(0, |written| written)
     }
 }

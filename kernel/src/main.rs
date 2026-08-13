@@ -10,6 +10,15 @@ pub mod storage;
 use cortex_m_rt::entry;
 use panic_halt as _;
 
+#[cfg(feature = "usb-cdc")]
+use stm32f4xx_hal::pac::interrupt;
+
+#[cfg(feature = "usb-cdc")]
+#[interrupt]
+fn OTG_FS() {
+    logging::service_usb_irq();
+}
+
 #[entry]
 fn main() -> ! {
     bootstrap::run()

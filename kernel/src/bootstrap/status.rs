@@ -20,8 +20,5 @@ pub const SLOW_BLINK_PERIOD_MS: u32 = 1_000;
 #[cfg(feature = "board-stm32f405-sd")]
 pub const FAST_BLINK_PERIOD_MS: u32 = 100;
 
-/// Maximum interval between USB CDC service calls.
-pub const USB_SERVICE_PERIOD_MS: u32 = 10;
-
-/// Bounded host-enumeration and CDC control-handshake deadline.
-pub const USB_ENUMERATION_TIMEOUT_MS: u32 = 5_000;
+/// Heartbeat loop tick used for bounded status LED timing.
+pub const HEARTBEAT_PERIOD_MS: u32 = 10;

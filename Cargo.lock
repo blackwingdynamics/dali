@@ -118,6 +118,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
+ "dali-usb",
  "embedded-sdmmc",
  "panic-halt",
  "rtt-target",
@@ -128,6 +129,10 @@ dependencies = [
 
 [[package]]
 name = "dali-sdk"
+version = "0.1.0"
+
+[[package]]
+name = "dali-usb"
 version = "0.1.0"
 
 [[package]]

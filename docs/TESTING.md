@@ -15,6 +15,17 @@ Host-side tests should cover pure logic without requiring an MCU:
 - CRC32 calculation and mismatch handling;
 - fixed load address and entry-offset validation.
 
+USB delivery primitives are tested in the hardware-neutral `dali-usb` crate:
+
+```text
+cargo test -p dali-usb
+```
+
+These tests cover FIFO ordering, bounded overflow behavior, partial writes,
+disconnect/reconnect retention, and link-state transitions. They do not prove
+USB electrical behavior, STM32 peripheral servicing, host enumeration, or
+storage progress while a HAL operation is blocking.
+
 ## Target tests
 
 Hardware tests should cover:

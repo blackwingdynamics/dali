@@ -2,7 +2,7 @@
 
 #[cfg(feature = "board-stm32f405-sd")]
 use super::status::FAST_BLINK_PERIOD_MS;
-use super::status::{SLOW_BLINK_PERIOD_MS, StorageStatus, USB_SERVICE_PERIOD_MS};
+use super::status::{HEARTBEAT_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus};
 use crate::board;
 use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
 
@@ -12,7 +12,6 @@ pub fn run(mut board: board::Board, storage_status: StorageStatus) -> ! {
     let mut elapsed_ms = 0;
 
     loop {
-        crate::logging::poll();
         match storage_status {
             #[cfg(feature = "board-stm32f405-sd")]
             StorageStatus::Ready => {
@@ -34,7 +33,7 @@ pub fn run(mut board: board::Board, storage_status: StorageStatus) -> ! {
                 }
             }
         }
-        board.delay.delay_ms(USB_SERVICE_PERIOD_MS);
-        elapsed_ms = elapsed_ms.saturating_add(USB_SERVICE_PERIOD_MS);
+        board.delay.delay_ms(HEARTBEAT_PERIOD_MS);
+        elapsed_ms = elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
     }
 }

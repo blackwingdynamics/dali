@@ -19,6 +19,7 @@ usb-cdc = ["stm32f4xx-hal/otg-fs", "stm32f4xx-hal/usb_fs", "dep:usb-device", "de
 workspace = true
 
 [dependencies]
+dali-usb = { path = "../crates/dali-usb" }
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
 embedded-sdmmc = { version = "=0.10.0", default-features = false }
