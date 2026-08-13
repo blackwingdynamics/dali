@@ -105,6 +105,11 @@ cargo install git-cliff --version 2.13.0 --locked
 
 Install `probe-rs` and `dfu-util` using the package-manager or installation method appropriate for the host operating system. The exact hardware flashing tools are host dependencies, not Cargo workspace members.
 
+The kernel uses `embedded-sdmmc` `0.10.0` with default features disabled. The
+filesystem layer is read-only, uses fixed-size buffers, and scans the first FAT
+volume's root directory for 8.3 filenames with the `AMRN` extension. It does
+not write to the card or require heap allocation.
+
 ## Workspace and Git hooks
 
 The repository is a Cargo workspace containing the kernel, the future `dali-sdk`, the future `dali-cli`, and the initial demo-application scaffold. Run workspace commands from the repository root.

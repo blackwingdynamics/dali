@@ -25,7 +25,7 @@ Hardware tests should cover:
 - SPI1 SD initialization;
 - one known block read;
 - FAT16/FAT32 root-directory enumeration;
-- `.amrn` discovery;
+- `.AMRN` extension filtering and `HELLO.AMRN` discovery;
 - payload copy to the reserved SRAM address `0x20008000`;
 - demo application entry;
 - deterministic application LED pattern.

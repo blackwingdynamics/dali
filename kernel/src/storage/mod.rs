@@ -1,5 +1,7 @@
 //! Transport-independent block-storage boundary.
 
+pub mod filesystem;
+
 /// The fixed sector size used by SD cards and the MVP filesystem layer.
 pub const BLOCK_SIZE: usize = 512;
 
@@ -38,6 +40,21 @@ pub enum StorageError {
     /// The underlying hardware transport reported an unspecified failure.
     Transport,
 }
+
+impl core::fmt::Display for StorageError {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter.write_str(match self {
+            Self::NotReady => "storage is not ready",
+            Self::InvalidBlockAddress => "invalid block address",
+            Self::Timeout => "storage operation timed out",
+            Self::DataCorruption => "storage data is corrupted",
+            Self::Unsupported => "storage operation is unsupported",
+            Self::Transport => "storage transport failure",
+        })
+    }
+}
+
+impl core::error::Error for StorageError {}
 
 /// Reads fixed-size blocks from a storage medium.
 pub trait BlockReader {

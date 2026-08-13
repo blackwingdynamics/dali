@@ -100,7 +100,35 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
-            status::StorageStatus::Ready
+            match crate::storage::filesystem::scan_root_directory(reader) {
+                Ok(report) if report.mvp_package_found => {
+                    logging::info(
+                        logging::BOOT_SUBSYSTEM,
+                        format_args!(
+                            "[STORAGE] Root scan found {} AMRN file(s); found /hello.amrn",
+                            report.amrn_file_count
+                        ),
+                    );
+                    status::StorageStatus::Ready
+                }
+                Ok(report) => {
+                    logging::info(
+                        logging::BOOT_SUBSYSTEM,
+                        format_args!(
+                            "[STORAGE] Root scan found {} AMRN file(s); MVP package not found",
+                            report.amrn_file_count
+                        ),
+                    );
+                    status::StorageStatus::Ready
+                }
+                Err(error) => {
+                    logging::error(
+                        logging::BOOT_SUBSYSTEM,
+                        format_args!("[STORAGE] Filesystem mount failed: {:?}", error),
+                    );
+                    status::StorageStatus::Failure
+                }
+            }
         }
         Err(error) => {
             logging::error(

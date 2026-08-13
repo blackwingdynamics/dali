@@ -47,11 +47,11 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - [ ] Implement SD card low-speed initialization.
 - [ ] Implement one raw block read.
 - [ ] Verify a known SD block read on hardware.
-- [ ] Integrate a read-only FAT16/FAT32 filesystem layer.
-- [ ] Mount the filesystem read-only.
-- [ ] Enumerate the root directory.
-- [ ] Filter files by the `.amrn` extension.
-- [ ] Log the discovered package path.
+- [x] Integrate a read-only FAT16/FAT32 filesystem layer.
+- [x] Mount the filesystem read-only.
+- [x] Enumerate the root directory.
+- [x] Filter files by the `.amrn` extension.
+- [x] Log the discovered package path.
 
 ## Phase 3 — AMRN parser and integrity
 
