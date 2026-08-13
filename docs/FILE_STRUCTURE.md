@@ -50,6 +50,9 @@ dali-kernel/
 │       ├── logging/              # Kernel-wide logging facade and backends
 │       │   ├── mod.rs            # Stable logging API
 │       │   └── rtt.rs            # RTT logging backend
+│       ├── bootstrap/            # Kernel startup orchestration
+│       │   ├── mod.rs            # Boot sequence
+│       │   └── heartbeat.rs      # Status heartbeat loop
 │       ├── logging.rs          # RTT and later serial logging
 │       ├── storage/            # SD and filesystem subsystem
 │       ├── loader/             # AMRN parsing and execution
@@ -93,21 +96,22 @@ The following order keeps each new file focused on one verifiable capability:
 3. `kernel/src/board/stm32f405_sd.rs` — STM32F405 clock, LED, and SDIO pin ownership.
 4. `kernel/src/logging/mod.rs` — the stable kernel logging facade.
 5. `kernel/src/logging/rtt.rs` — the RTT logging backend.
-6. `kernel/src/main.rs` — bootstrap orchestration using the board and logging modules.
-7. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
-8. `kernel/src/drivers/mod.rs` — hardware driver registry.
-9. `kernel/src/drivers/sdio.rs` — STM32F405 SDIO initialization and block reads.
-10. `kernel/src/drivers/spi_sd.rs` — STM32F411 SPI SD initialization and block reads.
-11. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
-12. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
-13. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
-14. `kernel/src/loader/crc32.rs` — payload CRC32 calculation and validation.
-15. `kernel/src/loader/exec.rs` — bounded SRAM copy and entry-point transfer.
-16. `apps/dali-app-hello/src/main.rs` — first independently built application.
-17. `apps/dali-app-hello/memory.x` — application linker memory layout.
-18. `apps/dali-app-hello/build.rs` — application package preparation, if required.
-19. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
-20. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
+6. `kernel/src/bootstrap/mod.rs` — boot sequence orchestration.
+7. `kernel/src/bootstrap/heartbeat.rs` — status heartbeat loop.
+8. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
+9. `kernel/src/drivers/mod.rs` — hardware driver registry.
+10. `kernel/src/drivers/sdio.rs` — STM32F405 SDIO initialization and block reads.
+11. `kernel/src/drivers/spi_sd.rs` — STM32F411 SPI SD initialization and block reads.
+12. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
+13. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
+14. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
+15. `kernel/src/loader/crc32.rs` — payload CRC32 calculation and validation.
+16. `kernel/src/loader/exec.rs` — bounded SRAM copy and entry-point transfer.
+17. `apps/dali-app-hello/src/main.rs` — first independently built application.
+18. `apps/dali-app-hello/memory.x` — application linker memory layout.
+19. `apps/dali-app-hello/build.rs` — application package preparation, if required.
+20. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
+21. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:
 
