@@ -38,7 +38,7 @@ The application load address is fixed at `0x20008000` for the MVP.
 
 - Board: WeAct Studio STM32F405RGT6 Core Board, 64-pin
 - MCU: STM32F405RGT6
-- HSE: 25 MHz
+- HSE: 8 MHz
 - Maximum documented MCU frequency: 168 MHz
 - Status LED: PB2, active-high push-pull
 - User key: PC13
@@ -66,7 +66,7 @@ The SD interface must use the board's correct 3.3 V logic levels. The SD module,
 ## Clock and logging
 
 The reference kernel targets a 100 MHz system clock and supports both RTT and
-USB CDC logging. The F405 backend targets 168 MHz from its 25 MHz HSE. Both
+USB CDC logging. The F405 backend targets 168 MHz from its 8 MHz HSE. Both
 backends configure the USB FS 48 MHz clock domain and use PA11/PA12 for USB
 D-/D+.
 

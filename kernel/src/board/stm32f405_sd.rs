@@ -2,7 +2,7 @@
 
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, timer::SysDelay};
 
-/// System clock target for the 25 MHz HSE board.
+/// System clock target for the 8 MHz HSE board.
 pub const SYSTEM_CLOCK_MHZ: u32 = 168;
 
 /// Status LED output pin on the active-high PB2 LED.
@@ -89,7 +89,7 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
     let rcc = device.RCC.constrain();
     let clocks = rcc
         .cfgr
-        .use_hse(25.MHz())
+        .use_hse(8.MHz())
         .sysclk(SYSTEM_CLOCK_MHZ.MHz())
         .hclk(SYSTEM_CLOCK_MHZ.MHz())
         .pclk1(42.MHz())
