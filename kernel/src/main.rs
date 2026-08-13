@@ -2,6 +2,7 @@
 #![no_main]
 
 mod board;
+pub mod drivers;
 pub mod logging;
 pub mod storage;
 

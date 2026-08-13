@@ -1,8 +1,5 @@
 //! Transport-independent block-storage boundary.
 
-#[cfg(feature = "board-stm32f405-sd")]
-pub mod sdio;
-
 /// The fixed sector size used by SD cards and the MVP filesystem layer.
 pub const BLOCK_SIZE: usize = 512;
 
