@@ -24,6 +24,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - [ ] Document the SPI1 pin mapping.
 - [ ] Document the logging channel used for acceptance testing.
 - [ ] Review all MVP claims for unsupported security language.
+- [x] Add the compile-time STM32F405 SDIO board backend.
+- [ ] Record STM32F405 SDIO wiring and hardware bring-up evidence.
 
 ## Phase 1 — Kernel bootstrap
 
@@ -40,7 +42,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 ## Phase 2 — SD and filesystem read path
 
-- [ ] Add the SPI1 peripheral configuration.
+- [ ] Add board-specific SD transport configuration for SPI1 or SDIO.
 - [ ] Configure the SD chip-select pin.
 - [ ] Implement SD card low-speed initialization.
 - [ ] Implement one raw block read.

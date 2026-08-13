@@ -8,6 +8,8 @@
 - `just` for the repository task runner;
 - an SWD programmer/debug probe;
 - a WeAct BlackPill STM32F411 board;
+- optionally, a WeAct Studio STM32F405RGT6 Core Board with its on-board SDIO
+  socket;
 - a correctly wired 3.3 V SD-card interface;
 - a supported RTT viewer.
 
@@ -228,6 +230,30 @@ DALI_DFU_DEVICE=0483:df11 just flash-dfu
 ```
 
 The command does not invoke `sudo`. Configure the host's USB permissions separately.
+
+### 5a. Build the STM32F405 SDIO board backend
+
+The F405 backend is selected explicitly and does not change the default F411
+build:
+
+```text
+cargo check -p dali-kernel --no-default-features \
+  --features board-stm32f405-sd \
+  --target thumbv7em-none-eabihf
+
+cargo build -p dali-kernel --no-default-features \
+  --features board-stm32f405-sd \
+  --target thumbv7em-none-eabihf
+```
+
+The generated ELF is located at:
+
+```text
+target/thumbv7em-none-eabihf/debug/dali-kernel
+```
+
+For SWD flashing, set `DALI_CHIP` to the exact STM32F405 identifier reported
+by `probe-rs`. DFU uses the same `DALI_DFU_DEVICE` override documented above.
 
 ### 6. Observe RTT output
 

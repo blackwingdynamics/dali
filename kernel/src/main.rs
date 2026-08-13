@@ -30,6 +30,9 @@ fn main() -> ! {
     let core = cortex_m::Peripherals::take().unwrap();
     let mut board: board::Board = board::initialize(device, core);
 
+    #[cfg(feature = "board-stm32f405-sd")]
+    let _sdio_pins = board.take_sdio_pins();
+
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[BOOT] System clock: {} MHz", board::SYSTEM_CLOCK_MHZ),

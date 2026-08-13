@@ -58,6 +58,11 @@ docs/                 Architecture and development documentation
 - Status LED: PC13
 - SD interface: SPI1
 
+The repository also includes a compile-time backend for the WeAct Studio
+STM32F405RGT6 Core Board. Its on-board microSD socket uses the STM32 hardware
+SDIO peripheral in 4-bit mode. The F411 BlackPill remains the MVP reference
+board; the F405 board is currently intended for storage bring-up.
+
 ## Development
 
 Install the embedded Rust target and Lefthook, then install the repository hooks:

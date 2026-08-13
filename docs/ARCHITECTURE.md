@@ -63,6 +63,13 @@ The MVP application is a RAM-loaded native module, not a sandboxed process. Kern
 - initial logging: RTT;
 - USB CDC logging: a later hardware milestone.
 
+The repository also contains a secondary compile-time backend for the WeAct
+Studio STM32F405RGT6 Core Board. This board exposes an on-board microSD socket
+through the STM32 hardware SDIO peripheral in 4-bit mode (`PC12`, `PD2`, and
+`PC8`–`PC11`). It is intended for storage bring-up and hardware experiments;
+the F411 BlackPill remains the MVP reference target until AMRN target
+compatibility is explicitly extended.
+
 The exact board wiring, voltage requirements, SPI startup speed, and clock configuration must be documented before hardware acceptance testing.
 
 Board support is selected at compile time. The kernel exposes one board facade,
