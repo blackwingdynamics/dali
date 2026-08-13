@@ -10,10 +10,12 @@ From the repository root:
 
 ```text
 just simulate
+just simulate f405
 ```
 
-The command builds the kernel ELF and starts the Renode scenario in
-`simulation/renode/dali_blackpill.resc`.
+The optional board argument selects only the firmware build. The scenario uses
+one generic Renode STM32F4 reference machine for both board variants; the
+machine name is not a chip or board selection mechanism.
 
 ## Evidence boundary
 
