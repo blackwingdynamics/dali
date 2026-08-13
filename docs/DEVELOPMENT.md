@@ -117,13 +117,16 @@ board USB data pins. After flashing and leaving DFU mode, Linux should expose a
 runtime console such as `/dev/ttyACM0`:
 
 ```text
-picocom /dev/ttyACM0 -b 115200
+just console
 ```
 
+For a different device path, use `just console port=/dev/ttyACM1` or set
+`DALI_USB_CONSOLE_PORT`. The default port is `/dev/ttyACM0` and the conventional
+terminal rate is 115200.
+
 The USB console is polled by the kernel main loop and does not require an SWD
-probe. The baud-rate argument is conventional for terminal tools; USB CDC does
-not use a physical UART baud clock. RTT remains available when an SWD probe is
-connected.
+probe. The terminal rate is conventional; USB CDC does not use a physical UART
+baud clock. RTT remains available when an SWD probe is connected.
 
 ## Workspace and Git hooks
 

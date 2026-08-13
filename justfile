@@ -13,6 +13,8 @@ renode_script := "simulation/renode/dali_blackpill.resc"
 chip := env_var_or_default("DALI_CHIP", "STM32F411CEUx")
 f405_chip := env_var_or_default("DALI_F405_CHIP", "STM32F405RGTx")
 dfu_device := env_var_or_default("DALI_DFU_DEVICE", "0483:df11")
+usb_console_port := env_var_or_default("DALI_USB_CONSOLE_PORT", "/dev/ttyACM0")
+usb_console_baud := "115200"
 flash_address := "0x08000000"
 
 default:
@@ -92,6 +94,10 @@ flash-probe board="f411":
 flash-dfu board="f411":
     just bin {{board}}
     dfu-util -d {{dfu_device}} -a 0 -s {{flash_address}}:leave -D {{ if board == "f405" { f405_kernel_bin } else if board == "f411" { kernel_bin } else { error("Unsupported board. Use f411 or f405.") } }}
+
+# Open the USB CDC runtime console. Requires picocom.
+console port=usb_console_port:
+    picocom {{port}} -b {{usb_console_baud}}
 
 # Attach to a running target and stream supported debug output.
 attach:
