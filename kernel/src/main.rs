@@ -3,6 +3,7 @@
 
 mod board;
 pub mod logging;
+pub mod storage;
 
 use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
 use cortex_m_rt::entry;
