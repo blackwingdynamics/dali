@@ -43,9 +43,10 @@ just setup-debian
 ```
 
 This script uses `apt-get` for system dependencies, installs `probe-rs` through
-Cargo, and installs Renode's portable Linux release so a distro-specific .NET
-runtime package is not required. It is safe to run again. A logout/login may
-be required after the script adds the current user to `plugdev`.
+Cargo, installs `picocom`, and installs Renode's portable Linux release so a
+distro-specific .NET runtime package is not required. It is safe to run again.
+A logout/login may be required after the script adds the current user to
+`plugdev`.
 
 ### Automated Fedora setup
 
@@ -56,9 +57,9 @@ just setup-fedora
 ```
 
 This script uses `dnf` or `dnf5` for system dependencies, installs `probe-rs`
-through Cargo, and installs Renode's portable Linux release. It is safe to run
-again. A logout/login may be required after the script adds the current user
-to `plugdev`.
+through Cargo, installs `picocom`, and installs Renode's portable Linux release.
+It is safe to run again. A logout/login may be required after the script adds
+the current user to `plugdev`.
 
 ### Automated macOS setup
 
@@ -70,8 +71,8 @@ just setup-macos
 ```
 
 This script installs the embedded Rust toolchain, Cargo tools, DFU utilities,
-`probe-rs`, and Renode through Homebrew. macOS does not require Linux udev
-rules for debug probes. Install Homebrew separately if it is not already
+`picocom`, `probe-rs`, and Renode through Homebrew. macOS does not require Linux
+udev rules for debug probes. Install Homebrew separately if it is not already
 available.
 
 ### Automated Windows setup

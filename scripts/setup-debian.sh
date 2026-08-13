@@ -24,6 +24,7 @@ readonly APT_PACKAGES=(
     libgdiplus
     libudev-dev
     libusb-1.0-0-dev
+    picocom
     pkg-config
     python3
     rustup
@@ -148,6 +149,7 @@ verify_tools() {
         git-cliff
         just
         lefthook
+        picocom
         probe-rs
         renode
         rustc

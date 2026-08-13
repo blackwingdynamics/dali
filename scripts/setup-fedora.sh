@@ -25,6 +25,7 @@ readonly DNF_PACKAGES=(
     libudev-devel
     libusb1-devel
     make
+    picocom
     pkgconf-pkg-config
     python3
     rustup
@@ -149,6 +150,7 @@ verify_tools() {
         git-cliff
         just
         lefthook
+        picocom
         probe-rs
         renode
         rustc

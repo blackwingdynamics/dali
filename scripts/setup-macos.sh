@@ -12,6 +12,7 @@ export PATH="${CARGO_HOME:-${HOME}/.cargo}/bin:${PATH}"
 readonly BREW_PACKAGES=(
     cmake
     dfu-util
+    picocom
     pkg-config
     python
     screen
@@ -108,6 +109,7 @@ verify_tools() {
         git-cliff
         just
         lefthook
+        picocom
         probe-rs
         renode
         rustc
