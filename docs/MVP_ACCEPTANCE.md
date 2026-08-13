@@ -104,7 +104,9 @@ The application must not depend on shared RTT logging for this acceptance test.
 
 ## 7. Expected LED behavior
 
-Before application execution, the kernel produces its slow heartbeat pattern.
+Before application execution, the kernel reports storage state through the
+board-specific status LED: solid on when storage is ready, slow blinking when
+no card is detected, and fast blinking after a storage failure.
 
 After the loader prints `Jumping to entry point`, the kernel stops controlling the LED and the application produces a distinct pattern:
 
@@ -112,7 +114,8 @@ After the loader prints `Jumping to entry point`, the kernel stops controlling t
 three short flashes -> long pause -> repeat
 ```
 
-The pattern must be visibly distinguishable from the kernel heartbeat. The application must not return from its entry point.
+The pattern must be visibly distinguishable from every kernel storage status.
+The application must not return from its entry point.
 
 ## 8. Pass criteria
 
@@ -120,7 +123,7 @@ The test passes only when all criteria are true:
 
 - [ ] The kernel image boots on the reference board.
 - [ ] The system clock reaches the documented target.
-- [ ] The status LED shows the kernel heartbeat.
+- [ ] The status LED shows the correct storage status.
 - [ ] The SD card initializes over SPI1.
 - [ ] The FAT16/FAT32 filesystem is read successfully.
 - [ ] `/hello.amrn` is discovered.

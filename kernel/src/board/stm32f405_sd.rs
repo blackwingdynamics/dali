@@ -5,9 +5,6 @@ use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, timer::SysDelay};
 /// System clock target for the 8 MHz HSE board.
 pub const SYSTEM_CLOCK_MHZ: u32 = 168;
 
-/// Heartbeat interval used by the kernel bootstrap demonstration.
-pub const HEARTBEAT_PERIOD_MS: u32 = 1_000;
-
 /// Status LED output pin on the active-high PB2 LED.
 pub type StatusLed = gpio::gpiob::PB2<gpio::Output<gpio::PushPull>>;
 
@@ -78,5 +75,14 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
         clocks,
+    }
+}
+
+/// Sets the active-high F405 board LED to the requested logical state.
+pub fn set_status_led(board: &mut Board, on: bool) {
+    if on {
+        board.status_led.set_high();
+    } else {
+        board.status_led.set_low();
     }
 }

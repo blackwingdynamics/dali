@@ -1,6 +1,7 @@
 //! Kernel startup orchestration.
 
 mod heartbeat;
+mod status;
 
 use crate::{board, logging};
 #[cfg(feature = "board-stm32f405-sd")]
@@ -20,7 +21,13 @@ pub fn run() -> ! {
     let core = cortex_m::Peripherals::take().unwrap();
     let mut board = board::initialize(device, core);
 
-    initialize_storage(&mut board);
+    // Keep a visible indication active while storage initialization is in progress.
+    board::set_status_led(&mut board, true);
+    logging::info(
+        logging::BOOT_SUBSYSTEM,
+        format_args!("[STORAGE] Starting storage initialization"),
+    );
+    let storage_status = initialize_storage(&mut board);
 
     logging::info(
         logging::BOOT_SUBSYSTEM,
@@ -35,7 +42,7 @@ pub fn run() -> ! {
         format_args!("Entering kernel heartbeat"),
     );
 
-    heartbeat::run(board);
+    heartbeat::run(board, storage_status);
 }
 
 fn initialize_logging() {
@@ -58,13 +65,13 @@ fn emit_boot_banner() {
 }
 
 #[cfg(feature = "board-stm32f405-sd")]
-fn initialize_storage(board: &mut board::Board) {
+fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
     let Some((peripheral, pins, clocks)) = board.take_sdio_resources() else {
         logging::error(
             logging::BOOT_SUBSYSTEM,
             format_args!("[STORAGE] SDIO resources unavailable"),
         );
-        return;
+        return status::StorageStatus::Failure;
     };
 
     let mut reader = SdioBlockReader::new(peripheral, pins, clocks);
@@ -73,7 +80,12 @@ fn initialize_storage(board: &mut board::Board) {
             logging::BOOT_SUBSYSTEM,
             format_args!("[STORAGE] SDIO initialization failed: {:?}", error),
         );
-        return;
+        return match error {
+            crate::storage::StorageError::NotReady | crate::storage::StorageError::Timeout => {
+                status::StorageStatus::NotDetected
+            }
+            _ => status::StorageStatus::Failure,
+        };
     }
 
     logging::info(
@@ -83,16 +95,24 @@ fn initialize_storage(board: &mut board::Board) {
 
     let mut block: Block = [0; BLOCK_SIZE];
     match reader.read_block(BlockAddress::new(0), &mut block) {
-        Ok(()) => logging::info(
-            logging::BOOT_SUBSYSTEM,
-            format_args!("[STORAGE] Read block 0 successfully"),
-        ),
-        Err(error) => logging::error(
-            logging::BOOT_SUBSYSTEM,
-            format_args!("[STORAGE] Block 0 read failed: {:?}", error),
-        ),
+        Ok(()) => {
+            logging::info(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[STORAGE] Read block 0 successfully"),
+            );
+            status::StorageStatus::Ready
+        }
+        Err(error) => {
+            logging::error(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[STORAGE] Block 0 read failed: {:?}", error),
+            );
+            status::StorageStatus::Failure
+        }
     }
 }
 
 #[cfg(not(feature = "board-stm32f405-sd"))]
-fn initialize_storage(_board: &mut board::Board) {}
+fn initialize_storage(_board: &mut board::Board) -> status::StorageStatus {
+    status::StorageStatus::NotDetected
+}

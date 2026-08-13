@@ -21,7 +21,7 @@ Hardware tests should cover:
 
 - boot banner;
 - 100 MHz clock initialization;
-- PC13 heartbeat;
+- board-specific storage status LED behavior;
 - SPI1 SD initialization;
 - one known block read;
 - FAT16/FAT32 root-directory enumeration;

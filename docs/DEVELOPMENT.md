@@ -158,6 +158,21 @@ just flash-dfu f405
 just flash-probe f405
 ```
 
+### Storage status LED
+
+The kernel reports the initial storage state through the board-specific status
+LED. The board backend hides LED polarity, so the logical behavior is identical
+on both supported boards:
+
+| Storage state | LED behavior | Meaning |
+| --- | --- | --- |
+| Ready | Solid on | The card initialized and block zero was read successfully. |
+| Not detected | Slow blink, 1 second per transition | No card was detected or storage is not configured for the selected board. |
+| Failure | Fast blink, 100 milliseconds per transition | The card or storage transport reported an operational failure. |
+
+On the STM32F405 board, `PB2` is active-high. On the STM32F411 BlackPill,
+`PC13` is active-low. Applications must not depend on either physical polarity.
+
 Do not pass Cargo feature names to these recipes. The recipe converts the board
 argument into the correct compile-time backend automatically. `just ci` checks
 the default F411 backend; use `just kernel-check f405` and

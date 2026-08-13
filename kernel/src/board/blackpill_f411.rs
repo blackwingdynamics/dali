@@ -5,9 +5,6 @@ use stm32f4xx_hal::{gpio, pac, prelude::*, timer::SysDelay};
 /// System clock target in megahertz for the STM32F411 MVP board.
 pub const SYSTEM_CLOCK_MHZ: u32 = 100;
 
-/// Heartbeat interval used by the kernel bootstrap demonstration.
-pub const HEARTBEAT_PERIOD_MS: u32 = 1_000;
-
 /// Status LED output pin after board initialization.
 pub type StatusLed = gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>;
 
@@ -27,4 +24,13 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
     let status_led = device.GPIOC.split().pc13.into_push_pull_output();
 
     Board { delay, status_led }
+}
+
+/// Sets the active-low BlackPill LED to the requested logical state.
+pub fn set_status_led(board: &mut Board, on: bool) {
+    if on {
+        board.status_led.set_low();
+    } else {
+        board.status_led.set_high();
+    }
 }
