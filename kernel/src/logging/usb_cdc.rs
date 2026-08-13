@@ -1,11 +1,7 @@
 //! Board-neutral USB CDC serial logging backend.
 
-use core::fmt::{self, Arguments, Write};
-
 use usb_device::{bus::UsbBusAllocator, class_prelude::*, prelude::*};
 use usbd_serial::SerialPort;
-
-use super::Level;
 
 /// Hardware resources required to construct a USB CDC bus.
 pub(crate) trait UsbResources {
@@ -73,39 +69,24 @@ pub(super) fn poll() {
     }
 }
 
-/// Writes one structured log message to the USB CDC endpoint when available.
-pub(super) fn write(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
+/// Writes bytes to the USB CDC endpoint when it accepts them.
+pub(super) fn write_bytes(bytes: &[u8]) -> usize {
     // SAFETY: USB state ownership is restricted to the kernel main context.
     unsafe {
         let serial = match (*core::ptr::addr_of_mut!(USB_SERIAL)).as_mut() {
             Some(serial) => serial,
-            None => return,
+            None => return 0,
         };
-        let mut writer = SerialWriter { serial };
-        match write_message(&mut writer, level, subsystem, arguments) {
-            Ok(()) | Err(fmt::Error) => {}
-        }
+        serial.write(bytes).map_or(0, |written| written)
     }
 }
 
-fn write_message(
-    writer: &mut impl Write,
-    level: Level,
-    subsystem: &'static str,
-    arguments: Arguments<'_>,
-) -> fmt::Result {
-    writeln!(writer, "[{}][{}] {}", level.label(), subsystem, arguments)
-}
-
-struct SerialWriter<'a> {
-    serial: &'a mut SerialPort<'static, ActiveBus>,
-}
-
-impl Write for SerialWriter<'_> {
-    fn write_str(&mut self, value: &str) -> fmt::Result {
-        match self.serial.write(value.as_bytes()) {
-            Ok(written) if written == value.len() => Ok(()),
-            Ok(_) | Err(_) => Err(fmt::Error),
-        }
+/// Returns whether the USB host has completed device configuration.
+pub(super) fn host_ready() -> bool {
+    // SAFETY: USB state ownership is restricted to the kernel main context.
+    unsafe {
+        (*core::ptr::addr_of!(USB_DEVICE))
+            .as_ref()
+            .is_some_and(|device| device.state() == UsbDeviceState::Configured)
     }
 }

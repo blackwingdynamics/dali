@@ -30,8 +30,11 @@ required by the packaged Renode build, and probe-rs udev rules. It is safe to
 run again. A logout/login
 may be required after the script adds the current user to `plugdev`.
 
-The script performs system package installation and requires `sudo`. It does
-not flash hardware, delete project files, or modify Git history.
+The script performs system package installation and requires `sudo`. It adds
+the current user to `uucp` for USB CDC serial access and to `plugdev` for debug
+probe access. Log out and back in after the first setup so both group changes
+become active. It does not flash hardware, delete project files, or modify Git
+history.
 
 ### Automated Debian-based Linux setup
 
@@ -122,13 +125,27 @@ runtime console such as `/dev/ttyACM0`:
 just console
 ```
 
-For a different device path, use `just console port=/dev/ttyACM1` or set
-`DALI_USB_CONSOLE_PORT`. The default port is `/dev/ttyACM0` and the conventional
-terminal rate is 115200.
+For a specific device path, use `just console port=/dev/ttyACM1` or set
+`DALI_USB_CONSOLE_PORT`. Without an override, the recipe discovers the first
+available `/dev/ttyACM*` device. The conventional terminal rate is 115200.
+The recipe automatically waits for the device and reconnects after a board
+reset or USB disconnect. Exit `picocom` with `Ctrl-A`, then `Ctrl-X`.
 
-The USB console is polled by the kernel main loop and does not require an SWD
-probe. The terminal rate is conventional; USB CDC does not use a physical UART
-baud clock. RTT remains available when an SWD probe is connected.
+The USB console is initialized during bootstrap. Before blocking storage
+bring-up, the kernel services USB control traffic during a bounded five-second
+host-enumeration and CDC control-handshake window. The deadline is five
+seconds, after which boot continues even if no host is present. The main loop
+then drains buffered log records when it resumes. It does not require an SWD
+probe. The terminal rate is conventional;
+USB CDC does not use a physical UART baud clock. RTT remains available when an
+SWD probe is connected.
+
+Boot logging uses a fixed-capacity queue in kernel RAM. Messages emitted before
+the host finishes USB enumeration are retained and drained when CDC becomes
+available; startup does not depend on an arbitrary enumeration delay. The queue
+stores up to 32 formatted lines of 128 bytes each. If that bounded capacity is
+exceeded, the oldest messages are discarded and the console emits an explicit
+overflow warning after the queue is writable.
 
 ## Workspace and Git hooks
 

@@ -23,5 +23,5 @@ pub const FAST_BLINK_PERIOD_MS: u32 = 100;
 /// Maximum interval between USB CDC service calls.
 pub const USB_SERVICE_PERIOD_MS: u32 = 10;
 
-/// Time reserved for USB host enumeration before storage initialization.
-pub const USB_ENUMERATION_WINDOW_MS: u32 = 1_000;
+/// Bounded host-enumeration and CDC control-handshake deadline.
+pub const USB_ENUMERATION_TIMEOUT_MS: u32 = 5_000;
