@@ -9,6 +9,7 @@ kernel_binary := "dali-kernel"
 kernel_elf := "target/" + target + "/debug/" + kernel_binary
 kernel_bin := "target/" + target + "/debug/" + kernel_binary + ".bin"
 f405_kernel_bin := "target/" + target + "/debug/" + kernel_binary + "-f405.bin"
+board_feature := env_var_or_default("DALI_BOARD_FEATURE", "board-blackpill-f411")
 renode_script := "simulation/renode/dali_blackpill.resc"
 chip := env_var_or_default("DALI_CHIP", "STM32F411CEUx")
 f405_chip := env_var_or_default("DALI_F405_CHIP", "STM32F405RGTx")
@@ -52,7 +53,7 @@ workspace-check:
 
 # Check the embedded kernel target.
 kernel-check:
-    cargo check-kernel
+    cargo check -p {{kernel_package}} --no-default-features --features {{board_feature}} --target {{target}}
 
 # Run host-side tests.
 test:
@@ -64,22 +65,23 @@ clippy:
 
 # Run kernel-target Clippy with warnings denied.
 kernel-clippy:
-    cargo clippy -p {{kernel_package}} --target {{target}} --bin {{kernel_binary}} -- -D warnings
+    cargo clippy -p {{kernel_package}} --no-default-features --features {{board_feature}} --target {{target}} --bin {{kernel_binary}} -- -D warnings
 
 # Run all local CI checks.
 ci: format-check workspace-check kernel-check test clippy kernel-clippy diff-check
 
 # Build the embedded kernel ELF.
 build:
-    cargo build-kernel
+    cargo build -p {{kernel_package}} --no-default-features --features {{board_feature}} --target {{target}}
 
 # Run the kernel in Renode. Requires Renode and uses the STM32F4 reference model.
-simulate: build
+simulate:
+    cargo build-kernel
     renode --console --disable-gui {{renode_script}}
 
 # Convert the kernel ELF to a raw binary. Requires cargo-binutils and llvm-tools.
 bin: build
-    cargo objcopy -p {{kernel_package}} --target {{target}} --bin {{kernel_binary}} -- -O binary {{kernel_bin}}
+    cargo objcopy -p {{kernel_package}} --no-default-features --features {{board_feature}} --target {{target}} --bin {{kernel_binary}} -- -O binary {{kernel_bin}}
 
 # Build the STM32F405 SDIO board backend.
 build-f405:

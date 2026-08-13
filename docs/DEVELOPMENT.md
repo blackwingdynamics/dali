@@ -231,13 +231,20 @@ DALI_DFU_DEVICE=0483:df11 just flash-dfu
 
 The command does not invoke `sudo`. Configure the host's USB permissions separately.
 
-### 5a. Build the STM32F405 SDIO board backend
+### 5a. Select a board backend
 
-The F405 backend is selected explicitly and does not change the default F411
-build:
+The default board is the F411 BlackPill. Select another board through
+`DALI_BOARD_FEATURE` without changing the recipes:
 
 ```text
-just build-f405
+DALI_BOARD_FEATURE=board-blackpill-f411 just build
+DALI_BOARD_FEATURE=board-stm32f405-sd just build
+```
+
+The F405 backend can be checked with:
+
+```text
+DALI_BOARD_FEATURE=board-stm32f405-sd just kernel-check
 ```
 
 The generated ELF is located at:
@@ -246,23 +253,22 @@ The generated ELF is located at:
 target/thumbv7em-none-eabihf/debug/dali-kernel
 ```
 
-For SWD flashing, set `DALI_CHIP` to the exact STM32F405 identifier reported
-by `probe-rs` and run:
+For F405 SWD flashing, set `DALI_BOARD_FEATURE` and `DALI_CHIP` and run:
 
 ```text
-just flash-probe-f405
+DALI_BOARD_FEATURE=board-stm32f405-sd DALI_CHIP=STM32F405RGTx just flash-probe
 ```
 
 For DFU flashing, put the board into DFU mode and run:
 
 ```text
-just flash-dfu-f405
+DALI_BOARD_FEATURE=board-stm32f405-sd just flash-dfu
 ```
 
 The raw F405 binary is generated at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel-f405.bin
+target/thumbv7em-none-eabihf/debug/dali-kernel.bin
 ```
 
 ### 6. Observe RTT output
