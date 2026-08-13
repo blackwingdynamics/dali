@@ -5,13 +5,12 @@ edition = "2024"
 publish = false
 
 [features]
-default = ["board-blackpill-f411"]
-board-blackpill-f411 = ["stm32f4xx-hal/stm32f411", "usb-cdc"]
+default = ["board-blackpill-f411", "usb-cdc"]
+board-blackpill-f411 = ["stm32f4xx-hal/stm32f411"]
 board-stm32f405-sd = [
     "stm32f4xx-hal/sdio",
     "stm32f4xx-hal/sdio-host",
     "stm32f4xx-hal/stm32f405",
-    "usb-cdc",
 ]
 log-colors = []
 usb-cdc = ["stm32f4xx-hal/otg-fs", "stm32f4xx-hal/usb_fs", "dep:usb-device", "dep:usbd-serial"]

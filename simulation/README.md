@@ -27,4 +27,8 @@ integrity, or physical LED behavior.
 The current kernel logger writes to RTT. The initial Renode scenario therefore
 does not promise visible kernel logs. A future simulation logging backend may
 route the same logging facade to a Renode virtual UART without changing the
-production RTT backend.
+production RTT backend. USB CDC is deliberately disabled by `just simulate`:
+the selected Renode STM32F4 reference model does not implement the OTG_FS
+global register block used by the production USB backend. Running that backend
+in the model produces unsupported-register warnings and does not provide
+evidence about physical USB enumeration.

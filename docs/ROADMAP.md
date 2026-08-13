@@ -15,6 +15,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - Read-only FAT filesystem integration, root-directory enumeration, AMRN extension filtering, and package discovery logging are implemented.
 - Cross-platform setup scripts, Just recipes, the USB console helper, and development documentation exist.
 - A fixed-capacity USB log queue exists in kernel RAM and records overflow instead of silently hiding it.
+- Renode simulation explicitly disables USB CDC because its STM32F4 reference model does not implement the OTG_FS global registers used by the production backend.
 
 ### Incomplete or not yet accepted
 

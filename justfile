@@ -55,7 +55,7 @@ workspace-check:
 
 # Check the embedded kernel target.
 kernel-check board="f411":
-    cargo check -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd" } else if board == "f411" { "board-blackpill-f411" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}}
+    cargo check -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else if board == "f411" { "board-blackpill-f411,usb-cdc" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}}
 
 # Run host-side tests.
 test:
@@ -67,24 +67,24 @@ clippy:
 
 # Run kernel-target Clippy with warnings denied.
 kernel-clippy board="f411":
-    cargo clippy -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd" } else if board == "f411" { "board-blackpill-f411" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -D warnings
+    cargo clippy -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else if board == "f411" { "board-blackpill-f411,usb-cdc" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -D warnings
 
 # Run all local CI checks.
 ci: format-check workspace-check kernel-check test clippy kernel-clippy diff-check
 
 # Build the embedded kernel ELF.
 build board="f411":
-    cargo build -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd" } else if board == "f411" { "board-blackpill-f411" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}}
+    cargo build -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else if board == "f411" { "board-blackpill-f411,usb-cdc" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}}
 
 # Run the kernel in Renode. Requires Renode and uses the STM32F4 reference model.
 simulate board="f411":
-    just build {{board}}
+    cargo build -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd" } else if board == "f411" { "board-blackpill-f411" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}}
     renode --console --disable-gui {{renode_script}}
 
 # Convert the kernel ELF to a raw binary. Requires cargo-binutils and llvm-tools.
 bin board="f411":
     just build {{board}}
-    cargo objcopy -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd" } else if board == "f411" { "board-blackpill-f411" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -O binary {{ if board == "f405" { f405_kernel_bin } else { kernel_bin } }}
+    cargo objcopy -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else if board == "f411" { "board-blackpill-f411,usb-cdc" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -O binary {{ if board == "f405" { f405_kernel_bin } else { kernel_bin } }}
 
 # Flash the kernel with a connected probe. Requires probe-rs.
 flash-probe board="f411":

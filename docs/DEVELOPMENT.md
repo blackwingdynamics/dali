@@ -382,8 +382,10 @@ The optional board argument selects the firmware build. Both variants run on
 the same closest-available STM32F4 reference platform. The simulation can
 support development checks for boot and linker placement, but it is not an
 electrical model of either board, does not prove SD-card wiring, and does not
-replace physical acceptance testing. It also does not currently expose the
-kernel's RTT output. See `simulation/README.md` for the evidence boundary.
+replace physical acceptance testing. USB CDC is disabled for this scenario
+because the reference model does not implement the OTG_FS global registers
+used by the production backend. It also does not currently expose the kernel's
+RTT output. See `simulation/README.md` for the evidence boundary.
 
 Preview generated release notes locally with:
 
