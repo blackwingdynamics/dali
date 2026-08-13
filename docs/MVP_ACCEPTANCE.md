@@ -91,7 +91,7 @@ The exact formatting may evolve, but the following events must be present and id
 ====================================
    Dali OS Kernel Booting...
 ====================================
-[BOOT] System clock: 100 MHz
+[INFO][BOOT] System clock: 100 MHz
 [SD] Card initialized
 [AMRN] Package found: /hello.amrn
 [AMRN] Header valid

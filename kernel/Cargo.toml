@@ -7,6 +7,7 @@ publish = false
 [features]
 default = ["board-blackpill-f411"]
 board-blackpill-f411 = []
+log-colors = []
 
 [lints]
 workspace = true

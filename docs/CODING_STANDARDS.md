@@ -259,17 +259,19 @@ Logs must be written in English and remain deterministic enough for hardware dia
 Use stable subsystem prefixes:
 
 ```text
-[BOOT] System clock: 100 MHz
-[SD] Card initialized
-[AMRN] Package found: /hello.amrn
-[AMRN] CRC32 valid
-[AMRN] Loading payload: 2048 bytes at 0x20008000
-[AMRN] Jumping to entry point
+[INFO][BOOT] System clock: 100 MHz
+[INFO][SD] Card initialized
+[INFO][AMRN] Package found: /hello.amrn
+[INFO][AMRN] CRC32 valid
+[INFO][AMRN] Loading payload: 2048 bytes at 0x20008000
+[INFO][AMRN] Jumping to entry point
 ```
 
 Logging rules:
 
 - use stable subsystem prefixes;
+- use the logging facade rather than calling a transport backend directly;
+- keep color output optional through the `log-colors` feature;
 - log validation failures with a reason;
 - do not hide storage or loader errors behind a generic message;
 - do not log credentials, keys, or secrets;
