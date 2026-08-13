@@ -1,6 +1,6 @@
 //! WeAct Studio STM32F405RGT6 Core Board support.
 
-use stm32f4xx_hal::{gpio, pac, prelude::*, timer::SysDelay};
+use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, timer::SysDelay};
 
 /// System clock target for the 8 MHz HSE board.
 pub const SYSTEM_CLOCK_MHZ: u32 = 168;
@@ -29,12 +29,18 @@ pub struct Board {
     pub status_led: StatusLed,
     /// Hardware SDIO 4-bit pins for the on-board microSD socket.
     sdio_pins: Option<SdioPins>,
+    /// SDIO peripheral reserved for the storage driver.
+    sdio: Option<pac::SDIO>,
+    /// Frozen clock configuration required to initialize SDIO.
+    clocks: Clocks,
 }
 
 impl Board {
-    /// Transfers ownership of the configured SDIO pins to the storage layer.
-    pub fn take_sdio_pins(&mut self) -> Option<SdioPins> {
-        self.sdio_pins.take()
+    /// Transfers the SDIO resources to the storage driver.
+    pub fn take_sdio_resources(&mut self) -> Option<(pac::SDIO, SdioPins, &Clocks)> {
+        let peripheral = self.sdio.take()?;
+        let pins = self.sdio_pins.take()?;
+        Some((peripheral, pins, &self.clocks))
     }
 }
 
@@ -70,5 +76,7 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
         delay,
         status_led,
         sdio_pins: Some(sdio_pins),
+        sdio: Some(device.SDIO),
+        clocks,
     }
 }
