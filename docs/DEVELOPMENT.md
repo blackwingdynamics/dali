@@ -233,18 +233,18 @@ The command does not invoke `sudo`. Configure the host's USB permissions separat
 
 ### 5a. Select a board backend
 
-The default board is the F411 BlackPill. Select another board through
-`DALI_BOARD_FEATURE` without changing the recipes:
+The default board is the F411 BlackPill. Select another board as a recipe
+argument without writing Cargo features or environment variables:
 
 ```text
-DALI_BOARD_FEATURE=board-blackpill-f411 just build
-DALI_BOARD_FEATURE=board-stm32f405-sd just build
+just build
+just build f405
 ```
 
 The F405 backend can be checked with:
 
 ```text
-DALI_BOARD_FEATURE=board-stm32f405-sd just kernel-check
+just kernel-check f405
 ```
 
 The generated ELF is located at:
@@ -253,16 +253,16 @@ The generated ELF is located at:
 target/thumbv7em-none-eabihf/debug/dali-kernel
 ```
 
-For F405 SWD flashing, set `DALI_BOARD_FEATURE` and `DALI_CHIP` and run:
+For F405 SWD flashing, run:
 
 ```text
-DALI_BOARD_FEATURE=board-stm32f405-sd DALI_CHIP=STM32F405RGTx just flash-probe
+just flash-probe f405
 ```
 
 For DFU flashing, put the board into DFU mode and run:
 
 ```text
-DALI_BOARD_FEATURE=board-stm32f405-sd just flash-dfu
+just flash-dfu f405
 ```
 
 The raw F405 binary is generated at:
