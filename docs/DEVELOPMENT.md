@@ -25,8 +25,9 @@ just setup-arch
 ```
 
 The script installs the pinned Rust target and components, Cargo tools, DFU and
-USB utilities, `probe-rs`, Renode, the .NET runtime required by the packaged
-Renode build, and probe-rs udev rules. It is safe to run again. A logout/login
+USB utilities including `picocom`, `probe-rs`, Renode, the .NET runtime
+required by the packaged Renode build, and probe-rs udev rules. It is safe to
+run again. A logout/login
 may be required after the script adds the current user to `plugdev`.
 
 The script performs system package installation and requires `sudo`. It does
@@ -212,6 +213,7 @@ git-cliff --version
 rust-objcopy --version
 probe-rs --version
 dfu-util --version
+picocom --version
 ```
 
 The pre-commit hook runs formatting, workspace checks, Clippy with warnings denied, workspace tests, and staged-diff validation. The commit-msg hook enforces the Conventional Commit format.

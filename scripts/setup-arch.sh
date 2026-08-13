@@ -18,6 +18,7 @@ readonly PACMAN_PACKAGES=(
     dfu-util
     dotnet-runtime
     git
+    picocom
     pkgconf
     python
     probe-rs
@@ -135,6 +136,7 @@ verify_tools() {
         git-cliff
         just
         lefthook
+        picocom
         probe-rs
         renode
         rustc
