@@ -137,6 +137,32 @@ just attach
 
 `just bin` requires `cargo-binutils` and the `llvm-tools-preview` Rust component. `just flash-probe` requires `probe-rs`. `just flash-dfu` requires `dfu-util` and appropriate host permissions; it never invokes `sudo` automatically.
 
+### Board selection
+
+Hardware recipes accept one optional positional board argument. The default is
+`f411`.
+
+| Argument | Board | On-board LED | SD interface |
+| --- | --- | --- | --- |
+| `f411` | WeAct BlackPill STM32F411CEU6 | PC13 | External SPI1 module |
+| `f405` | WeAct Studio STM32F405RGT6 Core Board | PB2 | On-board SDIO 4-bit socket |
+
+Use the same recipe names for either board:
+
+```text
+just build
+just build f405
+just kernel-check f405
+just bin f405
+just flash-dfu f405
+just flash-probe f405
+```
+
+Do not pass Cargo feature names to these recipes. The recipe converts the board
+argument into the correct compile-time backend automatically. `just ci` checks
+the default F411 backend; use `just kernel-check f405` and
+`just kernel-clippy f405` for the F405 target checks.
+
 Verify the tools before using hardware commands:
 
 ```text
@@ -268,7 +294,7 @@ just flash-dfu f405
 The raw F405 binary is generated at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel.bin
+target/thumbv7em-none-eabihf/debug/dali-kernel-f405.bin
 ```
 
 ### 6. Observe RTT output

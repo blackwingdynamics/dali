@@ -2,14 +2,14 @@
 
 use stm32f4xx_hal::{gpio, pac, prelude::*, timer::SysDelay};
 
-/// System clock target for the 25 MHz HSE board.
+/// System clock target for the 8 MHz HSE board.
 pub const SYSTEM_CLOCK_MHZ: u32 = 168;
 
 /// Heartbeat interval used by the kernel bootstrap demonstration.
 pub const HEARTBEAT_PERIOD_MS: u32 = 1_000;
 
-/// Status LED output pin on the active-low PC13 LED.
-pub type StatusLed = gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>;
+/// Status LED output pin on the active-high PB2 LED.
+pub type StatusLed = gpio::gpiob::PB2<gpio::Output<gpio::PushPull>>;
 
 /// SDIO pins owned by the kernel after board initialization.
 pub type SdioPins = (
@@ -25,7 +25,7 @@ pub type SdioPins = (
 pub struct Board {
     /// Blocking delay driven by the initialized SysTick timer.
     pub delay: SysDelay,
-    /// WeAct board status LED on active-low PC13.
+    /// WeAct board status LED on active-high PB2.
     pub status_led: StatusLed,
     /// Hardware SDIO 4-bit pins for the on-board microSD socket.
     sdio_pins: Option<SdioPins>,
@@ -43,7 +43,7 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
     let rcc = device.RCC.constrain();
     let clocks = rcc
         .cfgr
-        .use_hse(25.MHz())
+        .use_hse(8.MHz())
         .sysclk(SYSTEM_CLOCK_MHZ.MHz())
         .hclk(SYSTEM_CLOCK_MHZ.MHz())
         .pclk1(42.MHz())
@@ -51,10 +51,11 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
         .freeze();
     let delay = core.SYST.delay(&clocks);
 
+    let gpiob = device.GPIOB.split();
     let gpioc = device.GPIOC.split();
     let gpiod = device.GPIOD.split();
-    let mut status_led = gpioc.pc13.into_push_pull_output();
-    status_led.set_high();
+    let mut status_led = gpiob.pb2.into_push_pull_output();
+    status_led.set_low();
 
     let sdio_pins = (
         gpioc.pc12,

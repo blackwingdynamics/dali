@@ -66,7 +66,8 @@ The MVP application is a RAM-loaded native module, not a sandboxed process. Kern
 The repository also contains a secondary compile-time backend for the WeAct
 Studio STM32F405RGT6 Core Board. This board exposes an on-board microSD socket
 through the STM32 hardware SDIO peripheral in 4-bit mode (`PC12`, `PD2`, and
-`PC8`–`PC11`). It is intended for storage bring-up and hardware experiments;
+`PC8`–`PC11`) and an onboard status LED on `PB2`. It is intended for storage
+bring-up and hardware experiments;
 the F411 BlackPill remains the MVP reference target until AMRN target
 compatibility is explicitly extended.
 
