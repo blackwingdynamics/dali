@@ -65,10 +65,10 @@ The SD interface must use the board's correct 3.3 V logic levels. The SD module,
 
 ## Clock and logging
 
-The reference kernel targets a 100 MHz system clock and RTT logging. The F405
-backend targets 168 MHz from its 8 MHz HSE. USB CDC is a separate milestone
-because it requires a valid USB clock configuration, including the required
-48 MHz clock domain.
+The reference kernel targets a 100 MHz system clock and supports both RTT and
+USB CDC logging. The F405 backend targets 168 MHz from its 8 MHz HSE. Both
+backends configure the USB FS 48 MHz clock domain and use PA11/PA12 for USB
+D-/D+.
 
 ## Hardware acceptance evidence
 

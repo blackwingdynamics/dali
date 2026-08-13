@@ -18,16 +18,6 @@ const COLOR_BLUE: &str = "\x1b[34m";
 const COLOR_DIM: &str = "\x1b[2m";
 
 impl Level {
-    fn label(self) -> &'static str {
-        match self {
-            Self::Error => "ERROR",
-            Self::Warn => "WARN",
-            Self::Info => "INFO",
-            Self::Debug => "DEBUG",
-            Self::Trace => "TRACE",
-        }
-    }
-
     #[cfg(feature = "log-colors")]
     fn color(self) -> &'static str {
         match self {

@@ -22,7 +22,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - [ ] Require English comments, logs, and error messages.
 - [ ] Require tests or hardware evidence for every implementation module.
 - [ ] Document the SPI1 pin mapping.
-- [ ] Document the logging channel used for acceptance testing.
+- [x] Document the RTT and USB CDC logging channels used for acceptance testing.
 - [ ] Review all MVP claims for unsupported security language.
 - [x] Add the compile-time STM32F405 SDIO board backend.
 - [ ] Record STM32F405 SDIO wiring and hardware bring-up evidence.

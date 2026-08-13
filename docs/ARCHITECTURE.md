@@ -59,9 +59,10 @@ The MVP application is a RAM-loaded native module, not a sandboxed process. Kern
   - SCK: PA5;
   - MISO: PA6;
   - MOSI: PA7;
-  - CS: PA4;
+- CS: PA4;
 - initial logging: RTT;
-- USB CDC logging: a later hardware milestone.
+- runtime logging: USB CDC-ACM;
+- debug logging: RTT when an SWD probe is connected.
 
 The repository also contains a secondary compile-time backend for the WeAct
 Studio STM32F405RGT6 Core Board. This board exposes an on-board microSD socket

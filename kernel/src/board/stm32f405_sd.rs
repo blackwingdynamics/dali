@@ -8,6 +8,40 @@ pub const SYSTEM_CLOCK_MHZ: u32 = 168;
 /// Status LED output pin on the active-high PB2 LED.
 pub type StatusLed = gpio::gpiob::PB2<gpio::Output<gpio::PushPull>>;
 
+/// USB FS resources connected to the board's USB-C data pins.
+#[cfg(feature = "usb-cdc")]
+pub struct UsbResources {
+    /// USB global registers.
+    pub global: pac::OTG_FS_GLOBAL,
+    /// USB device registers.
+    pub device: pac::OTG_FS_DEVICE,
+    /// USB power and clock registers.
+    pub power_clock: pac::OTG_FS_PWRCLK,
+    /// USB D- pin on PA11.
+    pub dm: gpio::gpioa::PA11<gpio::Alternate<10>>,
+    /// USB D+ pin on PA12.
+    pub dp: gpio::gpioa::PA12<gpio::Alternate<10>>,
+    /// Frozen clocks used to configure the USB peripheral.
+    pub clocks: Clocks,
+}
+
+#[cfg(feature = "usb-cdc")]
+impl crate::logging::usb_cdc::UsbResources for UsbResources {
+    type Bus = stm32f4xx_hal::otg_fs::UsbBusType;
+
+    fn into_bus(
+        self,
+        endpoint_memory: &'static mut [u32],
+    ) -> usb_device::bus::UsbBusAllocator<Self::Bus> {
+        let usb = stm32f4xx_hal::otg_fs::USB::new(
+            (self.global, self.device, self.power_clock),
+            (self.dm, self.dp),
+            &self.clocks,
+        );
+        stm32f4xx_hal::otg_fs::UsbBus::new(usb, endpoint_memory)
+    }
+}
+
 /// SDIO pins owned by the kernel after board initialization.
 pub type SdioPins = (
     gpio::gpioc::PC12,
@@ -30,6 +64,9 @@ pub struct Board {
     sdio: Option<pac::SDIO>,
     /// Frozen clock configuration required to initialize SDIO.
     clocks: Clocks,
+    /// USB FS resources reserved for the CDC logging backend.
+    #[cfg(feature = "usb-cdc")]
+    usb: Option<UsbResources>,
 }
 
 impl Board {
@@ -38,6 +75,12 @@ impl Board {
         let peripheral = self.sdio.take()?;
         let pins = self.sdio_pins.take()?;
         Some((peripheral, pins, &self.clocks))
+    }
+
+    /// Transfers USB FS resources to the logging backend.
+    #[cfg(feature = "usb-cdc")]
+    pub fn take_usb_resources(&mut self) -> Option<UsbResources> {
+        self.usb.take()
     }
 }
 
@@ -50,11 +93,15 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
         .sysclk(SYSTEM_CLOCK_MHZ.MHz())
         .hclk(SYSTEM_CLOCK_MHZ.MHz())
         .pclk1(42.MHz())
-        .pclk2(84.MHz())
-        .freeze();
+        .pclk2(84.MHz());
+    #[cfg(feature = "usb-cdc")]
+    let clocks = clocks.require_pll48clk();
+    let clocks = clocks.freeze();
     let delay = core.SYST.delay(&clocks);
 
     let gpiob = device.GPIOB.split();
+    #[cfg(feature = "usb-cdc")]
+    let gpioa = device.GPIOA.split();
     let gpioc = device.GPIOC.split();
     let gpiod = device.GPIOD.split();
     let mut status_led = gpiob.pb2.into_push_pull_output();
@@ -69,12 +116,24 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
         gpioc.pc11.internal_pull_up(true),
     );
 
+    #[cfg(feature = "usb-cdc")]
+    let usb = Some(UsbResources {
+        global: device.OTG_FS_GLOBAL,
+        device: device.OTG_FS_DEVICE,
+        power_clock: device.OTG_FS_PWRCLK,
+        dm: gpioa.pa11.into_alternate::<10>(),
+        dp: gpioa.pa12.into_alternate::<10>(),
+        clocks,
+    });
+
     Board {
         delay,
         status_led,
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
         clocks,
+        #[cfg(feature = "usb-cdc")]
+        usb,
     }
 }
 

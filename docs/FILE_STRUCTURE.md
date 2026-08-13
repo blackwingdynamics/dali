@@ -49,7 +49,8 @@ dali-kernel/
 │       │   └── sdio.rs          # STM32F405 SDIO block driver
 │       ├── logging/              # Kernel-wide logging facade and backends
 │       │   ├── mod.rs            # Stable logging API
-│       │   └── rtt.rs            # RTT logging backend
+│       │   ├── rtt.rs            # RTT logging backend
+│       │   └── usb_cdc.rs        # Board-neutral USB CDC logging backend
 │       ├── bootstrap/            # Kernel startup orchestration
 │       │   ├── mod.rs            # Boot sequence
 │       │   └── heartbeat.rs      # Status heartbeat loop

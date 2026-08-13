@@ -13,13 +13,22 @@ use stm32f4xx_hal::pac;
 
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
 pub fn run() -> ! {
-    initialize_logging();
-    emit_boot_banner();
-
     // The reset entry point runs once, so both peripheral singleton tokens are available.
     let device = pac::Peripherals::take().unwrap();
     let core = cortex_m::Peripherals::take().unwrap();
     let mut board = board::initialize(device, core);
+
+    initialize_logging();
+    #[cfg(feature = "usb-cdc")]
+    if let Some(resources) = board.take_usb_resources() {
+        logging::initialize_usb(resources);
+    } else {
+        logging::error(
+            logging::BOOT_SUBSYSTEM,
+            format_args!("[USB] USB resources unavailable"),
+        );
+    }
+    emit_boot_banner();
 
     // Keep a visible indication active while storage initialization is in progress.
     board::set_status_led(&mut board, true);

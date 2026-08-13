@@ -110,6 +110,21 @@ filesystem layer is read-only, uses fixed-size buffers, and scans the first FAT
 volume's root directory for 8.3 filenames with the `AMRN` extension. It does
 not write to the card or require heap allocation.
 
+### USB CDC runtime console
+
+The kernel also exposes the shared logging facade through USB CDC-ACM on the
+board USB data pins. After flashing and leaving DFU mode, Linux should expose a
+runtime console such as `/dev/ttyACM0`:
+
+```text
+picocom /dev/ttyACM0 -b 115200
+```
+
+The USB console is polled by the kernel main loop and does not require an SWD
+probe. The baud-rate argument is conventional for terminal tools; USB CDC does
+not use a physical UART baud clock. RTT remains available when an SWD probe is
+connected.
+
 ## Workspace and Git hooks
 
 The repository is a Cargo workspace containing the kernel, the future `dali-sdk`, the future `dali-cli`, and the initial demo-application scaffold. Run workspace commands from the repository root.

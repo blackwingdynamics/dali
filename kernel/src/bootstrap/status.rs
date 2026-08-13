@@ -20,6 +20,5 @@ pub const SLOW_BLINK_PERIOD_MS: u32 = 1_000;
 #[cfg(feature = "board-stm32f405-sd")]
 pub const FAST_BLINK_PERIOD_MS: u32 = 100;
 
-/// Delay used while keeping the ready LED continuously on.
-#[cfg(feature = "board-stm32f405-sd")]
-pub const READY_STATUS_PERIOD_MS: u32 = 1_000;
+/// Maximum interval between USB CDC service calls.
+pub const USB_SERVICE_PERIOD_MS: u32 = 10;
