@@ -2,6 +2,49 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
+## Current Status — 2026-08-13
+
+### Completed and evidenced
+
+- The repository is a Rust workspace with kernel, SDK, CLI, and demo-application boundaries.
+- The STM32F411 BlackPill backend exists for the original MVP target.
+- The WeAct STM32F405RGT6 Core Board backend exists with its 8 MHz HSE, 168 MHz system clock, PB2 LED, and SDIO pin mapping.
+- The F405 kernel builds, checks, and passes strict target Clippy.
+- DFU flashing of the F405 firmware completes successfully.
+- The F405 USB CDC device has enumerated as `1209:da11` and created `/dev/ttyACM0` during hardware testing.
+- Read-only FAT filesystem integration, root-directory enumeration, AMRN extension filtering, and package discovery logging are implemented.
+- Cross-platform setup scripts, Just recipes, the USB console helper, and development documentation exist.
+- A fixed-capacity USB log queue exists in kernel RAM and records overflow instead of silently hiding it.
+
+### Incomplete or not yet accepted
+
+- Boot logs are not yet reliably observable through the USB CDC terminal after reset.
+- The current polling-based USB implementation can be starved by blocking SDIO/storage operations.
+- The attempted interrupt-driven USB implementation was not accepted and must be redesigned and tested independently before reuse.
+- The F405 SDIO path has not completed the documented hardware acceptance evidence.
+- AMRN parsing, CRC32 validation, RAM loading, application entry, SDK packaging, and CLI assembly remain incomplete.
+
+### Current priority
+
+**P0 — Make USB CDC boot logging deterministic under blocking storage bring-up.**
+
+The next implementation must establish a tested USB lifecycle contract that can
+service enumeration, CDC control requests, and log delivery while storage is
+initializing. It must not rely on arbitrary sleeps, terminal-specific behavior,
+or unverified interrupt code. Hardware testing resumes only after host-side or
+Renode-level evidence demonstrates the lifecycle behavior.
+
+### Next atomic tasks
+
+- [ ] Isolate the USB CDC backend behind a testable lifecycle/state interface.
+- [ ] Add host-side tests for USB log queue ordering, partial writes, reconnects, and overflow reporting.
+- [ ] Model blocking storage and USB control traffic in a deterministic simulation test.
+- [ ] Implement one reviewed USB servicing strategy for blocking boot phases.
+- [ ] Verify the strategy with F405 target checks and strict Clippy.
+- [ ] Verify USB enumeration and `Terminal ready` on F405 hardware.
+- [ ] Verify that all boot logs appear after a reset with the terminal already connected.
+- [ ] Record the hardware evidence before marking USB boot logging complete.
+
 ## Phase 0 — Documentation baseline
 
 - [ ] Confirm the reference board is WeAct BlackPill with STM32F411CEU6.
