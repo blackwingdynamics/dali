@@ -13,6 +13,83 @@
 
 ## Tool installation
 
+### Automated Arch Linux setup
+
+From the repository root, install the complete Arch Linux development
+environment with:
+
+```text
+just setup-arch
+```
+
+The script installs the pinned Rust target and components, Cargo tools, DFU and
+USB utilities, `probe-rs`, Renode, the .NET runtime required by the packaged
+Renode build, and probe-rs udev rules. It is safe to run again. A logout/login
+may be required after the script adds the current user to `plugdev`.
+
+The script performs system package installation and requires `sudo`. It does
+not flash hardware, delete project files, or modify Git history.
+
+### Automated Debian-based Linux setup
+
+On Debian, Ubuntu, and compatible distributions, install the complete
+development environment with:
+
+```text
+just setup-debian
+```
+
+This script uses `apt-get` for system dependencies, installs `probe-rs` through
+Cargo, and installs Renode's portable Linux release so a distro-specific .NET
+runtime package is not required. It is safe to run again. A logout/login may
+be required after the script adds the current user to `plugdev`.
+
+### Automated Fedora setup
+
+On Fedora, install the complete development environment with:
+
+```text
+just setup-fedora
+```
+
+This script uses `dnf` or `dnf5` for system dependencies, installs `probe-rs`
+through Cargo, and installs Renode's portable Linux release. It is safe to run
+again. A logout/login may be required after the script adds the current user
+to `plugdev`.
+
+### Automated macOS setup
+
+On macOS with Homebrew installed, install the complete development environment
+with:
+
+```text
+just setup-macos
+```
+
+This script installs the embedded Rust toolchain, Cargo tools, DFU utilities,
+`probe-rs`, and Renode through Homebrew. macOS does not require Linux udev
+rules for debug probes. Install Homebrew separately if it is not already
+available.
+
+### Automated Windows setup
+
+From PowerShell, run the setup script with:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-windows.ps1
+```
+
+After the first setup, the same script is also available through:
+
+```text
+just setup-windows
+```
+
+The script uses WinGet for Windows build prerequisites, Cargo for Rust tools
+and `probe-rs`, and portable releases for Renode and `dfu-util`. Windows USB
+drivers are device-specific: DFU requires a WinUSB-compatible driver, while
+ST-Link may require its vendor driver.
+
 Install the embedded Rust target and required Rust tools:
 
 ```text

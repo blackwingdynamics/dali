@@ -16,6 +16,26 @@ flash_address := "0x08000000"
 default:
     @just --list
 
+# Install the complete Arch Linux development environment.
+setup-arch:
+    bash scripts/setup-arch.sh
+
+# Install the complete Debian-based Linux development environment.
+setup-debian:
+    bash scripts/setup-debian.sh
+
+# Install the complete Fedora development environment.
+setup-fedora:
+    bash scripts/setup-fedora.sh
+
+# Install the complete macOS development environment through Homebrew.
+setup-macos:
+    bash scripts/setup-macos.sh
+
+# Install the complete Windows development environment through PowerShell.
+setup-windows:
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-windows.ps1
+
 # Apply rustfmt to the entire workspace.
 format:
     cargo fmt --all

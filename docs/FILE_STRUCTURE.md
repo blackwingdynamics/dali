@@ -20,7 +20,12 @@ dali-kernel/
 ├── lefthook.yml               # Pre-commit and commit-message hooks
 ├── scripts/
 │   ├── check-commit-message.sh  # Conventional Commit validator
-│   └── archive-changelog.sh     # Release changelog archiver
+│   ├── archive-changelog.sh     # Release changelog archiver
+│   ├── setup-arch.sh            # Complete Arch Linux environment setup
+│   ├── setup-debian.sh          # Complete Debian environment setup
+│   ├── setup-fedora.sh          # Complete Fedora environment setup
+│   ├── setup-macos.sh           # Complete macOS environment setup
+│   └── setup-windows.ps1        # Complete Windows environment setup
 ├── simulation/
 │   ├── README.md                 # Simulator scope and evidence boundary
 │   └── renode/
