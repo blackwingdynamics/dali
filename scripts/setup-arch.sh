@@ -49,6 +49,8 @@ install_system_packages() {
     log "Installing Arch host dependencies."
     sudo -v
     sudo pacman -S --needed "${PACMAN_PACKAGES[@]}"
+    sudo usermod --append --groups uucp "${USER}"
+    log "Added ${USER} to the uucp group for USB serial access."
 }
 
 install_renode() {
