@@ -8,8 +8,10 @@ kernel_package := "dali-kernel"
 kernel_binary := "dali-kernel"
 kernel_elf := "target/" + target + "/debug/" + kernel_binary
 kernel_bin := "target/" + target + "/debug/" + kernel_binary + ".bin"
+f405_kernel_bin := "target/" + target + "/debug/" + kernel_binary + "-f405.bin"
 renode_script := "simulation/renode/dali_blackpill.resc"
 chip := env_var_or_default("DALI_CHIP", "STM32F411CEUx")
+f405_chip := env_var_or_default("DALI_F405_CHIP", "STM32F405RGTx")
 dfu_device := env_var_or_default("DALI_DFU_DEVICE", "0483:df11")
 flash_address := "0x08000000"
 
@@ -79,6 +81,14 @@ simulate: build
 bin: build
     cargo objcopy -p {{kernel_package}} --target {{target}} --bin {{kernel_binary}} -- -O binary {{kernel_bin}}
 
+# Build the STM32F405 SDIO board backend.
+build-f405:
+    cargo build -p {{kernel_package}} --no-default-features --features board-stm32f405-sd --target {{target}}
+
+# Convert the STM32F405 kernel ELF to a raw binary.
+bin-f405: build-f405
+    cargo objcopy -p {{kernel_package}} --no-default-features --features board-stm32f405-sd --target {{target}} --bin {{kernel_binary}} -- -O binary {{f405_kernel_bin}}
+
 # Flash the kernel with a connected probe. Requires probe-rs.
 flash-probe: build
     probe-rs run --chip {{chip}} {{kernel_elf}}
@@ -87,9 +97,17 @@ flash-probe: build
 flash-dfu: bin
     dfu-util -d {{dfu_device}} -a 0 -s {{flash_address}}:leave -D {{kernel_bin}}
 
+# Flash the STM32F405 SDIO backend through DFU mode.
+flash-dfu-f405: bin-f405
+    dfu-util -d {{dfu_device}} -a 0 -s {{flash_address}}:leave -D {{f405_kernel_bin}}
+
 # Attach to a running target and stream supported debug output.
 attach:
     probe-rs attach --chip {{chip}}
+
+# Flash the STM32F405 SDIO backend with a connected debug probe.
+flash-probe-f405: build-f405
+    probe-rs run --chip {{f405_chip}} {{kernel_elf}}
 
 # Check committed and working-tree whitespace errors.
 diff-check:

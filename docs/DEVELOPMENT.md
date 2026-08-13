@@ -237,13 +237,7 @@ The F405 backend is selected explicitly and does not change the default F411
 build:
 
 ```text
-cargo check -p dali-kernel --no-default-features \
-  --features board-stm32f405-sd \
-  --target thumbv7em-none-eabihf
-
-cargo build -p dali-kernel --no-default-features \
-  --features board-stm32f405-sd \
-  --target thumbv7em-none-eabihf
+just build-f405
 ```
 
 The generated ELF is located at:
@@ -253,7 +247,23 @@ target/thumbv7em-none-eabihf/debug/dali-kernel
 ```
 
 For SWD flashing, set `DALI_CHIP` to the exact STM32F405 identifier reported
-by `probe-rs`. DFU uses the same `DALI_DFU_DEVICE` override documented above.
+by `probe-rs` and run:
+
+```text
+just flash-probe-f405
+```
+
+For DFU flashing, put the board into DFU mode and run:
+
+```text
+just flash-dfu-f405
+```
+
+The raw F405 binary is generated at:
+
+```text
+target/thumbv7em-none-eabihf/debug/dali-kernel-f405.bin
+```
 
 ### 6. Observe RTT output
 
