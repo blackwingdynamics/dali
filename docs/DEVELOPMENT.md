@@ -317,13 +317,15 @@ Renode is the supported development simulator for the initial kernel bring-up:
 
 ```text
 just simulate
+just simulate f405
 ```
 
-The scenario uses the closest available STM32F4 reference platform. It can
-support development checks for boot, linker placement, SysTick progress, and
-selected GPIO behavior. It does not replace physical STM32F411 acceptance
-testing and does not currently expose the kernel's RTT output. See
-`simulation/README.md` for the evidence boundary.
+The optional board argument selects the firmware build. Both variants run on
+the same closest-available STM32F4 reference platform. The simulation can
+support development checks for boot and linker placement, but it is not an
+electrical model of either board, does not prove SD-card wiring, and does not
+replace physical acceptance testing. It also does not currently expose the
+kernel's RTT output. See `simulation/README.md` for the evidence boundary.
 
 Preview generated release notes locally with:
 

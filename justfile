@@ -74,8 +74,8 @@ build board="f411":
     cargo build -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd" } else if board == "f411" { "board-blackpill-f411" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}}
 
 # Run the kernel in Renode. Requires Renode and uses the STM32F4 reference model.
-simulate:
-    cargo build-kernel
+simulate board="f411":
+    just build {{board}}
     renode --console --disable-gui {{renode_script}}
 
 # Convert the kernel ELF to a raw binary. Requires cargo-binutils and llvm-tools.
