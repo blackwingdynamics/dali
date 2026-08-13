@@ -1,0 +1,24 @@
+min_version: 1.7.0
+
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      run: cargo fmt --all -- --check
+    kernel-check:
+      run: cargo check-kernel
+    workspace-check:
+      run: cargo check --workspace --exclude dali-kernel
+    clippy:
+      run: cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
+    kernel-clippy:
+      run: cargo clippy -p dali-kernel --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
+    tests:
+      run: cargo test -p dali-sdk -p dali-app-hello -p dali-cli
+    diff:
+      run: git diff --cached --check
+
+commit-msg:
+  commands:
+    conventional-commit:
+      run: sh scripts/check-commit-message.sh {1}

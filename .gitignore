@@ -1,0 +1,35 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+
+# Embedded build and flashing artifacts
+*.bin
+*.elf
+*.hex
+*.map
+*.uf2
+*.img
+
+# Logs and runtime output
+*.log
+*.trace
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+
+# Debugger history
+.gdb_history

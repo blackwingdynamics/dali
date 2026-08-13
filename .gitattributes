@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+*.rs text
+*.toml text
+*.yml text
+*.yaml text
+*.md text
+*.sh text eol=lf
+LICENSE text
+
+*.bin binary
+*.elf binary
+*.hex binary
+*.img binary
+*.map binary
+*.uf2 binary

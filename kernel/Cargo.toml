@@ -1,0 +1,20 @@
+[package]
+name = "dali-kernel"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+stm32f4xx-hal = { version = "0.20", features = ["stm32f411"] }
+panic-halt = "1.0"
+rtt-target = "0.6"
+
+[[bin]]
+name = "dali-kernel"
+path = "src/main.rs"
+harness = false

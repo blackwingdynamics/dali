@@ -1,0 +1,21 @@
+[workspace]
+members = [
+    "kernel",
+    "apps/dali-app-hello",
+    "crates/dali-sdk",
+    "crates/dali-cli",
+]
+resolver = "2"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+all = "warn"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
