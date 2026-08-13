@@ -13,7 +13,7 @@ compile_error!("Select exactly one Dali OS board feature");
 pub use blackpill_f411::{Board, HEARTBEAT_PERIOD_MS, SYSTEM_CLOCK_MHZ, initialize};
 
 #[cfg(feature = "board-stm32f405-sd")]
-pub use stm32f405_sd::{Board, HEARTBEAT_PERIOD_MS, SYSTEM_CLOCK_MHZ, initialize};
+pub use stm32f405_sd::{Board, HEARTBEAT_PERIOD_MS, SYSTEM_CLOCK_MHZ, SdioPins, initialize};
 
 #[cfg(not(any(feature = "board-blackpill-f411", feature = "board-stm32f405-sd")))]
 compile_error!("Select a supported Dali OS board feature");

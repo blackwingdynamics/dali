@@ -88,17 +88,18 @@ The following order keeps each new file focused on one verifiable capability:
 4. `kernel/src/logging.rs` — the selected kernel logging boundary.
 5. `kernel/src/main.rs` — bootstrap orchestration using the board and logging modules.
 6. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
-7. `kernel/src/storage/sd.rs` — SD-over-SPI or SDIO initialization and block reads.
-8. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
-9. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
-10. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
-11. `kernel/src/loader/crc32.rs` — payload CRC32 calculation and validation.
-12. `kernel/src/loader/exec.rs` — bounded SRAM copy and entry-point transfer.
-13. `apps/dali-app-hello/src/main.rs` — first independently built application.
-14. `apps/dali-app-hello/memory.x` — application linker memory layout.
-15. `apps/dali-app-hello/build.rs` — application package preparation, if required.
-16. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
-17. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
+7. `kernel/src/storage/sdio.rs` — STM32F405 SDIO initialization and block reads.
+8. `kernel/src/storage/spi.rs` — STM32F411 SPI SD initialization and block reads.
+9. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
+10. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
+11. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
+12. `kernel/src/loader/crc32.rs` — payload CRC32 calculation and validation.
+13. `kernel/src/loader/exec.rs` — bounded SRAM copy and entry-point transfer.
+14. `apps/dali-app-hello/src/main.rs` — first independently built application.
+15. `apps/dali-app-hello/memory.x` — application linker memory layout.
+16. `apps/dali-app-hello/build.rs` — application package preparation, if required.
+17. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
+18. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:
 
