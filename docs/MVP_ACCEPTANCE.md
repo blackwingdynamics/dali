@@ -49,6 +49,8 @@ Record the board revision, SD-card type, wiring, power source, and probe before 
 - package load address: `0x20008000`;
 - package payload size no greater than 64 KiB;
 - package format version: `1`;
+- package target ID: `0x01` (`STM32F411CEU6`);
+- package ABI version: `1`;
 - valid CRC32 over the payload.
 
 The package must use the documented entry ABI:

@@ -10,9 +10,14 @@ pub type EntryPoint = unsafe extern "C" fn() -> !;
 
 The exact ABI must be identical in the kernel and demo application. The application is linked for `0x20008000` and its complete image is copied to the reserved SRAM region before the jump.
 
+The MVP ABI version is `1`. AMRN packages must declare this version in the
+header, and the kernel must reject packages requiring another ABI version.
+
 ## Rules
 
 - target: `thumbv7em-none-eabihf`;
+- target ID: `0x01` (`STM32F411CEU6`);
+- ABI version: `1`;
 - architecture: ARM Cortex-M4F;
 - entry address: `load_address + execution_offset`, with the Thumb bit set;
 - application return: forbidden in the MVP;
@@ -21,6 +26,10 @@ The exact ABI must be identical in the kernel and demo application. The applicat
 - kernel-private symbols: not available to applications;
 - interrupts: disabled and not owned by applications in the MVP;
 - shared memory: not available until an explicit layout is documented.
+
+The entry offset must be word-aligned and point inside the payload. The kernel
+sets the Cortex-M Thumb bit before calling the entry point. The application
+must never return from the entry point.
 
 The first application proves execution with a deterministic LED pattern. Shared RTT logging is intentionally deferred until a logging ABI exists.
 

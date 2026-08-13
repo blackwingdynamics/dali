@@ -23,6 +23,7 @@ dali-kernel/
 │   └── archive-changelog.sh     # Release changelog archiver
 ├── Cargo.toml                 # Virtual workspace metadata
 ├── Cargo.lock                 # Reproducible dependency resolution
+├── rust-toolchain.toml        # Pinned Rust toolchain and embedded target
 ├── .cargo/config.toml         # Embedded build and runner configuration
 ├── kernel/
 │   ├── Cargo.toml             # Embedded kernel package
@@ -30,7 +31,9 @@ dali-kernel/
 │   ├── memory.x               # Kernel and application SRAM layout
 │   └── src/
 │       ├── main.rs            # Kernel entry point and bootstrap
-│       ├── board.rs            # STM32F411 board pin and clock setup
+│       ├── board/              # Compile-time board selection and backends
+│       │   ├── mod.rs          # Common board facade
+│       │   └── blackpill_f411.rs # WeAct BlackPill STM32F411 backend
 │       ├── logging.rs          # RTT and later serial logging
 │       ├── storage/            # SD and filesystem subsystem
 │       ├── loader/             # AMRN parsing and execution
@@ -69,21 +72,22 @@ dali-kernel/
 
 The following order keeps each new file focused on one verifiable capability:
 
-1. `kernel/src/board.rs` — board constants, pins, clocks, and peripheral ownership.
-2. `kernel/src/logging.rs` — the selected kernel logging boundary.
-3. `kernel/src/main.rs` — bootstrap orchestration using the board and logging modules.
-4. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
-5. `kernel/src/storage/sd.rs` — SD-over-SPI initialization and block reads.
-6. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
-7. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
-8. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
-9. `kernel/src/loader/crc32.rs` — payload CRC32 calculation and validation.
-10. `kernel/src/loader/exec.rs` — bounded SRAM copy and entry-point transfer.
-11. `apps/dali-app-hello/src/main.rs` — first independently built application.
-12. `apps/dali-app-hello/memory.x` — application linker memory layout.
-13. `apps/dali-app-hello/build.rs` — application package preparation, if required.
-14. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
-15. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
+1. `kernel/src/board/mod.rs` — compile-time board selection facade.
+2. `kernel/src/board/blackpill_f411.rs` — BlackPill constants, pins, clocks, and peripheral ownership.
+3. `kernel/src/logging.rs` — the selected kernel logging boundary.
+4. `kernel/src/main.rs` — bootstrap orchestration using the board and logging modules.
+5. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
+6. `kernel/src/storage/sd.rs` — SD-over-SPI initialization and block reads.
+7. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
+8. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
+9. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
+10. `kernel/src/loader/crc32.rs` — payload CRC32 calculation and validation.
+11. `kernel/src/loader/exec.rs` — bounded SRAM copy and entry-point transfer.
+12. `apps/dali-app-hello/src/main.rs` — first independently built application.
+13. `apps/dali-app-hello/memory.x` — application linker memory layout.
+14. `apps/dali-app-hello/build.rs` — application package preparation, if required.
+15. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
+16. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:
 

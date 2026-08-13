@@ -8,7 +8,8 @@ Host-side tests should cover pure logic without requiring an MCU:
 - byte order and field encoding;
 - truncated input;
 - invalid magic and version;
-- unsupported target;
+- unsupported target ID and ABI version;
+- invalid header size and reserved fields;
 - size and offset overflow;
 - payload bounds;
 - CRC32 calculation and mismatch handling;

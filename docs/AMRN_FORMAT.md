@@ -20,13 +20,14 @@ The first revision must use an explicitly documented byte layout. Rust struct la
 | --- | --- | ---: | --- |
 | `0x00` | magic | 4 bytes | ASCII `DALI` |
 | `0x04` | format_version | 1 byte | MVP value is `1` |
-| `0x05` | target_id | 1 byte | MVP value identifies STM32F411 |
+| `0x05` | target_id | 1 byte | MVP value is `0x01` (`STM32F411CEU6`) |
 | `0x06` | header_size | 2 bytes | Little-endian; MVP value is `32` |
 | `0x08` | payload_size | 4 bytes | Little-endian payload length |
 | `0x0C` | load_address | 4 bytes | Little-endian; MVP value is `0x20008000` |
 | `0x10` | execution_offset | 4 bytes | Little-endian offset from payload start |
 | `0x14` | crc32 | 4 bytes | Little-endian CRC32 of the payload |
-| `0x18` | flags | 2 bytes | Reserved; must be zero in the MVP |
+| `0x18` | abi_version | 1 byte | MVP value is `1` |
+| `0x19` | flags | 1 byte | Reserved; must be zero in the MVP |
 | `0x1A` | reserved | 2 bytes | Must be zero in the MVP |
 | `0x1C` | reserved | 4 bytes | Must be zero in the MVP |
 
@@ -36,14 +37,17 @@ The exact header size is 32 bytes. The parser must read fields explicitly from b
 
 The loader rejects a package when:
 
-- the file is shorter than `header_size`;
+- the file is shorter than 32 bytes;
 - `magic` is not `DALI`;
 - `format_version` is unsupported;
-- `target` is unsupported;
-- `header_size` is smaller than the required revision size;
+- `target_id` is not `0x01`;
+- `header_size` is not exactly 32;
+- `abi_version` is unsupported;
+- `flags` or any reserved field is non-zero;
 - `payload_size` exceeds the file remainder;
-- `load_address` is outside the reserved application SRAM region;
-- `execution_offset` is outside the payload;
+- `payload_size` is zero or exceeds 64 KiB;
+- `load_address` is not exactly `0x20008000`;
+- `execution_offset` is not within the payload or is not word-aligned;
 - the calculated entry address overflows;
 - the CRC32 does not match the payload.
 
@@ -61,3 +65,21 @@ Future revisions may add manifest data, kernel compatibility, required services,
 - Relocations and dynamic linking are not supported.
 - The execution entry is `load_address + execution_offset`.
 - The entry address must have the Cortex-M Thumb bit set before the jump.
+
+## Canonical CRC32
+
+The checksum is CRC-32/ISO-HDLC over the payload bytes only. Its parameters are
+fixed for format version 1:
+
+```text
+width   = 32
+poly    = 0x04C11DB7
+init    = 0xFFFFFFFF
+refin   = true
+refout  = true
+xorout  = 0xFFFFFFFF
+check   = 0xCBF43926 for the ASCII string "123456789"
+```
+
+The stored value is encoded as a little-endian `u32`. Header bytes are not
+included in the checksum.

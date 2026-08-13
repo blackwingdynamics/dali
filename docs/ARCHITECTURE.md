@@ -65,6 +65,13 @@ The MVP application is a RAM-loaded native module, not a sandboxed process. Kern
 
 The exact board wiring, voltage requirements, SPI startup speed, and clock configuration must be documented before hardware acceptance testing.
 
+Board support is selected at compile time. The kernel exposes one board facade,
+while each supported board owns its pin mapping, clock setup, peripheral
+ownership, and board-specific constants in a separate backend module. The
+BlackPill F411 backend is the default MVP selection. Runtime board autodetection
+is not assumed because MCU pin mappings and safe clock initialization must be
+known before kernel startup.
+
 ## 5. Runtime layers
 
 ```text
@@ -137,23 +144,29 @@ The header specification must define every byte, field width, byte order, and al
 | --- | ---: | --- | --- |
 | `0x00` | 4 | Magic | ASCII `DALI` |
 | `0x04` | 1 | Format version | MVP value is `1` |
-| `0x05` | 1 | Target ID | MVP value identifies STM32F411 |
+| `0x05` | 1 | Target ID | MVP value is `0x01` (`STM32F411CEU6`) |
 | `0x06` | 2 | Header size | Little-endian; MVP value is `32` |
 | `0x08` | 4 | Payload size | Little-endian payload length |
 | `0x0C` | 4 | Load address | Little-endian; MVP value is `0x20008000` |
 | `0x10` | 4 | Execution offset | Little-endian offset from payload start |
 | `0x14` | 4 | CRC32 | Little-endian payload checksum |
-| `0x18` | 2 | Flags | Reserved for future use |
+| `0x18` | 1 | ABI version | MVP value is `1` |
+| `0x19` | 1 | Flags | Must be zero in the MVP |
 | `0x1A` | 2 | Reserved | Must be zero in the MVP |
 | `0x1C` | 4 | Reserved | Must be zero in the MVP |
 
 The loader must reject:
 
 - an invalid magic value or unsupported version;
-- an unsupported target;
+- a target ID other than `0x01`;
+- an ABI version other than `1`;
+- a header size other than 32 bytes;
+- non-zero flags or reserved fields;
 - integer overflow while calculating offsets or sizes;
-- a payload outside the package;
-- a payload outside the reserved executable SRAM region;
+- an empty payload or a payload larger than 64 KiB;
+- a payload outside the package or reserved executable SRAM region;
+- a load address other than `0x20008000`;
+- an unaligned or out-of-range execution offset;
 - a CRC32 mismatch;
 - an entry point outside the payload.
 

@@ -55,6 +55,8 @@ AMRN format version: 1
 Header size: 32 bytes
 Integrity: CRC32
 Load address: 0x20008000
+Target ID: 0x01 (STM32F411CEU6)
+ABI version: 1
 ```
 
 Format version `1` must remain readable by every kernel that claims support for it.
@@ -74,7 +76,7 @@ Interrupt ownership: kernel-controlled
 
 The ABI version must change when entry semantics, calling convention, memory ownership, interrupt ownership, lifecycle behavior, or shared data structures change.
 
-The package format should carry an ABI version before applications are distributed beyond the MVP.
+The package format carries the ABI version at header offset `0x18`.
 
 ## 5. Compatibility rules
 
