@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-13
+## Current Status — 2026-08-14
 
 ### Completed and evidenced
 
@@ -51,7 +51,9 @@ validated.
   appends to the bounded queue.
 - Host evidence: implemented and passing. The `dali-usb` crate tests FIFO
   ordering, partial writes, disconnect/reconnect retention, and explicit
-  overflow accounting.
+  overflow accounting. A deterministic lifecycle test also interleaves
+  blocking storage steps with host configuration changes and bounded USB
+  service budgets.
 - Simulation evidence: limited. Renode cannot exercise the production USB
   backend because its STM32F4 model lacks the required OTG_FS global registers.
 - F405 hardware evidence: DFU writes complete and the firmware enables the USB
@@ -67,7 +69,7 @@ validated.
 
 - [x] Isolate the USB CDC backend behind a testable lifecycle/state interface.
 - [x] Add host-side tests for USB log queue ordering, partial writes, reconnects, and overflow reporting.
-- [ ] Model blocking storage and USB control traffic in a deterministic host test.
+- [x] Model blocking storage and USB control traffic in a deterministic host test.
 - [x] Implement one reviewed USB servicing strategy for blocking boot phases.
 - [x] Verify the strategy with F405 target checks and strict Clippy.
 - [x] Record the first failed F405 enumeration evidence and keep it separate from CDC queue conclusions.

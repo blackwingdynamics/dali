@@ -22,9 +22,9 @@ cargo test -p dali-usb
 ```
 
 These tests cover FIFO ordering, bounded overflow behavior, partial writes,
-disconnect/reconnect retention, and link-state transitions. They do not prove
-USB electrical behavior, STM32 peripheral servicing, host enumeration, or
-storage progress while a HAL operation is blocking.
+disconnect/reconnect retention, link-state transitions, and deterministic
+interleaving of storage progress with USB service events. They do not prove USB
+electrical behavior, STM32 peripheral servicing, or host enumeration.
 
 ## Target tests
 
