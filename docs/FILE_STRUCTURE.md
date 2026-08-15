@@ -46,7 +46,7 @@ dali-kernel/
 │       │   └── stm32f405_sd.rs  # WeAct STM32F405 SDIO backend
 │       ├── drivers/             # Hardware-specific peripheral drivers
 │       │   ├── mod.rs           # Driver module registry
-│       │   └── sdio.rs          # STM32F405 SDIO block driver
+│       │   └── sdio.rs          # SDIO block driver
 │       ├── logging/              # Kernel-wide logging facade and backends
 │       │   ├── mod.rs            # Stable logging API
 │       │   ├── rtt.rs            # RTT logging backend
@@ -101,7 +101,7 @@ The following order keeps each new file focused on one verifiable capability:
 7. `kernel/src/bootstrap/heartbeat.rs` — status heartbeat loop.
 8. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
 9. `kernel/src/drivers/mod.rs` — hardware driver registry.
-10. `kernel/src/drivers/sdio.rs` — STM32F405 SDIO initialization and block reads.
+10. `kernel/src/drivers/sdio.rs` — SDIO initialization and block reads.
 11. `kernel/src/drivers/spi_sd.rs` — STM32F411 SPI SD initialization and block reads.
 12. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
 13. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.

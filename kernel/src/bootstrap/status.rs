@@ -6,10 +6,10 @@ pub enum StorageStatus {
     /// No storage medium was detected or the transport is not configured.
     NotDetected,
     /// The card initialized and block zero was read successfully.
-    #[cfg(feature = "board-stm32f405-sd")]
+    #[cfg(feature = "sdio")]
     Ready,
     /// The card or transport reported an operational failure.
-    #[cfg(feature = "board-stm32f405-sd")]
+    #[cfg(feature = "sdio")]
     Failure,
 }
 
@@ -17,7 +17,7 @@ pub enum StorageStatus {
 pub const SLOW_BLINK_PERIOD_MS: u32 = 1_000;
 
 /// Delay between fast status LED transitions.
-#[cfg(feature = "board-stm32f405-sd")]
+#[cfg(feature = "sdio")]
 pub const FAST_BLINK_PERIOD_MS: u32 = 100;
 
 /// Heartbeat loop tick used for bounded status LED timing.

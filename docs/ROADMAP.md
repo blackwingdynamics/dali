@@ -23,6 +23,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - SWD showed `Configured` USB state and successful drain reports, but no `SerialPort::write()` call after boot logs were queued; the queue therefore needs an explicit software-pended OTG_FS service trigger.
 - Hardware console testing showed `picocom` opening after enumeration while boot logs had already drained; CDC delivery must therefore wait for the host-open DTR signal.
 - On 2026-08-15, Pico 2 SWD programming and `/dev/ttyACM1` CDC testing produced `Terminal ready` and delivered boot logs through `[STORAGE] SDIO card initialized`.
+- SWD SDIO register evidence at the block-0 read showed `RXDAVL=1`, `RXACT=1`, `RXFIFOHF=0`, `RXOVERR=1`, 371 bytes remaining, and 94 FIFO words; the HAL read loop waits on half-full FIFO state and does not drain this tail.
 
 ### Incomplete or not yet accepted
 

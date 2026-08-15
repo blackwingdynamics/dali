@@ -1,4 +1,6 @@
 //! Hardware driver modules.
 
-#[cfg(feature = "board-stm32f405-sd")]
+#[cfg(feature = "sdio")]
 pub mod sdio;
+#[cfg(feature = "sdio")]
+mod sdio_raw;

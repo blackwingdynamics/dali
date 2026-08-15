@@ -4,7 +4,7 @@ mod heartbeat;
 mod status;
 
 use crate::{board, logging};
-#[cfg(feature = "board-stm32f405-sd")]
+#[cfg(feature = "sdio")]
 use crate::{
     drivers::sdio::SdioBlockReader,
     storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader},
@@ -74,7 +74,7 @@ fn emit_boot_banner() {
     );
 }
 
-#[cfg(feature = "board-stm32f405-sd")]
+#[cfg(feature = "sdio")]
 fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
     let Some((peripheral, pins, clocks)) = board.take_sdio_resources() else {
         logging::error(
@@ -150,7 +150,7 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
     }
 }
 
-#[cfg(not(feature = "board-stm32f405-sd"))]
+#[cfg(not(feature = "sdio"))]
 fn initialize_storage(_board: &mut board::Board) -> status::StorageStatus {
     status::StorageStatus::NotDetected
 }

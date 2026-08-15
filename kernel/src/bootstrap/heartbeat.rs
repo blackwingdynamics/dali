@@ -1,6 +1,6 @@
 //! Kernel heartbeat loop.
 
-#[cfg(feature = "board-stm32f405-sd")]
+#[cfg(feature = "sdio")]
 use super::status::FAST_BLINK_PERIOD_MS;
 use super::status::{HEARTBEAT_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus};
 use crate::board;
@@ -13,7 +13,7 @@ pub fn run(mut board: board::Board, storage_status: StorageStatus) -> ! {
 
     loop {
         match storage_status {
-            #[cfg(feature = "board-stm32f405-sd")]
+            #[cfg(feature = "sdio")]
             StorageStatus::Ready => {
                 board::set_status_led(&mut board, true);
             }
@@ -24,7 +24,7 @@ pub fn run(mut board: board::Board, storage_status: StorageStatus) -> ! {
                     elapsed_ms = 0;
                 }
             }
-            #[cfg(feature = "board-stm32f405-sd")]
+            #[cfg(feature = "sdio")]
             StorageStatus::Failure => {
                 if elapsed_ms >= FAST_BLINK_PERIOD_MS {
                     led_on = !led_on;

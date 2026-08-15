@@ -250,6 +250,13 @@ The storage subsystem is responsible for:
 - root-directory package discovery;
 - bounded reads into loader-owned buffers.
 
+The F405 SDIO block-read path keeps HAL card initialization but owns the data
+FIFO drain in a board-local module. It consumes every available FIFO word,
+including the final partial FIFO level, and maps SDIO timeout, CRC, and
+overrun flags to typed storage errors. MMIO access is centralized there.
+The kernel exposes this transport through the `sdio` capability feature; board
+features enable capabilities and select pins/clocks separately.
+
 The MVP does not need package installation, deletion, hot swap, or write support. SD-card replacement requires a reboot. The first acceptance application proves execution through a deterministic LED pattern rather than a shared logging API.
 
 ## 11. Future kernel architecture

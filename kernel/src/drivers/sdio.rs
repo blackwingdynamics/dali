@@ -3,6 +3,7 @@
 use crate::board::SdioPins;
 use core::cell::{Cell, RefCell};
 
+use super::sdio_raw::RawSdioReader;
 use crate::storage::{Block, BlockAddress, BlockReader, StorageError};
 use embedded_sdmmc::{Block as FilesystemBlock, BlockCount, BlockDevice, BlockIdx};
 use stm32f4xx_hal::{
@@ -14,6 +15,7 @@ use stm32f4xx_hal::{
 /// A block reader backed by the STM32 SDIO peripheral.
 pub struct SdioBlockReader {
     device: RefCell<Sdio<SdCard>>,
+    raw: RefCell<RawSdioReader>,
     block_count: Cell<Option<u32>>,
 }
 
@@ -22,6 +24,7 @@ impl SdioBlockReader {
     pub fn new(peripheral: pac::SDIO, pins: SdioPins, clocks: &Clocks) -> Self {
         Self {
             device: RefCell::new(Sdio::new(peripheral, pins, clocks)),
+            raw: RefCell::new(RawSdioReader::new()),
             block_count: Cell::new(None),
         }
     }
@@ -31,6 +34,8 @@ impl SdioBlockReader {
         let mut device = self.device.borrow_mut();
         device.init(ClockFreq::F24Mhz).map_err(map_sdio_error)?;
         let block_count = device.card().map_err(map_sdio_error)?.block_count();
+        let card = device.card().map_err(map_sdio_error)?;
+        self.raw.borrow_mut().configure(card.capacity);
         self.block_count.set(Some(block_count));
         Ok(())
     }
@@ -42,10 +47,7 @@ impl BlockReader for SdioBlockReader {
         address: BlockAddress,
         buffer: &mut Block,
     ) -> Result<(), StorageError> {
-        self.device
-            .borrow_mut()
-            .read_block(address.value(), buffer)
-            .map_err(map_sdio_error)
+        self.raw.borrow_mut().read_block(address, buffer)
     }
 }
 
@@ -57,16 +59,14 @@ impl BlockDevice for SdioBlockReader {
         blocks: &mut [FilesystemBlock],
         start_block_idx: BlockIdx,
     ) -> Result<(), Self::Error> {
-        let mut device = self.device.borrow_mut();
+        let mut device = self.raw.borrow_mut();
         for (offset, block) in blocks.iter_mut().enumerate() {
             let offset = u32::try_from(offset).map_err(|_| StorageError::InvalidBlockAddress)?;
             let address = start_block_idx
                 .0
                 .checked_add(offset)
                 .ok_or(StorageError::InvalidBlockAddress)?;
-            device
-                .read_block(address, &mut block.contents)
-                .map_err(map_sdio_error)?;
+            device.read_block(BlockAddress::new(address), &mut block.contents)?;
         }
         Ok(())
     }
