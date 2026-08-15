@@ -45,9 +45,12 @@ The initial application is `apps/dali-app-hello`. It has two purposes:
 - `src/main.rs` is the `no_std` native payload used by the embedded build.
 
 The current payload configures the F405 board's active-high PB2 status LED,
-submits three messages through the ABI v2 kernel logging service, and alternates
-the LED with a bounded busy-loop period. The direct GPIO proof is board-specific
-application code; the logging call crosses the documented service boundary.
+submits three messages through the ABI v2 kernel logging service, and produces
+three short logical flashes followed by a longer pause. The pattern uses named,
+bounded busy-loop constants; the relative phase lengths are the contract, while
+the exact wall-clock duration depends on the selected embedded build and clock.
+The direct GPIO proof is board-specific application code; the logging call
+crosses the documented service boundary.
 
 The embedded payload is enabled explicitly with the `embedded-payload` Cargo
 feature. This prevents the native entry binary from being built as part of
