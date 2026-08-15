@@ -24,6 +24,18 @@ input.
 
 See commands/inspect.md.
 
+## Application commands
+
+The following command is supported:
+
+```text
+dali app new <name>
+```
+
+See [commands/app-new.md](commands/app-new.md) and [Application project
+contract](APPLICATION_PROJECT.md) for the scaffold, manifest, and overwrite
+policy. `dali app init` remains planned.
+
 ## Unsupported commands
 
 Unknown commands fail with usage information. Hardware flashing, SD-card

@@ -210,6 +210,54 @@ observed; the targeted reset and reconnect behavior is now evidenced.
 - [x] Document the SD-card installation procedure.
 - [x] Document the complete MVP demo procedure and link the CLI workflow.
 
+### CLI platform expansion
+
+The `dali` executable is the product-facing application and device CLI. The
+`just` recipes remain the repository's developer task runner for builds, tests,
+formatting, CI, simulation, and local hardware workflows. New CLI commands
+must have an explicit contract, command-specific documentation, stable output,
+typed failures, host tests, and a documented hardware boundary where relevant.
+
+#### Application creation and packaging
+
+- [x] Define the application project manifest and scaffold contract.
+- [x] Add `dali app new <name>` to create a new application scaffold.
+- [ ] Add `dali app init` to initialize an existing directory as a Dali application.
+- [x] Add reproducible application template assets without embedding board-specific values in command logic.
+- [x] Add host tests for application-name validation, template rendering, and scaffold file creation.
+- [x] Document the `dali app new` command and generated project contract.
+- [x] Support standalone scaffolding outside a Dali workspace through an explicit SDK path.
+- [ ] Add `dali app build` for the documented native target and profile selection.
+- [ ] Add `dali app package` as the application-oriented wrapper around AMRN package creation.
+- [ ] Add `dali app inspect` as the application-oriented package validation command.
+- [ ] Decide and document compatibility between the existing top-level `dali package`/`dali inspect` commands and the application command group.
+
+#### Target and host diagnostics
+
+- [ ] Add `dali doctor` for toolchain, target, host-permission, and required-tool diagnostics.
+- [ ] Add `dali target list` for supported target profiles.
+- [ ] Add `dali target info <target>` for board, MCU, ABI, AMRN, and transport metadata.
+
+#### Device operations
+
+- [ ] Define a transport-neutral device discovery contract.
+- [ ] Add `dali device list` for probe, DFU, and runtime CDC discovery.
+- [ ] Add `dali device info` for selected device and target metadata.
+- [ ] Add `dali device flash --transport dfu --target <target>`.
+- [ ] Add `dali device flash --transport probe --target <target>`.
+- [ ] Add `dali device console [--port <path>]` for the runtime CDC console.
+- [ ] Add `dali device attach --target <target>` for debug attachment.
+- [ ] Add hardware tests and evidence before marking device commands accepted.
+
+#### Application lifecycle
+
+- [ ] Define package installation, selection, and removal semantics for the read-only MVP filesystem boundary.
+- [ ] Add `dali app install` only after writable package-management semantics are specified.
+- [ ] Add `dali app list` only after multi-package selection policy is specified.
+- [ ] Add `dali app remove` only after safe write and recovery semantics are specified.
+- [ ] Add `dali app run` only after application lifecycle and reset semantics are specified.
+- [ ] Add end-to-end device tests for application lifecycle commands.
+
 ## Phase 6 — Post-MVP platform work
 
 - [ ] Specify task and scheduler semantics.

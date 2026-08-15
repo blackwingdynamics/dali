@@ -1,0 +1,9 @@
+[application]
+name = "{{ application_name }}"
+version = "0.1.0"
+sdk = "dali"
+
+[build]
+target_profile = "stm32f405rgt6"
+entry_symbol = "amiran_entry"
+entry_offset = 0

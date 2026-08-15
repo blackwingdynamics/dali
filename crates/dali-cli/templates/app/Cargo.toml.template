@@ -1,0 +1,22 @@
+[package]
+name = "{{ application_name }}"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+dali = { path = "{{ sdk_path }}" }
+
+[features]
+embedded-payload = []
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "{{ application_name }}"
+path = "src/main.rs"
+required-features = ["embedded-payload"]
+test = false
+
+[workspace]

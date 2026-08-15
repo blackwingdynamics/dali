@@ -63,7 +63,7 @@ dali-kernel/
 │       ├── Cargo.toml
 │       ├── build.rs           # Application linker search path
 │       ├── memory.x           # Reserved application SRAM layout
-│       └── src/
+│       ├── src/
 │           ├── lib.rs         # SDK-facing application scaffold
 │           └── main.rs        # Native validation payload entry point
 ├── crates/
@@ -73,12 +73,22 @@ dali-kernel/
 │   │   └── src/lib.rs
 │   └── dali-cli/              # Future package and device CLI
 │       ├── Cargo.toml
-│       └── src/
-│           ├── main.rs
-│           └── commands/
-│               ├── mod.rs
-│               ├── package.rs
-│               └── inspect.rs
+│       ├── src/
+│       │   ├── main.rs
+│       │   └── commands/
+│       │       ├── mod.rs
+│       │       ├── app.rs
+│       │       ├── new.rs
+│       │       ├── package.rs
+│       │       └── inspect.rs
+│       └── templates/
+│           └── app/
+│               ├── Cargo.toml.template
+│               ├── dali.toml.template
+│               ├── build.rs.template
+│               ├── memory.x.template
+│               ├── lib.rs.template
+│               └── main.rs.template
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── FILE_STRUCTURE.md
@@ -107,9 +117,11 @@ dali-kernel/
 │   │   ├── TROUBLESHOOTING.md
 │   │   ├── TESTING.md
 │   │   ├── CONTRIBUTING.md
+│   │   ├── APPLICATION_PROJECT.md
 │   │   └── commands/
 │   │       ├── package.md
-│   │       └── inspect.md
+│   │       ├── inspect.md
+│   │       └── app-new.md
 │   └── changelog/             # Archived generated release changelogs
 │       └── README.md
 └── README.md                  # Public project introduction
@@ -143,6 +155,9 @@ The following order keeps each new file focused on one verifiable capability:
 22. `crates/dali-cli/src/commands/mod.rs` — command dispatch and shared flag parsing.
 23. `crates/dali-cli/src/commands/package.rs` — AMRN package construction command.
 24. `crates/dali-cli/src/commands/inspect.rs` — AMRN package inspection command.
+25. `crates/dali-cli/src/commands/app.rs` — application command group dispatch.
+26. `crates/dali-cli/src/commands/new.rs` — application scaffold creation.
+27. `crates/dali-cli/templates/app/` — versioned application scaffold assets.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:
 
