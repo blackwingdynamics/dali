@@ -7,12 +7,16 @@
 pub struct TargetProfile {
     /// Stable profile name used by Dali commands.
     pub name: &'static str,
+    /// Generated Rust registry constant used by board scaffolds.
+    pub registry_constant: &'static str,
     /// Human-readable board name.
     pub board: &'static str,
     /// MCU identifier supplied by the board manufacturer.
     pub mcu: &'static str,
     /// Rust compilation target triple.
     pub rust_target: &'static str,
+    /// Whether the profile is currently valid for AMRN application execution.
+    pub application_supported: bool,
     /// AMRN target identifier assigned by the package contract.
     pub amrn_target_id: u8,
     /// Application ABI version.
@@ -26,14 +30,16 @@ pub struct TargetProfile {
     /// USB FS data-pin metadata.
     pub usb: UsbProfile,
     /// Storage bus metadata.
-    pub storage: StorageProfile,
+    pub storage: Option<StorageProfile>,
 }
 
 /// Clock values declared by a board manifest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ClockProfile {
-    /// External high-speed oscillator frequency in hertz.
-    pub hse_hz: u32,
+    /// Clock source declared by the board manifest.
+    pub source: &'static str,
+    /// Input clock frequency in hertz.
+    pub input_hz: u32,
     /// Target system clock frequency in hertz.
     pub system_hz: u32,
     /// APB1 peripheral clock frequency in hertz.
@@ -107,15 +113,27 @@ pub fn find_target(name: &str) -> Option<&'static TargetProfile> {
     SUPPORTED_TARGETS.iter().find(|target| target.name == name)
 }
 
+/// Finds any declared board profile, including profiles pending application support.
+pub fn find_board(name: &str) -> Option<&'static TargetProfile> {
+    ALL_TARGETS.iter().find(|target| target.name == name)
+}
+
 #[cfg(test)]
 mod tests {
-    use super::SUPPORTED_TARGETS;
+    use super::{SUPPORTED_TARGETS, find_board};
 
     #[test]
     fn exposes_manifest_metadata() {
         assert_eq!(SUPPORTED_TARGETS.len(), 1);
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
-        assert_eq!(SUPPORTED_TARGETS[0].storage.bus_width, 4);
+        assert_eq!(
+            SUPPORTED_TARGETS[0]
+                .storage
+                .as_ref()
+                .map(|storage| storage.bus_width),
+            Some(4)
+        );
+        assert!(find_board("f411").is_some());
     }
 }

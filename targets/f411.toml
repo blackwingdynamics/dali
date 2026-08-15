@@ -1,0 +1,35 @@
+[profile]
+name = "f411"
+board = "WeAct BlackPill"
+mcu = "STM32F411CEU6"
+rust_target = "thumbv7em-none-eabihf"
+application_supported = false
+amrn_target_id = 0
+abi_version = 0
+
+[clock]
+source = "HSI"
+input_hz = 16_000_000
+system_hz = 100_000_000
+pclk1_hz = 50_000_000
+pclk2_hz = 100_000_000
+usb_hz = 48_000_000
+
+[memory]
+kernel_origin = 0x2000_0000
+kernel_length = 32_768
+application_origin = 0x2000_8000
+application_length = 65_536
+runtime_origin = 0x2001_8000
+runtime_length = 32_768
+
+[status_led]
+port = "PC"
+number = 13
+alternate_function = 0
+active_high = false
+
+[usb]
+controller = "OTG_FS"
+dm = { port = "PA", number = 11, alternate_function = 10, active_high = false }
+dp = { port = "PA", number = 12, alternate_function = 10, active_high = false }

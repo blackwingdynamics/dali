@@ -9,11 +9,13 @@ board metadata and the Dali compatibility identifiers consumed by host tools.
 The boundary is intentionally split:
 
 - `targets/*.toml` declares board facts: MCU, clocks, memory regions, pins,
-  alternate functions, USB, storage, AMRN target ID, and ABI version.
+  alternate functions, USB, optional storage, and application compatibility.
 - `crates/dali-targets/build.rs` parses and validates every manifest at build
   time, then generates a typed `no_std` registry for host consumers.
 - `crates/dali-cli` consumes the generated registry for target selection and
   diagnostics. CLI commands do not define board constants.
+- The target scaffold command can create a non-production backend template and
+  documentation checklist from an existing profile without overwriting files.
 - `kernel/src/board/` maps the selected profile to typed HAL peripherals and
   owns the compile-time GPIO, RCC, DMA, and peripheral initialization.
 
@@ -28,17 +30,19 @@ Each supported target manifest contains these sections:
 
 | Section | Purpose |
 | --- | --- |
-| `profile` | Stable profile name, board name, MCU, Rust target, AMRN target ID, and ABI version |
-| `clock` | HSE, system, APB1, APB2, and USB clock frequencies in hertz |
+| `profile` | Stable profile name, board name, MCU, Rust target, application support, AMRN target ID, and ABI version |
+| `clock` | Clock source, input, system, APB1, APB2, and USB frequencies in hertz |
 | `memory` | Kernel, application, and runtime SRAM regions |
 | `status_led` | Logical status LED port, pin, alternate function, and polarity |
 | `usb` | USB controller and D-/D+ pins with alternate functions |
-| `storage` | Storage controller, bus width, clock, command, and data pins with alternate functions |
+| `storage` | Optional storage controller, bus width, clock, command, and data pins with alternate functions |
 
 Values in this manifest are configuration and board-definition data, not
-implementation literals. Adding a profile requires a new manifest, a kernel
-backend mapping, target checks, and the relevant hardware documentation and
-acceptance evidence.
+implementation literals. `application_supported = true` requires non-zero
+AMRN and ABI identifiers; a board profile can remain metadata-only while its
+kernel mapping is pending. Adding an accepted target requires a new manifest,
+a kernel backend mapping, target checks, and the relevant hardware
+documentation and acceptance evidence.
 
 ## Validation rules
 
@@ -46,9 +50,9 @@ The target registry build rejects:
 
 - missing or empty profile identity fields;
 - duplicate profile names;
-- duplicate AMRN target identifiers;
-- zero contract identifiers;
-- storage widths outside the supported four-line representation;
+- duplicate non-zero AMRN target identifiers;
+- zero contract identifiers on application-supported profiles;
+- storage widths outside the supported four-line representation when storage is declared;
 - missing or malformed TOML fields.
 
 The generated registry is not committed. Rebuilding `dali-targets` regenerates

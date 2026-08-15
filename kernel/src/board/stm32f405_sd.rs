@@ -104,7 +104,7 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
     let rcc = device.RCC.constrain();
     let clocks = rcc
         .cfgr
-        .use_hse(Hertz::from_raw(TARGET_F405.clock.hse_hz))
+        .use_hse(Hertz::from_raw(TARGET_F405.clock.input_hz))
         .sysclk(Hertz::from_raw(TARGET_F405.clock.system_hz))
         .hclk(Hertz::from_raw(TARGET_F405.clock.system_hz))
         .pclk1(Hertz::from_raw(TARGET_F405.clock.pclk1_hz))

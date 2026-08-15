@@ -12,7 +12,7 @@ struct Manifest {
     memory: Memory,
     status_led: Pin,
     usb: Usb,
-    storage: Storage,
+    storage: Option<Storage>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -21,13 +21,15 @@ struct Profile {
     board: String,
     mcu: String,
     rust_target: String,
+    application_supported: bool,
     amrn_target_id: u8,
     abi_version: u8,
 }
 
 #[derive(Debug, Deserialize)]
 struct Clock {
-    hse_hz: u32,
+    source: String,
+    input_hz: u32,
     system_hz: u32,
     pclk1_hz: u32,
     pclk2_hz: u32,
@@ -128,16 +130,20 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         {
             return Err(format!("target manifest {index} has an empty profile field").into());
         }
-        if manifest.storage.bus_width == 0 || manifest.storage.bus_width > 4 {
+        if manifest.profile.application_supported
+            && (manifest.profile.abi_version == 0 || manifest.profile.amrn_target_id == 0)
+        {
             return Err(format!(
-                "target manifest {} has an invalid storage width",
+                "target manifest {} has an invalid contract identifier",
                 manifest.profile.name
             )
             .into());
         }
-        if manifest.profile.abi_version == 0 || manifest.profile.amrn_target_id == 0 {
+        if let Some(storage) = &manifest.storage
+            && (storage.bus_width == 0 || storage.bus_width > 4)
+        {
             return Err(format!(
-                "target manifest {} has an invalid contract identifier",
+                "target manifest {} has an invalid storage width",
                 manifest.profile.name
             )
             .into());
@@ -146,7 +152,9 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
             if other.profile.name == manifest.profile.name {
                 return Err(format!("duplicate target profile `{}`", manifest.profile.name).into());
             }
-            if other.profile.amrn_target_id == manifest.profile.amrn_target_id {
+            if manifest.profile.amrn_target_id != 0
+                && other.profile.amrn_target_id == manifest.profile.amrn_target_id
+            {
                 return Err(
                     format!("duplicate AMRN target id for `{}`", manifest.profile.name).into(),
                 );
@@ -167,32 +175,51 @@ fn generate_registry(manifests: &[Manifest]) -> String {
         .map(|manifest| constant_name(&manifest.profile.name))
         .collect::<Vec<_>>()
         .join(", ");
-    format!("{definitions}\n\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{names}];\n")
+    let supported = manifests
+        .iter()
+        .filter(|manifest| manifest.profile.application_supported)
+        .map(|manifest| constant_name(&manifest.profile.name))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "{definitions}\n\npub const ALL_TARGETS: &[TargetProfile] = &[{names}];\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{supported}];\n"
+    )
 }
 
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, board: {board}, mcu: {mcu}, rust_target: {target}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
         constant = constant_name(&profile.name),
+        constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
         board = string_literal(&profile.board),
         mcu = string_literal(&profile.mcu),
         target = string_literal(&profile.rust_target),
+        application_supported = profile.application_supported,
         id = profile.amrn_target_id,
         abi = profile.abi_version,
         clock = generate_clock(&manifest.clock),
         memory = generate_memory(&manifest.memory),
         led = generate_pin(&manifest.status_led),
         usb = generate_usb(&manifest.usb),
-        storage = generate_storage(&manifest.storage),
+        storage = manifest
+            .storage
+            .as_ref()
+            .map(generate_storage)
+            .map_or_else(|| "None".to_owned(), |storage| format!("Some({storage})")),
     )
 }
 
 fn generate_clock(clock: &Clock) -> String {
     format!(
-        "ClockProfile {{ hse_hz: {}, system_hz: {}, pclk1_hz: {}, pclk2_hz: {}, usb_hz: {} }}",
-        clock.hse_hz, clock.system_hz, clock.pclk1_hz, clock.pclk2_hz, clock.usb_hz
+        "ClockProfile {{ source: {}, input_hz: {}, system_hz: {}, pclk1_hz: {}, pclk2_hz: {}, usb_hz: {} }}",
+        string_literal(&clock.source),
+        clock.input_hz,
+        clock.system_hz,
+        clock.pclk1_hz,
+        clock.pclk2_hz,
+        clock.usb_hz
     )
 }
 
