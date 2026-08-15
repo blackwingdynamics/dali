@@ -160,6 +160,12 @@ implementation. It must not depend on an MCU HAL or contain board-specific
 values. The kernel remains the owner of logging policy and USB resource
 ownership.
 
+The hardware-neutral `dali-device` crate defines normalized host discovery
+records, transport/state/capability vocabulary, and deterministic
+deduplication. It does not enumerate devices or depend on a host USB, DFU, or
+debug-probe implementation. Those adapters remain CLI-owned and are subject
+to the device discovery contract.
+
 ## 6. Kernel responsibilities
 
 The kernel owns:

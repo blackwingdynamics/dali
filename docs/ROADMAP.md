@@ -255,6 +255,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 #### Device operations
 
 - [x] Define a transport-neutral device discovery contract.
+- [x] Add the hardware-neutral normalized device record model and ordering tests.
 - [ ] Add `dali device list` for probe, DFU, and runtime CDC discovery.
 - [ ] Add `dali device info` for selected device and target metadata.
 - [ ] Add `dali device flash --transport dfu --target <target>`.

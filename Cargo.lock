@@ -128,6 +128,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dali-device"
+version = "0.1.0"
+
+[[package]]
 name = "dali-kernel"
 version = "0.1.0"
 dependencies = [

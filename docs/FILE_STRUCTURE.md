@@ -70,6 +70,7 @@ dali-kernel/
 │           └── main.rs        # Native validation payload entry point
 ├── crates/
 │   ├── dali-amrn/             # AMRN format parser and validation
+│   ├── dali-device/           # Hardware-neutral discovery records
 │   ├── dali-targets/          # Build-time generated target registry
 │   ├── dali-sdk/              # Future application SDK
 │   │   ├── Cargo.toml

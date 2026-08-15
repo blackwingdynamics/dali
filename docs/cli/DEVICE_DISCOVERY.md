@@ -11,6 +11,10 @@ The contract is transport-neutral. Transport adapters own platform-specific
 enumeration and parsing; the CLI owns filtering, normalization, ordering, and
 presentation.
 
+The normalized record model is implemented in the hardware-neutral
+`dali-device` crate. The crate does not enumerate host devices and has no
+transport or board dependency.
+
 ## Discovery transports
 
 The initial transport set is:

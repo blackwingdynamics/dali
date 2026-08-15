@@ -6,6 +6,10 @@ Command modules should test validation and formatting without hardware or
 external devices. Current inspection tests cover valid packages and trailing
 data rejection.
 
+The `dali-device` crate tests discovery-record ordering, same-transport
+deduplication, and stable transport/state/capability spellings without host
+hardware.
+
 ## Integration checks
 
 The host validation set includes:
