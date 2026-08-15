@@ -139,8 +139,21 @@ pub const STORAGE_BUS_WIDTH: u8 = {bus_width};\n\
             )
         },
     );
+    let dfu = profile.dfu.map_or_else(
+        || "pub const DFU_SUPPORTED: bool = false;\n".to_owned(),
+        |dfu| {
+            format!(
+                "pub const DFU_SUPPORTED: bool = true;\n\
+pub const DFU_VENDOR_ID: u16 = 0x{vendor_id:04X};\n\
+pub const DFU_PRODUCT_ID: u16 = 0x{product_id:04X};\n",
+                vendor_id = dfu.vendor_id,
+                product_id = dfu.product_id
+            )
+        },
+    );
     format!(
         "pub const PROBE_CHIP: Option<&str> = {probe_chip:?};\n\
+{dfu}\
 pub const CLOCK_SOURCE: &str = {clock_source:?};\n\
 pub const CLOCK_INPUT_HZ: u32 = {input_hz};\n\
 pub const SYSTEM_CLOCK_HZ: u32 = {system_hz};\n\
@@ -150,6 +163,7 @@ pub const USB_CLOCK_HZ: u32 = {usb_hz};\n\
 {memory}{status_led}pub const USB_CONTROLLER: &str = {usb_controller:?};\n\
 {usb_dm}{usb_dp}{storage}",
         probe_chip = profile.probe_chip,
+        dfu = dfu,
         clock_source = profile.clock.source,
         input_hz = profile.clock.input_hz,
         system_hz = profile.clock.system_hz,
@@ -252,6 +266,7 @@ mod tests {
     fn renders_declared_board_values() {
         let f405 = backend_template(&SUPPORTED_TARGETS[0]);
         assert!(f405.contains("CLOCK_INPUT_HZ: u32 = 8000000"));
+        assert!(f405.contains("DFU_VENDOR_ID: u16 = 0x0483"));
         assert!(f405.contains("STATUS_LED_PORT: &str = \"PB\""));
         assert!(f405.contains("STORAGE_DATA_3_NUMBER: u8 = 11"));
 

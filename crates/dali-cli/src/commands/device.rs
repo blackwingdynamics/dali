@@ -11,6 +11,7 @@ const NO_DEVICES_MESSAGE: &str = "No devices found.";
 const DFU_PRODUCT_LABEL: &str = "DFU device";
 const UNDECLARED_VALUE: &str = "not declared";
 const UNIDENTIFIED_TARGET: &str = "not identified";
+const HEX_RADIX: u32 = 16;
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if arguments.get(1).map(String::as_str) != Some(LIST_COMMAND) || arguments.len() != 2 {
@@ -128,11 +129,21 @@ fn parse_dfu_inventory(output: &str) -> Vec<DeviceRecord> {
             if id.is_empty() {
                 return None;
             }
-            let (vendor, _) = id.split_once(':')?;
+            let (vendor, product) = id.split_once(':')?;
+            let vendor_id = parse_hex_id(vendor)?;
+            let product_id = parse_hex_id(product)?;
+            let target = dali_targets::ALL_TARGETS
+                .iter()
+                .find(|profile| {
+                    profile.dfu.is_some_and(|dfu| {
+                        dfu.vendor_id == vendor_id && dfu.product_id == product_id
+                    })
+                })
+                .map(|profile| profile.name.to_owned());
             Some(DeviceRecord {
                 id: id.to_owned(),
                 transport: Transport::Dfu,
-                target: None,
+                target,
                 vendor: Some(vendor.to_owned()),
                 product: Some(DFU_PRODUCT_LABEL.to_owned()),
                 serial: quoted_attribute(line, "serial"),
@@ -176,6 +187,10 @@ fn quoted_attribute(line: &str, key: &str) -> Option<String> {
     Some(line[start..end].to_owned())
 }
 
+fn parse_hex_id(value: &str) -> Option<u16> {
+    u16::from_str_radix(value, HEX_RADIX).ok()
+}
+
 fn first_line(text: &str) -> Option<String> {
     text.lines()
         .map(str::trim)
@@ -207,6 +222,7 @@ mod tests {
         );
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].id, "0483:df11");
+        assert_eq!(records[0].target.as_deref(), Some("f405"));
         assert_eq!(records[0].vendor.as_deref(), Some("0483"));
         assert_eq!(records[0].serial.as_deref(), Some("3571"));
         assert_eq!(records[0].path.as_deref(), Some("1-10.1"));

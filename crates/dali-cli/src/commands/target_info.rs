@@ -39,12 +39,16 @@ fn render_profile(profile: &dali_targets::TargetProfile) -> String {
         },
     );
     format!(
-        "profile: {name}\nboard: {board}\nmcu: {mcu}\nrust_target: {rust_target}\nprobe_chip: {probe_chip}\napplication_supported: {application_supported}\namrn_target_id: 0x{target_id:02X}\nabi_version: {abi}\nclock: {source}, input {input} Hz, system {system} Hz, APB1 {pclk1} Hz, APB2 {pclk2} Hz, USB {usb} Hz\nmemory: kernel 0x{kernel_origin:08X}+{kernel_length}, application 0x{application_origin:08X}+{application_length}, runtime 0x{runtime_origin:08X}+{runtime_length}\nstatus_led: {status_led}\nusb: {usb_controller}, D- {usb_dm}, D+ {usb_dp}\n{storage}",
+        "profile: {name}\nboard: {board}\nmcu: {mcu}\nrust_target: {rust_target}\nprobe_chip: {probe_chip}\ndfu: {dfu}\napplication_supported: {application_supported}\namrn_target_id: 0x{target_id:02X}\nabi_version: {abi}\nclock: {source}, input {input} Hz, system {system} Hz, APB1 {pclk1} Hz, APB2 {pclk2} Hz, USB {usb} Hz\nmemory: kernel 0x{kernel_origin:08X}+{kernel_length}, application 0x{application_origin:08X}+{application_length}, runtime 0x{runtime_origin:08X}+{runtime_length}\nstatus_led: {status_led}\nusb: {usb_controller}, D- {usb_dm}, D+ {usb_dp}\n{storage}",
         name = profile.name,
         board = profile.board,
         mcu = profile.mcu,
         rust_target = profile.rust_target,
         probe_chip = profile.probe_chip.unwrap_or("not declared"),
+        dfu = profile.dfu.map_or_else(
+            || "not declared".to_owned(),
+            |dfu| format!("0x{:04X}:0x{:04X}", dfu.vendor_id, dfu.product_id),
+        ),
         application_supported = profile.application_supported,
         target_id = profile.amrn_target_id,
         abi = profile.abi_version,
@@ -95,6 +99,7 @@ mod tests {
         let profile = dali_targets::find_board("f405").expect("generated F405 profile");
         let output = render_profile(profile);
         assert!(output.contains("board: WeAct Studio STM32F405RGT6 Core Board"));
+        assert!(output.contains("dfu: 0x0483:0xDF11"));
         assert!(output.contains("status_led: PB2 AF0 active-high"));
         assert!(output.contains("storage: SDIO (4-bit)"));
     }

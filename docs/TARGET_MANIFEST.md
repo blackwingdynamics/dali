@@ -34,6 +34,7 @@ alphanumeric names consistent with existing commands.
 Every manifest contains:
 
 - `[profile]` — identity and Dali compatibility;
+- `[dfu]` — optional USB DFU identity;
 - `[clock]` — oscillator and bus frequencies;
 - `[memory]` — kernel, application, and runtime regions;
 - `[status_led]` — logical status LED mapping;
@@ -58,6 +59,18 @@ that claims a kernel storage backend.
 
 `probe_chip` is transport metadata, not the MCU display name. Use the exact
 identifier reported by the selected debug tool.
+
+## `[dfu]`
+
+The section is optional for profiles without a documented DFU transport.
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `vendor_id` | integer | yes | USB vendor identifier reported by the DFU host tool. |
+| `product_id` | integer | yes | USB product identifier reported by the DFU host tool. |
+
+These values identify a transport endpoint only. They do not prove that the
+target firmware is valid or that flashing is safe.
 
 ## `[clock]`
 
@@ -139,6 +152,7 @@ board = "WeAct Studio STM32F405RGT6 Core Board"
 mcu = "STM32F405RGT6"
 rust_target = "thumbv7em-none-eabihf"
 probe_chip = "STM32F405RGTx"
+dfu = { vendor_id = 0x0483, product_id = 0xDF11 }
 application_supported = true
 amrn_target_id = 0x02
 abi_version = 2

@@ -22,9 +22,16 @@ struct Profile {
     mcu: String,
     rust_target: String,
     probe_chip: Option<String>,
+    dfu: Option<Dfu>,
     application_supported: bool,
     amrn_target_id: u8,
     abi_version: u8,
+}
+
+#[derive(Debug, Deserialize)]
+struct Dfu {
+    vendor_id: u16,
+    product_id: u16,
 }
 
 #[derive(Debug, Deserialize)]
@@ -140,6 +147,15 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
             )
             .into());
         }
+        if let Some(dfu) = &manifest.profile.dfu
+            && (dfu.vendor_id == 0 || dfu.product_id == 0)
+        {
+            return Err(format!(
+                "target manifest {} has an invalid DFU identity",
+                manifest.profile.name
+            )
+            .into());
+        }
         if let Some(storage) = &manifest.storage
             && (storage.bus_width == 0 || storage.bus_width > 4)
         {
@@ -190,7 +206,7 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, probe_chip: {probe_chip}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
@@ -202,6 +218,11 @@ fn generate_profile(manifest: &Manifest) -> String {
             .as_deref()
             .map(string_literal)
             .map_or_else(|| "None".to_owned(), |chip| format!("Some({chip})")),
+        dfu = profile
+            .dfu
+            .as_ref()
+            .map(generate_dfu)
+            .map_or_else(|| "None".to_owned(), |identity| format!("Some({identity})")),
         application_supported = profile.application_supported,
         id = profile.amrn_target_id,
         abi = profile.abi_version,
@@ -214,6 +235,13 @@ fn generate_profile(manifest: &Manifest) -> String {
             .as_ref()
             .map(generate_storage)
             .map_or_else(|| "None".to_owned(), |storage| format!("Some({storage})")),
+    )
+}
+
+fn generate_dfu(dfu: &Dfu) -> String {
+    format!(
+        "DfuProfile {{ vendor_id: 0x{:04X}, product_id: 0x{:04X} }}",
+        dfu.vendor_id, dfu.product_id
     )
 }
 

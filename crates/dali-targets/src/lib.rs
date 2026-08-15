@@ -17,6 +17,8 @@ pub struct TargetProfile {
     pub rust_target: &'static str,
     /// Probe chip identifier used by the debug transport, when declared.
     pub probe_chip: Option<&'static str>,
+    /// USB DFU identity used by the firmware download transport, when declared.
+    pub dfu: Option<DfuProfile>,
     /// Whether the profile is currently valid for AMRN application execution.
     pub application_supported: bool,
     /// AMRN target identifier assigned by the package contract.
@@ -33,6 +35,15 @@ pub struct TargetProfile {
     pub usb: UsbProfile,
     /// Storage bus metadata.
     pub storage: Option<StorageProfile>,
+}
+
+/// USB DFU identity declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DfuProfile {
+    /// USB vendor identifier.
+    pub vendor_id: u16,
+    /// USB product identifier.
+    pub product_id: u16,
 }
 
 /// Clock values declared by a board manifest.
@@ -122,13 +133,20 @@ pub fn find_board(name: &str) -> Option<&'static TargetProfile> {
 
 #[cfg(test)]
 mod tests {
-    use super::{SUPPORTED_TARGETS, find_board};
+    use super::{DfuProfile, SUPPORTED_TARGETS, find_board};
 
     #[test]
     fn exposes_manifest_metadata() {
         assert_eq!(SUPPORTED_TARGETS.len(), 1);
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
+        assert_eq!(
+            SUPPORTED_TARGETS[0].dfu,
+            Some(DfuProfile {
+                vendor_id: 0x0483,
+                product_id: 0xDF11
+            })
+        );
         assert_eq!(
             SUPPORTED_TARGETS[0]
                 .storage

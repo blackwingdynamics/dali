@@ -78,9 +78,10 @@ declared discovery transport registry, then records are ordered by `id`.
 
 ## Matching and filtering
 
-Target matching uses the generated target registry. A record is `identified`
-only when the transport-reported chip, bootloader, or runtime identity matches
-one declared profile. Unknown or conflicting identities remain
+Target matching uses the generated target registry. A DFU record is
+`identified` when its vendor/product pair matches the optional `[dfu]` identity
+in one declared profile. Probe and runtime matching use their own declared
+transport identities. Unknown or conflicting identities remain
 `unidentified`; the CLI must not guess or silently select a profile.
 
 Future filters may select transport, target, or identifier, but filtering must
