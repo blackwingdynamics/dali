@@ -98,7 +98,7 @@ app-build:
 
 # Assemble the native demo payload into a contract-valid AMRN package.
 package-hello: app-build
-    cargo run -p dali-cli -- package --input {{app_payload}} --output {{app_package_file}} --entry-offset {{app_entry_offset}}
+    cargo run -p dali-cli --bin dali -- package --input {{app_payload}} --output {{app_package_file}} --entry-offset {{app_entry_offset}}
 
 # Flash the kernel with a connected probe. Requires probe-rs.
 flash-probe board="f411":

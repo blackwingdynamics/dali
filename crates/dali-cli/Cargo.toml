@@ -9,3 +9,7 @@ workspace = true
 
 [dependencies]
 dali-amrn = { path = "../dali-amrn" }
+
+[[bin]]
+name = "dali"
+path = "src/main.rs"

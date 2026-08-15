@@ -37,7 +37,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The AMRN parser exposes separate header and incremental payload validation for a bounded streaming loader, with host coverage for the split path.
 - The read-only filesystem boundary now exposes one selected root AMRN file as a bounded read/rewind stream and rejects ambiguous package selection.
 - The kernel loader validates the selected package header, exact file length, and payload CRC using bounded block-sized reads; successful validation is logged.
-- The `dali-amrn` crate encodes contract-valid packages, and `dali-cli package` wraps a raw payload with the documented header and CRC.
+- The `dali-amrn` crate encodes contract-valid packages, and the `dali package` command wraps a raw payload with the documented header and CRC.
 - The `dali-app-hello` validation payload now has a dedicated 64 KiB SRAM linker layout and repeatable build/package recipes.
 - The validation payload is intentionally limited to package construction and loader validation plus the documented native execution proof.
 - The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
@@ -215,7 +215,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [ ] Add application lifecycle management.
 - [ ] Add fault and watchdog policy.
 - [ ] Expand the `dali` application SDK.
-- [ ] Add `dali-cli`.
+- [x] Add the `dali` package and device CLI command.
 - [ ] Add signed package verification.
 - [ ] Add kernel secure boot.
 - [ ] Add version compatibility and anti-rollback.

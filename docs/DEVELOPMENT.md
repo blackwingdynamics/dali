@@ -169,7 +169,7 @@ boot records.
 
 The repository is a Cargo workspace containing the kernel, the hardware-neutral
 `dali-usb` delivery primitives, the hardware-neutral `dali-amrn` format layer,
-the future `dali` package, the `dali-cli` package tool, and the initial
+the future `dali` package, the `dali` command package tool, and the initial
 demo-application scaffold. Run workspace commands from the repository root.
 
 `dali-usb` is `no_std` and has no MCU or HAL dependency. It owns only bounded
@@ -183,7 +183,7 @@ verification so the kernel and CLI can share the format contract.
 The host CLI can wrap a raw payload in a contract-valid AMRN package:
 
 ```text
-cargo run -p dali-cli -- package \
+cargo run -p dali-cli --bin dali -- package \
   --input <payload.bin> \
   --output <package.amrn> \
   --entry-offset <byte-offset>
@@ -196,7 +196,7 @@ for the documented target and load address.
 Inspect an existing package without changing it:
 
 ```text
-cargo run -p dali-cli -- inspect \
+cargo run -p dali-cli --bin dali -- inspect \
   --input <package.amrn>
 ```
 

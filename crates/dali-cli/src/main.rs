@@ -10,7 +10,7 @@ const ENTRY_OFFSET_FLAG: &str = "--entry-offset";
 
 fn main() {
     if let Err(error) = run(env::args().skip(1).collect()) {
-        eprintln!("dali-cli: {error}");
+        eprintln!("dali: {error}");
         process::exit(1);
     }
 }
@@ -89,7 +89,7 @@ fn required_flag(arguments: &[String], flag: &str) -> Result<String, String> {
 
 fn usage() -> String {
     format!(
-        "usage:\n  dali-cli package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali-cli inspect {INPUT_FLAG} <package>"
+        "usage:\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
     )
 }
 
