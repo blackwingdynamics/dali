@@ -30,6 +30,19 @@ dali device list
 See [DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md) for the normalized record and
 failure contract.
 
+### dali device info
+
+Displays one discovered device and the generated target metadata associated
+with it:
+
+~~~text
+dali device info <id-or-path>
+~~~
+
+The selector may be the transport-provided device `id` shown by
+`dali device list`, or the device path when the transport exposes one. The
+command is read-only and does not reset, attach, flash, or open the device.
+
 ### dali device console
 
 Opens the runtime USB CDC console with the host `picocom` command. With no

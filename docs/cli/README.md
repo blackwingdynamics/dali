@@ -17,6 +17,7 @@ executable is named dali.
 | dali app build | Build a native application payload | Supported |
 | dali app package | Package the built payload as AMRN | Supported |
 | dali device list | Discover host-visible devices | Supported |
+| dali device info | Display selected device and target metadata | Supported |
 | dali device console | Open a runtime USB CDC console | Supported |
 | dali device flash | Flash an explicit firmware through DFU | Supported |
 
@@ -77,6 +78,7 @@ exist.
 - [Contributing](CONTRIBUTING.md) — rules for extending the CLI.
 - [Application project contract](APPLICATION_PROJECT.md) — scaffold and manifest contract.
 - [Device discovery](DEVICE_DISCOVERY.md) — transport-neutral discovery contract.
+- [Device info](commands/device-info.md) — selected device and target metadata.
 - [Device console](commands/device-console.md) — runtime CDC console launcher.
 - [Device flash](commands/device-flash.md) — manifest-driven DFU firmware flashing.
 

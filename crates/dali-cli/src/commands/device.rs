@@ -16,6 +16,9 @@ const HEX_RADIX: u32 = 16;
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     match arguments.get(1).map(String::as_str) {
         Some(LIST_COMMAND) if arguments.len() == 2 => run_list(),
+        Some(crate::commands::device_info::INFO_COMMAND) => {
+            crate::commands::device_info::run(arguments)
+        }
         Some(crate::commands::device_console::CONSOLE_COMMAND) => {
             crate::commands::device_console::run(arguments)
         }
@@ -27,11 +30,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
 }
 
 fn run_list() -> Result<(), String> {
-    let (mut records, mut failures) = discover_all();
-    match crate::commands::device_cdc::discover() {
-        Ok(found) => records.extend(found),
-        Err(error) => failures.push(error),
-    }
+    let (records, failures) = discover_records();
     let records = normalize(records);
     if records.is_empty() && failures.is_empty() {
         println!("{NO_DEVICES_MESSAGE}");
@@ -44,6 +43,15 @@ fn run_list() -> Result<(), String> {
     } else {
         Err(failures.join("; "))
     }
+}
+
+pub(super) fn discover_records() -> (Vec<DeviceRecord>, Vec<String>) {
+    let (mut records, mut failures) = discover_all();
+    match crate::commands::device_cdc::discover() {
+        Ok(found) => records.extend(found),
+        Err(error) => failures.push(error),
+    }
+    (records, failures)
 }
 
 fn discover_all() -> (Vec<DeviceRecord>, Vec<String>) {
@@ -172,7 +180,7 @@ fn target_for_dfu_ids(vendor_id: u16, product_id: u16) -> Option<String> {
         .map(|profile| profile.name.to_owned())
 }
 
-fn render_record(record: &DeviceRecord) -> String {
+pub(super) fn render_record(record: &DeviceRecord) -> String {
     let product = record.product.as_deref().unwrap_or(UNDECLARED_VALUE);
     let target = record.target.as_deref().unwrap_or(UNIDENTIFIED_TARGET);
     let vendor = record.vendor.as_deref().unwrap_or(UNDECLARED_VALUE);
