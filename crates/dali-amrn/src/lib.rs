@@ -2,10 +2,12 @@
 
 //! Hardware-independent AMRN v1 header and payload validation.
 
+mod builder;
 mod stream;
 
+pub use builder::{BuildError, encode_package};
 #[cfg(test)]
-use stream::crc32;
+use stream::checksum as crc32;
 pub use stream::{PayloadValidator, ValidatedPayload};
 
 /// The fixed AMRN v1 header length in bytes.

@@ -4,8 +4,17 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 
+[features]
+embedded-payload = []
+
 [lib]
 path = "src/lib.rs"
+
+[[bin]]
+name = "dali-app-hello"
+path = "src/main.rs"
+required-features = ["embedded-payload"]
+test = false
 
 [lints]
 workspace = true

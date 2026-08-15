@@ -61,7 +61,11 @@ dali-kernel/
 ├── apps/
 │   └── dali-app-hello/        # First independently built demo app
 │       ├── Cargo.toml
-│       └── src/lib.rs         # Initial workspace scaffold
+│       ├── build.rs           # Application linker search path
+│       ├── memory.x           # Reserved application SRAM layout
+│       └── src/
+│           ├── lib.rs         # SDK-facing application scaffold
+│           └── main.rs        # Native validation payload entry point
 ├── crates/
 │   ├── dali-amrn/             # AMRN format parser and validation
 │   ├── dali-sdk/              # Future application SDK
@@ -80,6 +84,7 @@ dali-kernel/
 │   ├── ABI.md                 # Kernel/application execution contract
 │   ├── HARDWARE.md            # Board wiring and electrical assumptions
 │   ├── DEVELOPMENT.md         # Build, flash, and debug workflow
+│   ├── APPLICATION_WORKFLOW.md # Application build and AMRN packaging workflow
 │   ├── TESTING.md             # Host and hardware acceptance tests
 │   ├── MVP_ACCEPTANCE.md      # Physical MVP acceptance procedure
 │   ├── VERSIONING.md          # Component and compatibility versioning

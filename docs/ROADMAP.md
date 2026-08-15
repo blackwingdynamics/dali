@@ -37,6 +37,9 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The AMRN parser exposes separate header and incremental payload validation for a bounded streaming loader, with host coverage for the split path.
 - The read-only filesystem boundary now exposes one selected root AMRN file as a bounded read/rewind stream and rejects ambiguous package selection.
 - The kernel loader validates the selected package header, exact file length, and payload CRC using bounded block-sized reads; successful validation is logged.
+- The `dali-amrn` crate encodes contract-valid packages, and `dali-cli package` wraps a raw payload with the documented header and CRC.
+- The `dali-app-hello` validation payload now has a dedicated 64 KiB SRAM linker layout and repeatable build/package recipes.
+- The validation payload is intentionally limited to package construction and loader validation; SRAM copying, native entry transfer, and LED acceptance remain incomplete.
 
 ### Incomplete or not yet accepted
 
@@ -187,12 +190,12 @@ observed; reconnect and the remaining boot sequence are still pending.
 
 ## Phase 5 — Developer workflow
 
-- [ ] Create the `dali-app-hello` package.
-- [ ] Add its target configuration.
-- [ ] Link the demo payload for the reserved SRAM address.
-- [ ] Add a repeatable package assembly step.
+- [x] Create the `dali-app-hello` package scaffold.
+- [x] Add its target configuration.
+- [x] Link the validation payload for the reserved SRAM address.
+- [x] Add a repeatable package assembly step for a raw payload.
 - [ ] Add a package inspection command.
-- [ ] Add a package CRC32 command.
+- [x] Add package CRC32 generation through the package command.
 - [ ] Document the SD-card installation procedure.
 - [ ] Document the complete MVP demo procedure.
 

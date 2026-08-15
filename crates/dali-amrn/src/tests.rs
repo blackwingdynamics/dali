@@ -71,6 +71,22 @@ fn validates_payload_in_bounded_chunks() {
 }
 
 #[test]
+fn encodes_a_package_that_the_parser_accepts() {
+    let mut encoded = [0; HEADER_SIZE + TEST_PAYLOAD.len()];
+    let size = encode_package(TEST_PAYLOAD, TEST_EXECUTION_OFFSET, &mut encoded).unwrap();
+    assert_eq!(parse(&encoded[..size]).unwrap().payload, TEST_PAYLOAD);
+}
+
+#[test]
+fn rejects_an_output_buffer_that_is_too_small() {
+    let mut encoded = [0; HEADER_SIZE + TEST_PAYLOAD.len() - 1];
+    assert_eq!(
+        encode_package(TEST_PAYLOAD, TEST_EXECUTION_OFFSET, &mut encoded),
+        Err(BuildError::OutputTooSmall)
+    );
+}
+
+#[test]
 fn rejects_payload_chunk_beyond_declared_size() {
     let package = valid_package();
     let header = parse_header(&package[..HEADER_SIZE]).unwrap();

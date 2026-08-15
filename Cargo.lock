@@ -115,6 +115,9 @@ version = "0.1.0"
 [[package]]
 name = "dali-cli"
 version = "0.1.0"
+dependencies = [
+ "dali-amrn",
+]
 
 [[package]]
 name = "dali-kernel"

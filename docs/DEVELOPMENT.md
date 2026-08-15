@@ -170,8 +170,8 @@ boot records.
 
 The repository is a Cargo workspace containing the kernel, the hardware-neutral
 `dali-usb` delivery primitives, the hardware-neutral `dali-amrn` format layer,
-the future `dali-sdk`, the future `dali-cli`, and the initial demo-application
-scaffold. Run workspace commands from the repository root.
+the future `dali-sdk`, the `dali-cli` package tool, and the initial
+demo-application scaffold. Run workspace commands from the repository root.
 
 `dali-usb` is `no_std` and has no MCU or HAL dependency. It owns only bounded
 delivery mechanics that can be tested on the host. Board USB resources and
@@ -180,6 +180,19 @@ production CDC servicing remain in the kernel logging backend.
 `dali-amrn` is `no_std` and has no filesystem, MCU, or HAL dependency. It owns
 explicit AMRN v1 header decoding, payload bounds, entry validation, and CRC32
 verification so the kernel and CLI can share the format contract.
+
+The host CLI can wrap a raw payload in a contract-valid AMRN package:
+
+```text
+cargo run -p dali-cli -- package \
+  --input <payload.bin> \
+  --output <package.amrn> \
+  --entry-offset <byte-offset>
+```
+
+The entry offset is explicit because the package command does not infer symbol
+locations from an ELF file. The input must already be linked native payload
+for the documented target and load address.
 
 The embedded target is selected explicitly for kernel commands so host-side SDK and CLI tooling can be checked normally:
 

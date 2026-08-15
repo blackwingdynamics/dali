@@ -9,6 +9,11 @@ kernel_binary := "dali-kernel"
 kernel_elf := "target/" + target + "/debug/" + kernel_binary
 kernel_bin := "target/" + target + "/debug/" + kernel_binary + ".bin"
 f405_kernel_bin := "target/" + target + "/debug/" + kernel_binary + "-f405.bin"
+app_package := "dali-app-hello"
+app_binary := "dali-app-hello"
+app_payload := "target/" + target + "/debug/" + app_binary + ".bin"
+app_package_file := "target/" + target + "/debug/hello.amrn"
+app_entry_offset := "0"
 renode_script := "simulation/renode/dali_blackpill.resc"
 chip := env_var_or_default("DALI_CHIP", "STM32F411CEUx")
 f405_chip := env_var_or_default("DALI_F405_CHIP", "STM32F405RGTx")
@@ -85,6 +90,15 @@ simulate board="f411":
 bin board="f411":
     just build {{board}}
     cargo objcopy -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else if board == "f411" { "board-blackpill-f411,usb-cdc" } else { error("Unsupported board. Use f411 or f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -O binary {{ if board == "f405" { f405_kernel_bin } else { kernel_bin } }}
+
+# Build the native demo payload for the documented application SRAM region.
+app-build:
+    cargo build -p {{app_package}} --features embedded-payload --target {{target}}
+    cargo objcopy -p {{app_package}} --features embedded-payload --target {{target}} --bin {{app_binary}} -- -O binary {{app_payload}}
+
+# Assemble the native demo payload into a contract-valid AMRN package.
+package-hello: app-build
+    cargo run -p dali-cli -- package --input {{app_payload}} --output {{app_package_file}} --entry-offset {{app_entry_offset}}
 
 # Flash the kernel with a connected probe. Requires probe-rs.
 flash-probe board="f411":

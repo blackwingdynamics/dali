@@ -87,8 +87,7 @@ impl Crc32 {
     }
 }
 
-#[cfg(test)]
-pub(super) fn crc32(bytes: &[u8]) -> u32 {
+pub(crate) fn checksum(bytes: &[u8]) -> u32 {
     let mut checksum = Crc32::new();
     checksum.update(bytes);
     checksum.finish()
