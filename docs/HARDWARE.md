@@ -57,7 +57,8 @@ The application load address is fixed at `0x20008000` for the MVP.
 The F405 board is selected with the `board-stm32f405-sd` Cargo feature. Its
 SDIO pin tuple is owned by the board backend and is consumed by the storage
 subsystem. The current F405 backend uses HAL card initialization and a
-board-local bounded FIFO data path for block reads. It is not yet an MVP
+board-local DMA2 Stream 3, Channel 4 receive path with an aligned word buffer
+for block reads. It is not yet an MVP
 package target; AMRN target compatibility remains defined by `AMRN_FORMAT.md`.
 
 ## Electrical requirements

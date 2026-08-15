@@ -251,9 +251,20 @@ The storage subsystem is responsible for:
 - bounded reads into loader-owned buffers.
 
 The F405 SDIO block-read path keeps HAL card initialization but owns the data
-FIFO drain in a board-local module. It consumes every available FIFO word,
-including the final partial FIFO level, and maps SDIO timeout, CRC, and
-overrun flags to typed storage errors. MMIO access is centralized there.
+FIFO drain in a board-local module. It uses the documented DMA2 Stream 3,
+Channel 4 receive request and an aligned word buffer, then maps SDIO timeout,
+CRC, overrun, and DMA errors to typed storage errors. MMIO access is
+centralized there. The read command is issued without waiting for its response
+so DMA can begin receiving as soon as the card asserts data activity. USB
+servicing remains available while the storage transfer is blocking. SDIO
+hardware flow control remains disabled because the STM32F405/F40x device
+errata report clock glitches and CRC errors when it is enabled.
+The DMA controller is reset before each transfer setup to remove stale stream
+state, and a completed SDIO command with no active receive transfer is treated
+as a bounded transport failure. DMA FIFO mode uses a full threshold and
+incremental four-word bursts so the final receive words are not stranded below
+the direct-mode request threshold. If the SDIO data counter reaches zero while
+DMA has a bounded tail pending, that tail is drained directly from the FIFO.
 The kernel exposes this transport through the `sdio` capability feature; board
 features enable capabilities and select pins/clocks separately.
 

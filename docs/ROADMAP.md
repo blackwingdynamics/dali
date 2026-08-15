@@ -24,6 +24,13 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - Hardware console testing showed `picocom` opening after enumeration while boot logs had already drained; CDC delivery must therefore wait for the host-open DTR signal.
 - On 2026-08-15, Pico 2 SWD programming and `/dev/ttyACM1` CDC testing produced `Terminal ready` and delivered boot logs through `[STORAGE] SDIO card initialized`.
 - SWD SDIO register evidence at the block-0 read showed `RXDAVL=1`, `RXACT=1`, `RXFIFOHF=0`, `RXOVERR=1`, 371 bytes remaining, and 94 FIFO words; the HAL read loop waits on half-full FIFO state and does not drain this tail.
+- A follow-up SWD stop on the raw path showed `RXOVERR=1` with `TXUNDERR=0`; the reader now drains each 512-byte block in one bounded critical section using the SDIO eight-word threshold and its final FIFO tail.
+- Conditional SWD capture confirmed the overrun at `STA=0x0022a060` while `FIFOCNT=0x60`; the raw reader no longer waits for CMD17 completion before starting the bounded data drain.
+- A hardware test with `CLKCR.HWFC_EN` enabled changed the failure to `DataCorruption`; the STM32F4 HAL and F40x errata document that hardware flow control causes clock glitches and CRC errors, so it was removed again.
+- The polling reader was replaced with an aligned DMA2 Stream 3, Channel 4 receive path; hardware confirmed block reads and root scanning on the STM32F405.
+- SWD showed SDIO DMA enabled with active receive data while DMA2 Stream 3 registers were zero; DMA2 reset-before-setup and a bounded inactive-transfer failure path were added.
+- SWD then showed DMA2 Stream 3 at `NDTR=4` with `HTIF3=1`, so the DMA FIFO tail was the remaining failure; full FIFO mode with four-word bursts and a bounded tail drain are now hardware-confirmed.
+- The DMA receive path now handles the observed `DCOUNT=0` and `NDTR=4` terminal tail with a bounded direct FIFO drain.
 
 ### Incomplete or not yet accepted
 
