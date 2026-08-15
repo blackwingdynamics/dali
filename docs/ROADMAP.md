@@ -260,7 +260,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [ ] Add `dali device info` for selected device and target metadata.
 - [ ] Add `dali device flash --transport dfu --target <target>`.
 - [ ] Add `dali device flash --transport probe --target <target>`.
-- [ ] Add `dali device console [--port <path>]` for the runtime CDC console.
+- [x] Add `dali device console [--port <path>]` for the runtime CDC console.
 - [ ] Add `dali device attach --target <target>` for debug attachment.
 - [ ] Add hardware tests and evidence before marking device commands accepted.
 

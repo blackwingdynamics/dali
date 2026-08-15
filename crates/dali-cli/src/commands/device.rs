@@ -14,9 +14,16 @@ const UNIDENTIFIED_TARGET: &str = "not identified";
 const HEX_RADIX: u32 = 16;
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
-    if arguments.get(1).map(String::as_str) != Some(LIST_COMMAND) || arguments.len() != 2 {
-        return Err(usage());
+    match arguments.get(1).map(String::as_str) {
+        Some(LIST_COMMAND) if arguments.len() == 2 => run_list(),
+        Some(crate::commands::device_console::CONSOLE_COMMAND) => {
+            crate::commands::device_console::run(arguments)
+        }
+        _ => Err(usage()),
     }
+}
+
+fn run_list() -> Result<(), String> {
     let (mut records, mut failures) = discover_all();
     match crate::commands::device_cdc::discover() {
         Ok(found) => records.extend(found),
@@ -201,7 +208,7 @@ fn first_line(text: &str) -> Option<String> {
 }
 
 fn usage() -> String {
-    "usage: dali device list".to_owned()
+    "usage:\n  dali device list\n  dali device console [--port <path>]".to_owned()
 }
 
 #[cfg(test)]

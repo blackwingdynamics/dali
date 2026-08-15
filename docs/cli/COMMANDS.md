@@ -30,6 +30,20 @@ dali device list
 See [DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md) for the normalized record and
 failure contract.
 
+### dali device console
+
+Opens the runtime USB CDC console with the host \`picocom\` command. With no
+port argument, exactly one visible CDC console must be discoverable:
+
+~~~text
+dali device console
+dali device console --port /dev/ttyACM0
+~~~
+
+The explicit form is useful when more than one CDC device is connected. This
+command does not flash, reset, or identify a target; it only opens the selected
+host device path.
+
 ### dali target list
 
 Lists the current Dali application target profiles and their AMRN/ABI
@@ -115,6 +129,5 @@ derived from the same manifest.
 ## Unsupported commands
 
 Unknown commands fail with usage information. Hardware flashing, SD-card
-installation, package listing, and interactive
-terminal operations are not currently implemented. The device discovery
-contract is defined separately in [DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md).
+installation, and package listing are not currently implemented. The device
+discovery contract is defined separately in [DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md).
