@@ -73,7 +73,12 @@ dali-kernel/
 │   │   └── src/lib.rs
 │   └── dali-cli/              # Future package and device CLI
 │       ├── Cargo.toml
-│       └── src/main.rs
+│       └── src/
+│           ├── main.rs
+│           └── commands/
+│               ├── mod.rs
+│               ├── package.rs
+│               └── inspect.rs
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── FILE_STRUCTURE.md
@@ -118,7 +123,10 @@ The following order keeps each new file focused on one verifiable capability:
 18. `apps/dali-app-hello/memory.x` — application linker memory layout.
 19. `apps/dali-app-hello/build.rs` — application package preparation, if required.
 20. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
-21. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
+21. `crates/dali-cli/src/main.rs` — CLI process entry point.
+22. `crates/dali-cli/src/commands/mod.rs` — command dispatch and shared flag parsing.
+23. `crates/dali-cli/src/commands/package.rs` — AMRN package construction command.
+24. `crates/dali-cli/src/commands/inspect.rs` — AMRN package inspection command.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:
 
