@@ -113,7 +113,11 @@ Install `probe-rs` and `dfu-util` using the package-manager or installation meth
 The kernel uses `embedded-sdmmc` `0.10.0` with default features disabled. The
 filesystem layer is read-only, uses fixed-size buffers, and scans the first FAT
 volume's root directory for 8.3 filenames with the `AMRN` extension. It does
-not write to the card or require heap allocation.
+not write to the card or require heap allocation. The root scan must not call
+the `embedded-sdmmc` volume close operation: that library updates the FAT32
+FSInfo sector during close, which conflicts with the kernel's read-only block
+device. The scan releases its directory and retains no usable volume handle
+after the manager is dropped.
 
 ### USB CDC runtime console
 

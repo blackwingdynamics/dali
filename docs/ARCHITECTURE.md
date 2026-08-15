@@ -104,6 +104,14 @@ STM32F411 hardware
 
 The first implementation may keep the layers in one repository, but their contracts must remain explicit.
 
+The filesystem backend is read-only. Its root scan does not invoke the
+`embedded-sdmmc` volume close operation because that operation writes the FAT32
+FSInfo sector even when the scan performed no application writes. The scan
+releases its directory handle, transfers the volume to a raw handle, and lets
+the manager lifetime end without write-back. This preserves the read-only
+storage contract and treats a write request as unsupported rather than silently
+discarding it.
+
 USB CDC logging has two deliberately separate ownership boundaries:
 
 - `crates/dali-usb/` contains only `no_std`, transport-neutral bounded delivery

@@ -58,6 +58,9 @@ where
         ControlFlow::Continue(())
     })?;
     drop(root);
-    volume.close()?;
+    // `embedded-sdmmc` updates the FAT32 FSInfo sector while closing a volume.
+    // The kernel deliberately exposes a read-only block device, so preserve
+    // the open raw handle and let the manager finish without a write-back.
+    let _raw_volume = volume.to_raw_volume();
     Ok(report)
 }

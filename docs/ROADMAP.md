@@ -31,6 +31,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - SWD showed SDIO DMA enabled with active receive data while DMA2 Stream 3 registers were zero; DMA2 reset-before-setup and a bounded inactive-transfer failure path were added.
 - SWD then showed DMA2 Stream 3 at `NDTR=4` with `HTIF3=1`, so the DMA FIFO tail was the remaining failure; full FIFO mode with four-word bursts and a bounded tail drain are now hardware-confirmed.
 - The DMA receive path now handles the observed `DCOUNT=0` and `NDTR=4` terminal tail with a bounded direct FIFO drain.
+- A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.
 
 ### Incomplete or not yet accepted
 
