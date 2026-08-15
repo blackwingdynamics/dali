@@ -16,6 +16,9 @@ executable is named dali.
 | dali app init | Initialize the current directory as a Dali application | Supported |
 | dali app build | Build a native application payload | Supported |
 | dali app package | Package the built payload as AMRN | Supported |
+| dali device list | Discover host-visible devices | Supported |
+| dali device console | Open a runtime USB CDC console | Supported |
+| dali device flash | Flash an explicit firmware through DFU | Supported |
 
 ## Command layers
 
@@ -74,6 +77,8 @@ exist.
 - [Contributing](CONTRIBUTING.md) — rules for extending the CLI.
 - [Application project contract](APPLICATION_PROJECT.md) — scaffold and manifest contract.
 - [Device discovery](DEVICE_DISCOVERY.md) — transport-neutral discovery contract.
+- [Device console](commands/device-console.md) — runtime CDC console launcher.
+- [Device flash](commands/device-flash.md) — explicit DFU firmware flashing.
 
 Command-specific documentation lives in [commands/](commands/):
 
@@ -86,9 +91,9 @@ Command-specific documentation lives in [commands/](commands/):
 
 ## Scope boundary
 
-The current CLI does not flash hardware, mount storage, manage applications,
-or provide an interactive terminal UI. Those capabilities require separate
-contracts and are not implied by the current commands.
+The current CLI does not mount storage, manage applications, or provide an
+interactive terminal UI. Probe flashing requires a separate transport
+operation and is not implied by the DFU command.
 
 Application scaffolding is available through `dali app new`, both inside a
 Dali workspace and outside it with an explicit `--sdk-path`. Initializing an

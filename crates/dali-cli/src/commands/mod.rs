@@ -2,6 +2,7 @@ mod app;
 mod device;
 mod device_cdc;
 mod device_console;
+mod device_flash;
 mod doctor;
 mod inspect;
 mod package;

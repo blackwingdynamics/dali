@@ -34,7 +34,7 @@ alphanumeric names consistent with existing commands.
 Every manifest contains:
 
 - `[profile]` — identity and Dali compatibility;
-- `[dfu]` — optional USB DFU identity;
+- `[profile.dfu]` — optional USB DFU identity and download configuration;
 - `[clock]` — oscillator and bus frequencies;
 - `[memory]` — kernel, application, and runtime regions;
 - `[status_led]` — logical status LED mapping;
@@ -60,7 +60,7 @@ that claims a kernel storage backend.
 `probe_chip` is transport metadata, not the MCU display name. Use the exact
 identifier reported by the selected debug tool.
 
-## `[dfu]`
+## `[profile.dfu]`
 
 The section is optional for profiles without a documented DFU transport.
 
@@ -68,6 +68,9 @@ The section is optional for profiles without a documented DFU transport.
 | --- | --- | --- | --- |
 | `vendor_id` | integer | yes | USB vendor identifier reported by the DFU host tool. |
 | `product_id` | integer | yes | USB product identifier reported by the DFU host tool. |
+| `address` | integer | yes | Flash address passed to the DFU download operation. |
+| `alternate` | integer | yes | DFU alternate interface used for the download. |
+| `leave` | boolean | yes | Whether the tool requests leaving DFU mode after download. |
 
 These values identify a transport endpoint only. They do not prove that the
 target firmware is valid or that flashing is safe.

@@ -258,7 +258,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Add the hardware-neutral normalized device record model and ordering tests.
 - [x] Add `dali device list` for probe, DFU, and Linux CDC discovery; CDC records without serials remain explicitly unidentified.
 - [ ] Add `dali device info` for selected device and target metadata.
-- [ ] Add `dali device flash --transport dfu --target <target>`.
+- [x] Add `dali device flash --transport dfu --target <target> --input <firmware>` using manifest-driven DFU configuration.
 - [ ] Add `dali device flash --transport probe --target <target>`.
 - [x] Add `dali device console [--port <path>]` for the runtime CDC console.
 - [ ] Add `dali device attach --target <target>` for debug attachment.

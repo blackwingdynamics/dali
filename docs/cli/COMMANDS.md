@@ -32,7 +32,7 @@ failure contract.
 
 ### dali device console
 
-Opens the runtime USB CDC console with the host \`picocom\` command. With no
+Opens the runtime USB CDC console with the host `picocom` command. With no
 port argument, exactly one visible CDC console must be discoverable:
 
 ~~~text
@@ -43,6 +43,18 @@ dali device console --port /dev/ttyACM0
 The explicit form is useful when more than one CDC device is connected. This
 command does not flash, reset, or identify a target; it only opens the selected
 host device path.
+
+### dali device flash
+
+Flashes an explicit firmware file through the target's declared DFU transport:
+
+~~~text
+dali device flash --transport dfu --target f405 --input <firmware>
+~~~
+
+The target manifest supplies the DFU identity, alternate interface, flash
+address, and post-download transition. The command does not build the input,
+choose a target automatically, or support probe flashing yet.
 
 ### dali target list
 
@@ -128,6 +140,7 @@ derived from the same manifest.
 
 ## Unsupported commands
 
-Unknown commands fail with usage information. Hardware flashing, SD-card
-installation, and package listing are not currently implemented. The device
-discovery contract is defined separately in [DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md).
+Unknown commands fail with usage information. SD-card and package installation
+are not currently implemented. Probe flashing is not implemented yet. The
+device discovery contract is defined separately in
+[DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md).

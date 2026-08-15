@@ -4,10 +4,16 @@ board = "WeAct Studio STM32F405RGT6 Core Board"
 mcu = "STM32F405RGT6"
 rust_target = "thumbv7em-none-eabihf"
 probe_chip = "STM32F405RGTx"
-dfu = { vendor_id = 0x0483, product_id = 0xDF11 }
 application_supported = true
 amrn_target_id = 0x02
 abi_version = 2
+
+[profile.dfu]
+vendor_id = 0x0483
+product_id = 0xDF11
+address = 0x0800_0000
+alternate = 0
+leave = true
 
 [clock]
 source = "HSE"

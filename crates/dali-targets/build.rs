@@ -32,6 +32,9 @@ struct Profile {
 struct Dfu {
     vendor_id: u16,
     product_id: u16,
+    address: u32,
+    alternate: u8,
+    leave: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -148,10 +151,10 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
             .into());
         }
         if let Some(dfu) = &manifest.profile.dfu
-            && (dfu.vendor_id == 0 || dfu.product_id == 0)
+            && (dfu.vendor_id == 0 || dfu.product_id == 0 || dfu.address == 0)
         {
             return Err(format!(
-                "target manifest {} has an invalid DFU identity",
+                "target manifest {} has an invalid DFU configuration",
                 manifest.profile.name
             )
             .into());
@@ -240,8 +243,8 @@ fn generate_profile(manifest: &Manifest) -> String {
 
 fn generate_dfu(dfu: &Dfu) -> String {
     format!(
-        "DfuProfile {{ vendor_id: 0x{:04X}, product_id: 0x{:04X} }}",
-        dfu.vendor_id, dfu.product_id
+        "DfuProfile {{ vendor_id: 0x{:04X}, product_id: 0x{:04X}, address: 0x{:08X}, alternate: {}, leave: {} }}",
+        dfu.vendor_id, dfu.product_id, dfu.address, dfu.alternate, dfu.leave
     )
 }
 

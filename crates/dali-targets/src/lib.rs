@@ -44,6 +44,12 @@ pub struct DfuProfile {
     pub vendor_id: u16,
     /// USB product identifier.
     pub product_id: u16,
+    /// Flash download address accepted by the DFU target.
+    pub address: u32,
+    /// DFU alternate interface used for the firmware image.
+    pub alternate: u8,
+    /// Whether the DFU tool should request runtime transition after download.
+    pub leave: bool,
 }
 
 /// Clock values declared by a board manifest.
@@ -144,7 +150,10 @@ mod tests {
             SUPPORTED_TARGETS[0].dfu,
             Some(DfuProfile {
                 vendor_id: 0x0483,
-                product_id: 0xDF11
+                product_id: 0xDF11,
+                address: 0x0800_0000,
+                alternate: 0,
+                leave: true,
             })
         );
         assert_eq!(
