@@ -5,7 +5,9 @@ how the kernel currently consumes that package.
 
 The current workflow validates package construction and loader input. The
 loader now contains the bounded SRAM-copy and ABI entry-transfer path for the
-F405 MVP target, but those execution steps still require physical acceptance.
+F405 MVP target. The first physical loader and PB2 LED execution result has
+been observed; the complete MVP acceptance procedure remains broader than this
+single execution-path test.
 
 ## Workflow overview
 
@@ -188,7 +190,8 @@ The loader's execution path performs a second bounded read pass after the CRC
 pass, copies only the validated payload into the reserved SRAM region, and
 transfers control through the validated ABI entry address. It preserves the
 existing bounds checks and keeps the unsafe operations centralized in the
-loader. Physical F405 testing must still prove the LED acceptance behavior
+loader. Physical F405 testing has now shown the LED acceptance behavior once;
+repeatable reset and complete MVP acceptance evidence remain separate gates.
 before the application is considered accepted.
 
 ## Troubleshooting boundaries

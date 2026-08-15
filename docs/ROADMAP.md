@@ -43,6 +43,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
 - The loader now performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution remains unverified.
 - The validation payload now drives the F405 active-high PB2 LED with a deterministic native pattern; physical observation remains pending.
+- On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package, logged successful AMRN validation, and showed the native PB2 LED pattern after the kernel log stopped.
 
 ### Incomplete or not yet accepted
 
@@ -50,7 +51,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The interrupt-driven USB servicing strategy has target-build evidence but has not completed physical enumeration, reconnect, and boot-log acceptance.
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
 - The F405 SDIO path has not completed the documented hardware acceptance evidence.
-- F405 hardware execution, the deterministic LED proof, and SDK application APIs remain incomplete.
+- SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
 - A separate AMRN target profile for STM32F411 remains unspecified and is not part of the current execution work.
 
 ### Current priority
@@ -190,7 +191,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Define the application reset and return behavior.
 - [x] Provide the application entry-point transfer.
 - [x] Produce the deterministic LED pattern from the demo application.
-- [ ] Record the first end-to-end hardware acceptance result.
+- [x] Record the first end-to-end F405 loader and native LED execution result.
 
 ## Phase 5 — Developer workflow
 
