@@ -99,7 +99,15 @@ fn parse_probe_inventory(output: &str) -> Vec<DeviceRecord> {
                 transport: Transport::Probe,
                 target: None,
                 vendor: None,
-                product: Some(product.split_once(']')?.1.trim().to_owned()),
+                product: Some(
+                    product
+                        .split_once(']')?
+                        .1
+                        .trim()
+                        .trim_start_matches(':')
+                        .trim()
+                        .to_owned(),
+                ),
                 serial: None,
                 path: None,
                 state: State::Available,
@@ -154,15 +162,10 @@ fn render_record(record: &DeviceRecord) -> String {
         .collect::<Vec<_>>()
         .join(",");
     format!(
-        "transport={} id={} state={} target={} vendor={} product={} serial={} path={} capabilities={capabilities}",
+        "{} device: {product}\n  id: {}\n  state: {}\n  target: {target}\n  vendor: {vendor}\n  serial: {serial}\n  path: {path}\n  capabilities: {capabilities}",
         record.transport.as_str(),
         record.id,
         record.state.as_str(),
-        target,
-        vendor,
-        product,
-        serial,
-        path,
     )
 }
 
@@ -194,7 +197,7 @@ mod tests {
             parse_probe_inventory("[0]: Debugprobe on Pico -- 2e8a:000c-0:SERIAL (CMSIS-DAP)");
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].id, "2e8a:000c-0:SERIAL");
-        assert!(render_record(&records[0]).contains("transport=probe"));
+        assert!(render_record(&records[0]).contains("probe device: Debugprobe on Pico"));
     }
 
     #[test]
@@ -207,7 +210,7 @@ mod tests {
         assert_eq!(records[0].vendor.as_deref(), Some("0483"));
         assert_eq!(records[0].serial.as_deref(), Some("3571"));
         assert_eq!(records[0].path.as_deref(), Some("1-10.1"));
-        assert!(render_record(&records[0]).contains("product=DFU device"));
-        assert!(render_record(&records[0]).contains("capabilities=flash"));
+        assert!(render_record(&records[0]).contains("dfu device: DFU device"));
+        assert!(render_record(&records[0]).contains("capabilities: flash"));
     }
 }
