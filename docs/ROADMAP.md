@@ -42,11 +42,12 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The validation payload is intentionally limited to package construction and loader validation plus the documented native execution proof.
 - The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
 - The loader performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution has been observed.
-- The validation payload drives the F405 active-high PB2 LED with a deterministic native pattern; the pattern has been observed during F405 hardware testing.
+- The validation payload defines the documented three-flash/long-pause F405 active-high PB2 LED pattern with host coverage and physical observation.
 - ABI v2 now passes a bounded kernel service table to applications and exposes the first logging service; host evidence is passing.
-- On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package, logged successful AMRN validation, and showed the native PB2 LED pattern after the kernel log stopped.
+- On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package and logged successful AMRN validation; the earlier observed LED behavior was continuous slow blinking and did not satisfy the documented three-flash/long-pause pattern.
 - On 2026-08-15, the F405 board delivered three `[INFO][APP] Hello World from AMRN` records through USB CDC after AMRN validation. This is hardware evidence for the application logging service.
 - F405 hardware testing confirmed that boot logs and all three application records reappear after a board reset with the console already open, and after closing and reopening the USB CDC connection.
+- On 2026-08-15, after reseating the SD card following an SDIO timeout, the F405 board completed the full SDIO, AMRN, application logging, and corrected three-flash/long-pause LED path. The recovery indicates sensitivity in the physical SD-card connection or power path; the responsible component is not isolated.
 
 ### Incomplete or not yet accepted
 
@@ -54,6 +55,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The interrupt-driven USB servicing strategy has completed the targeted F405 enumeration, reset, reconnect, and boot-log test; broader MVP acceptance remains a separate gate.
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
 - The F405 SDIO path has not completed the documented hardware acceptance evidence.
+- The corrected three-flash/long-pause application LED pattern has been observed on F405 hardware; formal MVP acceptance recording remains a separate gate.
 - SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
 - Full MVP acceptance remains incomplete despite hardware evidence for application logging, reset-to-application execution, and USB reconnect behavior; the formal acceptance record still requires the complete documented procedure.
 - A separate AMRN target profile for STM32F411 remains unspecified and is not part of the current execution work.
@@ -194,7 +196,7 @@ observed; the targeted reset and reconnect behavior is now evidenced.
 - [x] Keep application-owned interrupts disabled for the MVP.
 - [x] Define the application reset and return behavior.
 - [x] Provide the application entry-point transfer.
-- [x] Produce the deterministic LED pattern from the demo application.
+- [x] Produce and physically verify the documented three-flash/long-pause LED pattern from the demo application.
 - [x] Record the first end-to-end F405 loader and native LED execution result.
 
 ## Phase 5 — Developer workflow

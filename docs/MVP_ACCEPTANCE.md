@@ -190,3 +190,13 @@ and three application log records:
 This confirms the application logging path on physical F405 hardware. It does
 not by itself close the complete MVP acceptance procedure, including reset
 log capture, reconnect behavior, and the full documented LED observation.
+
+On 2026-08-15, a subsequent F405 run produced an SDIO initialization timeout
+and the documented slow storage-status blink. After powering down the board,
+reseating the SD card, and restarting it, the same firmware completed SDIO
+initialization, read block zero, validated the AMRN package, and delivered all
+three application log records. The corrected three-flash/long-pause application
+pattern was also observed on the refreshed package. This is evidence that the
+software path can recover after a clean card reseat; it also records that the
+current hardware setup is sensitive to SD-card contact or power quality. The
+observation does not identify which physical component is responsible.
