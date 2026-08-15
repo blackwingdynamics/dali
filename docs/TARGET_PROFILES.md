@@ -16,6 +16,8 @@ The boundary is intentionally split:
   diagnostics. CLI commands do not define board constants.
 - The target scaffold command can create a non-production backend template and
   documentation checklist from an existing profile without overwriting files.
+  The template renders the declared board values as named constants before the
+  typed HAL mapping is reviewed.
 - `kernel/src/board/` maps the selected profile to typed HAL peripherals and
   owns the compile-time GPIO, RCC, DMA, and peripheral initialization.
 

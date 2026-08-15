@@ -23,6 +23,10 @@ The command creates:
 
 Existing files are never overwritten.
 
+The generated template includes named constants for the manifest's clock,
+memory, status LED, USB, optional storage, and probe metadata. It does not
+invent typed HAL mappings; those remain a reviewed backend implementation step.
+
 ## Review boundary
 
 The scaffold is not a working board backend. A developer must implement and

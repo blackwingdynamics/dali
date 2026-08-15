@@ -113,6 +113,7 @@ fn write_scaffold(path: &Path, contents: &str) -> Result<(), String> {
 }
 
 fn backend_template(profile: &dali_targets::TargetProfile) -> String {
+    let metadata = metadata_template(profile);
     format!(
         "//! Review scaffold generated from targets/{name}.toml.\n\
 //! Map the profile to typed HAL resources before adding this backend to board/mod.rs.\n\
@@ -124,12 +125,94 @@ fn backend_template(profile: &dali_targets::TargetProfile) -> String {
 //! - DMA and interrupt ownership\n\
 //! - unsafe safety invariants\n\
 \n\
+{metadata}\n\
 use dali_targets::{constant};\n\
 \n\
 /// Declarative profile selected for this backend.\n\
 pub const TARGET_PROFILE: &dali_targets::TargetProfile = &{constant};\n",
         name = profile.name,
-        constant = profile.registry_constant
+        constant = profile.registry_constant,
+        metadata = metadata
+    )
+}
+
+fn metadata_template(profile: &dali_targets::TargetProfile) -> String {
+    let storage = profile.storage.map_or_else(
+        || "pub const STORAGE_SUPPORTED: bool = false;\n".to_owned(),
+        |storage| {
+            format!(
+                "pub const STORAGE_SUPPORTED: bool = true;\n\
+pub const STORAGE_CONTROLLER: &str = {controller:?};\n\
+pub const STORAGE_BUS_WIDTH: u8 = {bus_width};\n\
+{clock}{command}{data}",
+                controller = storage.controller,
+                bus_width = storage.bus_width,
+                clock = pin_constants("STORAGE_CLOCK", storage.clock),
+                command = pin_constants("STORAGE_COMMAND", storage.command),
+                data = storage
+                    .data
+                    .iter()
+                    .enumerate()
+                    .map(|(index, pin)| pin_constants(&format!("STORAGE_DATA_{index}"), *pin))
+                    .collect::<String>()
+            )
+        },
+    );
+    format!(
+        "pub const PROBE_CHIP: Option<&str> = {probe_chip:?};\n\
+pub const CLOCK_SOURCE: &str = {clock_source:?};\n\
+pub const CLOCK_INPUT_HZ: u32 = {input_hz};\n\
+pub const SYSTEM_CLOCK_HZ: u32 = {system_hz};\n\
+pub const PCLK1_HZ: u32 = {pclk1_hz};\n\
+pub const PCLK2_HZ: u32 = {pclk2_hz};\n\
+pub const USB_CLOCK_HZ: u32 = {usb_hz};\n\
+{memory}{status_led}pub const USB_CONTROLLER: &str = {usb_controller:?};\n\
+{usb_dm}{usb_dp}{storage}",
+        probe_chip = profile.probe_chip,
+        clock_source = profile.clock.source,
+        input_hz = profile.clock.input_hz,
+        system_hz = profile.clock.system_hz,
+        pclk1_hz = profile.clock.pclk1_hz,
+        pclk2_hz = profile.clock.pclk2_hz,
+        usb_hz = profile.clock.usb_hz,
+        memory = memory_constants(profile),
+        status_led = pin_constants("STATUS_LED", profile.status_led),
+        usb_controller = profile.usb.controller,
+        usb_dm = pin_constants("USB_DM", profile.usb.dm),
+        usb_dp = pin_constants("USB_DP", profile.usb.dp),
+        storage = storage,
+    )
+}
+
+fn memory_constants(profile: &dali_targets::TargetProfile) -> String {
+    format!(
+        "pub const KERNEL_ORIGIN: u32 = 0x{:08X};\n\
+pub const KERNEL_LENGTH: u32 = {};\n\
+pub const APPLICATION_ORIGIN: u32 = 0x{:08X};\n\
+pub const APPLICATION_LENGTH: u32 = {};\n\
+pub const RUNTIME_ORIGIN: u32 = 0x{:08X};\n\
+pub const RUNTIME_LENGTH: u32 = {};\n\
+",
+        profile.memory.kernel_origin,
+        profile.memory.kernel_length,
+        profile.memory.application_origin,
+        profile.memory.application_length,
+        profile.memory.runtime_origin,
+        profile.memory.runtime_length,
+    )
+}
+
+fn pin_constants(prefix: &str, pin: dali_targets::PinProfile) -> String {
+    format!(
+        "pub const {prefix}_PORT: &str = {port:?};\n\
+pub const {prefix}_NUMBER: u8 = {number};\n\
+pub const {prefix}_ALTERNATE_FUNCTION: u8 = {alternate_function};\n\
+pub const {prefix}_ACTIVE_HIGH: bool = {active_high};\n\
+",
+        port = pin.port,
+        number = pin.number,
+        alternate_function = pin.alternate_function,
+        active_high = pin.active_high,
     )
 }
 
@@ -175,12 +258,23 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::{backend_template, documentation_template};
-    use dali_targets::SUPPORTED_TARGETS;
+    use dali_targets::{SUPPORTED_TARGETS, find_board};
 
     #[test]
     fn renders_reviewable_scaffolds_from_profile_metadata() {
         let profile = &SUPPORTED_TARGETS[0];
         assert!(backend_template(profile).contains(profile.registry_constant));
         assert!(documentation_template(profile).contains(profile.board));
+    }
+
+    #[test]
+    fn renders_declared_board_values() {
+        let f405 = backend_template(&SUPPORTED_TARGETS[0]);
+        assert!(f405.contains("CLOCK_INPUT_HZ: u32 = 8000000"));
+        assert!(f405.contains("STATUS_LED_PORT: &str = \"PB\""));
+        assert!(f405.contains("STORAGE_DATA_3_NUMBER: u8 = 11"));
+
+        let f411 = backend_template(find_board("f411").expect("generated test profile"));
+        assert!(f411.contains("STORAGE_SUPPORTED: bool = false"));
     }
 }
