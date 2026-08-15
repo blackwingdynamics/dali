@@ -15,6 +15,8 @@ pub struct TargetProfile {
     pub mcu: &'static str,
     /// Rust compilation target triple.
     pub rust_target: &'static str,
+    /// Probe chip identifier used by the debug transport, when declared.
+    pub probe_chip: Option<&'static str>,
     /// Whether the profile is currently valid for AMRN application execution.
     pub application_supported: bool,
     /// AMRN target identifier assigned by the package contract.

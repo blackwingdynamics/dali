@@ -37,6 +37,6 @@ pub(super) fn required_flag(arguments: &[String], flag: &str) -> Result<String, 
 
 fn usage() -> String {
     format!(
-        "usage:\n  dali doctor\n  dali target list\n  dali target scaffold <profile> [--output <workspace-root>]\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
+        "usage:\n  dali doctor\n  dali target list\n  dali target info <profile> --field probe-chip\n  dali target scaffold <profile> [--output <workspace-root>]\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
     )
 }

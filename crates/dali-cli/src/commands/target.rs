@@ -4,6 +4,9 @@ use std::{
 };
 
 const LIST_COMMAND: &str = "list";
+const INFO_COMMAND: &str = "info";
+const FIELD_FLAG: &str = "--field";
+const PROBE_CHIP_FIELD: &str = "probe-chip";
 const SCAFFOLD_COMMAND: &str = "scaffold";
 const OUTPUT_FLAG: &str = "--output";
 const BOARD_DIRECTORY: &str = "kernel/src/board";
@@ -14,9 +17,26 @@ const DOCUMENTATION_SUFFIX: &str = ".md";
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     match arguments.get(1).map(String::as_str) {
         Some(LIST_COMMAND) if arguments.len() == 2 => print_targets(),
+        Some(INFO_COMMAND) => print_info(arguments),
         Some(SCAFFOLD_COMMAND) => scaffold(arguments),
         _ => Err(usage()),
     }
+}
+
+fn print_info(arguments: &[String]) -> Result<(), String> {
+    if arguments.len() == 5
+        && arguments.get(3).map(String::as_str) == Some(FIELD_FLAG)
+        && arguments.get(4).map(String::as_str) == Some(PROBE_CHIP_FIELD)
+    {
+        let profile_name = &arguments[2];
+        let profile = dali_targets::find_board(profile_name)
+            .ok_or_else(|| format!("unknown board profile '{profile_name}'"))?;
+        return profile
+            .probe_chip
+            .ok_or_else(|| format!("board profile '{profile_name}' has no probe chip"))
+            .map(|chip| println!("{chip}"));
+    }
+    Err(usage())
 }
 
 fn scaffold(arguments: &[String]) -> Result<(), String> {
@@ -148,7 +168,7 @@ fn print_targets() -> Result<(), String> {
 }
 
 fn usage() -> String {
-    "usage:\n  dali target list\n  dali target scaffold <profile> [--output <workspace-root>]"
+    "usage:\n  dali target list\n  dali target info <profile> --field probe-chip\n  dali target scaffold <profile> [--output <workspace-root>]"
         .to_owned()
 }
 

@@ -21,6 +21,7 @@ struct Profile {
     board: String,
     mcu: String,
     rust_target: String,
+    probe_chip: Option<String>,
     application_supported: bool,
     amrn_target_id: u8,
     abi_version: u8,
@@ -189,13 +190,18 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, probe_chip: {probe_chip}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
         board = string_literal(&profile.board),
         mcu = string_literal(&profile.mcu),
         target = string_literal(&profile.rust_target),
+        probe_chip = profile
+            .probe_chip
+            .as_deref()
+            .map(string_literal)
+            .map_or_else(|| "None".to_owned(), |chip| format!("Some({chip})")),
         application_supported = profile.application_supported,
         id = profile.amrn_target_id,
         abi = profile.abi_version,

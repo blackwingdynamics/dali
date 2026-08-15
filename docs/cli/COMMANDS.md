@@ -42,6 +42,15 @@ dali target scaffold <profile> [--output <workspace-root>]
 
 See [commands/target-scaffold.md](commands/target-scaffold.md).
 
+### dali target info
+
+Resolves machine-readable transport metadata from a target profile. The field
+form is used by repository workflows so chip identifiers remain in manifests.
+
+~~~text
+dali target info <profile> --field probe-chip
+~~~
+
 ### dali package
 
 Creates an AMRN package from a linked native payload.

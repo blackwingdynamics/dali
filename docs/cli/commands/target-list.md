@@ -27,6 +27,7 @@ Each profile includes:
 - profile name;
 - board and MCU;
 - Rust compilation target;
+- declared probe chip identifier, when available;
 - AMRN target identifier;
 - ABI version.
 

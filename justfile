@@ -14,7 +14,6 @@ app_payload := "target/" + target + "/debug/" + app_binary + ".bin"
 app_package_file := "target/" + target + "/debug/hello.amrn"
 app_entry_offset := "0"
 renode_script := "simulation/renode/dali_blackpill.resc"
-f405_chip := env_var_or_default("DALI_F405_CHIP", "STM32F405RGTx")
 dfu_device := env_var_or_default("DALI_DFU_DEVICE", "0483:df11")
 usb_console_port := env_var_or_default("DALI_USB_CONSOLE_PORT", "")
 usb_console_baud := "115200"
@@ -101,7 +100,7 @@ package-hello: app-build
 # Flash the kernel with a connected probe. Requires probe-rs.
 flash-probe board="f405":
     just build {{board}}
-    {{ if board == "f405" { "probe-rs run --chip " + f405_chip + " " + kernel_elf } else { error("Unsupported board. Use f405.") } }}
+    probe-rs run --chip "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field probe-chip)" {{kernel_elf}}
 
 # Flash the raw binary through STM32 DFU mode. Requires dfu-util and host permissions.
 flash-dfu board="f405":
@@ -113,8 +112,8 @@ console port=usb_console_port:
     bash scripts/console.sh "{{port}}" "{{usb_console_baud}}" "{{usb_console_retry_delay}}"
 
 # Attach to a running target and stream supported debug output.
-attach:
-    probe-rs attach --chip {{chip}}
+attach board="f405":
+    probe-rs attach --chip "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field probe-chip)"
 
 # Check committed and working-tree whitespace errors.
 diff-check:

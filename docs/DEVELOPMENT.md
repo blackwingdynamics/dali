@@ -355,9 +355,8 @@ Connect the SWD probe, power the board safely, and run:
 just flash-probe
 ```
 
-This builds the ELF and runs it through `probe-rs` using the configured
-STM32F405 chip identifier. Use `DALI_F405_CHIP` to override the identifier
-when the probe reports a different compatible name.
+This builds the ELF and runs it through `probe-rs` using the chip identifier
+resolved from the selected target manifest.
 
 ### 5. Flash through STM32 DFU mode
 

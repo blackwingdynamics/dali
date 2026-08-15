@@ -63,6 +63,7 @@ exist.
 - [Doctor](commands/doctor.md) — host and toolchain diagnostics.
 - [Target list](commands/target-list.md) — supported target profiles.
 - [Target scaffold](commands/target-scaffold.md) — reviewable board backend scaffold generation.
+- Target info — machine-readable target transport metadata for repository workflows.
 - [Workflows](WORKFLOWS.md) — end-to-end user procedures.
 - [Output](OUTPUT.md) — output and stream conventions.
 - [Errors](ERRORS.md) — failure categories and recovery guidance.

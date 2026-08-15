@@ -3,6 +3,7 @@ name = "f405"
 board = "WeAct Studio STM32F405RGT6 Core Board"
 mcu = "STM32F405RGT6"
 rust_target = "thumbv7em-none-eabihf"
+probe_chip = "STM32F405RGTx"
 application_supported = true
 amrn_target_id = 0x02
 abi_version = 2
