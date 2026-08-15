@@ -21,7 +21,7 @@ workspace = true
 
 [dependencies]
 dali-amrn = { path = "../crates/dali-amrn" }
-dali-sdk = { path = "../crates/dali-sdk" }
+dali = { path = "../crates/dali-sdk" }
 dali-usb = { path = "../crates/dali-usb" }
 cortex-m = "0.7"
 cortex-m-rt = "0.7"

@@ -2,7 +2,7 @@
 #![no_main]
 
 use core::panic::PanicInfo;
-use dali_sdk::ServiceTable;
+use dali::ServiceTable;
 
 const GPIOB_BASE_ADDRESS: usize = 0x4002_0400;
 const GPIOB_MODER_OFFSET: usize = 0x00;
@@ -34,9 +34,7 @@ pub unsafe extern "C" fn amiran_entry(services: *const ServiceTable) -> ! {
         "Hello World from AMRN",
         "Hello World from AMRN",
     ];
-    let delivered = messages
-        .iter()
-        .all(|message| dali_sdk::log(services, message));
+    let delivered = messages.iter().all(|message| dali::log(services, message));
     configure_status_led();
     loop {
         set_status_led(delivered);

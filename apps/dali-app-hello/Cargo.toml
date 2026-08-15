@@ -5,7 +5,7 @@ edition = "2024"
 publish = false
 
 [dependencies]
-dali-sdk = { path = "../../crates/dali-sdk" }
+dali = { path = "../../crates/dali-sdk" }
 
 [features]
 embedded-payload = []
