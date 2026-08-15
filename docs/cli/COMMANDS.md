@@ -18,6 +18,18 @@ hardware tools.
 
 See [commands/doctor.md](commands/doctor.md).
 
+### dali device list
+
+Lists devices visible through the supported host transports without changing
+device state:
+
+~~~text
+dali device list
+~~~
+
+See [DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md) for the normalized record and
+failure contract.
+
 ### dali target list
 
 Lists the current Dali application target profiles and their AMRN/ABI
@@ -103,6 +115,6 @@ derived from the same manifest.
 ## Unsupported commands
 
 Unknown commands fail with usage information. Hardware flashing, SD-card
-installation, device discovery commands, package listing, and interactive
+installation, package listing, and interactive
 terminal operations are not currently implemented. The device discovery
-contract is defined separately for the upcoming `dali device list` command.
+contract is defined separately in [DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md).

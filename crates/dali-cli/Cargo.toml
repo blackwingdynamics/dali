@@ -9,6 +9,7 @@ workspace = true
 
 [dependencies]
 dali-amrn = { path = "../dali-amrn" }
+dali-device = { path = "../dali-device" }
 dali-targets = { path = "../dali-targets" }
 
 [[bin]]

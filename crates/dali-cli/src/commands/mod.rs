@@ -1,4 +1,5 @@
 mod app;
+mod device;
 mod doctor;
 mod inspect;
 mod package;
@@ -7,6 +8,7 @@ mod target_info;
 
 const APP_COMMAND: &str = "app";
 const DOCTOR_COMMAND: &str = "doctor";
+const DEVICE_COMMAND: &str = "device";
 const PACKAGE_COMMAND: &str = "package";
 const INSPECT_COMMAND: &str = "inspect";
 const TARGET_COMMAND: &str = "target";
@@ -20,6 +22,7 @@ pub(super) fn run(arguments: Vec<String>) -> Result<(), String> {
     };
     match command.as_str() {
         APP_COMMAND => app::run(&arguments),
+        DEVICE_COMMAND => device::run(&arguments),
         DOCTOR_COMMAND => doctor::run(&arguments),
         PACKAGE_COMMAND => package::run(&arguments),
         INSPECT_COMMAND => inspect::run(&arguments),
@@ -38,6 +41,6 @@ pub(super) fn required_flag(arguments: &[String], flag: &str) -> Result<String, 
 
 fn usage() -> String {
     format!(
-        "usage:\n  dali doctor\n  dali target list\n  dali target info <profile> [--field probe-chip]\n  dali target scaffold <profile> [--output <workspace-root>]\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
+        "usage:\n  dali doctor\n  dali device list\n  dali target list\n  dali target info <profile> [--field probe-chip]\n  dali target scaffold <profile> [--output <workspace-root>]\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
     )
 }

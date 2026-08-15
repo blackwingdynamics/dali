@@ -88,8 +88,9 @@ occur after discovery and must not alter adapter behavior.
 
 ## Output contract
 
-The default `dali device list` presentation is human-readable and stable in
-field names. It must not include secrets or unrestricted kernel/USB dumps. A
+The initial `dali device list` presentation is human-readable and stable in
+field names. It currently reports probe and DFU records; CDC discovery remains
+pending a stable host identity adapter. The output must not include secrets or unrestricted kernel/USB dumps. A
 future structured output mode may expose the normalized record fields, but it
 must be explicitly versioned before scripts depend on it.
 
