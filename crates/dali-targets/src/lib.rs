@@ -1,0 +1,117 @@
+#![no_std]
+
+//! Typed target metadata generated from repository board manifests.
+
+/// Metadata required to build and validate an application for a Dali target.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TargetProfile {
+    /// Stable profile name used by Dali commands.
+    pub name: &'static str,
+    /// Human-readable board name.
+    pub board: &'static str,
+    /// MCU identifier supplied by the board manufacturer.
+    pub mcu: &'static str,
+    /// Rust compilation target triple.
+    pub rust_target: &'static str,
+    /// AMRN target identifier assigned by the package contract.
+    pub amrn_target_id: u8,
+    /// Application ABI version.
+    pub abi_version: u8,
+    /// Board clock metadata.
+    pub clock: ClockProfile,
+    /// Board memory regions used by the kernel and applications.
+    pub memory: MemoryProfile,
+    /// Logical status LED metadata.
+    pub status_led: PinProfile,
+    /// USB FS data-pin metadata.
+    pub usb: UsbProfile,
+    /// Storage bus metadata.
+    pub storage: StorageProfile,
+}
+
+/// Clock values declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ClockProfile {
+    /// External high-speed oscillator frequency in hertz.
+    pub hse_hz: u32,
+    /// Target system clock frequency in hertz.
+    pub system_hz: u32,
+    /// USB clock domain frequency in hertz.
+    pub usb_hz: u32,
+}
+
+/// SRAM regions declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct MemoryProfile {
+    /// Start of the kernel-reserved region.
+    pub kernel_origin: u32,
+    /// Size of the kernel-reserved region in bytes.
+    pub kernel_length: u32,
+    /// Start of the application region.
+    pub application_origin: u32,
+    /// Size of the application region in bytes.
+    pub application_length: u32,
+    /// Start of the runtime and stack region.
+    pub runtime_origin: u32,
+    /// Size of the runtime and stack region in bytes.
+    pub runtime_length: u32,
+}
+
+/// A named GPIO pin declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PinProfile {
+    /// GPIO port name, for example `PB`.
+    pub port: &'static str,
+    /// GPIO pin number.
+    pub number: u8,
+    /// Alternate-function number, or zero for a GPIO mode.
+    pub alternate_function: u8,
+    /// Whether a high output means logically active.
+    pub active_high: bool,
+}
+
+/// USB data-pin metadata declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UsbProfile {
+    /// USB controller name.
+    pub controller: &'static str,
+    /// USB D- pin.
+    pub dm: PinProfile,
+    /// USB D+ pin.
+    pub dp: PinProfile,
+}
+
+/// Storage bus metadata declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StorageProfile {
+    /// Storage controller name.
+    pub controller: &'static str,
+    /// Number of data lines used by the storage bus.
+    pub bus_width: u8,
+    /// Clock pin.
+    pub clock: PinProfile,
+    /// Command pin.
+    pub command: PinProfile,
+    /// Data pins in bus order.
+    pub data: [PinProfile; 4],
+}
+
+include!(concat!(env!("OUT_DIR"), "/target_profiles.rs"));
+
+/// Finds a target profile by its stable manifest name.
+pub fn find_target(name: &str) -> Option<&'static TargetProfile> {
+    SUPPORTED_TARGETS.iter().find(|target| target.name == name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SUPPORTED_TARGETS;
+
+    #[test]
+    fn exposes_manifest_metadata() {
+        assert_eq!(SUPPORTED_TARGETS.len(), 1);
+        assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
+        assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
+        assert_eq!(SUPPORTED_TARGETS[0].storage.bus_width, 4);
+    }
+}
