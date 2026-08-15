@@ -7,6 +7,7 @@ const PROBE_RS_COMMAND: &str = "probe-rs";
 const PROBE_RS_LIST_ARGUMENTS: &[&str] = &["list"];
 const DFU_UTIL_COMMAND: &str = "dfu-util";
 const DFU_UTIL_LIST_ARGUMENTS: &[&str] = &["-l"];
+const NO_DEVICES_MESSAGE: &str = "No devices found.";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if arguments.get(1).map(String::as_str) != Some(LIST_COMMAND) || arguments.len() != 2 {
@@ -14,7 +15,11 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     }
     let (mut records, failures) = discover_all();
     records.extend(discover_cdc());
-    for record in normalize(records) {
+    let records = normalize(records);
+    if records.is_empty() && failures.is_empty() {
+        println!("{NO_DEVICES_MESSAGE}");
+    }
+    for record in records {
         println!("{}", render_record(&record));
     }
     if failures.is_empty() {
