@@ -73,6 +73,7 @@ exist.
 - [Testing](TESTING.md) — CLI validation strategy.
 - [Contributing](CONTRIBUTING.md) — rules for extending the CLI.
 - [Application project contract](APPLICATION_PROJECT.md) — scaffold and manifest contract.
+- [Device discovery](DEVICE_DISCOVERY.md) — transport-neutral discovery contract.
 
 Command-specific documentation lives in [commands/](commands/):
 

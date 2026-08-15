@@ -103,5 +103,6 @@ derived from the same manifest.
 ## Unsupported commands
 
 Unknown commands fail with usage information. Hardware flashing, SD-card
-installation, device discovery, package listing, and interactive terminal
-operations are not currently CLI commands.
+installation, device discovery commands, package listing, and interactive
+terminal operations are not currently implemented. The device discovery
+contract is defined separately for the upcoming `dali device list` command.

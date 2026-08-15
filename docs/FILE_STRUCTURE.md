@@ -123,6 +123,7 @@ dali-kernel/
 │   │   ├── TESTING.md
 │   │   ├── CONTRIBUTING.md
 │   │   ├── APPLICATION_PROJECT.md
+│   │   ├── DEVICE_DISCOVERY.md
 │   │   └── commands/
 │   │       ├── package.md
 │   │       ├── inspect.md
