@@ -23,6 +23,7 @@ workspace = true
 dali-amrn = { path = "../crates/dali-amrn" }
 dali = { path = "../crates/dali-sdk" }
 dali-usb = { path = "../crates/dali-usb" }
+dali-targets = { path = "../crates/dali-targets" }
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
 embedded-sdmmc = { version = "=0.10.0", default-features = false }

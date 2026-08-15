@@ -29,7 +29,7 @@ Each supported target manifest contains these sections:
 | Section | Purpose |
 | --- | --- |
 | `profile` | Stable profile name, board name, MCU, Rust target, AMRN target ID, and ABI version |
-| `clock` | HSE, system, and USB clock frequencies in hertz |
+| `clock` | HSE, system, APB1, APB2, and USB clock frequencies in hertz |
 | `memory` | Kernel, application, and runtime SRAM regions |
 | `status_led` | Logical status LED port, pin, alternate function, and polarity |
 | `usb` | USB controller and D-/D+ pins with alternate functions |

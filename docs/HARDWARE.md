@@ -60,6 +60,12 @@ board-local DMA2 Stream 3, Channel 4 receive path with an aligned word buffer
 for block reads. It is the current AMRN package target; AMRN target
 compatibility remains defined by `AMRN_FORMAT.md`.
 
+The manufacturer and target metadata for this board is declared in
+`targets/f405.toml`. The F405 backend consumes the generated clock profile and
+performs compile-time checks against the AMRN load-region and ABI contracts.
+Typed GPIO and peripheral ownership remains explicit in the backend because
+the HAL requires compile-time pin types and singleton peripheral ownership.
+
 ## Electrical requirements
 
 The SD interface must use the board's correct 3.3 V logic levels. The SD module, wiring, power supply, and chip-select pull-up behavior must be verified on the actual hardware before acceptance testing.

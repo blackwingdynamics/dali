@@ -135,6 +135,7 @@ dependencies = [
  "cortex-m-rt",
  "dali",
  "dali-amrn",
+ "dali-targets",
  "dali-usb",
  "embedded-sdmmc",
  "panic-halt",

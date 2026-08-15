@@ -238,7 +238,8 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Define declarative target manifests for manufacturer and compatibility metadata.
 - [x] Generate and validate a typed target registry from `targets/*.toml`.
 - [x] Centralize target profile metadata outside individual CLI commands.
-- [ ] Map every declarative target manifest to a typed kernel board backend.
+- [x] Connect the F405 backend clock and AMRN compatibility checks to its generated target profile.
+- [ ] Map every remaining declarative target manifest to a typed kernel board backend.
 - [ ] Add `dali target info <target>` for board, MCU, ABI, AMRN, and transport metadata.
 
 #### Device operations

@@ -9,6 +9,8 @@ abi_version = 2
 [clock]
 hse_hz = 8_000_000
 system_hz = 168_000_000
+pclk1_hz = 42_000_000
+pclk2_hz = 84_000_000
 usb_hz = 48_000_000
 
 [memory]

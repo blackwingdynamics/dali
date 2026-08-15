@@ -29,6 +29,8 @@ struct Profile {
 struct Clock {
     hse_hz: u32,
     system_hz: u32,
+    pclk1_hz: u32,
+    pclk2_hz: u32,
     usb_hz: u32,
 }
 
@@ -155,18 +157,24 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
 }
 
 fn generate_registry(manifests: &[Manifest]) -> String {
-    let profiles = manifests
+    let definitions = manifests
         .iter()
         .map(generate_profile)
         .collect::<Vec<_>>()
-        .join(",\n");
-    format!("pub const SUPPORTED_TARGETS: &[TargetProfile] = &[\n{profiles}\n];\n")
+        .join("\n");
+    let names = manifests
+        .iter()
+        .map(|manifest| constant_name(&manifest.profile.name))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("{definitions}\n\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{names}];\n")
 }
 
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "    TargetProfile {{ name: {name}, board: {board}, mcu: {mcu}, rust_target: {target}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }}",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, board: {board}, mcu: {mcu}, rust_target: {target}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        constant = constant_name(&profile.name),
         name = string_literal(&profile.name),
         board = string_literal(&profile.board),
         mcu = string_literal(&profile.mcu),
@@ -183,8 +191,8 @@ fn generate_profile(manifest: &Manifest) -> String {
 
 fn generate_clock(clock: &Clock) -> String {
     format!(
-        "ClockProfile {{ hse_hz: {}, system_hz: {}, usb_hz: {} }}",
-        clock.hse_hz, clock.system_hz, clock.usb_hz
+        "ClockProfile {{ hse_hz: {}, system_hz: {}, pclk1_hz: {}, pclk2_hz: {}, usb_hz: {} }}",
+        clock.hse_hz, clock.system_hz, clock.pclk1_hz, clock.pclk2_hz, clock.usb_hz
     )
 }
 
@@ -238,4 +246,18 @@ fn generate_storage(storage: &Storage) -> String {
 
 fn string_literal(value: &str) -> String {
     format!("{:?}", value)
+}
+
+fn constant_name(profile_name: &str) -> String {
+    let suffix = profile_name
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() {
+                character.to_ascii_uppercase()
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>();
+    format!("TARGET_{suffix}")
 }

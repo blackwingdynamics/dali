@@ -36,6 +36,10 @@ pub struct ClockProfile {
     pub hse_hz: u32,
     /// Target system clock frequency in hertz.
     pub system_hz: u32,
+    /// APB1 peripheral clock frequency in hertz.
+    pub pclk1_hz: u32,
+    /// APB2 peripheral clock frequency in hertz.
+    pub pclk2_hz: u32,
     /// USB clock domain frequency in hertz.
     pub usb_hz: u32,
 }
