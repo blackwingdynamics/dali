@@ -39,7 +39,8 @@ Record the board revision, SD-card type, wiring, power source, and probe before 
 ## 3. Required artifacts
 
 - kernel image built for STM32F405;
-- independently built `hello.amrn` package;
+- independently built `.amrn` package; `hello.amrn` is the reference
+  package name;
 - package built for `thumbv7em-none-eabihf`;
 - package load address: `0x20008000`;
 - package payload size no greater than 64 KiB;
@@ -58,9 +59,11 @@ unsafe extern "C" fn(*const ServiceTable) -> !
 
 1. Format the card as FAT16 or FAT32.
 2. Copy exactly one test package to the card root.
-3. Name the package `hello.amrn`.
+3. Use any valid `.amrn` filename; `hello.amrn` is only the reference
+   package name.
 4. Safely eject the card.
-5. Record the package filename, size, format version, load address, entry offset, and CRC32.
+5. Record the actual package filename, size, format version, load address,
+   entry offset, and CRC32.
 
 The MVP does not require package installation, package deletion, or hot swap. The card is inserted before reset and remains unchanged during the test.
 
@@ -104,7 +107,8 @@ Before application execution, the kernel reports storage state through the
 board-specific status LED: solid on when storage is ready, slow blinking when
 no card is detected, and fast blinking after a storage failure.
 
-After the loader prints `Jumping to entry point`, the kernel stops controlling the LED and the application produces a distinct pattern:
+After the loader validates the package and transfers control, the kernel stops
+controlling the LED and the application produces a distinct pattern:
 
 ```text
 three short flashes -> long pause -> repeat
@@ -120,9 +124,9 @@ The test passes only when all criteria are true:
 - [ ] The kernel image boots on the reference board.
 - [ ] The system clock reaches the documented target.
 - [ ] The status LED shows the correct storage status.
-- [ ] The SD card initializes over SPI1.
+- [ ] The SD card initializes over SDIO.
 - [ ] The FAT16/FAT32 filesystem is read successfully.
-- [ ] `/hello.amrn` is discovered.
+- [ ] Exactly one root `.amrn` package is discovered.
 - [ ] The 32-byte header is accepted.
 - [ ] The target and fixed load address are accepted.
 - [ ] The payload size is within the 64 KiB limit.
@@ -200,3 +204,17 @@ pattern was also observed on the refreshed package. This is evidence that the
 software path can recover after a clean card reseat; it also records that the
 current hardware setup is sensitive to SD-card contact or power quality. The
 observation does not identify which physical component is responsible.
+
+On 2026-08-16, the F405 board was programmed through the Pico 2 CMSIS-DAP
+probe while the STM32 USB CDC port was connected separately. The host
+identified the STM32 console as `/dev/ttyACM1`, distinct from the Pico's
+`/dev/ttyACM0`. The console received the complete boot sequence, successful
+SDIO initialization, block-zero read, AMRN validation, and three application
+log records. With the SD card removed, the board showed the documented slow
+storage-status blink. After the card was inserted, it showed three short
+application flashes followed by a long pause. Reset caused the USB CDC
+terminal to lose its port temporarily; reopening the console showed the boot
+and application logs again. This is hardware evidence for the storage-status
+and application LED distinction and CDC reset/reconnect behavior. The formal
+acceptance record still requires the board revision, power source, exact
+package revision and CRC32, and tester fields.

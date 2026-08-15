@@ -57,6 +57,11 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - On 2026-08-16, a Raspberry Pi Pico 2 running CMSIS-DAP successfully programmed
   the F405 through SWD. The firmware started immediately after probe flashing
   and the application logs were delivered through USB CDC.
+- On 2026-08-16, the F405 storage-status and application LED distinction was
+  physically verified: no SD card produced the slow storage-status blink, while
+  the inserted card produced three short application flashes followed by a
+  long pause. The STM32 CDC console also repeated the boot and application
+  logs after reset and reconnect.
 
 ### Incomplete or not yet accepted
 
