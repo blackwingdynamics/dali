@@ -13,7 +13,8 @@ dali app init
 `new` creates a new application directory and refuses to overwrite an
 existing path. `init` initializes the current directory using its directory
 name as the application name and refuses to replace any existing managed
-file. Neither command builds, packages, flashes, or writes to an SD card.
+file. `build` builds and packages locally; these commands do not flash
+hardware or write to an SD card.
 
 The command works both inside and outside a Dali workspace. Inside a workspace
 it discovers the local SDK automatically. Outside a workspace, the caller must
@@ -31,6 +32,8 @@ The scaffold must contain:
 ├── dali.toml
 ├── build.rs
 ├── memory.x
+├── .cargo/
+│   └── config.toml
 └── src/
     ├── lib.rs
     └── main.rs
@@ -43,14 +46,22 @@ The manifest declares an independent Cargo workspace so a scaffold created
 inside the Dali repository does not silently modify the root workspace's
 member set.
 
+The generated Cargo configuration adds the application linker script for the
+documented embedded target. This keeps standalone projects outside the Dali
+repository aligned with the same linker contract.
+
 `dali.toml` is the Dali project manifest. It owns application metadata and
 build configuration that must remain configurable:
 
 - application name and version;
 - SDK requirement;
-- target profile;
+- target profile, expressed as the documented Rust compilation target;
 - package output name;
 - entry symbol and entry offset policy.
+
+The generated project currently uses `thumbv7em-none-eabihf`. The build
+command passes this manifest-owned value to Cargo and does not embed a board
+name or target mapping in command logic.
 
 Board pins, memory addresses, ABI versions, and AMRN protocol values remain
 owned by documented target profiles and the AMRN/ABI contracts. The scaffold

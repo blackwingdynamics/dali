@@ -13,7 +13,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     fs::write(output, package).map_err(|error| format!("cannot write output: {error}"))
 }
 
-fn build_package(payload: &[u8], entry_offset: u32) -> Result<Vec<u8>, String> {
+pub(super) fn build_package(payload: &[u8], entry_offset: u32) -> Result<Vec<u8>, String> {
     let output_size = dali_amrn::HEADER_SIZE
         .checked_add(payload.len())
         .ok_or_else(|| "package size overflow".to_owned())?;

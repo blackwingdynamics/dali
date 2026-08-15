@@ -14,6 +14,7 @@ const BUILD_TEMPLATE: &str = include_str!("../../templates/app/build.rs.template
 const MEMORY_TEMPLATE: &str = include_str!("../../templates/app/memory.x.template");
 const LIB_TEMPLATE: &str = include_str!("../../templates/app/lib.rs.template");
 const MAIN_TEMPLATE: &str = include_str!("../../templates/app/main.rs.template");
+const CARGO_CONFIG_TEMPLATE: &str = include_str!("../../templates/app/config.toml.template");
 
 struct Template {
     relative_path: &'static str,
@@ -44,6 +45,10 @@ const TEMPLATES: &[Template] = &[
     Template {
         relative_path: "src/main.rs",
         contents: MAIN_TEMPLATE,
+    },
+    Template {
+        relative_path: ".cargo/config.toml",
+        contents: CARGO_CONFIG_TEMPLATE,
     },
 ];
 
@@ -174,6 +179,10 @@ fn create_project(parent: &Path, name: &str, sdk_path: &str) -> Result<(), Strin
 
     for template in TEMPLATES {
         let destination = project_directory.join(template.relative_path);
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|error| format!("cannot create {}: {error}", parent.display()))?;
+        }
         let contents = render(template.contents, name, sdk_path);
         fs::write(&destination, contents)
             .map_err(|error| format!("cannot write {}: {error}", destination.display()))?;

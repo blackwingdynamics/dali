@@ -227,10 +227,9 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Add host tests for application-name validation, template rendering, and scaffold file creation.
 - [x] Document the `dali app new` command and generated project contract.
 - [x] Support standalone scaffolding outside a Dali workspace through an explicit SDK path.
-- [ ] Add `dali app build` for the documented native target and profile selection.
-- [ ] Add `dali app package` as the application-oriented wrapper around AMRN package creation.
-- [ ] Add `dali app inspect` as the application-oriented package validation command.
-- [ ] Decide and document compatibility between the existing top-level `dali package`/`dali inspect` commands and the application command group.
+- [x] Add `dali app build` for the documented native target and profile selection.
+- [x] Add `dali app package` as the application-oriented wrapper around AMRN package creation.
+- [x] Decide and document compatibility between the existing top-level `dali package`/`dali inspect` commands and the application command group.
 
 #### Target and host diagnostics
 
