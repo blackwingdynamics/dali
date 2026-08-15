@@ -111,6 +111,9 @@ version = "0.1.0"
 [[package]]
 name = "dali-app-hello"
 version = "0.1.0"
+dependencies = [
+ "dali-sdk",
+]
 
 [[package]]
 name = "dali-cli"
@@ -126,6 +129,7 @@ dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "dali-amrn",
+ "dali-sdk",
  "dali-usb",
  "embedded-sdmmc",
  "panic-halt",

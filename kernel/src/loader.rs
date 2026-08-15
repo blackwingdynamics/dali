@@ -1,6 +1,7 @@
 //! AMRN package validation owned by the kernel loader boundary.
 
 use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, parse_header};
+use dali_sdk::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable};
 
 use crate::storage::{self, BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
 
@@ -33,7 +34,7 @@ where
 /// Transfers control to a previously validated and loaded native application.
 pub fn start_application(payload: ValidatedPayload) -> ! {
     let entry_address = payload.entry_address | 1;
-    let entry: unsafe extern "C" fn() -> ! = unsafe {
+    let entry: unsafe extern "C" fn(*const ServiceTable) -> ! = unsafe {
         // SAFETY: The parser checked the target, load range, entry offset, and alignment;
         // the loader copied the complete CRC-validated payload to that exact SRAM region.
         core::mem::transmute(entry_address as usize)
@@ -41,8 +42,45 @@ pub fn start_application(payload: ValidatedPayload) -> ! {
     unsafe {
         // SAFETY: The AMRN ABI requires a non-returning C entry point, and application
         // interrupts remain kernel-controlled for this MVP.
-        entry()
+        entry(&APPLICATION_SERVICES)
     }
+}
+
+static APPLICATION_SERVICES: ServiceTable = ServiceTable {
+    log: application_log,
+};
+
+unsafe extern "C" fn application_log(message: *const u8, length: usize) -> u32 {
+    let start = message as usize;
+    let end = match start.checked_add(length) {
+        Some(end) => end,
+        None => return LOG_REJECTED,
+    };
+    let application_start = dali_amrn::LOAD_ADDRESS as usize;
+    let application_end = match application_start.checked_add(dali_amrn::MAX_PAYLOAD_SIZE) {
+        Some(end) => end,
+        None => return LOG_REJECTED,
+    };
+    if length > MAX_LOG_MESSAGE_BYTES
+        || start < application_start
+        || end > application_end
+        || message.is_null()
+    {
+        return LOG_REJECTED;
+    }
+    let bytes = unsafe {
+        // SAFETY: The application ABI restricts the pointer and length to the
+        // validated native payload region before this slice is created.
+        core::slice::from_raw_parts(message, length)
+    };
+    let Ok(message) = core::str::from_utf8(bytes) else {
+        return LOG_REJECTED;
+    };
+    crate::logging::info(
+        crate::logging::APPLICATION_SUBSYSTEM,
+        format_args!("{}", message),
+    );
+    LOG_OK
 }
 
 fn validate_file<D>(file: &AmrnFile<'_, D>) -> Result<ValidatedPayload, LoaderError>

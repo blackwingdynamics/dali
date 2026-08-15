@@ -26,7 +26,7 @@ The first revision must use an explicitly documented byte layout. Rust struct la
 | `0x0C` | load_address | 4 bytes | Little-endian; MVP value is `0x20008000` |
 | `0x10` | execution_offset | 4 bytes | Little-endian offset from payload start |
 | `0x14` | crc32 | 4 bytes | Little-endian CRC32 of the payload |
-| `0x18` | abi_version | 1 byte | MVP value is `1` |
+| `0x18` | abi_version | 1 byte | Current MVP value is `2` |
 | `0x19` | flags | 1 byte | Reserved; must be zero in the MVP |
 | `0x1A` | reserved | 2 bytes | Must be zero in the MVP |
 | `0x1C` | reserved | 4 bytes | Must be zero in the MVP |

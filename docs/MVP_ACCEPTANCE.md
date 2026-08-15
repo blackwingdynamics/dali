@@ -45,13 +45,13 @@ Record the board revision, SD-card type, wiring, power source, and probe before 
 - package payload size no greater than 64 KiB;
 - package format version: `1`;
 - package target ID: `0x02` (`STM32F405RGT6`);
-- package ABI version: `1`;
+- package ABI version: `2`;
 - valid CRC32 over the payload.
 
 The package must use the documented entry ABI:
 
 ```rust
-unsafe extern "C" fn() -> !
+unsafe extern "C" fn(*const ServiceTable) -> !
 ```
 
 ## 4. SD-card preparation
@@ -95,7 +95,8 @@ The exact formatting may evolve, but the following events must be present and id
 [AMRN] Jumping to entry point
 ```
 
-The application must not depend on shared RTT logging for this acceptance test.
+The application submits its messages through the kernel service table; it must
+not access RTT or USB CDC directly.
 
 ## 7. Expected LED behavior
 
@@ -129,6 +130,7 @@ The test passes only when all criteria are true:
 - [ ] The payload is copied to the reserved SRAM region.
 - [ ] The entry address is validated and the Thumb bit is set.
 - [ ] Control is transferred to the application.
+- [ ] Three `[INFO][APP] Hello World from AMRN` messages are delivered.
 - [ ] The application produces the documented three-flash LED pattern.
 
 Build success, a valid parser test, or a simulated function-pointer call is not sufficient for an MVP pass.

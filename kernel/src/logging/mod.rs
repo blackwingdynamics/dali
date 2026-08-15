@@ -28,6 +28,8 @@ const USB_FLUSH_FAILURE_WARNING: &str =
 
 /// Stable subsystem label for bootstrap messages.
 pub const BOOT_SUBSYSTEM: &str = "BOOT";
+/// Subsystem label for messages submitted by a native application.
+pub const APPLICATION_SUBSYSTEM: &str = "APP";
 
 /// Message severity used by the kernel logging facade.
 #[derive(Clone, Copy)]

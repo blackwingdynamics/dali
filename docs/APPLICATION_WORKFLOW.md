@@ -44,9 +44,10 @@ The initial application is `apps/dali-app-hello`. It has two purposes:
 - `src/lib.rs` remains the host-testable application scaffold;
 - `src/main.rs` is the `no_std` native payload used by the embedded build.
 
-The current payload configures the F405 board's active-high PB2 status LED and
-alternates it with a bounded busy-loop period. This direct GPIO proof is
-board-specific application code; it is not a general SDK API.
+The current payload configures the F405 board's active-high PB2 status LED,
+submits three messages through the ABI v2 kernel logging service, and alternates
+the LED with a bounded busy-loop period. The direct GPIO proof is board-specific
+application code; the logging call crosses the documented service boundary.
 
 The embedded payload is enabled explicitly with the `embedded-payload` Cargo
 feature. This prevents the native entry binary from being built as part of
@@ -57,7 +58,7 @@ places the native entry section first:
 
 - load address: `0x20008000`;
 - application region: 64 KiB;
-- entry ABI: `unsafe extern "C" fn() -> !`.
+- entry ABI: `unsafe extern "C" fn(*const ServiceTable) -> !`.
 
 These values belong to the ABI and memory-layout contracts. An application must
 not choose a different load address or entry convention independently.
