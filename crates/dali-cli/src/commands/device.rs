@@ -8,6 +8,9 @@ const PROBE_RS_LIST_ARGUMENTS: &[&str] = &["list"];
 const DFU_UTIL_COMMAND: &str = "dfu-util";
 const DFU_UTIL_LIST_ARGUMENTS: &[&str] = &["-l"];
 const NO_DEVICES_MESSAGE: &str = "No devices found.";
+const DFU_PRODUCT_LABEL: &str = "DFU device";
+const UNDECLARED_VALUE: &str = "not declared";
+const UNIDENTIFIED_TARGET: &str = "not identified";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if arguments.get(1).map(String::as_str) != Some(LIST_COMMAND) || arguments.len() != 2 {
@@ -117,14 +120,15 @@ fn parse_dfu_inventory(output: &str) -> Vec<DeviceRecord> {
             if id.is_empty() {
                 return None;
             }
+            let (vendor, _) = id.split_once(':')?;
             Some(DeviceRecord {
                 id: id.to_owned(),
                 transport: Transport::Dfu,
                 target: None,
-                vendor: None,
-                product: Some(line.trim().to_owned()),
-                serial: None,
-                path: None,
+                vendor: Some(vendor.to_owned()),
+                product: Some(DFU_PRODUCT_LABEL.to_owned()),
+                serial: quoted_attribute(line, "serial"),
+                path: quoted_attribute(line, "path"),
                 state: State::Available,
                 capabilities: vec![Capability::Flash],
                 diagnostic: None,
@@ -138,8 +142,11 @@ fn discover_cdc() -> Vec<DeviceRecord> {
 }
 
 fn render_record(record: &DeviceRecord) -> String {
-    let product = record.product.as_deref().unwrap_or("not declared");
-    let target = record.target.as_deref().unwrap_or("not identified");
+    let product = record.product.as_deref().unwrap_or(UNDECLARED_VALUE);
+    let target = record.target.as_deref().unwrap_or(UNIDENTIFIED_TARGET);
+    let vendor = record.vendor.as_deref().unwrap_or(UNDECLARED_VALUE);
+    let serial = record.serial.as_deref().unwrap_or(UNDECLARED_VALUE);
+    let path = record.path.as_deref().unwrap_or(UNDECLARED_VALUE);
     let capabilities = record
         .capabilities
         .iter()
@@ -147,13 +154,23 @@ fn render_record(record: &DeviceRecord) -> String {
         .collect::<Vec<_>>()
         .join(",");
     format!(
-        "transport={} id={} state={} target={} product={} capabilities={capabilities}",
+        "transport={} id={} state={} target={} vendor={} product={} serial={} path={} capabilities={capabilities}",
         record.transport.as_str(),
         record.id,
         record.state.as_str(),
         target,
+        vendor,
         product,
+        serial,
+        path,
     )
+}
+
+fn quoted_attribute(line: &str, key: &str) -> Option<String> {
+    let marker = format!("{key}=\"");
+    let start = line.find(&marker)? + marker.len();
+    let end = line[start..].find('"')? + start;
+    Some(line[start..end].to_owned())
 }
 
 fn first_line(text: &str) -> Option<String> {
@@ -182,9 +199,15 @@ mod tests {
 
     #[test]
     fn parses_dfu_inventory_records() {
-        let records = parse_dfu_inventory("Found DFU: [0483:df11] ver=011a, devnum=1");
+        let records = parse_dfu_inventory(
+            "Found DFU: [0483:df11] ver=011a, path=\"1-10.1\", serial=\"3571\"",
+        );
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].id, "0483:df11");
+        assert_eq!(records[0].vendor.as_deref(), Some("0483"));
+        assert_eq!(records[0].serial.as_deref(), Some("3571"));
+        assert_eq!(records[0].path.as_deref(), Some("1-10.1"));
+        assert!(render_record(&records[0]).contains("product=DFU device"));
         assert!(render_record(&records[0]).contains("capabilities=flash"));
     }
 }
