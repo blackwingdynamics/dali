@@ -17,8 +17,11 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if arguments.get(1).map(String::as_str) != Some(LIST_COMMAND) || arguments.len() != 2 {
         return Err(usage());
     }
-    let (mut records, failures) = discover_all();
-    records.extend(discover_cdc());
+    let (mut records, mut failures) = discover_all();
+    match crate::commands::device_cdc::discover() {
+        Ok(found) => records.extend(found),
+        Err(error) => failures.push(error),
+    }
     let records = normalize(records);
     if records.is_empty() && failures.is_empty() {
         println!("{NO_DEVICES_MESSAGE}");
@@ -132,18 +135,10 @@ fn parse_dfu_inventory(output: &str) -> Vec<DeviceRecord> {
             let (vendor, product) = id.split_once(':')?;
             let vendor_id = parse_hex_id(vendor)?;
             let product_id = parse_hex_id(product)?;
-            let target = dali_targets::ALL_TARGETS
-                .iter()
-                .find(|profile| {
-                    profile.dfu.is_some_and(|dfu| {
-                        dfu.vendor_id == vendor_id && dfu.product_id == product_id
-                    })
-                })
-                .map(|profile| profile.name.to_owned());
             Some(DeviceRecord {
                 id: id.to_owned(),
                 transport: Transport::Dfu,
-                target,
+                target: target_for_dfu_ids(vendor_id, product_id),
                 vendor: Some(vendor.to_owned()),
                 product: Some(DFU_PRODUCT_LABEL.to_owned()),
                 serial: quoted_attribute(line, "serial"),
@@ -156,8 +151,15 @@ fn parse_dfu_inventory(output: &str) -> Vec<DeviceRecord> {
         .collect()
 }
 
-fn discover_cdc() -> Vec<DeviceRecord> {
-    Vec::new()
+fn target_for_dfu_ids(vendor_id: u16, product_id: u16) -> Option<String> {
+    dali_targets::ALL_TARGETS
+        .iter()
+        .find(|profile| {
+            profile.dfu.is_some_and(|identity| {
+                identity.vendor_id == vendor_id && identity.product_id == product_id
+            })
+        })
+        .map(|profile| profile.name.to_owned())
 }
 
 fn render_record(record: &DeviceRecord) -> String {

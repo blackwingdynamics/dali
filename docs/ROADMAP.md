@@ -256,7 +256,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 
 - [x] Define a transport-neutral device discovery contract.
 - [x] Add the hardware-neutral normalized device record model and ordering tests.
-- [x] Add `dali device list` for probe and DFU discovery; CDC adapter remains pending stable host identity support.
+- [x] Add `dali device list` for probe, DFU, and Linux CDC discovery; CDC records without serials remain explicitly unidentified.
 - [ ] Add `dali device info` for selected device and target metadata.
 - [ ] Add `dali device flash --transport dfu --target <target>`.
 - [ ] Add `dali device flash --transport probe --target <target>`.

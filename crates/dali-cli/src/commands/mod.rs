@@ -1,5 +1,6 @@
 mod app;
 mod device;
+mod device_cdc;
 mod doctor;
 mod inspect;
 mod package;

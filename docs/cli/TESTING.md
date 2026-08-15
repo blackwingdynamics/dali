@@ -10,6 +10,11 @@ The `dali-device` crate tests discovery-record ordering, same-transport
 deduplication, and stable transport/state/capability spellings without host
 hardware.
 
+The CLI also tests the pure Linux udev-property parser used by CDC discovery.
+The adapter can be exercised on Linux with `dali device list`; a visible
+`/dev/ttyACM*` device is required for a live CDC record. A CDC record without
+a serial number must remain `unidentified`.
+
 ## Integration checks
 
 The host validation set includes:

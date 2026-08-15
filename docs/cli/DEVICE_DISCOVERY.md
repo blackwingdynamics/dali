@@ -72,6 +72,11 @@ identity from a path alone because paths can change after reconnects. When the
 same physical device is visible through multiple transports, records remain
 separate because each transport represents a different operation boundary.
 
+Runtime CDC devices may not expose a serial number. In that case the Linux
+adapter may report a connection-scoped identity derived from udev's physical
+topology property, but it must mark the record `unidentified` and must not use
+that identity for target matching or unattended destructive operations.
+
 Within one transport, duplicate records with the same adapter-provided `id`
 are collapsed. Output ordering is deterministic: transport order follows the
 declared discovery transport registry, then records are ordered by `id`.
@@ -90,9 +95,11 @@ occur after discovery and must not alter adapter behavior.
 ## Output contract
 
 The initial `dali device list` presentation is human-readable and stable in
-field names. It currently reports probe and DFU records; CDC discovery remains
-pending a stable host identity adapter. The output must not include secrets or unrestricted kernel/USB dumps. A
-future structured output mode may expose the normalized record fields, but it
+field names. It reports probe, DFU, and Linux CDC records. CDC records without
+a declared serial are marked `unidentified` and use a connection-scoped udev
+topology identity. The output must not include secrets or unrestricted
+kernel/USB dumps. A future structured output mode may expose the normalized
+record fields, but it
 must be explicitly versioned before scripts depend on it.
 
 An empty result is successful and distinct from an adapter error. Hardware
