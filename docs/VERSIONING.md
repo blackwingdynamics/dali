@@ -7,7 +7,7 @@ Dali OS has several versioned contracts. They must not be treated as one number 
 | Component | Versioning scheme | Purpose |
 | --- | --- | --- |
 | Kernel | Semantic Versioning | Kernel runtime and service compatibility |
-| `dali-sdk` | Semantic Versioning | Application developer API |
+| `dali` | Semantic Versioning | Application developer API |
 | `dali-cli` | Semantic Versioning | Package and device tooling |
 | `.amrn` format | Integer format version | Binary package parsing rules |
 | Application ABI | Integer ABI version | Kernel-to-application entry contract |

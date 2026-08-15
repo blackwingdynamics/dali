@@ -52,7 +52,7 @@ Calling the entry point is `unsafe` because the kernel cannot prove that the loa
 
 ## Future ABI work
 
-Before `dali-sdk` is published, specify application context, task creation,
+Before `dali` is published, specify application context, task creation,
 service discovery, shutdown, health reporting, capability handles, version
 compatibility, and error representation. The v2 logging service is intentionally
 the smallest initial service surface.

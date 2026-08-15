@@ -77,7 +77,7 @@ Useful commands:
 ```text
 cargo check-kernel
 cargo build-kernel
-cargo test -p dali-sdk -p dali-app-hello -p dali-cli
+cargo test -p dali -p dali-app-hello -p dali-cli
 ```
 
 The complete development and hardware workflow is documented in [DEVELOPMENT.md](docs/DEVELOPMENT.md).

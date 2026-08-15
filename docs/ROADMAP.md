@@ -213,7 +213,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [ ] Specify service discovery and capabilities.
 - [ ] Add application lifecycle management.
 - [ ] Add fault and watchdog policy.
-- [ ] Add `dali-sdk`.
+- [ ] Expand the `dali` application SDK.
 - [ ] Add `dali-cli`.
 - [ ] Add signed package verification.
 - [ ] Add kernel secure boot.

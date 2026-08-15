@@ -14,7 +14,7 @@
 cargo fmt --all -- --check
 cargo check --workspace --exclude dali-kernel
 cargo check-kernel
-cargo test -p dali-sdk -p dali-app-hello -p dali-cli
+cargo test -p dali -p dali-app-hello -p dali-cli
 cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
 cargo clippy -p dali-kernel --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
 git diff --check

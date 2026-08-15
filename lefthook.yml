@@ -14,7 +14,7 @@ pre-commit:
     kernel-clippy:
       run: cargo clippy -p dali-kernel --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
     tests:
-      run: cargo test -p dali-sdk -p dali-app-hello -p dali-cli
+      run: cargo test -p dali -p dali-app-hello -p dali-cli
     diff:
       run: git diff --cached --check
 
