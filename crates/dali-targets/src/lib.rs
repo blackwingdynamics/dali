@@ -17,6 +17,8 @@ pub struct TargetProfile {
     pub rust_target: &'static str,
     /// Conventional kernel firmware artifact name, when declared.
     pub kernel_binary: Option<&'static str>,
+    /// Conventional kernel ELF artifact name, when declared.
+    pub kernel_elf: Option<&'static str>,
     /// Probe chip identifier used by the debug transport, when declared.
     pub probe_chip: Option<&'static str>,
     /// USB DFU identity used by the firmware download transport, when declared.

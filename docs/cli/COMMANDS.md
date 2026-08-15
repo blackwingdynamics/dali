@@ -51,14 +51,16 @@ Flashes an explicit firmware file through the target's declared DFU transport:
 ~~~text
 dali device flash f405
 dali device flash f405 --input custom.bin
+dali device flash f405 --transport probe
 dali device flash --transport dfu --target f405 --input <firmware>
 ~~~
 
 The short form resolves the conventional kernel artifact from the target
 manifest and workspace build directory. The explicit form remains available
 for custom paths. The target manifest supplies the DFU identity, alternate
-interface, flash address, and post-download transition. The command does not
-build the input, choose a target automatically, or support probe flashing yet.
+interface, flash address, and post-download transition. Probe flashing uses
+the target's declared probe chip and ELF artifact. The command does not build
+the input or choose a target automatically.
 
 ### dali target list
 

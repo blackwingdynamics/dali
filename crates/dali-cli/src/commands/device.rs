@@ -211,7 +211,7 @@ fn first_line(text: &str) -> Option<String> {
 }
 
 fn usage() -> String {
-    "usage:\n  dali device list\n  dali device console [--port <path>]\n  dali device flash <target> [--input <firmware>]\n  dali device flash --transport dfu --target <target> --input <firmware>"
+    "usage:\n  dali device list\n  dali device console [--port <path>]\n  dali device flash <target> [--transport <transport>] [--input <firmware>]\n  dali device flash --transport <transport> --target <target> --input <firmware>"
         .to_owned()
 }
 

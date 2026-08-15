@@ -82,7 +82,8 @@ The section is optional for profiles without a supported kernel build route.
 
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
-| `kernel_binary` | string | yes when section is present | Conventional firmware artifact name under the workspace target directory. |
+| `kernel_binary` | string | yes when section is present | Conventional raw firmware artifact name under the workspace target directory. |
+| `kernel_elf` | string | yes when section is present | Conventional ELF artifact name used by probe flashing. |
 
 The CLI combines this declared file name with the workspace build target and
 debug profile directories. It does not embed a board-specific artifact path.

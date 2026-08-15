@@ -259,7 +259,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Add `dali device list` for probe, DFU, and Linux CDC discovery; CDC records without serials remain explicitly unidentified.
 - [ ] Add `dali device info` for selected device and target metadata.
 - [x] Add manifest-driven DFU flashing with explicit flags and the short `dali device flash <target>` artifact form.
-- [ ] Add `dali device flash --transport probe --target <target>`.
+- [x] Add manifest-driven probe flashing with the short `dali device flash <target> --transport probe` form.
 - [x] Add `dali device console [--port <path>]` for the runtime CDC console.
 - [ ] Add `dali device attach --target <target>` for debug attachment.
 - [ ] Add hardware tests and evidence before marking device commands accepted.

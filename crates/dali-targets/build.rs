@@ -19,6 +19,7 @@ struct Manifest {
 #[derive(Debug, Deserialize)]
 struct Artifacts {
     kernel_binary: String,
+    kernel_elf: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -148,7 +149,7 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
             return Err(format!("target manifest {index} has an empty profile field").into());
         }
         if let Some(artifacts) = &manifest.artifacts
-            && artifacts.kernel_binary.is_empty()
+            && (artifacts.kernel_binary.is_empty() || artifacts.kernel_elf.is_empty())
         {
             return Err(format!(
                 "target manifest {} has an empty kernel artifact",
@@ -224,7 +225,7 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
@@ -236,6 +237,11 @@ fn generate_profile(manifest: &Manifest) -> String {
             .as_ref()
             .map(|artifacts| string_literal(&artifacts.kernel_binary))
             .map_or_else(|| "None".to_owned(), |binary| format!("Some({binary})")),
+        kernel_elf = manifest
+            .artifacts
+            .as_ref()
+            .map(|artifacts| string_literal(&artifacts.kernel_elf))
+            .map_or_else(|| "None".to_owned(), |elf| format!("Some({elf})")),
         probe_chip = profile
             .probe_chip
             .as_deref()

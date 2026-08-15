@@ -10,6 +10,7 @@ configuration.
 ```text
 dali device flash f405
 dali device flash f405 --input custom.bin
+dali device flash f405 --transport probe
 dali device flash --transport dfu --target f405 --input <firmware>
 ```
 
@@ -21,5 +22,6 @@ ID, product ID, alternate interface, flash address, and leave behavior from the
 target manifest. It then invokes `dfu-util` for the download.
 
 The command does not build firmware, select a target automatically, or flash
-through a debug probe. Verify the target and input path before running it;
-flashing changes device state.
+through a debug probe unless `--transport probe` is selected. Probe flashing
+uses the manifest's chip identifier and ELF artifact. Verify the target and
+input path before running it; flashing changes device state.

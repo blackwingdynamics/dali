@@ -10,6 +10,7 @@ abi_version = 2
 
 [artifacts]
 kernel_binary = "dali-kernel-f405.bin"
+kernel_elf = "dali-kernel"
 
 [profile.dfu]
 vendor_id = 0x0483

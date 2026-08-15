@@ -1,17 +1,12 @@
-use std::{env, fs, path::PathBuf, process::Command};
+use std::{env, path::PathBuf};
 
 const TRANSPORT_FLAG: &str = "--transport";
 const DFU_TRANSPORT: &str = "dfu";
+const PROBE_TRANSPORT: &str = "probe";
 const TARGET_FLAG: &str = "--target";
 const INPUT_FLAG: &str = "--input";
-const DFU_UTIL_COMMAND: &str = "dfu-util";
-const DEVICE_ARGUMENT: &str = "-d";
-const ALTERNATE_ARGUMENT: &str = "-a";
-const ADDRESS_ARGUMENT: &str = "-s";
-const DOWNLOAD_ARGUMENT: &str = "-D";
-const DOWNLOAD_ADDRESS_SEPARATOR: &str = ":";
-const ADDRESS_PREFIX: &str = "0x";
-const LEAVE_ARGUMENT: &str = "leave";
+const TARGET_DIRECTORY: &str = "target";
+const DEBUG_PROFILE_DIRECTORY: &str = "debug";
 const FLASH_ARGUMENT_COUNT: usize = 8;
 const COMMAND_INDEX: usize = 1;
 const TRANSPORT_FLAG_INDEX: usize = 2;
@@ -27,34 +22,20 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let request = FlashRequest::parse(arguments)?;
     let target = dali_targets::find_board(&request.target)
         .ok_or_else(|| format!("unknown target profile '{}'.", request.target))?;
-    let dfu = target
-        .dfu
-        .ok_or_else(|| format!("target '{}' has no DFU configuration.", target.name))?;
+    let transport = request.transport.as_deref().unwrap_or(DFU_TRANSPORT);
     let input = request
         .input
-        .or_else(|| default_input_path(target))
+        .or_else(|| default_input_path(target, transport))
         .ok_or_else(|| {
             "cannot determine the default firmware path; use --input <firmware>.".to_owned()
         })?;
-    let metadata =
-        fs::metadata(&input).map_err(|error| format!("cannot read firmware '{input}': {error}"))?;
-    if !metadata.is_file() {
-        return Err(format!("firmware input is not a regular file: {input}"));
-    }
-    let status = Command::new(DFU_UTIL_COMMAND)
-        .args(download_arguments(dfu, &input))
-        .status()
-        .map_err(|error| format!("failed to start {DFU_UTIL_COMMAND}: {error}"))?;
-    if status.success() {
-        Ok(())
-    } else {
-        Err(format!("{DFU_UTIL_COMMAND} exited with {status}"))
-    }
+    crate::commands::device_flash_transport::flash(target, transport, &input)
 }
 
 struct FlashRequest {
     target: String,
     input: Option<String>,
+    transport: Option<String>,
 }
 
 impl FlashRequest {
@@ -63,6 +44,7 @@ impl FlashRequest {
             [_, command, target] if command == FLASH_COMMAND && !target.is_empty() => Ok(Self {
                 target: target.clone(),
                 input: None,
+                transport: None,
             }),
             [_, command, target, flag, input]
                 if command == FLASH_COMMAND
@@ -73,18 +55,54 @@ impl FlashRequest {
                 Ok(Self {
                     target: target.clone(),
                     input: Some(input.clone()),
+                    transport: None,
+                })
+            }
+            [_, command, target, transport_flag, transport]
+                if command == FLASH_COMMAND
+                    && transport_flag == TRANSPORT_FLAG
+                    && !target.is_empty()
+                    && !transport.is_empty() =>
+            {
+                Ok(Self {
+                    target: target.clone(),
+                    input: None,
+                    transport: Some(transport.clone()),
+                })
+            }
+            [
+                _,
+                command,
+                target,
+                transport_flag,
+                transport,
+                input_flag,
+                input,
+            ] if command == FLASH_COMMAND
+                && transport_flag == TRANSPORT_FLAG
+                && input_flag == INPUT_FLAG
+                && !target.is_empty()
+                && !transport.is_empty()
+                && !input.is_empty() =>
+            {
+                Ok(Self {
+                    target: target.clone(),
+                    input: Some(input.clone()),
+                    transport: Some(transport.clone()),
                 })
             }
             _ if arguments.len() == FLASH_ARGUMENT_COUNT
                 && arguments.get(COMMAND_INDEX).map(String::as_str) == Some(FLASH_COMMAND)
                 && arguments.get(TRANSPORT_FLAG_INDEX).map(String::as_str)
                     == Some(TRANSPORT_FLAG)
-                && arguments.get(TRANSPORT_VALUE_INDEX).map(String::as_str)
-                    == Some(DFU_TRANSPORT)
+                && arguments
+                    .get(TRANSPORT_VALUE_INDEX)
+                    .is_some_and(|value| !value.is_empty())
                 && arguments.get(TARGET_FLAG_INDEX).map(String::as_str) == Some(TARGET_FLAG)
                 && arguments.get(INPUT_FLAG_INDEX).map(String::as_str) == Some(INPUT_FLAG) =>
             {
                 let target = arguments[TARGET_VALUE_INDEX].clone();
+                let transport = arguments[TRANSPORT_VALUE_INDEX].clone();
                 let input = arguments[INPUT_VALUE_INDEX].clone();
                 if target.is_empty() || input.is_empty() {
                     return Err(usage());
@@ -92,6 +110,7 @@ impl FlashRequest {
                 Ok(Self {
                     target,
                     input: Some(input),
+                    transport: Some(transport),
                 })
             }
             _ => Err(usage()),
@@ -99,14 +118,18 @@ impl FlashRequest {
     }
 }
 
-fn default_input_path(target: &dali_targets::TargetProfile) -> Option<String> {
-    let binary = target.kernel_binary?;
+fn default_input_path(target: &dali_targets::TargetProfile, transport: &str) -> Option<String> {
+    let binary = match transport {
+        DFU_TRANSPORT => target.kernel_binary?,
+        PROBE_TRANSPORT => target.kernel_elf?,
+        _ => return None,
+    };
     let workspace = workspace_root(env::current_dir().ok()?)?;
     Some(
         workspace
-            .join("target")
+            .join(TARGET_DIRECTORY)
             .join(target.rust_target)
-            .join("debug")
+            .join(DEBUG_PROFILE_DIRECTORY)
             .join(binary)
             .display()
             .to_string(),
@@ -124,35 +147,14 @@ fn workspace_root(mut directory: PathBuf) -> Option<PathBuf> {
     }
 }
 
-fn download_arguments(dfu: dali_targets::DfuProfile, input: &str) -> [String; 8] {
-    let device = format!("{:04X}:{:04X}", dfu.vendor_id, dfu.product_id);
-    let address = if dfu.leave {
-        format!(
-            "{ADDRESS_PREFIX}{:08X}{DOWNLOAD_ADDRESS_SEPARATOR}{LEAVE_ARGUMENT}",
-            dfu.address
-        )
-    } else {
-        format!("{ADDRESS_PREFIX}{:08X}", dfu.address)
-    };
-    [
-        DEVICE_ARGUMENT.to_owned(),
-        device,
-        ALTERNATE_ARGUMENT.to_owned(),
-        dfu.alternate.to_string(),
-        ADDRESS_ARGUMENT.to_owned(),
-        address,
-        DOWNLOAD_ARGUMENT.to_owned(),
-        input.to_owned(),
-    ]
-}
-
 fn usage() -> String {
-    "usage:\n  dali device flash <target> [--input <firmware>]\n  dali device flash --transport dfu --target <target> --input <firmware>".to_owned()
+    "usage:\n  dali device flash <target> [--transport <transport>] [--input <firmware>]\n  dali device flash --transport <transport> --target <target> --input <firmware>"
+        .to_owned()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{FlashRequest, download_arguments};
+    use super::FlashRequest;
 
     #[test]
     fn parses_the_explicit_dfu_request() {
@@ -172,6 +174,7 @@ mod tests {
         let request = FlashRequest::parse(&arguments).expect("documented flash request");
         assert_eq!(request.target, "f405");
         assert_eq!(request.input.as_deref(), Some("firmware.bin"));
+        assert_eq!(request.transport.as_deref(), Some("dfu"));
     }
 
     #[test]
@@ -183,6 +186,7 @@ mod tests {
         let request = FlashRequest::parse(&arguments).expect("short flash request");
         assert_eq!(request.target, "f405");
         assert_eq!(request.input, None);
+        assert_eq!(request.transport, None);
     }
 
     #[test]
@@ -197,32 +201,27 @@ mod tests {
     }
 
     #[test]
-    fn renders_manifest_driven_download_arguments() {
-        let dfu = dali_targets::DfuProfile {
-            vendor_id: 0x0483,
-            product_id: 0xDF11,
-            address: 0x0800_0000,
-            alternate: 0,
-            leave: true,
-        };
-        assert_eq!(
-            download_arguments(dfu, "firmware.bin"),
-            [
-                "-d",
-                "0483:DF11",
-                "-a",
-                "0",
-                "-s",
-                "0x08000000:leave",
-                "-D",
-                "firmware.bin"
-            ]
-            .map(str::to_owned)
-        );
+    fn accepts_probe_transport_with_a_target_and_input() {
+        let arguments = [
+            "device",
+            "flash",
+            "f405",
+            "--transport",
+            "probe",
+            "--input",
+            "kernel.elf",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+        let request = FlashRequest::parse(&arguments).expect("probe flash request");
+        assert_eq!(request.target, "f405");
+        assert_eq!(request.transport.as_deref(), Some("probe"));
+        assert_eq!(request.input.as_deref(), Some("kernel.elf"));
     }
 
     #[test]
-    fn rejects_non_dfu_transport() {
+    fn parses_non_dfu_transport_for_dispatch() {
         let arguments = [
             "device",
             "flash",
@@ -236,6 +235,7 @@ mod tests {
         .into_iter()
         .map(str::to_owned)
         .collect::<Vec<_>>();
-        assert!(FlashRequest::parse(&arguments).is_err());
+        let request = FlashRequest::parse(&arguments).expect("probe transport request");
+        assert_eq!(request.transport.as_deref(), Some("probe"));
     }
 }
