@@ -19,7 +19,7 @@ The central architectural idea is:
 - hardware services for sensors, motors, communication, storage, and power;
 - independently built and deployed applications;
 - a Rust SDK (`dali`);
-- a package and device-management CLI (`dali-cli`);
+- a package and device-management CLI (`dali` command, `dali-cli` package);
 - signed packages, compatibility checks, rollback, and safe recovery.
 
 ### Explicit non-goals for the first version
@@ -76,7 +76,7 @@ known before kernel startup.
 ## 5. Runtime layers
 
 ```text
-dali-cli
+dali
     |
     v
 .amrn package + CRC32 integrity check
@@ -302,7 +302,7 @@ After the MVP, the platform can grow toward:
 - MPU-backed memory protection where supported;
 - signed packages and secure boot;
 - A/B updates and rollback;
-- `dali` and `dali-cli` workflows.
+- `dali` CLI workflows.
 
 Safety-critical behavior such as emergency stop, watchdog policy, power handling, and actuator limits must remain kernel-owned even when mission logic is supplied by an application.
 

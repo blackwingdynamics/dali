@@ -21,7 +21,7 @@ target-native ELF linked for the application region
         v
 raw native payload binary
         |
-        | dali-cli package
+        | dali package
         v
 AMRN package (.amrn)
         |
@@ -100,7 +100,7 @@ The package command adds the documented AMRN v1 header, records the payload
 length and entry metadata, and calculates the CRC32 over the payload:
 
 ```text
-cargo run -p dali-cli -- package \
+cargo run -p dali-cli --bin dali -- package \
   --input target/thumbv7em-none-eabihf/debug/dali-app-hello.bin \
   --output target/thumbv7em-none-eabihf/debug/hello.amrn \
   --entry-offset 0
@@ -119,6 +119,35 @@ just package-hello
 
 The generated package is written under the target directory and is ignored by
 Git as a build artifact.
+
+## Inspect an AMRN package
+
+Use the host CLI to validate an existing package against the AMRN contract and
+print its decoded fields:
+
+```text
+cargo run -p dali-cli --bin dali -- inspect \
+  --input target/thumbv7em-none-eabihf/debug/hello.amrn
+```
+
+The command validates the header, target, ABI version, payload bounds,
+execution entry, CRC32, and exact file length. It does not modify the package.
+
+## Install the CLI
+
+Install the host CLI from the repository with Cargo:
+
+```text
+cargo install --path crates/dali-cli --locked
+```
+
+After installation, the user-facing executable is `dali`:
+
+```text
+dali inspect --input target/thumbv7em-none-eabihf/debug/hello.amrn
+```
+
+The Cargo package remains `dali-cli`; `dali` is the installed executable name.
 
 ## Install a package on the SD card
 
@@ -208,4 +237,4 @@ before the application is considered accepted.
   length, or CRC32 is invalid.
 
 Do not rename a source file to `.amrn`. The package must be produced from a
-linked native payload with `dali-cli package`.
+linked native payload with `dali package`.

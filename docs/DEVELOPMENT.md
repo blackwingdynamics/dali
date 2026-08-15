@@ -169,7 +169,7 @@ boot records.
 
 The repository is a Cargo workspace containing the kernel, the hardware-neutral
 `dali-usb` delivery primitives, the hardware-neutral `dali-amrn` format layer,
-the future `dali` package, the `dali-cli` package tool, and the initial
+the future `dali` package, the `dali` command package tool, and the initial
 demo-application scaffold. Run workspace commands from the repository root.
 
 `dali-usb` is `no_std` and has no MCU or HAL dependency. It owns only bounded
@@ -183,7 +183,7 @@ verification so the kernel and CLI can share the format contract.
 The host CLI can wrap a raw payload in a contract-valid AMRN package:
 
 ```text
-cargo run -p dali-cli -- package \
+cargo run -p dali-cli --bin dali -- package \
   --input <payload.bin> \
   --output <package.amrn> \
   --entry-offset <byte-offset>
@@ -192,6 +192,27 @@ cargo run -p dali-cli -- package \
 The entry offset is explicit because the package command does not infer symbol
 locations from an ELF file. The input must already be linked native payload
 for the documented target and load address.
+
+Inspect an existing package without changing it:
+
+```text
+cargo run -p dali-cli --bin dali -- inspect \
+  --input <package.amrn>
+```
+
+The inspection command reports the decoded header fields and rejects invalid
+AMRN data, CRC32 mismatches, and trailing bytes.
+
+To install the CLI locally and use it without `cargo run`:
+
+```text
+cargo install --path crates/dali-cli --locked
+dali inspect --input <package.amrn>
+```
+
+Cargo installs the executable under its configured binary directory, normally
+`~/.cargo/bin`. That directory must be in `PATH` for the `dali` command to be
+available directly.
 
 The embedded target is selected explicitly for kernel commands so host-side SDK and CLI tooling can be checked normally:
 
