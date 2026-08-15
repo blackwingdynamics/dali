@@ -255,7 +255,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Add manifest-driven DFU flashing with explicit flags and the short `dali device flash <target>` artifact form.
 - [x] Add manifest-driven probe flashing with the short `dali device flash <target> --transport probe` form.
 - [x] Add `dali device console [--port <path>]` for the runtime CDC console.
-- [ ] Add `dali device attach --target <target>` for debug attachment.
+- [x] Add `dali device attach --target <target>` for debug attachment.
 - [x] Record F405 hardware evidence for device discovery, USB CDC console,
   DFU flashing, and Pico CMSIS-DAP probe flashing.
 

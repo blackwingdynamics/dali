@@ -19,6 +19,9 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         Some(crate::commands::device_info::INFO_COMMAND) => {
             crate::commands::device_info::run(arguments)
         }
+        Some(crate::commands::device_attach::ATTACH_COMMAND) => {
+            crate::commands::device_attach::run(arguments)
+        }
         Some(crate::commands::device_console::CONSOLE_COMMAND) => {
             crate::commands::device_console::run(arguments)
         }

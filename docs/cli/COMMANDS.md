@@ -43,6 +43,18 @@ The selector may be the transport-provided device `id` shown by
 `dali device list`, or the device path when the transport exposes one. The
 command is read-only and does not reset, attach, flash, or open the device.
 
+### dali device attach
+
+Starts a debug attachment through the target's declared probe chip:
+
+~~~text
+dali device attach --target <target>
+~~~
+
+The command resolves the chip identifier from the generated target registry
+and invokes `probe-rs attach`. It requires a connected SWD probe and does not
+flash firmware.
+
 ### dali device console
 
 Opens the runtime USB CDC console with the host `picocom` command. With no
