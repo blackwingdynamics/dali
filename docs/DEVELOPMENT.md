@@ -118,6 +118,9 @@ the `embedded-sdmmc` volume close operation: that library updates the FAT32
 FSInfo sector during close, which conflicts with the kernel's read-only block
 device. The scan releases its directory and retains no usable volume handle
 after the manager is dropped.
+The root scan uses the FAT long-file-name API because the four-character
+`.amrn` extension cannot fit in an 8.3 short entry. Comparisons are ASCII
+case-insensitive for host-created names.
 
 ### USB CDC runtime console
 

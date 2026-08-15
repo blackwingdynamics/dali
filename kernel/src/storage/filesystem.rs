@@ -3,13 +3,15 @@
 use core::ops::ControlFlow;
 
 use crate::storage::StorageError;
-use embedded_sdmmc::{Error, TimeSource, Timestamp, VolumeIdx, VolumeManager};
-
-/// The first package base name used by the MVP acceptance application.
-pub const MVP_PACKAGE_BASE_NAME: &[u8] = b"HELLO";
+use embedded_sdmmc::{DirEntry, Error, LfnBuffer, TimeSource, Timestamp, VolumeIdx, VolumeManager};
 
 /// The package extension recognized by the MVP root-directory scan.
 pub const AMRN_EXTENSION: &[u8] = b"AMRN";
+// These bounds are defined by the FAT long-file-name representation and the
+// UTF-8 encoding used by `embedded-sdmmc`.
+const FAT_LFN_MAX_CHARACTERS: usize = 255;
+const UTF8_MAX_BYTES_PER_CHARACTER: usize = 3;
+const LFN_BUFFER_BYTES: usize = FAT_LFN_MAX_CHARACTERS * UTF8_MAX_BYTES_PER_CHARACTER;
 
 const DEFAULT_TIMESTAMP: Timestamp = Timestamp {
     year_since_1970: 56,
@@ -25,8 +27,6 @@ const DEFAULT_TIMESTAMP: Timestamp = Timestamp {
 pub struct RootDirectoryReport {
     /// Number of regular root entries with the AMRN extension.
     pub amrn_file_count: u32,
-    /// Whether the named MVP package was found.
-    pub mvp_package_found: bool,
 }
 
 /// Supplies a deterministic timestamp because the MVP has no RTC integration.
@@ -46,14 +46,12 @@ where
     let manager = VolumeManager::new(device, KernelTimeSource);
     let volume = manager.open_volume(VolumeIdx(0))?;
     let root = volume.open_root_dir()?;
-    let mut report = RootDirectoryReport {
-        amrn_file_count: 0,
-        mvp_package_found: false,
-    };
-    root.iterate_dir(|entry| {
-        if entry.name.extension() == AMRN_EXTENSION {
+    let mut lfn_storage = [0u8; LFN_BUFFER_BYTES];
+    let mut lfn_buffer = LfnBuffer::new(&mut lfn_storage);
+    let mut report = RootDirectoryReport { amrn_file_count: 0 };
+    root.iterate_dir_lfn(&mut lfn_buffer, |entry, long_name| {
+        if is_amrn_entry(entry, long_name) {
             report.amrn_file_count = report.amrn_file_count.saturating_add(1);
-            report.mvp_package_found |= entry.name.base_name() == MVP_PACKAGE_BASE_NAME;
         }
         ControlFlow::Continue(())
     })?;
@@ -63,4 +61,17 @@ where
     // the open raw handle and let the manager finish without a write-back.
     let _raw_volume = volume.to_raw_volume();
     Ok(report)
+}
+
+fn is_amrn_entry(entry: &DirEntry, long_name: Option<&str>) -> bool {
+    if entry.name.extension().eq_ignore_ascii_case(AMRN_EXTENSION) {
+        return true;
+    }
+    let Some(long_name) = long_name else {
+        return false;
+    };
+    let Some((_, extension)) = long_name.rsplit_once('.') else {
+        return false;
+    };
+    extension.as_bytes().eq_ignore_ascii_case(AMRN_EXTENSION)
 }

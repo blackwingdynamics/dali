@@ -45,13 +45,13 @@ Hardware tests should cover:
 - SPI1 SD initialization;
 - one known block read;
 - FAT16/FAT32 root-directory enumeration;
-- `.AMRN` extension filtering and `HELLO.AMRN` discovery;
+- `.AMRN` extension filtering and arbitrary package-name discovery;
 - payload copy to the reserved SRAM address `0x20008000`;
 - demo application entry;
 - deterministic application LED pattern.
 
 ## MVP acceptance test
 
-The MVP passes only when a freshly flashed kernel discovers `hello.amrn` on the SD card, validates its 32-byte header and CRC32, loads it into the reserved SRAM region, transfers control to `unsafe extern "C" fn() -> !`, and produces the documented application LED pattern on hardware.
+The MVP passes only when a freshly flashed kernel discovers an `.amrn` package on the SD card, validates its 32-byte header and CRC32, loads it into the reserved SRAM region, transfers control to `unsafe extern "C" fn() -> !`, and produces the documented application LED pattern on hardware.
 
 Build success, parser tests, or a simulated jump do not independently prove the end-to-end milestone.

@@ -112,6 +112,12 @@ the manager lifetime end without write-back. This preserves the read-only
 storage contract and treats a write request as unsupported rather than silently
 discarding it.
 
+AMRN root-directory matching uses the FAT long-file-name API and ASCII
+case-insensitive comparison. A four-character `.amrn` extension cannot fit in
+an 8.3 short entry, so short-name-only enumeration would miss packages. The
+filesystem layer reports package discovery generically; package selection is a
+higher-level loader policy.
+
 USB CDC logging has two deliberately separate ownership boundaries:
 
 - `crates/dali-usb/` contains only `no_std`, transport-neutral bounded delivery

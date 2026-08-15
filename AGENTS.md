@@ -11,7 +11,7 @@ The first milestone is deliberately narrow:
 1. boot a Rust kernel on the STM32F411CEU6 WeAct BlackPill;
 2. initialize the clock, PC13 status LED, and RTT logging;
 3. read a FAT16/FAT32 SD card over SPI1;
-4. discover `hello.amrn` in the card root;
+4. discover an `.amrn` package in the card root;
 5. validate a fixed 32-byte AMRN header and CRC32 payload checksum;
 6. load a native payload into the reserved SRAM region at `0x20008000`;
 7. transfer control to `unsafe extern "C" fn() -> !`;

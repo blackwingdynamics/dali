@@ -261,7 +261,7 @@ Use stable subsystem prefixes:
 ```text
 [INFO][BOOT] System clock: 100 MHz
 [INFO][SD] Card initialized
-[INFO][AMRN] Package found: /hello.amrn
+[INFO][AMRN] AMRN package discovered in the card root
 [INFO][AMRN] CRC32 valid
 [INFO][AMRN] Loading payload: 2048 bytes at 0x20008000
 [INFO][AMRN] Jumping to entry point
