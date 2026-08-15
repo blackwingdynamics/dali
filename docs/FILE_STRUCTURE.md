@@ -126,7 +126,8 @@ dali-kernel/
 │   │   └── commands/
 │   │       ├── package.md
 │   │       ├── inspect.md
-│   │       └── app-new.md
+│   │       ├── app-new.md
+│   │       └── target-info.md
 │   ├── boards/                # Generated board review checklists
 │   └── changelog/             # Archived generated release changelogs
 │       └── README.md

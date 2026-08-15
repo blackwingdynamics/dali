@@ -44,12 +44,24 @@ See [commands/target-scaffold.md](commands/target-scaffold.md).
 
 ### dali target info
 
-Resolves machine-readable transport metadata from a target profile. The field
-form is used by repository workflows so chip identifiers remain in manifests.
+Displays complete metadata from a target profile:
+
+~~~text
+dali target info <profile>
+~~~
+
+For repository workflows, the field form resolves machine-readable transport
+metadata so chip identifiers remain in manifests:
 
 ~~~text
 dali target info <profile> --field probe-chip
 ~~~
+
+The human-readable form reports the board, MCU, Rust target, probe identifier,
+application and AMRN compatibility, clock, memory, LED, USB, and storage
+metadata. The `probe-chip` form prints only the probe identifier.
+
+See [commands/target-info.md](commands/target-info.md).
 
 ### dali package
 

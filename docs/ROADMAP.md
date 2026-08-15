@@ -250,7 +250,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Add target scaffold generation for reviewable board backend templates.
 - [x] Document the complete `targets/*.toml` manifest contract and generation workflow.
 - [ ] Map every remaining declarative target manifest to a typed kernel board backend.
-- [ ] Add `dali target info <target>` for board, MCU, ABI, AMRN, and transport metadata.
+- [x] Add `dali target info <target>` for board, MCU, ABI, AMRN, memory, clock, and transport metadata, with a machine-readable probe-chip field.
 
 #### Device operations
 
