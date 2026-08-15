@@ -30,6 +30,18 @@ the remaining board metadata during the build.
 
 See [commands/target-list.md](commands/target-list.md).
 
+### dali target scaffold
+
+Generates a non-production board backend template and documentation checklist
+from an existing target profile. The command refuses to overwrite files and
+does not modify board module registration.
+
+~~~text
+dali target scaffold <profile> [--output <workspace-root>]
+~~~
+
+See [commands/target-scaffold.md](commands/target-scaffold.md).
+
 ### dali package
 
 Creates an AMRN package from a linked native payload.
