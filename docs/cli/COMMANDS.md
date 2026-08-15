@@ -26,15 +26,17 @@ See commands/inspect.md.
 
 ## Application commands
 
-The following command is supported:
+The following commands are supported:
 
 ```text
-dali app new <name>
+dali app new <name> [--sdk-path <path>]
+dali app init [--sdk-path <path>]
 ```
 
 See [commands/app-new.md](commands/app-new.md) and [Application project
 contract](APPLICATION_PROJECT.md) for the scaffold, manifest, and overwrite
-policy. `dali app init` remains planned.
+policy. See [commands/app-init.md](commands/app-init.md) for initialization
+of an existing directory.
 
 ## Unsupported commands
 

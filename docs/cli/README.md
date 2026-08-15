@@ -11,6 +11,7 @@ executable is named dali.
 | dali package | Wrap a linked native payload in an AMRN package | Supported |
 | dali inspect | Validate and display an AMRN package | Supported |
 | dali app new | Create a Dali application scaffold | Supported |
+| dali app init | Initialize the current directory as a Dali application | Supported |
 
 ## Documentation map
 
@@ -25,13 +26,14 @@ executable is named dali.
 - [Troubleshooting](TROUBLESHOOTING.md) — common host-side problems.
 - [Testing](TESTING.md) — CLI validation strategy.
 - [Contributing](CONTRIBUTING.md) — rules for extending the CLI.
-- [Application project contract](APPLICATION_PROJECT.md) — planned scaffold and manifest contract.
+- [Application project contract](APPLICATION_PROJECT.md) — scaffold and manifest contract.
 
 Command-specific documentation lives in [commands/](commands/):
 
 - [package](commands/package.md)
 - [inspect](commands/inspect.md)
 - [app new](commands/app-new.md)
+- [app init](commands/app-init.md)
 
 ## Scope boundary
 
@@ -41,4 +43,5 @@ contracts and are not implied by the current commands.
 
 Application scaffolding is available through `dali app new`, both inside a
 Dali workspace and outside it with an explicit `--sdk-path`. Initializing an
-existing directory with `dali app init` remains planned.
+existing directory is available through `dali app init`; it never overwrites
+existing managed files.

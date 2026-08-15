@@ -31,6 +31,6 @@ pub(super) fn required_flag(arguments: &[String], flag: &str) -> Result<String, 
 
 fn usage() -> String {
     format!(
-        "usage:\n  dali app new <name> [--sdk-path <path>]\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
+        "usage:\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
     )
 }

@@ -71,7 +71,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_name(name: &str) -> Result<(), String> {
+pub(super) fn validate_name(name: &str) -> Result<(), String> {
     let is_single_component = Path::new(name)
         .components()
         .all(|component| matches!(component, Component::Normal(_)));
@@ -84,7 +84,10 @@ fn validate_name(name: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn resolve_sdk_directory(start: &Path, override_path: Option<&Path>) -> Result<PathBuf, String> {
+pub(super) fn resolve_sdk_directory(
+    start: &Path,
+    override_path: Option<&Path>,
+) -> Result<PathBuf, String> {
     let sdk_directory = if let Some(path) = override_path {
         let path = if path.is_absolute() {
             path.to_path_buf()
@@ -131,7 +134,7 @@ fn validate_sdk_directory(sdk_directory: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn relative_path(from: &Path, to: &Path) -> Result<String, String> {
+pub(super) fn relative_path(from: &Path, to: &Path) -> Result<String, String> {
     let from_components: Vec<_> = from.components().collect();
     let to_components: Vec<_> = to.components().collect();
     let common_length = from_components
@@ -178,6 +181,34 @@ fn create_project(parent: &Path, name: &str, sdk_path: &str) -> Result<(), Strin
     Ok(())
 }
 
+pub(super) fn initialize_project(
+    project_directory: &Path,
+    name: &str,
+    sdk_path: &str,
+) -> Result<(), String> {
+    for template in TEMPLATES {
+        let destination = project_directory.join(template.relative_path);
+        if destination.exists() {
+            return Err(format!(
+                "refusing to overwrite existing managed file {}",
+                destination.display()
+            ));
+        }
+    }
+
+    for template in TEMPLATES {
+        let destination = project_directory.join(template.relative_path);
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|error| format!("cannot create {}: {error}", parent.display()))?;
+        }
+        let contents = render(template.contents, name, sdk_path);
+        fs::write(&destination, contents)
+            .map_err(|error| format!("cannot write {}: {error}", destination.display()))?;
+    }
+    Ok(())
+}
+
 fn render(template: &str, name: &str, sdk_path: &str) -> String {
     template
         .replace(APPLICATION_NAME_TOKEN, name)
@@ -190,7 +221,7 @@ fn usage() -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{create_project, render, validate_name};
+    use super::{create_project, initialize_project, render, validate_name};
     use std::{
         env, fs,
         time::{SystemTime, UNIX_EPOCH},
@@ -229,6 +260,21 @@ mod tests {
         assert!(root.join("demo/Cargo.toml").is_file());
         assert!(root.join("demo/dali.toml").is_file());
         assert!(root.join("demo/src/main.rs").is_file());
+        fs::remove_dir_all(root)?;
+        Ok(())
+    }
+
+    #[test]
+    fn initializes_only_an_empty_managed_project() -> Result<(), Box<dyn std::error::Error>> {
+        let suffix = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+        let root = env::temp_dir().join(format!("dali-cli-app-init-{suffix}"));
+        fs::create_dir(&root)?;
+        fs::write(root.join("README.md"), "user content")?;
+        initialize_project(&root, "demo", "../crates/dali-sdk")?;
+        assert!(root.join("Cargo.toml").is_file());
+        assert!(root.join("README.md").is_file());
+        let result = initialize_project(&root, "demo", "../crates/dali-sdk");
+        assert!(result.is_err());
         fs::remove_dir_all(root)?;
         Ok(())
     }

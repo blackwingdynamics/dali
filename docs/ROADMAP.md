@@ -222,7 +222,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 
 - [x] Define the application project manifest and scaffold contract.
 - [x] Add `dali app new <name>` to create a new application scaffold.
-- [ ] Add `dali app init` to initialize an existing directory as a Dali application.
+- [x] Add `dali app init` to initialize an existing directory as a Dali application.
 - [x] Add reproducible application template assets without embedding board-specific values in command logic.
 - [x] Add host tests for application-name validation, template rendering, and scaffold file creation.
 - [x] Document the `dali app new` command and generated project contract.

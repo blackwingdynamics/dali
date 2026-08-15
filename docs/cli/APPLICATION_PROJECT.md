@@ -1,8 +1,7 @@
 # Dali Application Project Contract
 
 This document defines the project structure that `dali app new` and
-`dali app init` will create. The initial `new` command is implemented; `init`
-remains planned.
+`dali app init` create.
 
 ## Commands
 
@@ -12,9 +11,9 @@ dali app init
 ```
 
 `new` creates a new application directory and refuses to overwrite an
-existing path. `init` initializes the current directory and refuses to replace
-existing managed files. Neither command builds, packages, flashes, or writes
-to an SD card.
+existing path. `init` initializes the current directory using its directory
+name as the application name and refuses to replace any existing managed
+file. Neither command builds, packages, flashes, or writes to an SD card.
 
 The command works both inside and outside a Dali workspace. Inside a workspace
 it discovers the local SDK automatically. Outside a workspace, the caller must
