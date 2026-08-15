@@ -4,6 +4,7 @@
 pub(crate) mod board;
 mod bootstrap;
 pub mod drivers;
+pub mod loader;
 pub mod logging;
 pub mod storage;
 

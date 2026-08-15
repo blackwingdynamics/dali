@@ -3,7 +3,10 @@
 use core::ops::ControlFlow;
 
 use crate::storage::StorageError;
-use embedded_sdmmc::{DirEntry, Error, LfnBuffer, TimeSource, Timestamp, VolumeIdx, VolumeManager};
+use embedded_sdmmc::{
+    DirEntry, Error, LfnBuffer, Mode, RawFile, ShortFileName, TimeSource, Timestamp, VolumeIdx,
+    VolumeManager,
+};
 
 /// The package extension recognized by the MVP root-directory scan.
 pub const AMRN_EXTENSION: &[u8] = b"AMRN";
@@ -27,6 +30,43 @@ const DEFAULT_TIMESTAMP: Timestamp = Timestamp {
 pub struct RootDirectoryReport {
     /// Number of regular root entries with the AMRN extension.
     pub amrn_file_count: u32,
+}
+
+const MAX_OPEN_DIRECTORIES: usize = 4;
+const MAX_OPEN_FILES: usize = 4;
+const MAX_OPEN_VOLUMES: usize = 1;
+
+type FilesystemManager<D> =
+    VolumeManager<D, KernelTimeSource, MAX_OPEN_DIRECTORIES, MAX_OPEN_FILES, MAX_OPEN_VOLUMES>;
+
+/// A read-only stream for the single root AMRN package selected by the loader.
+pub struct AmrnFile<'a, D>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    manager: &'a FilesystemManager<D>,
+    raw_file: RawFile,
+    length: u32,
+}
+
+impl<D> AmrnFile<'_, D>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    /// Returns the file length recorded in the FAT directory entry.
+    pub const fn length(&self) -> u32 {
+        self.length
+    }
+
+    /// Reads the next bounded portion of the package.
+    pub fn read(&self, buffer: &mut [u8]) -> Result<usize, Error<StorageError>> {
+        self.manager.read(self.raw_file, buffer)
+    }
+
+    /// Rewinds the stream to the beginning of the package.
+    pub fn rewind(&self) -> Result<(), Error<StorageError>> {
+        self.manager.file_seek_from_start(self.raw_file, 0)
+    }
 }
 
 /// Supplies a deterministic timestamp because the MVP has no RTC integration.
@@ -61,6 +101,116 @@ where
     // the open raw handle and let the manager finish without a write-back.
     let _raw_volume = volume.to_raw_volume();
     Ok(report)
+}
+
+/// Runs a bounded read-only operation on the single root AMRN package.
+pub fn with_amrn_file<D, F, R, E>(
+    device: D,
+    callback: F,
+) -> Result<Result<R, E>, Error<StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+    F: for<'a> FnOnce(AmrnFile<'a, D>) -> Result<R, E>,
+{
+    let manager = VolumeManager::new(device, KernelTimeSource);
+    let volume = manager.open_volume(VolumeIdx(0))?;
+    let raw_volume = volume.to_raw_volume();
+    let root = manager.open_root_dir(raw_volume)?;
+    let candidate = match find_single_amrn(&manager, root) {
+        Ok(candidate) => candidate,
+        Err(error) => return abort_file_operation(&manager, root, None, error),
+    };
+    let raw_file = match manager.open_file_in_dir(root, candidate.name, Mode::ReadOnly) {
+        Ok(raw_file) => raw_file,
+        Err(error) => return abort_file_operation(&manager, root, None, error),
+    };
+    let length = match manager.file_length(raw_file) {
+        Ok(length) => length,
+        Err(error) => return abort_file_operation(&manager, root, Some(raw_file), error),
+    };
+    let result = callback(AmrnFile {
+        manager: &manager,
+        raw_file,
+        length,
+    });
+    finish_file_operation(&manager, root, raw_file, result)
+}
+
+fn abort_file_operation<D, R, E>(
+    manager: &FilesystemManager<D>,
+    root: embedded_sdmmc::RawDirectory,
+    raw_file: Option<RawFile>,
+    error: Error<StorageError>,
+) -> Result<Result<R, E>, Error<StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    let file_result = match raw_file {
+        Some(raw_file) => manager.close_file(raw_file),
+        None => Ok(()),
+    };
+    let dir_result = manager.close_dir(root);
+    match (file_result, dir_result) {
+        (Ok(()), Ok(())) => Err(error),
+        (Err(cleanup_error), _) | (_, Err(cleanup_error)) => Err(cleanup_error),
+    }
+}
+
+#[derive(Clone, Copy)]
+struct PackageCandidate {
+    name: ShortFileName,
+}
+
+fn find_single_amrn<D>(
+    manager: &FilesystemManager<D>,
+    root: embedded_sdmmc::RawDirectory,
+) -> Result<PackageCandidate, Error<StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    let mut lfn_storage = [0u8; LFN_BUFFER_BYTES];
+    let mut lfn_buffer = LfnBuffer::new(&mut lfn_storage);
+    let mut candidate = None;
+    let mut count = 0u8;
+    manager.iterate_dir_lfn(root, &mut lfn_buffer, |entry, long_name| {
+        if is_amrn_entry(entry, long_name) {
+            count = count.saturating_add(1);
+            if candidate.is_none() {
+                candidate = Some(PackageCandidate { name: entry.name });
+            }
+        }
+        ControlFlow::Continue(())
+    })?;
+    match (count, candidate) {
+        (0, _) => Err(Error::NotFound),
+        (1, Some(candidate)) => Ok(candidate),
+        _ => Err(Error::Unsupported),
+    }
+}
+
+fn finish_file_operation<D, R, E>(
+    manager: &FilesystemManager<D>,
+    root: embedded_sdmmc::RawDirectory,
+    raw_file: RawFile,
+    result: Result<R, E>,
+) -> Result<Result<R, E>, Error<StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+    E: Sized,
+{
+    let file_result = manager.close_file(raw_file);
+    let dir_result = manager.close_dir(root);
+    match result {
+        Err(error) => match (file_result, dir_result) {
+            (Ok(()), Ok(())) => Ok(Err(error)),
+            (Err(cleanup_error), _) | (_, Err(cleanup_error)) => Err(cleanup_error),
+        },
+        Ok(value) => {
+            file_result?;
+            dir_result?;
+            Ok(Ok(value))
+        }
+    }
 }
 
 fn is_amrn_entry(entry: &DirEntry, long_name: Option<&str>) -> bool {

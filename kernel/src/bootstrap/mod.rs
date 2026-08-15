@@ -110,21 +110,18 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
-            match crate::storage::filesystem::scan_root_directory(reader) {
-                Ok(report) => {
+            match crate::loader::validate_amrn_file(reader) {
+                Ok(_) => {
                     logging::info(
                         logging::BOOT_SUBSYSTEM,
-                        format_args!(
-                            "[STORAGE] Root scan found {} AMRN file(s)",
-                            report.amrn_file_count
-                        ),
+                        format_args!("[LOADER] AMRN header and payload validated"),
                     );
                     status::StorageStatus::Ready
                 }
                 Err(error) => {
                     logging::error(
                         logging::BOOT_SUBSYSTEM,
-                        format_args!("[STORAGE] Filesystem mount failed: {:?}", error),
+                        format_args!("[LOADER] AMRN validation failed: {:?}", error),
                     );
                     status::StorageStatus::Failure
                 }

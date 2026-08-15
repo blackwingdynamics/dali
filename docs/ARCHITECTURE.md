@@ -115,8 +115,10 @@ discarding it.
 AMRN root-directory matching uses the FAT long-file-name API and ASCII
 case-insensitive comparison. A four-character `.amrn` extension cannot fit in
 an 8.3 short entry, so short-name-only enumeration would miss packages. The
-filesystem layer reports package discovery generically; package selection is a
-higher-level loader policy.
+filesystem layer exposes a read-only stream for the single package selected by
+the MVP loader policy. Zero matching files is `NotFound`; more than one
+matching regular file is `Unsupported`. The loader never silently chooses
+between multiple application packages.
 
 The hardware-independent `dali-amrn` crate exposes header decoding and payload
 validation separately as well as a contiguous-package convenience API. The

@@ -35,6 +35,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - FAT long-file-name enumeration now discovers host-created packages with the four-character `.amrn` extension without a package-name assumption.
 - The `dali-amrn` crate decodes the fixed header, validates payload bounds and entry metadata, and verifies CRC32 with 15 host tests.
 - The AMRN parser exposes separate header and incremental payload validation for a bounded streaming loader, with host coverage for the split path.
+- The read-only filesystem boundary now exposes one selected root AMRN file as a bounded read/rewind stream and rejects ambiguous package selection.
+- The kernel loader validates the selected package header, exact file length, and payload CRC using bounded block-sized reads; successful validation is logged.
 
 ### Incomplete or not yet accepted
 
@@ -42,7 +44,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The interrupt-driven USB servicing strategy has target-build evidence but has not completed physical enumeration, reconnect, and boot-log acceptance.
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
 - The F405 SDIO path has not completed the documented hardware acceptance evidence.
-- AMRN parsing, CRC32 validation, RAM loading, application entry, SDK packaging, and CLI assembly remain incomplete.
+- RAM loading, application entry, SDK packaging, and CLI assembly remain incomplete.
 
 ### Current priority
 
@@ -166,7 +168,8 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Reject CRC32 mismatches.
 - [x] Expose separate header and payload validation for bounded loader reads.
 - [x] Expose incremental payload validation before the future SRAM copy pass.
-- [ ] Log successful header validation.
+- [x] Define the single-root-package selection policy for the loader boundary.
+- [x] Log successful header and payload validation.
 
 ## Phase 4 — RAM loading and execution
 
