@@ -1,8 +1,10 @@
 mod app;
+mod doctor;
 mod inspect;
 mod package;
 
 const APP_COMMAND: &str = "app";
+const DOCTOR_COMMAND: &str = "doctor";
 const PACKAGE_COMMAND: &str = "package";
 const INSPECT_COMMAND: &str = "inspect";
 const INPUT_FLAG: &str = "--input";
@@ -15,6 +17,7 @@ pub(super) fn run(arguments: Vec<String>) -> Result<(), String> {
     };
     match command.as_str() {
         APP_COMMAND => app::run(&arguments),
+        DOCTOR_COMMAND => doctor::run(&arguments),
         PACKAGE_COMMAND => package::run(&arguments),
         INSPECT_COMMAND => inspect::run(&arguments),
         _ => Err(usage()),
@@ -31,6 +34,6 @@ pub(super) fn required_flag(arguments: &[String], flag: &str) -> Result<String, 
 
 fn usage() -> String {
     format!(
-        "usage:\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
+        "usage:\n  dali doctor\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali package {INPUT_FLAG} <payload> {OUTPUT_FLAG} <package> {ENTRY_OFFSET_FLAG} <bytes>\n  dali inspect {INPUT_FLAG} <package>"
     )
 }

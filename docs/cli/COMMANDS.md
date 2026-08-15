@@ -11,6 +11,13 @@ cargo run -p dali-cli --bin dali -- <command> <options>
 
 ## Available commands
 
+### dali doctor
+
+Checks the host toolchain, embedded target, required build tools, and optional
+hardware tools.
+
+See [commands/doctor.md](commands/doctor.md).
+
 ### dali package
 
 Creates an AMRN package from a linked native payload.

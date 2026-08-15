@@ -8,6 +8,7 @@ executable is named dali.
 
 | Command | Purpose | Status |
 | --- | --- | --- |
+| dali doctor | Check host toolchain and embedded build prerequisites | Supported |
 | dali package | Wrap a linked native payload in an AMRN package | Supported |
 | dali inspect | Validate and display an AMRN package | Supported |
 | dali app new | Create a Dali application scaffold | Supported |
@@ -58,6 +59,7 @@ exist.
 - [Installation](INSTALLATION.md) — install and verify the executable.
 - [Quickstart](QUICKSTART.md) — first successful package workflow.
 - [Commands](COMMANDS.md) — command catalog and syntax.
+- [Doctor](commands/doctor.md) — host and toolchain diagnostics.
 - [Workflows](WORKFLOWS.md) — end-to-end user procedures.
 - [Output](OUTPUT.md) — output and stream conventions.
 - [Errors](ERRORS.md) — failure categories and recovery guidance.

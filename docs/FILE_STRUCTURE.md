@@ -161,6 +161,7 @@ The following order keeps each new file focused on one verifiable capability:
 28. `crates/dali-cli/src/commands/build.rs` — native application payload build.
 29. `crates/dali-cli/templates/app/config.toml.template` — standalone Cargo linker configuration.
 30. `crates/dali-cli/src/commands/app_package.rs` — application payload packaging.
+31. `crates/dali-cli/src/commands/doctor.rs` — host and toolchain diagnostics.
 27. `crates/dali-cli/templates/app/` — versioned application scaffold assets.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:

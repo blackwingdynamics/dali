@@ -233,7 +233,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 
 #### Target and host diagnostics
 
-- [ ] Add `dali doctor` for toolchain, target, host-permission, and required-tool diagnostics.
+- [x] Add `dali doctor` for toolchain, target, host-permission, and required-tool diagnostics.
 - [ ] Add `dali target list` for supported target profiles.
 - [ ] Add `dali target info <target>` for board, MCU, ABI, AMRN, and transport metadata.
 
