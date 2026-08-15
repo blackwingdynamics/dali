@@ -42,6 +42,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The validation payload is intentionally limited to package construction and loader validation; SRAM copying, native entry transfer, and LED acceptance remain incomplete.
 - The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
 - The loader now performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution remains unverified.
+- The validation payload now drives the F405 active-high PB2 LED with a deterministic native pattern; physical observation remains pending.
 
 ### Incomplete or not yet accepted
 
@@ -188,7 +189,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Keep application-owned interrupts disabled for the MVP.
 - [x] Define the application reset and return behavior.
 - [x] Provide the application entry-point transfer.
-- [ ] Produce the deterministic LED pattern from the demo application.
+- [x] Produce the deterministic LED pattern from the demo application.
 - [ ] Record the first end-to-end hardware acceptance result.
 
 ## Phase 5 — Developer workflow

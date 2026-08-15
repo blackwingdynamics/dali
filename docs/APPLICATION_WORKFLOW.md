@@ -42,6 +42,10 @@ The initial application is `apps/dali-app-hello`. It has two purposes:
 - `src/lib.rs` remains the host-testable application scaffold;
 - `src/main.rs` is the `no_std` native payload used by the embedded build.
 
+The current payload configures the F405 board's active-high PB2 status LED and
+alternates it with a bounded busy-loop period. This direct GPIO proof is
+board-specific application code; it is not a general SDK API.
+
 The embedded payload is enabled explicitly with the `embedded-payload` Cargo
 feature. This prevents the native entry binary from being built as part of
 ordinary host workspace tests.
