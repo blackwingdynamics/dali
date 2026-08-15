@@ -47,6 +47,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The loader performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution has been observed.
 - The validation payload defines the documented three-flash/long-pause F405 active-high PB2 LED pattern with host coverage and physical observation.
 - Board metadata is generated from typed registry data: F405 is application-supported, while the F411 manifest is a generator-only board profile without storage or AMRN compatibility claims.
+- The target manifest schema is documented with field rules and a complete F405 example.
 - The F411 kernel backend and its build/flash routes were removed; F405 is now the only kernel backend and hardware recipe.
 - ABI v2 now passes a bounded kernel service table to applications and exposes the first logging service; host evidence is passing.
 - On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package and logged successful AMRN validation; the earlier observed LED behavior was continuous slow blinking and did not satisfy the documented three-flash/long-pause pattern.
@@ -247,6 +248,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Centralize target profile metadata outside individual CLI commands.
 - [x] Connect the F405 backend clock and AMRN compatibility checks to its generated target profile.
 - [x] Add target scaffold generation for reviewable board backend templates.
+- [x] Document the complete `targets/*.toml` manifest contract and generation workflow.
 - [ ] Map every remaining declarative target manifest to a typed kernel board backend.
 - [ ] Add `dali target info <target>` for board, MCU, ABI, AMRN, and transport metadata.
 

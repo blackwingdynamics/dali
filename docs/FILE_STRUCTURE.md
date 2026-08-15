@@ -96,6 +96,8 @@ dali-kernel/
 │   ├── ARCHITECTURE.md
 │   ├── FILE_STRUCTURE.md
 │   ├── DOCUMENTATION_INDEX.md
+│   ├── TARGET_PROFILES.md
+│   ├── TARGET_MANIFEST.md
 │   ├── ROADMAP.md
 │   ├── CODING_STANDARDS.md
 │   ├── AMRN_FORMAT.md         # Binary package specification
