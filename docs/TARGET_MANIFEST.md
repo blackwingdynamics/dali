@@ -34,6 +34,7 @@ alphanumeric names consistent with existing commands.
 Every manifest contains:
 
 - `[profile]` — identity and Dali compatibility;
+- `[artifacts]` — optional conventional build artifact names;
 - `[profile.dfu]` — optional USB DFU identity and download configuration;
 - `[clock]` — oscillator and bus frequencies;
 - `[memory]` — kernel, application, and runtime regions;
@@ -74,6 +75,17 @@ The section is optional for profiles without a documented DFU transport.
 
 These values identify a transport endpoint only. They do not prove that the
 target firmware is valid or that flashing is safe.
+
+## `[artifacts]`
+
+The section is optional for profiles without a supported kernel build route.
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `kernel_binary` | string | yes when section is present | Conventional firmware artifact name under the workspace target directory. |
+
+The CLI combines this declared file name with the workspace build target and
+debug profile directories. It does not embed a board-specific artifact path.
 
 ## `[clock]`
 

@@ -8,6 +8,9 @@ application_supported = true
 amrn_target_id = 0x02
 abi_version = 2
 
+[artifacts]
+kernel_binary = "dali-kernel-f405.bin"
+
 [profile.dfu]
 vendor_id = 0x0483
 product_id = 0xDF11

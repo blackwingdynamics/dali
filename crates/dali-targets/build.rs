@@ -8,11 +8,17 @@ const GENERATED_FILE: &str = "target_profiles.rs";
 #[derive(Debug, Deserialize)]
 struct Manifest {
     profile: Profile,
+    artifacts: Option<Artifacts>,
     clock: Clock,
     memory: Memory,
     status_led: Pin,
     usb: Usb,
     storage: Option<Storage>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Artifacts {
+    kernel_binary: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -141,6 +147,15 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         {
             return Err(format!("target manifest {index} has an empty profile field").into());
         }
+        if let Some(artifacts) = &manifest.artifacts
+            && artifacts.kernel_binary.is_empty()
+        {
+            return Err(format!(
+                "target manifest {} has an empty kernel artifact",
+                manifest.profile.name
+            )
+            .into());
+        }
         if manifest.profile.application_supported
             && (manifest.profile.abi_version == 0 || manifest.profile.amrn_target_id == 0)
         {
@@ -209,13 +224,18 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
         board = string_literal(&profile.board),
         mcu = string_literal(&profile.mcu),
         target = string_literal(&profile.rust_target),
+        kernel_binary = manifest
+            .artifacts
+            .as_ref()
+            .map(|artifacts| string_literal(&artifacts.kernel_binary))
+            .map_or_else(|| "None".to_owned(), |binary| format!("Some({binary})")),
         probe_chip = profile
             .probe_chip
             .as_deref()

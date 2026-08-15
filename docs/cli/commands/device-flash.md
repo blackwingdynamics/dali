@@ -8,12 +8,16 @@ configuration.
 ## Usage
 
 ```text
+dali device flash f405
+dali device flash f405 --input custom.bin
 dali device flash --transport dfu --target f405 --input <firmware>
 ```
 
-The input must be an existing regular file. The command reads the selected
-target profile from the generated registry and obtains the DFU vendor ID,
-product ID, alternate interface, flash address, and leave behavior from the
+The short form uses the target manifest's declared kernel artifact under the
+workspace target directory. The `--input` form overrides that artifact path.
+The fully explicit form remains available for scripts. The command reads the
+selected target profile from the generated registry and obtains the DFU vendor
+ID, product ID, alternate interface, flash address, and leave behavior from the
 target manifest. It then invokes `dfu-util` for the download.
 
 The command does not build firmware, select a target automatically, or flash

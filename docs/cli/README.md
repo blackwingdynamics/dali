@@ -78,7 +78,7 @@ exist.
 - [Application project contract](APPLICATION_PROJECT.md) — scaffold and manifest contract.
 - [Device discovery](DEVICE_DISCOVERY.md) — transport-neutral discovery contract.
 - [Device console](commands/device-console.md) — runtime CDC console launcher.
-- [Device flash](commands/device-flash.md) — explicit DFU firmware flashing.
+- [Device flash](commands/device-flash.md) — manifest-driven DFU firmware flashing.
 
 Command-specific documentation lives in [commands/](commands/):
 
