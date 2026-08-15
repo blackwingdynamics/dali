@@ -94,6 +94,22 @@ dali-kernel/
 │   ├── MVP_ACCEPTANCE.md      # Physical MVP acceptance procedure
 │   ├── VERSIONING.md          # Component and compatibility versioning
 │   ├── SECURITY.md            # Security model and future guarantees
+│   ├── cli/                   # Production CLI documentation
+│   │   ├── README.md
+│   │   ├── INSTALLATION.md
+│   │   ├── QUICKSTART.md
+│   │   ├── COMMANDS.md
+│   │   ├── WORKFLOWS.md
+│   │   ├── OUTPUT.md
+│   │   ├── ERRORS.md
+│   │   ├── EXIT_CODES.md
+│   │   ├── COMPATIBILITY.md
+│   │   ├── TROUBLESHOOTING.md
+│   │   ├── TESTING.md
+│   │   ├── CONTRIBUTING.md
+│   │   └── commands/
+│   │       ├── package.md
+│   │       └── inspect.md
 │   └── changelog/             # Archived generated release changelogs
 │       └── README.md
 └── README.md                  # Public project introduction
