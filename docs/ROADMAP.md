@@ -204,8 +204,8 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Add a repeatable package assembly step for a raw payload.
 - [x] Add a package inspection command with contract and exact-length validation.
 - [x] Add package CRC32 generation through the package command.
-- [ ] Document the SD-card installation procedure.
-- [ ] Document the complete MVP demo procedure.
+- [x] Document the SD-card installation procedure.
+- [x] Document the complete MVP demo procedure and link the CLI workflow.
 
 ## Phase 6 — Post-MVP platform work
 

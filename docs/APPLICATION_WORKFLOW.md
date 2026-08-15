@@ -221,7 +221,7 @@ pass, copies only the validated payload into the reserved SRAM region, and
 transfers control through the validated ABI entry address. It preserves the
 existing bounds checks and keeps the unsafe operations centralized in the
 loader. Physical F405 testing has now shown the LED acceptance behavior once;
-repeatable reset and complete MVP acceptance evidence remain separate gates.
+repeatable reset and complete MVP acceptance evidence remain separate gates
 before the application is considered accepted.
 
 ## Troubleshooting boundaries
