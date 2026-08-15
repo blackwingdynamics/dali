@@ -46,15 +46,16 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - ABI v2 now passes a bounded kernel service table to applications and exposes the first logging service; host evidence is passing.
 - On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package, logged successful AMRN validation, and showed the native PB2 LED pattern after the kernel log stopped.
 - On 2026-08-15, the F405 board delivered three `[INFO][APP] Hello World from AMRN` records through USB CDC after AMRN validation. This is hardware evidence for the application logging service.
+- F405 hardware testing confirmed that boot logs and all three application records reappear after a board reset with the console already open, and after closing and reopening the USB CDC connection.
 
 ### Incomplete or not yet accepted
 
-- USB CDC boot logs are now observable through the terminal after reset through the SDIO initialization milestone. Full boot-log and reconnect acceptance remains incomplete.
-- The interrupt-driven USB servicing strategy has target-build evidence but has not completed physical enumeration, reconnect, and boot-log acceptance.
+- USB CDC boot logs are observable through the terminal after reset, and the targeted reset/reconnect test has passed. Formal MVP acceptance recording remains incomplete.
+- The interrupt-driven USB servicing strategy has completed the targeted F405 enumeration, reset, reconnect, and boot-log test; broader MVP acceptance remains a separate gate.
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
 - The F405 SDIO path has not completed the documented hardware acceptance evidence.
 - SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
-- Full MVP acceptance remains incomplete; application logging ABI v2 and the three-message hardware output are now evidenced, while the complete reset-to-application procedure and reconnect behavior still require acceptance evidence.
+- Full MVP acceptance remains incomplete despite hardware evidence for application logging, reset-to-application execution, and USB reconnect behavior; the formal acceptance record still requires the complete documented procedure.
 - A separate AMRN target profile for STM32F411 remains unspecified and is not part of the current execution work.
 
 ### Current priority
@@ -72,7 +73,7 @@ The next implementation must establish a tested USB lifecycle contract that can
 service enumeration, CDC control requests, and log delivery while storage is
 initializing. It must not rely on arbitrary sleeps, terminal-specific behavior,
 or unverified interrupt code. Initial F405 CDC delivery is now hardware-
-observed; reconnect and the remaining boot sequence are still pending.
+observed; the targeted reset and reconnect behavior is now evidenced.
 
 ### P0 handoff boundary
 
@@ -86,14 +87,14 @@ observed; reconnect and the remaining boot sequence are still pending.
   service budgets.
 - Simulation evidence: limited. Renode cannot exercise the production USB
   backend because its STM32F4 model lacks the required OTG_FS global registers.
-- F405 hardware evidence: Pico 2 SWD reaches the firmware, RTT shows boot logs
-  through SDIO initialization, and the host creates `/dev/ttyACM1` for the
-  runtime CDC device; `picocom` reports `Terminal ready` and receives the boot
-  logs through `[STORAGE] SDIO card initialized`.
-- Current fault boundary: initial CDC delivery is working. Full boot completion
-  and reconnect behavior remain unverified.
-- Required next input: one targeted reconnect test and evidence for the
-  remaining boot sequence.
+- F405 hardware evidence: direct USB DFU flashing produced a runtime CDC
+  device; `picocom` reported `Terminal ready` and received the complete boot,
+  AMRN validation, and three application records. A reset with the console
+  open repeated the sequence, and a USB disconnect/reconnect repeated it again.
+- Current fault boundary: the targeted CDC reset/reconnect behavior is working.
+  Formal MVP acceptance remains the remaining evidence gate.
+- Required next input: record the complete MVP acceptance result using the
+  documented procedure.
 
 ### Next atomic tasks
 
@@ -104,14 +105,14 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Verify the strategy with F405 target checks and strict Clippy.
 - [x] Record the first failed F405 enumeration evidence and keep it separate from CDC queue conclusions.
 - [x] Verify USB enumeration and `Terminal ready` on F405 hardware.
-- [ ] Verify that all boot logs appear after a reset with the terminal already connected.
-- [ ] Record the hardware evidence before marking USB boot logging complete.
+- [x] Verify that all boot logs appear after a reset with the terminal already connected.
+- [x] Record the hardware evidence before marking USB boot logging complete.
 - [x] Use Pico 2 SWD to identify that USB polling runs while storage is blocked and separate enumeration from CDC TX delivery.
 - [x] Preserve CDC TX data across software-buffer flush backpressure.
 - [x] Trigger USB service after queue insertion when the host is already configured.
 - [x] Retain boot logs until the CDC host-open signal is asserted.
 - [x] Verify initial CDC TX delivery after the targeted flush and host-open fixes.
-- [ ] Verify CDC TX reconnect behavior and the remaining boot sequence.
+- [x] Verify CDC TX reconnect behavior and the remaining boot sequence.
 
 ## Phase 0 — Documentation baseline
 
