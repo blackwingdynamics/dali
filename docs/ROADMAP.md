@@ -33,6 +33,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The DMA receive path now handles the observed `DCOUNT=0` and `NDTR=4` terminal tail with a bounded direct FIFO drain.
 - A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.
 - FAT long-file-name enumeration now discovers host-created packages with the four-character `.amrn` extension without a package-name assumption.
+- The `dali-amrn` crate decodes the fixed header, validates payload bounds and entry metadata, and verifies CRC32 with 15 host tests.
 
 ### Incomplete or not yet accepted
 
@@ -151,17 +152,17 @@ observed; reconnect and the remaining boot sequence are still pending.
 
 ## Phase 3 — AMRN parser and integrity
 
-- [ ] Define the fixed header as a Rust representation.
-- [ ] Add parser tests for a valid header.
-- [ ] Reject an invalid magic value.
-- [ ] Reject an unsupported format version.
-- [ ] Reject an unsupported target.
-- [ ] Reject truncated headers.
-- [ ] Reject integer-overflowing sizes and offsets.
-- [ ] Reject payloads outside the package.
-- [ ] Reject payloads larger than the reserved SRAM region.
-- [ ] Implement CRC32 for the payload.
-- [ ] Reject CRC32 mismatches.
+- [x] Define the fixed header as a Rust representation.
+- [x] Add parser tests for a valid header.
+- [x] Reject an invalid magic value.
+- [x] Reject an unsupported format version.
+- [x] Reject an unsupported target.
+- [x] Reject truncated headers.
+- [x] Reject integer-overflowing sizes and offsets.
+- [x] Reject payloads outside the package.
+- [x] Reject payloads larger than the reserved SRAM region.
+- [x] Implement CRC32 for the payload.
+- [x] Reject CRC32 mismatches.
 - [ ] Log successful header validation.
 
 ## Phase 4 — RAM loading and execution

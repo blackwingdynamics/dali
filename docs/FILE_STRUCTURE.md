@@ -63,6 +63,7 @@ dali-kernel/
 │       ├── Cargo.toml
 │       └── src/lib.rs         # Initial workspace scaffold
 ├── crates/
+│   ├── dali-amrn/             # AMRN format parser and validation
 │   ├── dali-sdk/              # Future application SDK
 │   │   ├── Cargo.toml
 │   │   └── src/lib.rs

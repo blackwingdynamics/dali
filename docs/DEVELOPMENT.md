@@ -169,13 +169,17 @@ boot records.
 ## Workspace and Git hooks
 
 The repository is a Cargo workspace containing the kernel, the hardware-neutral
-`dali-usb` delivery primitives, the future `dali-sdk`, the future `dali-cli`,
-and the initial demo-application scaffold. Run workspace commands from the
-repository root.
+`dali-usb` delivery primitives, the hardware-neutral `dali-amrn` format layer,
+the future `dali-sdk`, the future `dali-cli`, and the initial demo-application
+scaffold. Run workspace commands from the repository root.
 
 `dali-usb` is `no_std` and has no MCU or HAL dependency. It owns only bounded
 delivery mechanics that can be tested on the host. Board USB resources and
 production CDC servicing remain in the kernel logging backend.
+
+`dali-amrn` is `no_std` and has no filesystem, MCU, or HAL dependency. It owns
+explicit AMRN v1 header decoding, payload bounds, entry validation, and CRC32
+verification so the kernel and CLI can share the format contract.
 
 The embedded target is selected explicitly for kernel commands so host-side SDK and CLI tooling can be checked normally:
 

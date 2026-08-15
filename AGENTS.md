@@ -44,6 +44,7 @@ apps/dali-app-hello/  Independent demo application
 crates/dali-sdk/      Application SDK scaffold
 crates/dali-cli/      Package and device CLI scaffold
 crates/dali-usb/      Hardware-neutral bounded USB delivery primitives and host tests
+crates/dali-amrn/     Hardware-neutral AMRN format parser and validation
 docs/                 Architecture and process documentation
 scripts/              Validation and release automation
 .github/              CI, release workflow, and PR policy
@@ -55,6 +56,7 @@ Module ownership:
 - `kernel/src/board.rs` — board-specific pins, clocks, and peripheral ownership;
 - `kernel/src/logging/` — logging facade and hardware backend boundary;
 - `crates/dali-usb/` — transport-neutral bounded log delivery state and tests;
+- `crates/dali-amrn/` — AMRN header, payload bounds, and CRC32 validation;
 - `kernel/src/storage/` — SD and filesystem access;
 - `kernel/src/loader/` — AMRN parsing, CRC32, bounds checks, and execution;
 - `kernel/src/runtime/` — future tasks, scheduling, IPC, services, and watchdogs.

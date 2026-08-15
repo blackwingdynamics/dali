@@ -1,0 +1,237 @@
+#![no_std]
+
+//! Hardware-independent AMRN v1 header and payload validation.
+
+/// The fixed AMRN v1 header length in bytes.
+pub const HEADER_SIZE: usize = 32;
+/// The AMRN format revision implemented by this crate.
+pub const FORMAT_VERSION: u8 = 1;
+/// The STM32F411CEU6 target identifier defined by the v1 format.
+pub const TARGET_ID: u8 = 0x01;
+/// The ABI revision implemented by the v1 format.
+pub const ABI_VERSION: u8 = 1;
+/// The reserved flags value accepted by the v1 format.
+pub const RESERVED_FLAGS: u8 = 0;
+/// The reserved 16-bit field value accepted by the v1 format.
+pub const RESERVED_U16: u16 = 0;
+/// The reserved 32-bit field value accepted by the v1 format.
+pub const RESERVED_U32: u32 = 0;
+/// The native payload load address defined by the v1 format.
+pub const LOAD_ADDRESS: u32 = 0x2000_8000;
+/// The maximum native payload size defined by the v1 format.
+pub const MAX_PAYLOAD_SIZE: usize = 64 * 1024;
+/// The payload offset field position in the fixed header.
+pub const PAYLOAD_OFFSET: usize = HEADER_SIZE;
+/// The expected AMRN magic bytes.
+pub const MAGIC: [u8; 4] = *b"DALI";
+
+const FORMAT_VERSION_OFFSET: usize = 4;
+const TARGET_ID_OFFSET: usize = 5;
+const HEADER_SIZE_OFFSET: usize = 6;
+const PAYLOAD_SIZE_OFFSET: usize = 8;
+const LOAD_ADDRESS_OFFSET: usize = 12;
+const EXECUTION_OFFSET_OFFSET: usize = 16;
+const CRC32_OFFSET: usize = 20;
+const ABI_VERSION_OFFSET: usize = 24;
+const FLAGS_OFFSET: usize = 25;
+const RESERVED_U16_OFFSET: usize = 26;
+const RESERVED_U32_OFFSET: usize = 28;
+const WORD_ALIGNMENT: u32 = 4;
+const CRC32_POLYNOMIAL: u32 = 0xEDB8_8320;
+const CRC32_INITIAL: u32 = u32::MAX;
+
+/// A validated AMRN package view into caller-owned bytes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Package<'a> {
+    /// The validated fixed header fields.
+    pub header: Header,
+    /// The validated native payload bytes.
+    pub payload: &'a [u8],
+    /// The calculated native entry address before the Thumb bit is applied.
+    pub entry_address: u32,
+}
+
+/// The explicitly decoded AMRN v1 fixed header.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Header {
+    /// The package magic bytes.
+    pub magic: [u8; 4],
+    /// The package format revision.
+    pub format_version: u8,
+    /// The target identifier.
+    pub target_id: u8,
+    /// The fixed header length.
+    pub header_size: u16,
+    /// The native payload length.
+    pub payload_size: u32,
+    /// The native payload load address.
+    pub load_address: u32,
+    /// The entry offset from the payload start.
+    pub execution_offset: u32,
+    /// The CRC32 of the payload bytes.
+    pub crc32: u32,
+    /// The application ABI revision.
+    pub abi_version: u8,
+    /// Reserved flags.
+    pub flags: u8,
+    /// Reserved 16-bit field.
+    pub reserved_u16: u16,
+    /// Reserved 32-bit field.
+    pub reserved_u32: u32,
+}
+
+/// Reasons an AMRN package failed validation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ParseError {
+    /// The input does not contain the fixed header.
+    TruncatedHeader,
+    /// The four-byte package magic is invalid.
+    InvalidMagic,
+    /// The format revision is not supported.
+    UnsupportedFormatVersion,
+    /// The target identifier is not supported.
+    UnsupportedTarget,
+    /// The header length is not the fixed v1 length.
+    InvalidHeaderSize,
+    /// The ABI revision is not supported.
+    UnsupportedAbiVersion,
+    /// A reserved header field is non-zero.
+    NonZeroReservedField,
+    /// The payload length is zero.
+    EmptyPayload,
+    /// The payload exceeds the v1 limit.
+    PayloadTooLarge,
+    /// The payload extends beyond the supplied package bytes.
+    PayloadOutsidePackage,
+    /// The load address does not match the v1 contract.
+    InvalidLoadAddress,
+    /// The execution offset is outside the payload.
+    InvalidExecutionOffset,
+    /// The execution offset is not word-aligned.
+    UnalignedExecutionOffset,
+    /// The calculated entry address overflowed.
+    EntryAddressOverflow,
+    /// The payload CRC32 does not match the header.
+    CrcMismatch,
+}
+
+/// Parses and validates an AMRN v1 package without copying its payload.
+pub fn parse(package: &[u8]) -> Result<Package<'_>, ParseError> {
+    if package.len() < HEADER_SIZE {
+        return Err(ParseError::TruncatedHeader);
+    }
+    let header = parse_header(package)?;
+
+    let payload_size = header.payload_size as usize;
+    if payload_size == 0 {
+        return Err(ParseError::EmptyPayload);
+    }
+    if payload_size > MAX_PAYLOAD_SIZE {
+        return Err(ParseError::PayloadTooLarge);
+    }
+    let payload_end = PAYLOAD_OFFSET
+        .checked_add(payload_size)
+        .ok_or(ParseError::PayloadOutsidePackage)?;
+    let payload = package
+        .get(PAYLOAD_OFFSET..payload_end)
+        .ok_or(ParseError::PayloadOutsidePackage)?;
+
+    validate_execution_offset(header.execution_offset, payload_size)?;
+    let entry_address = header
+        .load_address
+        .checked_add(header.execution_offset)
+        .ok_or(ParseError::EntryAddressOverflow)?;
+    if crc32(payload) != header.crc32 {
+        return Err(ParseError::CrcMismatch);
+    }
+    Ok(Package {
+        header,
+        payload,
+        entry_address,
+    })
+}
+
+fn parse_header(package: &[u8]) -> Result<Header, ParseError> {
+    if package.get(..MAGIC.len()) != Some(MAGIC.as_slice()) {
+        return Err(ParseError::InvalidMagic);
+    }
+    let header = Header {
+        magic: MAGIC,
+        format_version: package[FORMAT_VERSION_OFFSET],
+        target_id: package[TARGET_ID_OFFSET],
+        header_size: read_u16(package, HEADER_SIZE_OFFSET),
+        payload_size: read_u32(package, PAYLOAD_SIZE_OFFSET),
+        load_address: read_u32(package, LOAD_ADDRESS_OFFSET),
+        execution_offset: read_u32(package, EXECUTION_OFFSET_OFFSET),
+        crc32: read_u32(package, CRC32_OFFSET),
+        abi_version: package[ABI_VERSION_OFFSET],
+        flags: package[FLAGS_OFFSET],
+        reserved_u16: read_u16(package, RESERVED_U16_OFFSET),
+        reserved_u32: read_u32(package, RESERVED_U32_OFFSET),
+    };
+    if header.format_version != FORMAT_VERSION {
+        return Err(ParseError::UnsupportedFormatVersion);
+    }
+    if header.target_id != TARGET_ID {
+        return Err(ParseError::UnsupportedTarget);
+    }
+    if usize::from(header.header_size) != HEADER_SIZE {
+        return Err(ParseError::InvalidHeaderSize);
+    }
+    if header.abi_version != ABI_VERSION {
+        return Err(ParseError::UnsupportedAbiVersion);
+    }
+    if header.flags != RESERVED_FLAGS
+        || header.reserved_u16 != RESERVED_U16
+        || header.reserved_u32 != RESERVED_U32
+    {
+        return Err(ParseError::NonZeroReservedField);
+    }
+    if header.load_address != LOAD_ADDRESS {
+        return Err(ParseError::InvalidLoadAddress);
+    }
+    Ok(header)
+}
+
+fn validate_execution_offset(offset: u32, payload_size: usize) -> Result<(), ParseError> {
+    if usize::try_from(offset).map_or(true, |value| value >= payload_size) {
+        return Err(ParseError::InvalidExecutionOffset);
+    }
+    if !offset.is_multiple_of(WORD_ALIGNMENT) {
+        return Err(ParseError::UnalignedExecutionOffset);
+    }
+    Ok(())
+}
+
+fn read_u16(bytes: &[u8], offset: usize) -> u16 {
+    // Callers validate the fixed header length before reading any field.
+    u16::from_le_bytes([bytes[offset], bytes[offset + 1]])
+}
+
+fn read_u32(bytes: &[u8], offset: usize) -> u32 {
+    // Callers validate the fixed header length before reading any field.
+    u32::from_le_bytes([
+        bytes[offset],
+        bytes[offset + 1],
+        bytes[offset + 2],
+        bytes[offset + 3],
+    ])
+}
+
+fn crc32(bytes: &[u8]) -> u32 {
+    let mut checksum = CRC32_INITIAL;
+    for byte in bytes {
+        checksum ^= u32::from(*byte);
+        for _ in 0..u8::BITS {
+            checksum = if checksum & 1 == 1 {
+                (checksum >> 1) ^ CRC32_POLYNOMIAL
+            } else {
+                checksum >> 1
+            };
+        }
+    }
+    !checksum
+}
+
+#[cfg(test)]
+mod tests;
