@@ -5,8 +5,7 @@ edition = "2024"
 publish = false
 
 [features]
-default = ["board-blackpill-f411", "usb-cdc"]
-board-blackpill-f411 = ["stm32f4xx-hal/stm32f411"]
+default = ["board-stm32f405-sd", "usb-cdc"]
 sdio = [
     "stm32f4xx-hal/sdio",
     "stm32f4xx-hal/sdio-host",

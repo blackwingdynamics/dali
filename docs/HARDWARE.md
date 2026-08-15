@@ -2,16 +2,17 @@
 
 ## Board
 
-The project supports two compile-time board backends. The F405 board is the
-current MVP execution platform; the BlackPill remains a separate backend.
+The project currently has one compile-time kernel backend. The F405 board is
+the MVP execution platform. A BlackPill profile is retained only as a
+generator input and has no kernel backend.
 
-### Secondary board
+### Generator-only board profile
 
 - Board: WeAct BlackPill
 - MCU: STM32F411CEU6
 - Core: ARM Cortex-M4F
 - Frequency target: 100 MHz
-- Application target: `thumbv7em-none-eabihf`
+- Application target: not supported by the current kernel
 
 ## SRAM layout
 

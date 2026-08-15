@@ -31,7 +31,8 @@ dali-kernel/
 │   └── renode/
 │       └── dali_blackpill.resc   # Renode STM32F4 development scenario
 ├── targets/
-│   └── f405.toml                  # Declarative F405 board and target metadata
+│   ├── f405.toml                  # Declarative F405 board and target metadata
+│   └── f411.toml                  # Generator-only BlackPill board metadata
 ├── Cargo.toml                 # Virtual workspace metadata
 ├── Cargo.lock                 # Reproducible dependency resolution
 ├── rust-toolchain.toml        # Pinned Rust toolchain and embedded target
@@ -44,8 +45,7 @@ dali-kernel/
 │       ├── main.rs            # Kernel entry point and bootstrap
 │       ├── board/              # Compile-time board selection and backends
 │       │   ├── mod.rs          # Common board facade
-│       │   ├── blackpill_f411.rs # WeAct BlackPill STM32F411 backend
-│       │   └── stm32f405_sd.rs  # WeAct STM32F405 SDIO backend
+│       │   └── stm32f405_sd.rs   # WeAct STM32F405 SDIO backend
 │       ├── drivers/             # Hardware-specific peripheral drivers
 │       │   ├── mod.rs           # Driver module registry
 │       │   └── sdio.rs          # SDIO block driver
@@ -125,6 +125,7 @@ dali-kernel/
 │   │       ├── package.md
 │   │       ├── inspect.md
 │   │       └── app-new.md
+│   ├── boards/                # Generated board review checklists
 │   └── changelog/             # Archived generated release changelogs
 │       └── README.md
 └── README.md                  # Public project introduction
@@ -135,8 +136,7 @@ dali-kernel/
 The following order keeps each new file focused on one verifiable capability:
 
 1. `kernel/src/board/mod.rs` — compile-time board selection facade.
-2. `kernel/src/board/blackpill_f411.rs` — BlackPill constants, pins, clocks, and peripheral ownership.
-3. `kernel/src/board/stm32f405_sd.rs` — STM32F405 clock, LED, and SDIO pin ownership.
+2. `kernel/src/board/stm32f405_sd.rs` — STM32F405 clock, LED, and SDIO pin ownership.
 4. `kernel/src/logging/mod.rs` — the stable kernel logging facade.
 5. `kernel/src/logging/rtt.rs` — the RTT logging backend.
 6. `kernel/src/bootstrap/mod.rs` — boot sequence orchestration.
@@ -144,7 +144,8 @@ The following order keeps each new file focused on one verifiable capability:
 8. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
 9. `kernel/src/drivers/mod.rs` — hardware driver registry.
 10. `kernel/src/drivers/sdio.rs` — SDIO initialization and block reads.
-11. `kernel/src/drivers/spi_sd.rs` — STM32F411 SPI SD initialization and block reads.
+11. A future board backend may add a board-owned storage driver after its
+    manifest and hardware contract are accepted.
 12. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
 13. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
 14. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.

@@ -7,7 +7,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 ### Completed and evidenced
 
 - The repository is a Rust workspace with kernel, SDK, CLI, and demo-application boundaries.
-- The STM32F411 BlackPill backend exists for the original MVP target.
+- The STM32F411 BlackPill backend has been removed; its board facts now live in
+  a generator-only `targets/f411.toml` profile.
 - The WeAct STM32F405RGT6 Core Board backend exists with its 8 MHz HSE, 168 MHz system clock, PB2 LED, and SDIO pin mapping.
 - The F405 kernel builds, checks, and passes strict target Clippy.
 - DFU flashing of the F405 firmware completes successfully.
@@ -16,7 +17,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - Cross-platform setup scripts, Just recipes, the USB console helper, and development documentation exist.
 - A fixed-capacity USB log queue exists in kernel RAM and records overflow instead of silently hiding it.
 - The hardware-neutral `dali-usb` crate provides bounded delivery, link state, partial-write handling, and host tests without owning USB hardware.
-- The production USB backend services the `usb-device` state machine from the F405/F411 `OTG_FS` interrupt while main-context logging only appends to the bounded queue.
+- The production USB backend services the `usb-device` state machine from the
+  F405 `OTG_FS` interrupt while main-context logging only appends to the bounded queue.
 - Renode simulation explicitly disables USB CDC because its STM32F4 reference model does not implement the OTG_FS global registers used by the production backend.
 - Pico 2 SWD evidence shows the F405 firmware reaches blocking SDIO block-read code while the OTG_FS interrupt services USB polling; RTT boot logs are visible through the probe.
 - The host successfully enumerated the runtime CDC device as `1209:da11` and created `/dev/ttyACM1` during SWD debugging.
@@ -40,9 +42,12 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The `dali-amrn` crate encodes contract-valid packages, and the `dali package` command wraps a raw payload with the documented header and CRC.
 - The `dali-app-hello` validation payload now has a dedicated 64 KiB SRAM linker layout and repeatable build/package recipes.
 - The validation payload is intentionally limited to package construction and loader validation plus the documented native execution proof.
-- The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
+- The AMRN v1 execution target is STM32F405 (`0x02`); F411 is a generator-only
+  board profile without an AMRN target ID.
 - The loader performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution has been observed.
 - The validation payload defines the documented three-flash/long-pause F405 active-high PB2 LED pattern with host coverage and physical observation.
+- Board metadata is generated from typed registry data: F405 is application-supported, while the F411 manifest is a generator-only board profile without storage or AMRN compatibility claims.
+- The F411 kernel backend and its build/flash routes were removed; F405 is now the only kernel backend and hardware recipe.
 - ABI v2 now passes a bounded kernel service table to applications and exposes the first logging service; host evidence is passing.
 - On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package and logged successful AMRN validation; the earlier observed LED behavior was continuous slow blinking and did not satisfy the documented three-flash/long-pause pattern.
 - On 2026-08-15, the F405 board delivered three `[INFO][APP] Hello World from AMRN` records through USB CDC after AMRN validation. This is hardware evidence for the application logging service.
@@ -58,13 +63,15 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The corrected three-flash/long-pause application LED pattern has been observed on F405 hardware; formal MVP acceptance recording remains a separate gate.
 - SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
 - Full MVP acceptance remains incomplete despite hardware evidence for application logging, reset-to-application execution, and USB reconnect behavior; the formal acceptance record still requires the complete documented procedure.
-- A separate AMRN target profile for STM32F411 remains unspecified and is not part of the current execution work.
+- The F411 profile is intentionally not part of current kernel execution work.
 
 ### Current priority
 
-**P0 — Make USB CDC boot logging deterministic under blocking storage bring-up.**
+**Current priority — Prepare the F405-based 0.1.0 release boundary.**
 
-The implementation phase resumed after Pico 2 SWD access became available.
+The USB implementation phase is complete at the targeted hardware-evidence
+boundary. The next work remains release preparation and explicit F405 scope;
+RP2350/Pico support is deferred until after 0.1.0.
 The first targeted fix addresses the CDC TX delivery boundary: the backend
 must flush the `usbd-serial` software buffer and preserve pending transport
 progress across USB service events. Queue insertion also software-pends the
@@ -77,7 +84,7 @@ initializing. It must not rely on arbitrary sleeps, terminal-specific behavior,
 or unverified interrupt code. Initial F405 CDC delivery is now hardware-
 observed; the targeted reset and reconnect behavior is now evidenced.
 
-### P0 handoff boundary
+### USB CDC handoff boundary
 
 - Software architecture: implemented and target-checked. USB control/state
   servicing is owned by the `OTG_FS` interrupt, while main-context logging only
@@ -144,7 +151,7 @@ observed; the targeted reset and reconnect behavior is now evidenced.
 ## Phase 1 — Kernel bootstrap
 
 - [ ] Confirm the project builds for the embedded target.
-- [ ] Confirm the linker script matches STM32F411 memory.
+- [ ] Confirm the linker script matches the F405 reference memory.
 - [ ] Initialize core and device peripherals.
 - [ ] Configure the 100 MHz system clock.
 - [ ] Configure the PC13 status LED.
@@ -239,6 +246,7 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Generate and validate a typed target registry from `targets/*.toml`.
 - [x] Centralize target profile metadata outside individual CLI commands.
 - [x] Connect the F405 backend clock and AMRN compatibility checks to its generated target profile.
+- [x] Add target scaffold generation for reviewable board backend templates.
 - [ ] Map every remaining declarative target manifest to a typed kernel board backend.
 - [ ] Add `dali target info <target>` for board, MCU, ABI, AMRN, and transport metadata.
 

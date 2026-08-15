@@ -8,9 +8,9 @@ Dali OS is a `no_std` Rust operating system and embedded runtime for STM32 micro
 
 The first milestone is deliberately narrow:
 
-1. boot a Rust kernel on the STM32F411CEU6 WeAct BlackPill;
-2. initialize the clock, PC13 status LED, and RTT logging;
-3. read a FAT16/FAT32 SD card over SPI1;
+1. boot a Rust kernel on the STM32F405RGT6 WeAct Studio Core Board;
+2. initialize the clock, PB2 status LED, and RTT logging;
+3. read a FAT16/FAT32 SD card over SDIO;
 4. discover an `.amrn` package in the card root;
 5. validate a fixed 32-byte AMRN header and CRC32 payload checksum;
 6. load a native payload into the reserved SRAM region at `0x20008000`;
@@ -85,12 +85,12 @@ Any exception must be reviewed, named, documented, and justified by the relevant
 
 ### Target
 
-- MCU: STM32F411CEU6;
-- board: WeAct BlackPill;
+- MCU: STM32F405RGT6;
+- board: WeAct Studio STM32F405RGT6 Core Board;
 - target: `thumbv7em-none-eabihf`;
-- clock target: 100 MHz;
-- status LED: PC13;
-- SD SPI1 pins: SCK PA5, MISO PA6, MOSI PA7, CS PA4.
+- clock target: 168 MHz;
+- status LED: PB2;
+- SD interface: hardware SDIO in 4-bit mode.
 
 ### SRAM
 

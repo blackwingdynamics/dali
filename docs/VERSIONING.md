@@ -60,8 +60,8 @@ ABI version: 2
 ```
 
 The current AMRN v1 target profile is STM32F405RGT6 (`0x02`). The STM32F411
-BlackPill requires a separate target profile before its native applications can
-be accepted by the loader.
+BlackPill manifest is generator-only and does not authorize native application
+execution.
 
 Format version `1` must remain readable by every kernel that claims support for it.
 

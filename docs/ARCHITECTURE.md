@@ -60,9 +60,9 @@ The MVP application is a RAM-loaded native module, not a sandboxed process. Kern
 - runtime logging: USB CDC-ACM;
 - debug logging: RTT when an SWD probe is connected.
 
-The repository also contains a secondary BlackPill F411 backend. It is not
-compatible with the current F405 AMRN target profile until a separate target
-ID and board acceptance procedure are specified.
+The repository also contains a declarative BlackPill F411 board profile for
+generator testing. It has no kernel backend and is not an accepted execution
+target until its target contract and hardware implementation are specified.
 
 The exact board wiring, voltage requirements, SPI startup speed, and clock configuration must be documented before hardware acceptance testing.
 
@@ -98,7 +98,7 @@ Dali OS kernel services and runtime
 STM32 HAL and board support
     |
     v
-STM32F411 hardware
+STM32F405 hardware
 ```
 
 The first implementation may keep the layers in one repository, but their contracts must remain explicit.
@@ -262,9 +262,9 @@ The loader must:
 
 The application entry ABI, return behavior, panic behavior, and reset behavior are specified in `ABI.md`. Interrupt ownership is intentionally deferred.
 
-The current STM32F405 board is the AMRN execution target. The F411 BlackPill
-is not silently treated as compatible with this profile; it requires a future
-versioned target profile before native execution is accepted there.
+The current STM32F405 board is the only AMRN execution target. The F411
+profile is metadata-only and is not silently treated as compatible with the
+F405 target.
 
 ## 10. Storage subsystem
 
