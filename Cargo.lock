@@ -105,12 +105,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 
 [[package]]
+name = "dali"
+version = "0.1.0"
+
+[[package]]
 name = "dali-amrn"
 version = "0.1.0"
 
 [[package]]
 name = "dali-app-hello"
 version = "0.1.0"
+dependencies = [
+ "dali",
+]
 
 [[package]]
 name = "dali-cli"
@@ -125,6 +132,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
+ "dali",
  "dali-amrn",
  "dali-usb",
  "embedded-sdmmc",
@@ -134,10 +142,6 @@ dependencies = [
  "usb-device",
  "usbd-serial",
 ]
-
-[[package]]
-name = "dali-sdk"
-version = "0.1.0"
 
 [[package]]
 name = "dali-usb"

@@ -218,7 +218,8 @@ Use typed error enums with enough information to identify the failed operation. 
 - Timing assumptions must be documented and testable.
 - Logging must not make a critical path unbounded or block indefinitely.
 
-The MVP application has no scheduler, service API, shared logging ABI, or application-owned interrupts.
+The MVP application has no scheduler or application-owned interrupts. Its only
+service is the bounded logging ABI defined in `docs/ABI.md`.
 
 ## 10. Module and API boundaries
 
@@ -276,7 +277,7 @@ Logging rules:
 - do not hide storage or loader errors behind a generic message;
 - do not log credentials, keys, or secrets;
 - avoid high-frequency logs in production paths;
-- keep the MVP application proof on the LED rather than depending on a shared logging ABI.
+- keep the MVP application proof on the LED and verify the bounded logging ABI independently.
 
 ## 13. Testing requirements
 

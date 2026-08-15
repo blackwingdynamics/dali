@@ -64,7 +64,7 @@ kernel-check board="f411":
 
 # Run host-side tests.
 test:
-    cargo test -p dali-sdk -p dali-app-hello -p dali-cli
+    cargo test -p dali -p dali-app-hello -p dali-cli
 
 # Run host-side Clippy with warnings denied.
 clippy:

@@ -45,7 +45,7 @@ jobs:
         run: cargo check --workspace --exclude dali-kernel
 
       - name: Run host tests
-        run: cargo test -p dali-sdk -p dali-app-hello -p dali-cli
+        run: cargo test -p dali -p dali-app-hello -p dali-cli
 
       - name: Run host Clippy
         run: cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings

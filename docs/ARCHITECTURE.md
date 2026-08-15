@@ -18,7 +18,7 @@ The central architectural idea is:
 - predictable scheduling and bounded real-time services;
 - hardware services for sensors, motors, communication, storage, and power;
 - independently built and deployed applications;
-- a Rust SDK (`dali-sdk`);
+- a Rust SDK (`dali`);
 - a package and device-management CLI (`dali-cli`);
 - signed packages, compatibility checks, rollback, and safe recovery.
 
@@ -43,9 +43,9 @@ The first milestone proves one complete path on a single reference board:
 6. validate its fixed 32-byte header, payload bounds, target, and CRC32 checksum;
 7. copy its native ARM payload to a reserved SRAM region;
 8. jump to its fixed ABI entry point;
-9. observe a deterministic application LED pattern.
+9. observe a deterministic application LED pattern and three application log messages.
 
-The MVP application is a RAM-loaded native module, not a sandboxed process. Kernel and application isolation is a later capability. The first application does not use interrupts, kernel services, shared logging, or a scheduler.
+The MVP application is a RAM-loaded native module, not a sandboxed process. Kernel and application isolation is a later capability. The first application does not use interrupts or a scheduler; its only kernel service is the bounded logging entry defined by ABI v2.
 
 ## 4. Reference platform
 
@@ -208,7 +208,7 @@ The header specification must define every byte, field width, byte order, and al
 | `0x0C` | 4 | Load address | Little-endian; MVP value is `0x20008000` |
 | `0x10` | 4 | Execution offset | Little-endian offset from payload start |
 | `0x14` | 4 | CRC32 | Little-endian payload checksum |
-| `0x18` | 1 | ABI version | MVP value is `1` |
+| `0x18` | 1 | ABI version | Current MVP value is `2` |
 | `0x19` | 1 | Flags | Must be zero in the MVP |
 | `0x1A` | 2 | Reserved | Must be zero in the MVP |
 | `0x1C` | 4 | Reserved | Must be zero in the MVP |
@@ -217,7 +217,7 @@ The loader must reject:
 
 - an invalid magic value or unsupported version;
 - a target ID other than `0x02`;
-- an ABI version other than `1`;
+- an ABI version other than `2`;
 - a header size other than 32 bytes;
 - non-zero flags or reserved fields;
 - integer overflow while calculating offsets or sizes;
@@ -288,7 +288,7 @@ DMA has a bounded tail pending, that tail is drained directly from the FIFO.
 The kernel exposes this transport through the `sdio` capability feature; board
 features enable capabilities and select pins/clocks separately.
 
-The MVP does not need package installation, deletion, hot swap, or write support. SD-card replacement requires a reboot. The first acceptance application proves execution through a deterministic LED pattern rather than a shared logging API.
+The MVP does not need package installation, deletion, hot swap, or write support. SD-card replacement requires a reboot. The first acceptance application proves execution through a deterministic LED pattern and bounded application logging.
 
 ## 11. Future kernel architecture
 
@@ -302,7 +302,7 @@ After the MVP, the platform can grow toward:
 - MPU-backed memory protection where supported;
 - signed packages and secure boot;
 - A/B updates and rollback;
-- `dali-sdk` and `dali-cli` workflows.
+- `dali` and `dali-cli` workflows.
 
 Safety-critical behavior such as emergency stop, watchdog policy, power handling, and actuator limits must remain kernel-owned even when mission logic is supplied by an application.
 

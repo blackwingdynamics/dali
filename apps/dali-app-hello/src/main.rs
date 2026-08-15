@@ -2,6 +2,7 @@
 #![no_main]
 
 use core::panic::PanicInfo;
+use dali::ServiceTable;
 
 const GPIOB_BASE_ADDRESS: usize = 0x4002_0400;
 const GPIOB_MODER_OFFSET: usize = 0x00;
@@ -14,12 +15,31 @@ const LED_HALF_PERIOD_ITERATIONS: u32 = 1_000_000;
 /// Native MVP entry point linked at the contract load address.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
-pub unsafe extern "C" fn amiran_entry() -> ! {
+pub unsafe extern "C" fn amiran_entry(services: *const ServiceTable) -> ! {
+    let Some(services) = (unsafe {
+        // SAFETY: The kernel passes a valid service table for the lifetime of
+        // the non-returning application entry point.
+        services.as_ref()
+    }) else {
+        configure_status_led();
+        loop {
+            set_status_led(false);
+            delay_half_period();
+            set_status_led(true);
+            delay_half_period();
+        }
+    };
+    let messages = [
+        "Hello World from AMRN",
+        "Hello World from AMRN",
+        "Hello World from AMRN",
+    ];
+    let delivered = messages.iter().all(|message| dali::log(services, message));
     configure_status_led();
     loop {
-        set_status_led(true);
+        set_status_led(delivered);
         delay_half_period();
-        set_status_led(false);
+        set_status_led(!delivered);
         delay_half_period();
     }
 }

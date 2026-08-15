@@ -45,13 +45,13 @@ Record the board revision, SD-card type, wiring, power source, and probe before 
 - package payload size no greater than 64 KiB;
 - package format version: `1`;
 - package target ID: `0x02` (`STM32F405RGT6`);
-- package ABI version: `1`;
+- package ABI version: `2`;
 - valid CRC32 over the payload.
 
 The package must use the documented entry ABI:
 
 ```rust
-unsafe extern "C" fn() -> !
+unsafe extern "C" fn(*const ServiceTable) -> !
 ```
 
 ## 4. SD-card preparation
@@ -86,16 +86,17 @@ The exact formatting may evolve, but the following events must be present and id
 ====================================
    Dali OS Kernel Booting...
 ====================================
-[INFO][BOOT] System clock: 100 MHz
-[SD] Card initialized
-[AMRN] Package found: /hello.amrn
-[AMRN] Header valid
-[AMRN] CRC32 valid
-[AMRN] Loading payload: <size> bytes at 0x20008000
-[AMRN] Jumping to entry point
+[INFO][BOOT] System clock: 168 MHz
+[INFO][STORAGE] SDIO card initialized
+[INFO][STORAGE] Read block 0 successfully
+[INFO][LOADER] AMRN header and payload validated
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
 ```
 
-The application must not depend on shared RTT logging for this acceptance test.
+The application submits its messages through the kernel service table; it must
+not access RTT or USB CDC directly.
 
 ## 7. Expected LED behavior
 
@@ -129,6 +130,7 @@ The test passes only when all criteria are true:
 - [ ] The payload is copied to the reserved SRAM region.
 - [ ] The entry address is validated and the Thumb bit is set.
 - [ ] Control is transferred to the application.
+- [ ] Three `[INFO][APP] Hello World from AMRN` messages are delivered.
 - [ ] The application produces the documented three-flash LED pattern.
 
 Build success, a valid parser test, or a simulated function-pointer call is not sufficient for an MVP pass.
@@ -168,3 +170,23 @@ Observed LED pattern:
 Result: PASS / FAIL
 Known issues:
 ```
+
+## 11. Recorded partial acceptance evidence
+
+On 2026-08-15, the WeAct Studio STM32F405RGT6 board was programmed through a
+Pico 2 CMSIS-DAP probe and booted from a FAT32 SD card. The USB CDC console
+reported successful SDIO initialization, block-zero read, AMRN validation,
+and three application log records:
+
+```text
+[INFO][STORAGE] SDIO card initialized
+[INFO][STORAGE] Read block 0 successfully
+[INFO][LOADER] AMRN header and payload validated
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
+```
+
+This confirms the application logging path on physical F405 hardware. It does
+not by itself close the complete MVP acceptance procedure, including reset
+log capture, reconnect behavior, and the full documented LED observation.

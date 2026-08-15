@@ -7,7 +7,7 @@ Dali OS has several versioned contracts. They must not be treated as one number 
 | Component | Versioning scheme | Purpose |
 | --- | --- | --- |
 | Kernel | Semantic Versioning | Kernel runtime and service compatibility |
-| `dali-sdk` | Semantic Versioning | Application developer API |
+| `dali` | Semantic Versioning | Application developer API |
 | `dali-cli` | Semantic Versioning | Package and device tooling |
 | `.amrn` format | Integer format version | Binary package parsing rules |
 | Application ABI | Integer ABI version | Kernel-to-application entry contract |
@@ -56,7 +56,7 @@ Header size: 32 bytes
 Integrity: CRC32
 Load address: 0x20008000
 Target ID: 0x02 (STM32F405RGT6)
-ABI version: 1
+ABI version: 2
 ```
 
 The current AMRN v1 target profile is STM32F405RGT6 (`0x02`). The STM32F411
@@ -72,13 +72,13 @@ The application ABI is independent from the AMRN container format. A package may
 The MVP ABI is:
 
 ```text
-ABI version: 1
-Entry: unsafe extern "C" fn() -> !
+ABI version: 2
+Entry: unsafe extern "C" fn(*const ServiceTable) -> !
 Target: thumbv7em-none-eabihf
 Interrupt ownership: kernel-controlled
 ```
 
-The ABI version must change when entry semantics, calling convention, memory ownership, interrupt ownership, lifecycle behavior, or shared data structures change.
+The ABI version must change when entry semantics, calling convention, memory ownership, interrupt ownership, lifecycle behavior, service-table layout, or shared data structures change.
 
 The package format carries the ABI version at header offset `0x18`.
 

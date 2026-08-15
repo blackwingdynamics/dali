@@ -169,7 +169,7 @@ boot records.
 
 The repository is a Cargo workspace containing the kernel, the hardware-neutral
 `dali-usb` delivery primitives, the hardware-neutral `dali-amrn` format layer,
-the future `dali-sdk`, the `dali-cli` package tool, and the initial
+the future `dali` package, the `dali-cli` package tool, and the initial
 demo-application scaffold. Run workspace commands from the repository root.
 
 `dali-usb` is `no_std` and has no MCU or HAL dependency. It owns only bounded

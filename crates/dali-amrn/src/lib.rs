@@ -16,8 +16,8 @@ pub const HEADER_SIZE: usize = 32;
 pub const FORMAT_VERSION: u8 = 1;
 /// The STM32F405RGT6 target identifier defined by the current v1 profile.
 pub const TARGET_ID: u8 = 0x02;
-/// The ABI revision implemented by the v1 format.
-pub const ABI_VERSION: u8 = 1;
+/// The ABI revision implemented by the current AMRN profile.
+pub const ABI_VERSION: u8 = 2;
 /// The reserved flags value accepted by the v1 format.
 pub const RESERVED_FLAGS: u8 = 0;
 /// The reserved 16-bit field value accepted by the v1 format.
