@@ -22,5 +22,6 @@ Read the documents in this order:
 12. [Versioning](VERSIONING.md) — component versions, ABI compatibility, and release tags.
 13. [Security](SECURITY.md) — current guarantees, non-guarantees, and post-MVP security work.
 14. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
+15. [Target Profiles](TARGET_PROFILES.md) — declarative board metadata and kernel mapping ownership.
 
 The architecture and MVP documents are the source of truth until the more detailed specifications are created.

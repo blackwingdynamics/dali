@@ -30,6 +30,8 @@ dali-kernel/
 │   ├── README.md                 # Simulator scope and evidence boundary
 │   └── renode/
 │       └── dali_blackpill.resc   # Renode STM32F4 development scenario
+├── targets/
+│   └── f405.toml                  # Declarative F405 board and target metadata
 ├── Cargo.toml                 # Virtual workspace metadata
 ├── Cargo.lock                 # Reproducible dependency resolution
 ├── rust-toolchain.toml        # Pinned Rust toolchain and embedded target
@@ -68,6 +70,7 @@ dali-kernel/
 │           └── main.rs        # Native validation payload entry point
 ├── crates/
 │   ├── dali-amrn/             # AMRN format parser and validation
+│   ├── dali-targets/          # Build-time generated target registry
 │   ├── dali-sdk/              # Future application SDK
 │   │   ├── Cargo.toml
 │   │   └── src/lib.rs
@@ -162,6 +165,9 @@ The following order keeps each new file focused on one verifiable capability:
 29. `crates/dali-cli/templates/app/config.toml.template` — standalone Cargo linker configuration.
 30. `crates/dali-cli/src/commands/app_package.rs` — application payload packaging.
 31. `crates/dali-cli/src/commands/doctor.rs` — host and toolchain diagnostics.
+32. `crates/dali-cli/src/commands/target.rs` — supported application target profiles.
+33. `targets/*.toml` — declarative manufacturer and compatibility metadata.
+34. `crates/dali-targets/` — validated generated target registry shared by host tooling.
 27. `crates/dali-cli/templates/app/` — versioned application scaffold assets.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:

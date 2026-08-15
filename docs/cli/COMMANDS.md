@@ -18,6 +18,18 @@ hardware tools.
 
 See [commands/doctor.md](commands/doctor.md).
 
+### dali target list
+
+Lists the current Dali application target profiles and their AMRN/ABI
+compatibility metadata.
+
+The command reads the generated registry built from the repository's
+`targets/*.toml` manifests. The profile name shown here is the value used in
+an application's `dali.toml`; the registry resolves it to the Rust target and
+the remaining board metadata during the build.
+
+See [commands/target-list.md](commands/target-list.md).
+
 ### dali package
 
 Creates an AMRN package from a linked native payload.

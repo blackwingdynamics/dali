@@ -14,10 +14,10 @@ dali app build
 The command must run from an initialized application directory. It reads:
 
 - `application.name` for the Cargo binary name;
-- `build.target_profile` for the Rust target triple;
+- `build.target_profile` for the stable profile name from `dali target list`;
 - `build.profile` for `dev` or `release` selection.
 
-The generated project defaults to `thumbv7em-none-eabihf` and the `dev`
+The generated project defaults to `f405` and the `dev`
 profile. The target value belongs to the application manifest; the command
 does not embed a board-specific target mapping.
 

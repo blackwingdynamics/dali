@@ -234,7 +234,11 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 #### Target and host diagnostics
 
 - [x] Add `dali doctor` for toolchain, target, host-permission, and required-tool diagnostics.
-- [ ] Add `dali target list` for supported target profiles.
+- [x] Add `dali target list` for supported target profiles.
+- [x] Define declarative target manifests for manufacturer and compatibility metadata.
+- [x] Generate and validate a typed target registry from `targets/*.toml`.
+- [x] Centralize target profile metadata outside individual CLI commands.
+- [ ] Map every declarative target manifest to a typed kernel board backend.
 - [ ] Add `dali target info <target>` for board, MCU, ABI, AMRN, and transport metadata.
 
 #### Device operations

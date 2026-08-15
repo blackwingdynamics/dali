@@ -9,6 +9,7 @@ executable is named dali.
 | Command | Purpose | Status |
 | --- | --- | --- |
 | dali doctor | Check host toolchain and embedded build prerequisites | Supported |
+| dali target list | List supported Dali application targets | Supported |
 | dali package | Wrap a linked native payload in an AMRN package | Supported |
 | dali inspect | Validate and display an AMRN package | Supported |
 | dali app new | Create a Dali application scaffold | Supported |
@@ -60,6 +61,7 @@ exist.
 - [Quickstart](QUICKSTART.md) — first successful package workflow.
 - [Commands](COMMANDS.md) — command catalog and syntax.
 - [Doctor](commands/doctor.md) — host and toolchain diagnostics.
+- [Target list](commands/target-list.md) — supported target profiles.
 - [Workflows](WORKFLOWS.md) — end-to-end user procedures.
 - [Output](OUTPUT.md) — output and stream conventions.
 - [Errors](ERRORS.md) — failure categories and recovery guidance.
@@ -92,3 +94,9 @@ existing managed files.
 
 `dali inspect` can derive the current application's AMRN path when run from
 its project root, or discover a single AMRN file in a package directory.
+
+Target and board metadata is declared in repository-level `targets/*.toml`
+manifests. The `dali-targets` build script validates those manifests and
+generates the typed registry consumed by CLI commands. CLI commands therefore
+do not define one set of board constants per command; kernel backends remain
+responsible for mapping the selected profile to typed HAL resources.

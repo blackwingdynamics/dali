@@ -59,7 +59,7 @@ build configuration that must remain configurable:
 - package output name;
 - entry symbol and entry offset policy.
 
-The generated project currently uses `thumbv7em-none-eabihf`. The build
+The generated project currently uses the `f405` target profile. The build
 command passes this manifest-owned value to Cargo and does not embed a board
 name or target mapping in command logic.
 

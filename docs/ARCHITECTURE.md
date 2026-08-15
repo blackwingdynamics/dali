@@ -73,6 +73,13 @@ F405 backend is the current MVP selection. Runtime board autodetection
 is not assumed because MCU pin mappings and safe clock initialization must be
 known before kernel startup.
 
+Manufacturer-supplied board facts and Dali target compatibility metadata are
+declared in repository-level `targets/*.toml` manifests. A host build step
+validates those manifests and generates a typed registry for the CLI. The
+kernel still owns the mapping from the selected profile to typed HAL resources;
+the manifest does not replace compile-time GPIO, RCC, DMA, or peripheral
+ownership code.
+
 ## 5. Runtime layers
 
 ```text
