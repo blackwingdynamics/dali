@@ -202,7 +202,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Add its target configuration.
 - [x] Link the validation payload for the reserved SRAM address.
 - [x] Add a repeatable package assembly step for a raw payload.
-- [ ] Add a package inspection command.
+- [x] Add a package inspection command with contract and exact-length validation.
 - [x] Add package CRC32 generation through the package command.
 - [ ] Document the SD-card installation procedure.
 - [ ] Document the complete MVP demo procedure.

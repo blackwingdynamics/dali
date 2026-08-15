@@ -120,6 +120,19 @@ just package-hello
 The generated package is written under the target directory and is ignored by
 Git as a build artifact.
 
+## Inspect an AMRN package
+
+Use the host CLI to validate an existing package against the AMRN contract and
+print its decoded fields:
+
+```text
+cargo run -p dali-cli -- inspect \
+  --input target/thumbv7em-none-eabihf/debug/hello.amrn
+```
+
+The command validates the header, target, ABI version, payload bounds,
+execution entry, CRC32, and exact file length. It does not modify the package.
+
 ## Install a package on the SD card
 
 1. Build the package with `just package-hello`.

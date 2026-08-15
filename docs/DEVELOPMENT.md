@@ -193,6 +193,16 @@ The entry offset is explicit because the package command does not infer symbol
 locations from an ELF file. The input must already be linked native payload
 for the documented target and load address.
 
+Inspect an existing package without changing it:
+
+```text
+cargo run -p dali-cli -- inspect \
+  --input <package.amrn>
+```
+
+The inspection command reports the decoded header fields and rejects invalid
+AMRN data, CRC32 mismatches, and trailing bytes.
+
 The embedded target is selected explicitly for kernel commands so host-side SDK and CLI tooling can be checked normally:
 
 ```text
