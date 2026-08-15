@@ -34,6 +34,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.
 - FAT long-file-name enumeration now discovers host-created packages with the four-character `.amrn` extension without a package-name assumption.
 - The `dali-amrn` crate decodes the fixed header, validates payload bounds and entry metadata, and verifies CRC32 with 15 host tests.
+- The AMRN parser exposes separate header and incremental payload validation for a bounded streaming loader, with host coverage for the split path.
 
 ### Incomplete or not yet accepted
 
@@ -163,6 +164,8 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Reject payloads larger than the reserved SRAM region.
 - [x] Implement CRC32 for the payload.
 - [x] Reject CRC32 mismatches.
+- [x] Expose separate header and payload validation for bounded loader reads.
+- [x] Expose incremental payload validation before the future SRAM copy pass.
 - [ ] Log successful header validation.
 
 ## Phase 4 — RAM loading and execution

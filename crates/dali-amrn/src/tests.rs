@@ -36,6 +36,53 @@ fn parses_valid_package_and_payload() {
 }
 
 #[test]
+fn validates_header_and_payload_separately() {
+    let package = valid_package();
+    let header = parse_header(&package[..HEADER_SIZE]).unwrap();
+    let parsed = validate_payload(header, &package[PAYLOAD_OFFSET..]).unwrap();
+    assert_eq!(parsed.payload, TEST_PAYLOAD);
+    assert_eq!(parsed.entry_address, LOAD_ADDRESS);
+}
+
+#[test]
+fn rejects_payload_length_mismatch_after_header_validation() {
+    let package = valid_package();
+    let header = parse_header(&package[..HEADER_SIZE]).unwrap();
+    assert_eq!(
+        validate_payload(header, &package[PAYLOAD_OFFSET..PAYLOAD_OFFSET + 1]),
+        Err(ParseError::PayloadOutsidePackage)
+    );
+}
+
+#[test]
+fn validates_payload_in_bounded_chunks() {
+    let package = valid_package();
+    let header = parse_header(&package[..HEADER_SIZE]).unwrap();
+    let mut validator = PayloadValidator::new(header).unwrap();
+    validator.update(&TEST_PAYLOAD[..3]).unwrap();
+    validator.update(&TEST_PAYLOAD[3..]).unwrap();
+    assert_eq!(
+        validator.finish(),
+        Ok(ValidatedPayload {
+            header,
+            entry_address: LOAD_ADDRESS,
+        })
+    );
+}
+
+#[test]
+fn rejects_payload_chunk_beyond_declared_size() {
+    let package = valid_package();
+    let header = parse_header(&package[..HEADER_SIZE]).unwrap();
+    let mut validator = PayloadValidator::new(header).unwrap();
+    let oversized = [0; TEST_PAYLOAD.len() + 1];
+    assert_eq!(
+        validator.update(&oversized),
+        Err(ParseError::PayloadOutsidePackage)
+    );
+}
+
+#[test]
 fn rejects_invalid_magic() {
     let mut package = valid_package();
     package[0] = b'X';

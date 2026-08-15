@@ -118,6 +118,14 @@ an 8.3 short entry, so short-name-only enumeration would miss packages. The
 filesystem layer reports package discovery generically; package selection is a
 higher-level loader policy.
 
+The hardware-independent `dali-amrn` crate exposes header decoding and payload
+validation separately as well as a contiguous-package convenience API. The
+split form is the loader boundary for bounded filesystem reads: a loader can
+validate a fixed header and stream a payload without allocating a complete
+64 KiB package on the stack. The incremental validator must finish before any
+payload copy to the executable SRAM region; a later loader may perform a
+validation pass followed by a separate copy pass.
+
 USB CDC logging has two deliberately separate ownership boundaries:
 
 - `crates/dali-usb/` contains only `no_std`, transport-neutral bounded delivery

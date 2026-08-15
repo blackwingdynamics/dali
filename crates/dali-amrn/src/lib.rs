@@ -2,6 +2,12 @@
 
 //! Hardware-independent AMRN v1 header and payload validation.
 
+mod stream;
+
+#[cfg(test)]
+use stream::crc32;
+pub use stream::{PayloadValidator, ValidatedPayload};
+
 /// The fixed AMRN v1 header length in bytes.
 pub const HEADER_SIZE: usize = 32;
 /// The AMRN format revision implemented by this crate.
@@ -120,15 +126,9 @@ pub fn parse(package: &[u8]) -> Result<Package<'_>, ParseError> {
     if package.len() < HEADER_SIZE {
         return Err(ParseError::TruncatedHeader);
     }
-    let header = parse_header(package)?;
+    let header = parse_header(&package[..HEADER_SIZE])?;
 
     let payload_size = header.payload_size as usize;
-    if payload_size == 0 {
-        return Err(ParseError::EmptyPayload);
-    }
-    if payload_size > MAX_PAYLOAD_SIZE {
-        return Err(ParseError::PayloadTooLarge);
-    }
     let payload_end = PAYLOAD_OFFSET
         .checked_add(payload_size)
         .ok_or(ParseError::PayloadOutsidePackage)?;
@@ -136,39 +136,55 @@ pub fn parse(package: &[u8]) -> Result<Package<'_>, ParseError> {
         .get(PAYLOAD_OFFSET..payload_end)
         .ok_or(ParseError::PayloadOutsidePackage)?;
 
-    validate_execution_offset(header.execution_offset, payload_size)?;
-    let entry_address = header
-        .load_address
-        .checked_add(header.execution_offset)
-        .ok_or(ParseError::EntryAddressOverflow)?;
-    if crc32(payload) != header.crc32 {
-        return Err(ParseError::CrcMismatch);
+    validate_payload(header, payload)
+}
+
+/// Decodes and validates the fixed AMRN header without reading the payload.
+pub fn parse_header(header_bytes: &[u8]) -> Result<Header, ParseError> {
+    if header_bytes.len() < HEADER_SIZE {
+        return Err(ParseError::TruncatedHeader);
     }
+    let header = Header {
+        magic: read_magic(header_bytes),
+        format_version: header_bytes[FORMAT_VERSION_OFFSET],
+        target_id: header_bytes[TARGET_ID_OFFSET],
+        header_size: read_u16(header_bytes, HEADER_SIZE_OFFSET),
+        payload_size: read_u32(header_bytes, PAYLOAD_SIZE_OFFSET),
+        load_address: read_u32(header_bytes, LOAD_ADDRESS_OFFSET),
+        execution_offset: read_u32(header_bytes, EXECUTION_OFFSET_OFFSET),
+        crc32: read_u32(header_bytes, CRC32_OFFSET),
+        abi_version: header_bytes[ABI_VERSION_OFFSET],
+        flags: header_bytes[FLAGS_OFFSET],
+        reserved_u16: read_u16(header_bytes, RESERVED_U16_OFFSET),
+        reserved_u32: read_u32(header_bytes, RESERVED_U32_OFFSET),
+    };
+    validate_header(header)
+}
+
+/// Validates payload bytes against a previously decoded AMRN header.
+pub fn validate_payload<'a>(header: Header, payload: &'a [u8]) -> Result<Package<'a>, ParseError> {
+    if payload.len() != header.payload_size as usize {
+        return Err(ParseError::PayloadOutsidePackage);
+    }
+    validate_execution_offset(header.execution_offset, payload.len())?;
+    let mut validator = PayloadValidator::new(header)?;
+    validator.update(payload)?;
+    let validated = validator.finish()?;
     Ok(Package {
-        header,
+        header: validated.header,
         payload,
-        entry_address,
+        entry_address: validated.entry_address,
     })
 }
 
-fn parse_header(package: &[u8]) -> Result<Header, ParseError> {
-    if package.get(..MAGIC.len()) != Some(MAGIC.as_slice()) {
+fn read_magic(bytes: &[u8]) -> [u8; MAGIC.len()] {
+    [bytes[0], bytes[1], bytes[2], bytes[3]]
+}
+
+fn validate_header(header: Header) -> Result<Header, ParseError> {
+    if header.magic != MAGIC {
         return Err(ParseError::InvalidMagic);
     }
-    let header = Header {
-        magic: MAGIC,
-        format_version: package[FORMAT_VERSION_OFFSET],
-        target_id: package[TARGET_ID_OFFSET],
-        header_size: read_u16(package, HEADER_SIZE_OFFSET),
-        payload_size: read_u32(package, PAYLOAD_SIZE_OFFSET),
-        load_address: read_u32(package, LOAD_ADDRESS_OFFSET),
-        execution_offset: read_u32(package, EXECUTION_OFFSET_OFFSET),
-        crc32: read_u32(package, CRC32_OFFSET),
-        abi_version: package[ABI_VERSION_OFFSET],
-        flags: package[FLAGS_OFFSET],
-        reserved_u16: read_u16(package, RESERVED_U16_OFFSET),
-        reserved_u32: read_u32(package, RESERVED_U32_OFFSET),
-    };
     if header.format_version != FORMAT_VERSION {
         return Err(ParseError::UnsupportedFormatVersion);
     }
@@ -187,9 +203,16 @@ fn parse_header(package: &[u8]) -> Result<Header, ParseError> {
     {
         return Err(ParseError::NonZeroReservedField);
     }
+    if header.payload_size == 0 {
+        return Err(ParseError::EmptyPayload);
+    }
+    if header.payload_size as usize > MAX_PAYLOAD_SIZE {
+        return Err(ParseError::PayloadTooLarge);
+    }
     if header.load_address != LOAD_ADDRESS {
         return Err(ParseError::InvalidLoadAddress);
     }
+    validate_execution_offset(header.execution_offset, header.payload_size as usize)?;
     Ok(header)
 }
 
@@ -216,21 +239,6 @@ fn read_u32(bytes: &[u8], offset: usize) -> u32 {
         bytes[offset + 2],
         bytes[offset + 3],
     ])
-}
-
-fn crc32(bytes: &[u8]) -> u32 {
-    let mut checksum = CRC32_INITIAL;
-    for byte in bytes {
-        checksum ^= u32::from(*byte);
-        for _ in 0..u8::BITS {
-            checksum = if checksum & 1 == 1 {
-                (checksum >> 1) ^ CRC32_POLYNOMIAL
-            } else {
-                checksum >> 1
-            };
-        }
-    }
-    !checksum
 }
 
 #[cfg(test)]
