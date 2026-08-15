@@ -133,6 +133,22 @@ cargo run -p dali-cli --bin dali -- inspect \
 The command validates the header, target, ABI version, payload bounds,
 execution entry, CRC32, and exact file length. It does not modify the package.
 
+## Install the CLI
+
+Install the host CLI from the repository with Cargo:
+
+```text
+cargo install --path crates/dali-cli --locked
+```
+
+After installation, the user-facing executable is `dali`:
+
+```text
+dali inspect --input target/thumbv7em-none-eabihf/debug/hello.amrn
+```
+
+The Cargo package remains `dali-cli`; `dali` is the installed executable name.
+
 ## Install a package on the SD card
 
 1. Build the package with `just package-hello`.

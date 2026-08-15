@@ -203,6 +203,17 @@ cargo run -p dali-cli --bin dali -- inspect \
 The inspection command reports the decoded header fields and rejects invalid
 AMRN data, CRC32 mismatches, and trailing bytes.
 
+To install the CLI locally and use it without `cargo run`:
+
+```text
+cargo install --path crates/dali-cli --locked
+dali inspect --input <package.amrn>
+```
+
+Cargo installs the executable under its configured binary directory, normally
+`~/.cargo/bin`. That directory must be in `PATH` for the `dali` command to be
+available directly.
+
 The embedded target is selected explicitly for kernel commands so host-side SDK and CLI tooling can be checked normally:
 
 ```text
