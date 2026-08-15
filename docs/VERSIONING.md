@@ -55,9 +55,13 @@ AMRN format version: 1
 Header size: 32 bytes
 Integrity: CRC32
 Load address: 0x20008000
-Target ID: 0x01 (STM32F411CEU6)
+Target ID: 0x02 (STM32F405RGT6)
 ABI version: 1
 ```
+
+The current AMRN v1 target profile is STM32F405RGT6 (`0x02`). The STM32F411
+BlackPill requires a separate target profile before its native applications can
+be accepted by the loader.
 
 Format version `1` must remain readable by every kernel that claims support for it.
 

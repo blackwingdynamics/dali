@@ -27,29 +27,24 @@ This test does not prove:
 
 ## 2. Required hardware
 
-- WeAct BlackPill with STM32F411CEU6;
+- WeAct Studio STM32F405RGT6 Core Board;
 - SWD programmer/debug probe;
-- 3.3 V SD-card interface;
+- 3.3 V microSD card in the on-board SDIO socket;
 - FAT16 or FAT32 SD card;
 - RTT-capable debug connection;
-- correctly wired SPI1:
-  - SCK: PA5;
-  - MISO: PA6;
-  - MOSI: PA7;
-  - CS: PA4;
-- PC13 status LED.
+- PB2 status LED.
 
 Record the board revision, SD-card type, wiring, power source, and probe before testing.
 
 ## 3. Required artifacts
 
-- kernel image built for STM32F411;
+- kernel image built for STM32F405;
 - independently built `hello.amrn` package;
 - package built for `thumbv7em-none-eabihf`;
 - package load address: `0x20008000`;
 - package payload size no greater than 64 KiB;
 - package format version: `1`;
-- package target ID: `0x01` (`STM32F411CEU6`);
+- package target ID: `0x02` (`STM32F405RGT6`);
 - package ABI version: `1`;
 - valid CRC32 over the payload.
 
@@ -72,7 +67,7 @@ The MVP does not require package installation, package deletion, or hot swap. Th
 ## 5. Test procedure
 
 1. Connect the debug probe and RTT viewer.
-2. Flash the kernel image to the STM32F411.
+2. Flash the kernel image to the STM32F405.
 3. Insert the prepared SD card.
 4. Reset the board.
 5. Capture the complete RTT output from reset through application execution.

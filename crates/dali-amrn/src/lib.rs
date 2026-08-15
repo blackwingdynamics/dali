@@ -14,8 +14,8 @@ pub use stream::{PayloadValidator, ValidatedPayload};
 pub const HEADER_SIZE: usize = 32;
 /// The AMRN format revision implemented by this crate.
 pub const FORMAT_VERSION: u8 = 1;
-/// The STM32F411CEU6 target identifier defined by the v1 format.
-pub const TARGET_ID: u8 = 0x01;
+/// The STM32F405RGT6 target identifier defined by the current v1 profile.
+pub const TARGET_ID: u8 = 0x02;
 /// The ABI revision implemented by the v1 format.
 pub const ABI_VERSION: u8 = 1;
 /// The reserved flags value accepted by the v1 format.

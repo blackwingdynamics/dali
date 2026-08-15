@@ -2,11 +2,10 @@
 
 ## Board
 
-The project supports two compile-time board backends. The BlackPill remains the
-MVP reference platform; the F405 board is the secondary platform for early
-on-board SDIO bring-up.
+The project supports two compile-time board backends. The F405 board is the
+current MVP execution platform; the BlackPill remains a separate backend.
 
-### MVP reference board
+### Secondary board
 
 - Board: WeAct BlackPill
 - MCU: STM32F411CEU6
@@ -34,7 +33,7 @@ The application load address is fixed at `0x20008000` for the MVP.
 | SPI1 MOSI | PA7 |
 | SD chip select | PA4 |
 
-### Secondary SDIO board
+### Current MVP SDIO board
 
 - Board: WeAct Studio STM32F405RGT6 Core Board, 64-pin
 - MCU: STM32F405RGT6
@@ -58,8 +57,8 @@ The F405 board is selected with the `board-stm32f405-sd` Cargo feature. Its
 SDIO pin tuple is owned by the board backend and is consumed by the storage
 subsystem. The current F405 backend uses HAL card initialization and a
 board-local DMA2 Stream 3, Channel 4 receive path with an aligned word buffer
-for block reads. It is not yet an MVP
-package target; AMRN target compatibility remains defined by `AMRN_FORMAT.md`.
+for block reads. It is the current AMRN package target; AMRN target
+compatibility remains defined by `AMRN_FORMAT.md`.
 
 ## Electrical requirements
 

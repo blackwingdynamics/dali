@@ -20,7 +20,7 @@ The first revision must use an explicitly documented byte layout. Rust struct la
 | --- | --- | ---: | --- |
 | `0x00` | magic | 4 bytes | ASCII `DALI` |
 | `0x04` | format_version | 1 byte | MVP value is `1` |
-| `0x05` | target_id | 1 byte | MVP value is `0x01` (`STM32F411CEU6`) |
+| `0x05` | target_id | 1 byte | Current MVP profile is `0x02` (`STM32F405RGT6`) |
 | `0x06` | header_size | 2 bytes | Little-endian; MVP value is `32` |
 | `0x08` | payload_size | 4 bytes | Little-endian payload length |
 | `0x0C` | load_address | 4 bytes | Little-endian; MVP value is `0x20008000` |
@@ -40,7 +40,7 @@ The loader rejects a package when:
 - the file is shorter than 32 bytes;
 - `magic` is not `DALI`;
 - `format_version` is unsupported;
-- `target_id` is not `0x01`;
+- `target_id` is not `0x02`;
 - `header_size` is not exactly 32;
 - `abi_version` is unsupported;
 - `flags` or any reserved field is non-zero;
@@ -62,6 +62,9 @@ Future revisions may add manifest data, kernel compatibility, required services,
 - The payload is linked for `0x20008000`.
 - The maximum payload size is 64 KiB.
 - The payload contains native `thumbv7em-none-eabihf` code.
+- AMRN v1 execution is defined for the STM32F405RGT6 current MVP target.
+  STM32F411 support remains a separate board profile and is not implied by the
+  F405 target ID.
 - Relocations and dynamic linking are not supported.
 - The execution entry is `load_address + execution_offset`.
 - The entry address must have the Cortex-M Thumb bit set before the jump.

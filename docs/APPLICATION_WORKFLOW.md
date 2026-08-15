@@ -3,10 +3,9 @@
 This document describes how a Dali OS application becomes an AMRN package and
 how the kernel currently consumes that package.
 
-The current workflow validates package construction and loader input. The MVP
-loader does not yet copy the payload into application SRAM or transfer control
-to its entry point. Those steps are explicitly described as future stages
-below.
+The current workflow validates package construction and loader input. The
+loader now contains the bounded SRAM-copy and ABI entry-transfer path for the
+F405 MVP target, but those execution steps still require physical acceptance.
 
 ## Workflow overview
 
@@ -28,7 +27,7 @@ AMRN package (.amrn)
         v
 kernel filesystem scan and bounded AMRN validation
         |
-        | future loader stage
+        | validated loader execution path
         v
 copy to application SRAM and call the native entry point
 ```
@@ -181,10 +180,12 @@ The current loader is intentionally read-only and bounded:
 5. verify the CRC32;
 6. report success or a typed failure.
 
-The next implementation stage must add validated SRAM copying and the ABI
-entry transfer. It must preserve the existing bounds checks, keep unsafe code
-centralized, and add host tests plus the physical LED acceptance evidence
-before the application is considered executable.
+The loader's execution path performs a second bounded read pass after the CRC
+pass, copies only the validated payload into the reserved SRAM region, and
+transfers control through the validated ABI entry address. It preserves the
+existing bounds checks and keeps the unsafe operations centralized in the
+loader. Physical F405 testing must still prove the LED acceptance behavior
+before the application is considered accepted.
 
 ## Troubleshooting boundaries
 

@@ -2,6 +2,9 @@
 
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, timer::SysDelay};
 
+/// The current MVP board supports AMRN native application execution.
+pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
+
 /// System clock target for the 8 MHz HSE board.
 pub const SYSTEM_CLOCK_MHZ: u32 = 168;
 

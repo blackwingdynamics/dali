@@ -110,12 +110,20 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
-            match crate::loader::validate_amrn_file(reader) {
-                Ok(_) => {
+            let package = if board::APPLICATION_EXECUTION_SUPPORTED {
+                crate::loader::load_amrn_file(reader)
+            } else {
+                crate::loader::validate_amrn_file(reader)
+            };
+            match package {
+                Ok(package) => {
                     logging::info(
                         logging::BOOT_SUBSYSTEM,
                         format_args!("[LOADER] AMRN header and payload validated"),
                     );
+                    if board::APPLICATION_EXECUTION_SUPPORTED {
+                        crate::loader::start_application(package);
+                    }
                     status::StorageStatus::Ready
                 }
                 Err(error) => {

@@ -36,8 +36,8 @@ The central architectural idea is:
 The first milestone proves one complete path on a single reference board:
 
 1. boot a `no_std` Rust kernel;
-2. initialize the STM32F411 clock, status LED, and logging;
-3. initialize an SD card over SPI1;
+2. initialize the STM32F405 clock, status LED, SDIO, and logging;
+3. initialize an SD card over the STM32 hardware SDIO interface;
 4. read a FAT16/FAT32 filesystem;
 5. discover an `.amrn` package in the SD card root directory;
 6. validate its fixed 32-byte header, payload bounds, target, and CRC32 checksum;
@@ -49,35 +49,27 @@ The MVP application is a RAM-loaded native module, not a sandboxed process. Kern
 
 ## 4. Reference platform
 
-- MCU: STM32F411CEU6;
-- board: WeAct BlackPill;
+- MCU: STM32F405RGT6;
+- board: WeAct Studio STM32F405RGT6 Core Board;
 - CPU: ARM Cortex-M4F;
 - target: `thumbv7em-none-eabihf`;
-- clock target: 100 MHz;
-- status LED: PC13;
-- SD interface: SPI1;
-  - SCK: PA5;
-  - MISO: PA6;
-  - MOSI: PA7;
-- CS: PA4;
+- clock target: 168 MHz from an 8 MHz HSE;
+- status LED: PB2, active-high;
+- SD interface: hardware SDIO, 4-bit mode;
 - initial logging: RTT;
 - runtime logging: USB CDC-ACM;
 - debug logging: RTT when an SWD probe is connected.
 
-The repository also contains a secondary compile-time backend for the WeAct
-Studio STM32F405RGT6 Core Board. This board exposes an on-board microSD socket
-through the STM32 hardware SDIO peripheral in 4-bit mode (`PC12`, `PD2`, and
-`PC8`–`PC11`) and an onboard status LED on `PB2`. It is intended for storage
-bring-up and hardware experiments;
-the F411 BlackPill remains the MVP reference target until AMRN target
-compatibility is explicitly extended.
+The repository also contains a secondary BlackPill F411 backend. It is not
+compatible with the current F405 AMRN target profile until a separate target
+ID and board acceptance procedure are specified.
 
 The exact board wiring, voltage requirements, SPI startup speed, and clock configuration must be documented before hardware acceptance testing.
 
 Board support is selected at compile time. The kernel exposes one board facade,
 while each supported board owns its pin mapping, clock setup, peripheral
 ownership, and board-specific constants in a separate backend module. The
-BlackPill F411 backend is the default MVP selection. Runtime board autodetection
+F405 backend is the current MVP selection. Runtime board autodetection
 is not assumed because MCU pin mappings and safe clock initialization must be
 known before kernel startup.
 
@@ -210,7 +202,7 @@ The header specification must define every byte, field width, byte order, and al
 | --- | ---: | --- | --- |
 | `0x00` | 4 | Magic | ASCII `DALI` |
 | `0x04` | 1 | Format version | MVP value is `1` |
-| `0x05` | 1 | Target ID | MVP value is `0x01` (`STM32F411CEU6`) |
+| `0x05` | 1 | Target ID | Current MVP value is `0x02` (`STM32F405RGT6`) |
 | `0x06` | 2 | Header size | Little-endian; MVP value is `32` |
 | `0x08` | 4 | Payload size | Little-endian payload length |
 | `0x0C` | 4 | Load address | Little-endian; MVP value is `0x20008000` |
@@ -224,7 +216,7 @@ The header specification must define every byte, field width, byte order, and al
 The loader must reject:
 
 - an invalid magic value or unsupported version;
-- a target ID other than `0x01`;
+- a target ID other than `0x02`;
 - an ABI version other than `1`;
 - a header size other than 32 bytes;
 - non-zero flags or reserved fields;
@@ -262,6 +254,10 @@ The loader must:
 8. transfer control through the documented `unsafe` entry ABI.
 
 The application entry ABI, return behavior, panic behavior, and reset behavior are specified in `ABI.md`. Interrupt ownership is intentionally deferred.
+
+The current STM32F405 board is the AMRN execution target. The F411 BlackPill
+is not silently treated as compatible with this profile; it requires a future
+versioned target profile before native execution is accepted there.
 
 ## 10. Storage subsystem
 

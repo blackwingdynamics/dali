@@ -7,9 +7,8 @@
 - `git-cliff` for local changelog previews;
 - `just` for the repository task runner;
 - an SWD programmer/debug probe;
-- a WeAct BlackPill STM32F411 board;
-- optionally, a WeAct Studio STM32F405RGT6 Core Board with its on-board SDIO
-  socket;
+- a WeAct Studio STM32F405RGT6 Core Board with its on-board SDIO socket;
+- optionally, a WeAct BlackPill STM32F411 board for the separate backend;
 - a correctly wired 3.3 V SD-card interface;
 - a supported RTT viewer.
 

@@ -40,6 +40,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The `dali-amrn` crate encodes contract-valid packages, and `dali-cli package` wraps a raw payload with the documented header and CRC.
 - The `dali-app-hello` validation payload now has a dedicated 64 KiB SRAM linker layout and repeatable build/package recipes.
 - The validation payload is intentionally limited to package construction and loader validation; SRAM copying, native entry transfer, and LED acceptance remain incomplete.
+- The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
+- The loader now performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution remains unverified.
 
 ### Incomplete or not yet accepted
 
@@ -47,7 +49,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The interrupt-driven USB servicing strategy has target-build evidence but has not completed physical enumeration, reconnect, and boot-log acceptance.
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
 - The F405 SDIO path has not completed the documented hardware acceptance evidence.
-- RAM loading, application entry, SDK packaging, and CLI assembly remain incomplete.
+- F405 hardware execution, the deterministic LED proof, and SDK application APIs remain incomplete.
+- A separate AMRN target profile for STM32F411 remains unspecified and is not part of the current execution work.
 
 ### Current priority
 
@@ -107,7 +110,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 
 ## Phase 0 — Documentation baseline
 
-- [ ] Confirm the reference board is WeAct BlackPill with STM32F411CEU6.
+- [x] Confirm the reference board is WeAct Studio STM32F405RGT6 Core Board.
 - [ ] Confirm `.amrn` as the single MVP package extension.
 - [ ] Record the target triple as `thumbv7em-none-eabihf`.
 - [ ] Define the MVP application entry ABI.
@@ -128,7 +131,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Document the RTT and USB CDC logging channels used for acceptance testing.
 - [ ] Review all MVP claims for unsupported security language.
 - [x] Add the compile-time STM32F405 SDIO board backend.
-- [ ] Record STM32F405 SDIO wiring and hardware bring-up evidence.
+- [ ] Record STM32F405 SDIO wiring and hardware acceptance evidence.
 
 ## Phase 1 — Kernel bootstrap
 
@@ -176,15 +179,15 @@ observed; reconnect and the remaining boot sequence are still pending.
 
 ## Phase 4 — RAM loading and execution
 
-- [ ] Reserve the application SRAM region in `kernel/memory.x`.
-- [ ] Expose the region only to the loader.
-- [ ] Read a validated payload into a bounded buffer.
-- [ ] Copy the payload to `0x20008000`.
-- [ ] Validate the calculated entry address.
-- [ ] Set the Cortex-M Thumb bit on the entry address.
-- [ ] Disable application-owned interrupts for the MVP.
-- [ ] Define the application reset and return behavior.
-- [ ] Jump to the application entry point.
+- [x] Reserve the application SRAM region in `kernel/memory.x`.
+- [x] Expose the region only to the loader.
+- [x] Read a validated payload into a bounded buffer.
+- [x] Copy the payload to `0x20008000`.
+- [x] Validate the calculated entry address.
+- [x] Set the Cortex-M Thumb bit on the entry address.
+- [x] Keep application-owned interrupts disabled for the MVP.
+- [x] Define the application reset and return behavior.
+- [x] Provide the application entry-point transfer.
 - [ ] Produce the deterministic LED pattern from the demo application.
 - [ ] Record the first end-to-end hardware acceptance result.
 

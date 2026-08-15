@@ -2,6 +2,10 @@
 
 use stm32f4xx_hal::{gpio, pac, prelude::*, timer::SysDelay};
 
+/// The reference MVP board supports AMRN native application execution.
+#[cfg(feature = "sdio")]
+pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
+
 /// System clock target in megahertz for the STM32F411 MVP board.
 pub const SYSTEM_CLOCK_MHZ: u32 = 100;
 

@@ -16,7 +16,7 @@ header, and the kernel must reject packages requiring another ABI version.
 ## Rules
 
 - target: `thumbv7em-none-eabihf`;
-- target ID: `0x01` (`STM32F411CEU6`);
+- target ID: `0x02` (`STM32F405RGT6`);
 - ABI version: `1`;
 - architecture: ARM Cortex-M4F;
 - entry address: `load_address + execution_offset`, with the Thumb bit set;
@@ -26,6 +26,10 @@ header, and the kernel must reject packages requiring another ABI version.
 - kernel-private symbols: not available to applications;
 - interrupts: disabled and not owned by applications in the MVP;
 - shared memory: not available until an explicit layout is documented.
+
+The current execution target is the STM32F405RGT6 board. The F411 BlackPill is
+not implied to be compatible with target ID `0x02`; it requires a separate
+versioned target profile before native execution is accepted there.
 
 The entry offset must be word-aligned and point inside the payload. The kernel
 sets the Cortex-M Thumb bit before calling the entry point. The application
