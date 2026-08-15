@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-14
+## Current Status — 2026-08-15
 
 ### Completed and evidenced
 
@@ -18,10 +18,15 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The hardware-neutral `dali-usb` crate provides bounded delivery, link state, partial-write handling, and host tests without owning USB hardware.
 - The production USB backend services the `usb-device` state machine from the F405/F411 `OTG_FS` interrupt while main-context logging only appends to the bounded queue.
 - Renode simulation explicitly disables USB CDC because its STM32F4 reference model does not implement the OTG_FS global registers used by the production backend.
+- Pico 2 SWD evidence shows the F405 firmware reaches blocking SDIO block-read code while the OTG_FS interrupt services USB polling; RTT boot logs are visible through the probe.
+- The host successfully enumerated the runtime CDC device as `1209:da11` and created `/dev/ttyACM1` during SWD debugging.
+- SWD showed `Configured` USB state and successful drain reports, but no `SerialPort::write()` call after boot logs were queued; the queue therefore needs an explicit software-pended OTG_FS service trigger.
+- Hardware console testing showed `picocom` opening after enumeration while boot logs had already drained; CDC delivery must therefore wait for the host-open DTR signal.
+- On 2026-08-15, Pico 2 SWD programming and `/dev/ttyACM1` CDC testing produced `Terminal ready` and delivered boot logs through `[STORAGE] SDIO card initialized`.
 
 ### Incomplete or not yet accepted
 
-- Boot logs are not yet reliably observable through the USB CDC terminal after reset.
+- USB CDC boot logs are now observable through the terminal after reset through the SDIO initialization milestone. Full boot-log and reconnect acceptance remains incomplete.
 - The interrupt-driven USB servicing strategy has target-build evidence but has not completed physical enumeration, reconnect, and boot-log acceptance.
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
 - The F405 SDIO path has not completed the documented hardware acceptance evidence.
@@ -31,18 +36,18 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 **P0 — Make USB CDC boot logging deterministic under blocking storage bring-up.**
 
-The implementation phase is paused pending hardware diagnostics. No further
-USB driver or timing changes should be made from the current evidence alone.
-The next evidence-gathering requirement is an SWD debug probe compatible with
-the STM32F405, such as ST-Link/V2, so the reset/control-request failure can be
-located from the faulting program counter or an observed USB interrupt state.
+The implementation phase resumed after Pico 2 SWD access became available.
+The first targeted fix addresses the CDC TX delivery boundary: the backend
+must flush the `usbd-serial` software buffer and preserve pending transport
+progress across USB service events. Queue insertion also software-pends the
+OTG_FS interrupt so configured hosts are serviced without arbitrary delays or
+terminal-specific workarounds.
 
 The next implementation must establish a tested USB lifecycle contract that can
 service enumeration, CDC control requests, and log delivery while storage is
 initializing. It must not rely on arbitrary sleeps, terminal-specific behavior,
-or unverified interrupt code. Hardware acceptance resumes only after the SWD
-diagnostic evidence identifies the runtime failure and a targeted fix is
-validated.
+or unverified interrupt code. Initial F405 CDC delivery is now hardware-
+observed; reconnect and the remaining boot sequence are still pending.
 
 ### P0 handoff boundary
 
@@ -56,14 +61,14 @@ validated.
   service budgets.
 - Simulation evidence: limited. Renode cannot exercise the production USB
   backend because its STM32F4 model lacks the required OTG_FS global registers.
-- F405 hardware evidence: DFU writes complete and the firmware enables the USB
-  pull-up, but the host does not receive the runtime device descriptor. Linux
-  reported `error -110` followed by `error -71`; `/dev/ttyACM*` and CDC boot
-  logs were not produced.
-- Current fault boundary: before CDC configuration and before queue draining.
-  The evidence does not prove a queue, terminal, or storage logging fault.
-- Required next input: SWD access to capture the runtime fault location or USB
-  interrupt state. Blind flash/reset iteration is intentionally stopped.
+- F405 hardware evidence: Pico 2 SWD reaches the firmware, RTT shows boot logs
+  through SDIO initialization, and the host creates `/dev/ttyACM1` for the
+  runtime CDC device; `picocom` reports `Terminal ready` and receives the boot
+  logs through `[STORAGE] SDIO card initialized`.
+- Current fault boundary: initial CDC delivery is working. Full boot completion
+  and reconnect behavior remain unverified.
+- Required next input: one targeted reconnect test and evidence for the
+  remaining boot sequence.
 
 ### Next atomic tasks
 
@@ -73,10 +78,15 @@ validated.
 - [x] Implement one reviewed USB servicing strategy for blocking boot phases.
 - [x] Verify the strategy with F405 target checks and strict Clippy.
 - [x] Record the first failed F405 enumeration evidence and keep it separate from CDC queue conclusions.
-- [ ] Verify USB enumeration and `Terminal ready` on F405 hardware.
+- [x] Verify USB enumeration and `Terminal ready` on F405 hardware.
 - [ ] Verify that all boot logs appear after a reset with the terminal already connected.
 - [ ] Record the hardware evidence before marking USB boot logging complete.
-- [ ] Use SWD to identify the F405 USB reset/control-request failure before the next driver change.
+- [x] Use Pico 2 SWD to identify that USB polling runs while storage is blocked and separate enumeration from CDC TX delivery.
+- [x] Preserve CDC TX data across software-buffer flush backpressure.
+- [x] Trigger USB service after queue insertion when the host is already configured.
+- [x] Retain boot logs until the CDC host-open signal is asserted.
+- [x] Verify initial CDC TX delivery after the targeted flush and host-open fixes.
+- [ ] Verify CDC TX reconnect behavior and the remaining boot sequence.
 
 ## Phase 0 — Documentation baseline
 

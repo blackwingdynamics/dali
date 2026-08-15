@@ -22,6 +22,9 @@ static mut USB_LOG_QUEUE: LogQueue = LogQueue::new();
 #[cfg(feature = "usb-cdc")]
 const USB_OVERFLOW_WARNING: &str =
     "[WARN][LOG] USB log queue overflow; oldest messages were dropped\r\n";
+#[cfg(feature = "usb-cdc")]
+const USB_FLUSH_FAILURE_WARNING: &str =
+    "[WARN][USB] CDC transport flush failed; queued delivery may be delayed\r\n";
 
 /// Stable subsystem label for bootstrap messages.
 pub const BOOT_SUBSYSTEM: &str = "BOOT";
@@ -85,6 +88,7 @@ pub fn log(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
                 // SAFETY: Main-context logging masks OTG_FS while updating the
                 // queue, so the handler cannot observe a partial record.
                 unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).push(line) };
+                cortex_m::peripheral::NVIC::pend(stm32f4xx_hal::pac::Interrupt::OTG_FS);
             });
         }
     }
@@ -94,8 +98,18 @@ pub fn log(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
 fn drain_usb_queue(link: dali_usb::LinkState, sink: &mut dyn dali_usb::ByteSink) {
     // SAFETY: This runs in the OTG_FS handler while main-context queue updates
     // are masked by the interrupt-free critical section.
-    let dropped =
+    let report =
         unsafe { dali_usb::drain(&mut *core::ptr::addr_of_mut!(USB_LOG_QUEUE), link, sink) };
+
+    if report.flush == dali_usb::FlushStatus::Failed {
+        rtt::write(
+            Level::Warn,
+            BOOT_SUBSYSTEM,
+            format_args!("{}", USB_FLUSH_FAILURE_WARNING),
+        );
+    }
+
+    let dropped = report.dropped;
 
     // The queue intentionally keeps the newest messages when its fixed capacity
     // is exhausted. Emit a visible diagnostic after the queue becomes writable.
@@ -110,7 +124,14 @@ fn drain_usb_queue(link: dali_usb::LinkState, sink: &mut dyn dali_usb::ByteSink)
         // SAFETY: The same OTG_FS ownership invariant applies while the
         // warning is drained immediately after it is queued.
         let queue = unsafe { &mut *core::ptr::addr_of_mut!(USB_LOG_QUEUE) };
-        let _ = dali_usb::drain(queue, link, sink);
+        let report = dali_usb::drain(queue, link, sink);
+        if report.flush == dali_usb::FlushStatus::Failed {
+            rtt::write(
+                Level::Warn,
+                BOOT_SUBSYSTEM,
+                format_args!("{}", USB_FLUSH_FAILURE_WARNING),
+            );
+        }
     }
 }
 

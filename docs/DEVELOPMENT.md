@@ -147,6 +147,18 @@ stores up to 32 formatted lines of 128 bytes each. If that bounded capacity is
 exceeded, the oldest messages are discarded and the console emits an explicit
 overflow warning after the queue is writable.
 
+CDC transmission also requires an explicit flush after bytes enter the
+`usbd-serial` software buffer. A `WouldBlock` result is normal transport
+backpressure and must be retried by later USB service events; it is not proof
+that a queued log reached the host.
+
+Appending a log record also pends `OTG_FS`. This makes queue insertion a bounded
+service trigger during blocking storage operations while keeping all USB state
+and endpoint access in the interrupt owner.
+The queue is drained only after both USB configuration and the CDC terminal's
+host-open (`DTR`) signal are present; device enumeration alone does not consume
+boot records.
+
 ## Workspace and Git hooks
 
 The repository is a Cargo workspace containing the kernel, the hardware-neutral

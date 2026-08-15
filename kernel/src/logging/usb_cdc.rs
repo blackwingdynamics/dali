@@ -94,8 +94,10 @@ where
             return;
         };
         let _ = device.poll(&mut [serial]);
-        let link =
-            dali_usb::LinkState::from_configured(device.state() == UsbDeviceState::Configured);
+        let link = dali_usb::LinkState::from_configured_and_open(
+            device.state() == UsbDeviceState::Configured,
+            serial.dtr(),
+        );
         drain(link, &mut UsbSink { serial });
     }
 }
@@ -107,5 +109,13 @@ struct UsbSink<'a> {
 impl dali_usb::ByteSink for UsbSink<'_> {
     fn write(&mut self, bytes: &[u8]) -> usize {
         self.serial.write(bytes).map_or(0, |written| written)
+    }
+
+    fn flush(&mut self) -> dali_usb::FlushStatus {
+        match self.serial.flush() {
+            Ok(()) => dali_usb::FlushStatus::Complete,
+            Err(UsbError::WouldBlock) => dali_usb::FlushStatus::Pending,
+            Err(_) => dali_usb::FlushStatus::Failed,
+        }
     }
 }

@@ -26,6 +26,15 @@ disconnect/reconnect retention, link-state transitions, and deterministic
 interleaving of storage progress with USB service events. They do not prove USB
 electrical behavior, STM32 peripheral servicing, or host enumeration.
 
+The delivery tests must also cover a pending transport flush and its retry. A
+successful queue write alone is insufficient because `usbd-serial` may retain
+accepted bytes in its software buffer before the USB IN endpoint accepts them.
+The lifecycle model must also represent a log enqueue that software-pends USB
+service after the host is already configured; otherwise a configured-but-idle
+host can leave queued records unserved.
+Tests must also distinguish a configured device from a host-open CDC terminal,
+and retain records until the latter is true.
+
 ## Target tests
 
 Hardware tests should cover:

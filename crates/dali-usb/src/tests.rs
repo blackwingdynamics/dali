@@ -1,4 +1,4 @@
-use super::{ByteSink, LinkState, LogLine, LogQueue, drain};
+use super::{ByteSink, FlushStatus, LinkState, LogLine, LogQueue, drain};
 
 const LINE_CAPACITY: usize = 8;
 const QUEUE_CAPACITY: usize = 2;
@@ -47,6 +47,10 @@ impl ByteSink for LifecycleSink {
         self.budget -= count;
         count
     }
+
+    fn flush(&mut self) -> FlushStatus {
+        FlushStatus::Complete
+    }
 }
 
 impl ByteSink for TestSink {
@@ -55,6 +59,10 @@ impl ByteSink for TestSink {
         self.bytes[self.length..self.length + count].copy_from_slice(&bytes[..count]);
         self.length += count;
         count
+    }
+
+    fn flush(&mut self) -> FlushStatus {
+        FlushStatus::Complete
     }
 }
 
@@ -120,6 +128,15 @@ fn models_disconnect_and_reconnect() {
     let configured = LinkState::from_configured(true);
     assert_eq!(configured, LinkState::Configured);
     assert!(configured.is_configured());
+
+    assert_eq!(
+        LinkState::from_configured_and_open(true, false),
+        LinkState::Disconnected
+    );
+    assert_eq!(
+        LinkState::from_configured_and_open(true, true),
+        LinkState::Configured
+    );
 }
 
 #[test]
@@ -132,11 +149,67 @@ fn retains_records_across_disconnect_and_partial_writes() {
         length: 0,
     };
 
-    assert_eq!(drain(&mut queue, LinkState::Disconnected, &mut sink), 0);
+    assert_eq!(
+        drain(&mut queue, LinkState::Disconnected, &mut sink).dropped,
+        0
+    );
     assert_eq!(sink.length, 0);
-    assert_eq!(drain(&mut queue, LinkState::Configured, &mut sink), 0);
+    assert_eq!(
+        drain(&mut queue, LinkState::Configured, &mut sink).dropped,
+        0
+    );
     assert_eq!(sink.length, 3);
     assert_eq!(&sink.bytes[..3], &[0x41, 0, 0]);
+}
+
+struct PendingFlushSink {
+    flushes: usize,
+}
+
+impl ByteSink for PendingFlushSink {
+    fn write(&mut self, bytes: &[u8]) -> usize {
+        bytes.len()
+    }
+
+    fn flush(&mut self) -> FlushStatus {
+        self.flushes += 1;
+        if self.flushes == 1 {
+            FlushStatus::Pending
+        } else {
+            FlushStatus::Complete
+        }
+    }
+}
+
+#[test]
+fn retries_pending_transport_flush_without_queue_loss() {
+    let mut queue = LogQueue::<LINE_CAPACITY, QUEUE_CAPACITY>::new();
+    queue.push(line(0x41, 1));
+    let mut sink = PendingFlushSink { flushes: 0 };
+
+    let first = drain(&mut queue, LinkState::Configured, &mut sink);
+    assert_eq!(first.flush, FlushStatus::Pending);
+    assert_eq!(queue.copy_front(&mut [0; LINE_CAPACITY]), 0);
+
+    let second = drain(&mut queue, LinkState::Configured, &mut sink);
+    assert_eq!(second.flush, FlushStatus::Complete);
+    assert_eq!(sink.flushes, 2);
+}
+
+#[test]
+fn serves_log_enqueued_after_configured_idle_service() {
+    let mut queue = LogQueue::<LINE_CAPACITY, QUEUE_CAPACITY>::new();
+    let mut sink = LifecycleSink {
+        bytes: [0; 16],
+        length: 0,
+        budget: 0,
+    };
+
+    sink.service(&mut queue, LinkState::Configured, FINAL_SERVICE_BUDGET);
+    queue.push(line(0x41, 1));
+    sink.service(&mut queue, LinkState::Configured, FINAL_SERVICE_BUDGET);
+
+    assert_eq!(&sink.bytes[..1], &[0x41]);
 }
 
 #[test]

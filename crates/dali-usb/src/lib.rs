@@ -13,10 +13,33 @@ pub enum LinkState {
     Configured,
 }
 
+/// Result of attempting to move accepted bytes to the transport endpoint.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FlushStatus {
+    /// All bytes accepted by the sink were handed to the endpoint.
+    Complete,
+    /// The sink still owns accepted bytes and needs another service attempt.
+    Pending,
+    /// The sink reported a transport failure.
+    Failed,
+}
+
+/// Result of one bounded queue service operation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DrainReport {
+    /// Number of records discarded because the queue overflowed.
+    pub dropped: u32,
+    /// Result of flushing the sink after queue service.
+    pub flush: FlushStatus,
+}
+
 /// A byte sink used by the bounded delivery engine.
 pub trait ByteSink {
     /// Attempts to write bytes and returns the number accepted.
     fn write(&mut self, bytes: &[u8]) -> usize;
+
+    /// Flushes bytes accepted by the sink toward its transport endpoint.
+    fn flush(&mut self) -> FlushStatus;
 }
 
 impl LinkState {
@@ -27,6 +50,11 @@ impl LinkState {
         } else {
             Self::Disconnected
         }
+    }
+
+    /// Returns whether the configured CDC terminal is open on the host.
+    pub const fn from_configured_and_open(configured: bool, terminal_open: bool) -> Self {
+        Self::from_configured(configured && terminal_open)
     }
 
     /// Returns whether the link can accept CDC output.
@@ -187,9 +215,12 @@ pub fn drain<const LINE_CAPACITY: usize, const QUEUE_CAPACITY: usize, S: ByteSin
     queue: &mut LogQueue<LINE_CAPACITY, QUEUE_CAPACITY>,
     link: LinkState,
     sink: &mut S,
-) -> u32 {
+) -> DrainReport {
     if !link.is_configured() {
-        return 0;
+        return DrainReport {
+            dropped: 0,
+            flush: FlushStatus::Complete,
+        };
     }
 
     let mut chunk = [0; LINE_CAPACITY];
@@ -200,11 +231,17 @@ pub fn drain<const LINE_CAPACITY: usize, const QUEUE_CAPACITY: usize, S: ByteSin
         }
         let written = sink.write(&chunk[..count]).min(count);
         if written == 0 {
-            return 0;
+            return DrainReport {
+                dropped: 0,
+                flush: sink.flush(),
+            };
         }
         queue.advance(written);
     }
-    queue.take_dropped()
+    DrainReport {
+        dropped: queue.take_dropped(),
+        flush: sink.flush(),
+    }
 }
 
 #[cfg(test)]

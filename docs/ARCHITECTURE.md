@@ -120,6 +120,18 @@ delivery serviceable while SDIO operations are inside HAL busy loops. The
 interrupt strategy is target-checked but remains subject to physical USB
 acceptance evidence.
 
+CDC delivery has two progress points: accepting bytes into the `usbd-serial`
+software buffer and flushing that buffer to the USB IN endpoint. The interrupt
+backend must perform both operations and retry pending flushes on later USB
+service events. Transport backpressure must not be treated as host delivery.
+When main-context logging appends a record, it pends the same `OTG_FS`
+interrupt so the USB owner can service the queue even when the host has not
+generated a new bus event. This software-pended interrupt is a wake-up signal,
+not a second USB owner or a timing workaround.
+Boot-log draining additionally requires the CDC terminal's host-open signal
+(`DTR`) so enumeration alone cannot consume records before the terminal is
+ready to receive them.
+
 The shared crate is not a hardware driver, application API, or interrupt
 implementation. It must not depend on an MCU HAL or contain board-specific
 values. The kernel remains the owner of logging policy and USB resource
