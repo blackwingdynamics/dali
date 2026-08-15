@@ -4,7 +4,7 @@ version = "0.1.0"
 sdk = "dali"
 
 [build]
-target_profile = "thumbv7em-none-eabihf"
+target_profile = "f405"
 profile = "dev"
 entry_symbol = "amiran_entry"
 entry_offset = 0

@@ -32,7 +32,10 @@ fn manifest_package_path(directory: &Path) -> Result<PathBuf, String> {
     let contents = fs::read_to_string(directory.join(MANIFEST_FILE))
         .map_err(|error| format!("cannot read {MANIFEST_FILE}: {error}"))?;
     let name = manifest_value(&contents, "name")?;
-    let target = manifest_value(&contents, "target_profile")?;
+    let target_profile = manifest_value(&contents, "target_profile")?;
+    let target = dali_targets::find_target(&target_profile)
+        .ok_or_else(|| format!("unsupported target profile `{target_profile}`"))?
+        .rust_target;
     let profile =
         manifest_value(&contents, "profile").unwrap_or_else(|_| DEVELOPMENT_PROFILE.to_owned());
     let output_directory = match profile.as_str() {

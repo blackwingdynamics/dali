@@ -25,7 +25,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let project_directory = env::current_dir()
         .map_err(|error| format!("cannot determine current directory: {error}"))?;
     let manifest = read_manifest(&project_directory)?;
-    let target = &manifest.target_profile;
+    let target = target_profile(&manifest.target_profile)?.rust_target;
     let release = cargo_profile_is_release(&manifest.profile)?;
     let cargo_manifest = project_directory.join(CARGO_MANIFEST_FILE);
     run_cargo_build(&project_directory, &cargo_manifest, target, release)?;
@@ -67,6 +67,11 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
         profile,
         entry_offset,
     })
+}
+
+pub(super) fn target_profile(name: &str) -> Result<&'static dali_targets::TargetProfile, String> {
+    dali_targets::find_target(name)
+        .ok_or_else(|| format!("unsupported target profile `{name}`; run `dali target list`"))
 }
 
 fn required_value(contents: &str, key: &str) -> Result<String, String> {
@@ -180,20 +185,19 @@ mod tests {
     #[test]
     fn parses_documented_manifest_values() {
         let manifest = parse_manifest(
-            "[application]\nname = \"telemetry\"\n\n[build]\ntarget_profile = \"thumbv7em-none-eabihf\"\nprofile = \"release\"\nentry_offset = 0",
+            "[application]\nname = \"telemetry\"\n\n[build]\ntarget_profile = \"f405\"\nprofile = \"release\"\nentry_offset = 0",
         ).expect("manifest should parse");
         assert_eq!(manifest.name, "telemetry");
-        assert_eq!(manifest.target_profile, "thumbv7em-none-eabihf");
+        assert_eq!(manifest.target_profile, "f405");
         assert_eq!(manifest.profile, RELEASE_PROFILE);
         assert_eq!(manifest.entry_offset, 0);
     }
 
     #[test]
     fn defaults_to_development_profile() {
-        let manifest = parse_manifest(
-            "name = \"telemetry\"\ntarget_profile = \"thumbv7em-none-eabihf\"\nentry_offset = 0",
-        )
-        .expect("manifest should parse");
+        let manifest =
+            parse_manifest("name = \"telemetry\"\ntarget_profile = \"f405\"\nentry_offset = 0")
+                .expect("manifest should parse");
         assert_eq!(manifest.profile, DEVELOPMENT_PROFILE);
     }
 

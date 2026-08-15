@@ -1,5 +1,7 @@
 use std::{env, path::Path, process::Command};
 
+use dali_targets::SUPPORTED_TARGETS;
+
 const RUSTC_COMMAND: &str = "rustc";
 const CARGO_COMMAND: &str = "cargo";
 const RUSTUP_COMMAND: &str = "rustup";
@@ -7,7 +9,6 @@ const CARGO_OBJCOPY_COMMAND: &str = "cargo objcopy";
 const PROBE_RS_COMMAND: &str = "probe-rs";
 const DFU_UTIL_COMMAND: &str = "dfu-util";
 const PICOCOM_COMMAND: &str = "picocom";
-const EMBEDDED_TARGET: &str = "thumbv7em-none-eabihf";
 
 struct Check {
     label: &'static str,
@@ -19,7 +20,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if arguments.len() != 1 {
         return Err("usage:\n  dali doctor".to_owned());
     }
-    let checks = [
+    let mut checks = vec![
         Check {
             label: RUSTC_COMMAND,
             required: true,
@@ -29,11 +30,6 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             label: CARGO_COMMAND,
             required: true,
             result: command_version(CARGO_COMMAND),
-        },
-        Check {
-            label: EMBEDDED_TARGET,
-            required: true,
-            result: installed_target(),
         },
         Check {
             label: CARGO_OBJCOPY_COMMAND,
@@ -56,6 +52,16 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             result: command_version(PICOCOM_COMMAND),
         },
     ];
+    for target in SUPPORTED_TARGETS {
+        checks.insert(
+            2,
+            Check {
+                label: target.rust_target,
+                required: true,
+                result: installed_target(target.rust_target),
+            },
+        );
+    }
     let failures = print_checks(&checks);
     if failures == 0 {
         Ok(())
@@ -100,7 +106,7 @@ fn executable_on_path(executable: &str) -> bool {
         .unwrap_or(false)
 }
 
-fn installed_target() -> Result<String, String> {
+fn installed_target(required_target: &str) -> Result<String, String> {
     let output = Command::new(RUSTUP_COMMAND)
         .args(["target", "list", "--installed"])
         .output()
@@ -111,7 +117,7 @@ fn installed_target() -> Result<String, String> {
     let installed = String::from_utf8_lossy(&output.stdout);
     if installed
         .lines()
-        .any(|target| target.trim() == EMBEDDED_TARGET)
+        .any(|target| target.trim() == required_target)
     {
         Ok("installed".to_owned())
     } else {
@@ -149,6 +155,7 @@ fn print_checks(checks: &[Check]) -> usize {
 #[cfg(test)]
 mod tests {
     use super::{command_version, installed_target};
+    use dali_targets::SUPPORTED_TARGETS;
 
     #[test]
     fn detects_rustc() {
@@ -157,7 +164,7 @@ mod tests {
 
     #[test]
     fn checks_the_configured_embedded_target() {
-        let result = installed_target();
+        let result = installed_target(SUPPORTED_TARGETS[0].rust_target);
         assert!(
             result.is_ok(),
             "embedded target should be installed: {result:?}"

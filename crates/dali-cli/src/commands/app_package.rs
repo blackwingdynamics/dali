@@ -12,13 +12,9 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let project_directory = env::current_dir()
         .map_err(|error| format!("cannot determine current directory: {error}"))?;
     let manifest = build::read_manifest(&project_directory)?;
+    let target = build::target_profile(&manifest.target_profile)?.rust_target;
     let release = build::cargo_profile_is_release(&manifest.profile)?;
-    let payload = build::payload_path(
-        &project_directory,
-        &manifest.target_profile,
-        release,
-        &manifest.name,
-    );
+    let payload = build::payload_path(&project_directory, target, release, &manifest.name);
     let output = payload.with_extension(AMRN_EXTENSION);
     let payload_bytes = fs::read(&payload)
         .map_err(|error| format!("cannot read native payload {}: {error}", payload.display()))?;
