@@ -39,12 +39,13 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The kernel loader validates the selected package header, exact file length, and payload CRC using bounded block-sized reads; successful validation is logged.
 - The `dali-amrn` crate encodes contract-valid packages, and `dali-cli package` wraps a raw payload with the documented header and CRC.
 - The `dali-app-hello` validation payload now has a dedicated 64 KiB SRAM linker layout and repeatable build/package recipes.
-- The validation payload is intentionally limited to package construction and loader validation; SRAM copying, native entry transfer, and LED acceptance remain incomplete.
+- The validation payload is intentionally limited to package construction and loader validation plus the documented native execution proof.
 - The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
-- The loader now performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution remains unverified.
-- The validation payload now drives the F405 active-high PB2 LED with a deterministic native pattern; physical observation remains pending.
-- ABI v2 now passes a bounded kernel service table to applications and exposes the first logging service; host evidence is passing and hardware output remains pending.
+- The loader performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution has been observed.
+- The validation payload drives the F405 active-high PB2 LED with a deterministic native pattern; the pattern has been observed during F405 hardware testing.
+- ABI v2 now passes a bounded kernel service table to applications and exposes the first logging service; host evidence is passing.
 - On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package, logged successful AMRN validation, and showed the native PB2 LED pattern after the kernel log stopped.
+- On 2026-08-15, the F405 board delivered three `[INFO][APP] Hello World from AMRN` records through USB CDC after AMRN validation. This is hardware evidence for the application logging service.
 
 ### Incomplete or not yet accepted
 
@@ -53,7 +54,7 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
 - The F405 SDIO path has not completed the documented hardware acceptance evidence.
 - SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
-- Application logging ABI v2 and three-message hardware output remain incomplete.
+- Full MVP acceptance remains incomplete; application logging ABI v2 and the three-message hardware output are now evidenced, while the complete reset-to-application procedure and reconnect behavior still require acceptance evidence.
 - A separate AMRN target profile for STM32F411 remains unspecified and is not part of the current execution work.
 
 ### Current priority

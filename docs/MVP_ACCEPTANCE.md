@@ -86,13 +86,13 @@ The exact formatting may evolve, but the following events must be present and id
 ====================================
    Dali OS Kernel Booting...
 ====================================
-[INFO][BOOT] System clock: 100 MHz
-[SD] Card initialized
-[AMRN] Package found: /hello.amrn
-[AMRN] Header valid
-[AMRN] CRC32 valid
-[AMRN] Loading payload: <size> bytes at 0x20008000
-[AMRN] Jumping to entry point
+[INFO][BOOT] System clock: 168 MHz
+[INFO][STORAGE] SDIO card initialized
+[INFO][STORAGE] Read block 0 successfully
+[INFO][LOADER] AMRN header and payload validated
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
 ```
 
 The application submits its messages through the kernel service table; it must
@@ -170,3 +170,23 @@ Observed LED pattern:
 Result: PASS / FAIL
 Known issues:
 ```
+
+## 11. Recorded partial acceptance evidence
+
+On 2026-08-15, the WeAct Studio STM32F405RGT6 board was programmed through a
+Pico 2 CMSIS-DAP probe and booted from a FAT32 SD card. The USB CDC console
+reported successful SDIO initialization, block-zero read, AMRN validation,
+and three application log records:
+
+```text
+[INFO][STORAGE] SDIO card initialized
+[INFO][STORAGE] Read block 0 successfully
+[INFO][LOADER] AMRN header and payload validated
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
+[INFO][APP] Hello World from AMRN
+```
+
+This confirms the application logging path on physical F405 hardware. It does
+not by itself close the complete MVP acceptance procedure, including reset
+log capture, reconnect behavior, and the full documented LED observation.
