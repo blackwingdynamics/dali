@@ -12,6 +12,46 @@ executable is named dali.
 | dali inspect | Validate and display an AMRN package | Supported |
 | dali app new | Create a Dali application scaffold | Supported |
 | dali app init | Initialize the current directory as a Dali application | Supported |
+| dali app build | Build a native application payload | Supported |
+| dali app package | Package the built payload as AMRN | Supported |
+
+## Command layers
+
+The CLI has two deliberately different command layers:
+
+### Application workflow
+
+Use `dali app ...` commands from an initialized application project. These
+commands read `dali.toml` and derive artifact names and paths automatically:
+
+```text
+dali app new <name> [--sdk-path <path>]
+dali app init [--sdk-path <path>]
+dali app build
+dali app package
+```
+
+`dali app build` produces both the native `.bin` payload and the `.amrn`
+package. `dali app package` repackages an existing payload without rebuilding
+it.
+
+There is currently no separate `dali app inspect` command. Use the generic
+`dali inspect` command to validate the AMRN artifact.
+
+### Generic package operations
+
+Use the top-level commands when working with raw artifacts or paths outside an
+application project. They do not require application project context:
+
+```text
+dali package --input <payload> --output <package> --entry-offset <bytes>
+dali inspect --input <package>
+```
+
+`dali inspect` also supports discovery without `--input` when run from an
+application root or a directory containing exactly one `.amrn` file. An
+explicit `--input` is required for another location or when multiple packages
+exist.
 
 ## Documentation map
 
@@ -34,6 +74,8 @@ Command-specific documentation lives in [commands/](commands/):
 - [inspect](commands/inspect.md)
 - [app new](commands/app-new.md)
 - [app init](commands/app-init.md)
+- [app build](commands/app-build.md)
+- [app package](commands/app-package.md)
 
 ## Scope boundary
 
@@ -45,3 +87,6 @@ Application scaffolding is available through `dali app new`, both inside a
 Dali workspace and outside it with an explicit `--sdk-path`. Initializing an
 existing directory is available through `dali app init`; it never overwrites
 existing managed files.
+
+`dali inspect` can derive the current application's AMRN path when run from
+its project root, or discover a single AMRN file in a package directory.

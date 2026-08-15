@@ -31,12 +31,22 @@ The following commands are supported:
 ```text
 dali app new <name> [--sdk-path <path>]
 dali app init [--sdk-path <path>]
+dali app build
+dali app package
 ```
 
 See [commands/app-new.md](commands/app-new.md) and [Application project
 contract](APPLICATION_PROJECT.md) for the scaffold, manifest, and overwrite
 policy. See [commands/app-init.md](commands/app-init.md) for initialization
-of an existing directory.
+of an existing directory, [commands/app-build.md](commands/app-build.md) for
+native payload builds, and [commands/app-package.md](commands/app-package.md)
+for application-aware packaging.
+
+There is no `dali app inspect` command. AMRN validation is provided by the
+generic `dali inspect` command because it validates a package artifact rather
+than application project configuration.
+The `app package` command creates the AMRN artifact from the payload path
+derived from the same manifest.
 
 ## Unsupported commands
 

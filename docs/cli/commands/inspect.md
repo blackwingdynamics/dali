@@ -5,9 +5,20 @@
 Validate an existing AMRN package and display its decoded contract fields
 without modifying the input file.
 
+This is a generic package operation, not an application-project command. It
+does not build or package an application. Use `dali app build` for the full
+application workflow, then use this command to validate the resulting AMRN
+artifact.
+
 ## Input
 
-- --input <package> — AMRN package to validate.
+- `--input <package>` — AMRN package to validate explicitly.
+
+The input flag is optional. Without it, the command first checks the current
+directory for `dali.toml` and derives the package path from the application
+name, target profile, and Cargo profile. If no manifest exists, it accepts the
+single `.amrn` file in the current directory. Multiple packages require an
+explicit input path.
 
 ## Validation
 
@@ -30,7 +41,13 @@ sizes, load and entry addresses, ABI version, and CRC32.
 ## Example
 
 ~~~text
-dali inspect --input <application.amrn>
+dali inspect
+~~~
+
+For an explicit package or a package in another directory:
+
+~~~text
+dali inspect --input /path/to/application.amrn
 ~~~
 
 ## Failure cases
