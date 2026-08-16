@@ -75,12 +75,12 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 ### Current priority
 
-**Current priority — Prepare the F405-based 0.1.0-alpha.1 release boundary.**
+**Current priority — Build the F405 single-application isolation foundation.**
 
-The USB implementation phase and formal F405 MVP acceptance are complete.
-RP2350/Pico kernel support remains deferred until after 0.1.0-alpha.1; the Pico is
-currently used only as an external SWD probe. The next work is release-scope
-cleanup and post-MVP platform capability.
+The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.1
+release boundary are complete. RP2350/Pico kernel support remains deferred;
+the Pico is currently used only as an external SWD probe. The next work is the
+ABI v3 implementation and its host/SWD evidence.
 
 ### USB CDC handoff boundary
 
@@ -292,22 +292,22 @@ protection boundary is implemented and accepted.
 
 #### Design constraints
 
-- [ ] Update `docs/ABI.md`, `docs/ARCHITECTURE.md`, `docs/HARDWARE.md`,
+- [x] Update `docs/ABI.md`, `docs/ARCHITECTURE.md`, `docs/HARDWARE.md`,
   `docs/SECURITY.md`, and `docs/VERSIONING.md` before implementation.
-- [ ] Define ABI v3 around an SVC-based service gateway; direct calls into
+- [x] Define ABI v3 around an SVC-based service gateway; direct calls into
   privileged kernel functions are not an isolation boundary.
-- [ ] Define the privileged kernel Thread-mode bootstrap, unprivileged
+- [x] Define the privileged kernel Thread-mode bootstrap, unprivileged
   application Thread mode, MSP ownership, and application PSP ownership.
-- [ ] Define the MPU region budget for kernel RAM, runtime stack, application
+- [x] Define the MPU region budget for kernel RAM, runtime stack, application
   code, application data/stack, peripherals, and future shared memory.
-- [ ] Reconcile MPU power-of-two alignment with the current application region;
+- [x] Reconcile MPU power-of-two alignment with the current application region;
   do not assume `0x20008000` can represent one 64 KiB MPU region.
-- [ ] Evaluate the STM32F405 CCM RAM (`0x10000000`) for kernel stack/runtime
+- [x] Evaluate the STM32F405 CCM RAM (`0x10000000`) for kernel stack/runtime
   use, while keeping SDIO and USB DMA buffers in DMA-accessible SRAM.
-- [ ] Define whether application code may read or execute from kernel Flash;
+- [x] Define whether application code may read or execute from kernel Flash;
   `Read-Only` is not equivalent to confidentiality or complete kernel
   protection.
-- [ ] Define the fault policy for MemManage, BusFault, UsageFault, and
+- [x] Define the fault policy for MemManage, BusFault, UsageFault, and
   exception-return failures without claiming automatic recovery.
 
 #### Implementation and evidence order

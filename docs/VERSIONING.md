@@ -93,6 +93,13 @@ as an ABI v2-compatible implementation.
 
 The package format carries the ABI version at header offset `0x18`.
 
+The planned ABI v3 uses an SVC service gateway, unprivileged Thread mode, a
+PSP-backed application stack, and separate application code/data regions. It
+is not compatible with ABI v2's direct service-table function pointer or its
+single-region linker contract. ABI v3 packages must therefore be rejected by
+ABI v2 kernels, and the AMRN package builder must not emit v3 metadata until
+the v3 implementation is available.
+
 ## 5. Compatibility rules
 
 The loader must validate at least:
