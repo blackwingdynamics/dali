@@ -1,6 +1,6 @@
 //! Streaming ABI v3 package loading for the feature-gated kernel path.
 
-use dali_amrn::{Crc32, HEADER_SIZE, v2};
+use dali_amrn::{Crc32, v2};
 
 use crate::security::launch::{self, LaunchFrame};
 use crate::storage::{self, BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
@@ -80,17 +80,17 @@ fn target_contract() -> Option<v2::Contract> {
     })
 }
 
-fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; HEADER_SIZE], super::LoaderError>
+fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v2::HEADER_SIZE], super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    let mut header = [0; HEADER_SIZE];
+    let mut header = [0; v2::HEADER_SIZE];
     read_exact(file, &mut header).map_err(super::LoaderError::Filesystem)?;
     Ok(header)
 }
 
 fn package_length(header: v2::Header) -> Option<u32> {
-    u32::try_from(HEADER_SIZE)
+    u32::try_from(v2::HEADER_SIZE)
         .ok()?
         .checked_add(header.code_size)?
         .checked_add(header.data_init_size)
