@@ -321,6 +321,8 @@ protection boundary is implemented and accepted.
   planned ABI v3 memory contract.
 - [x] Add a feature-gated kernel SVC frame validator and bounded log dispatch;
   keep it disabled in the default ABI v2 MVP.
+- [x] Define a bounded kernel-owned fault record for invalid exception-return
+  rejection without installing handlers or changing ABI v2 behavior.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

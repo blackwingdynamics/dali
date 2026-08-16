@@ -166,3 +166,7 @@ a privileged kernel fault boundary. The boundary records a bounded fault
 record, marks the current application terminated, and returns to a kernel-owned
 control path. It must not unwind or reuse an application PSP as a kernel stack.
 The exact recovery assembly and fault record layout remain implementation work.
+
+The feature-gated kernel now defines a bounded `FaultRecord` for invalid
+exception-return rejection. The record is not installed as a hardware fault
+handler and does not change ABI v2 behavior.

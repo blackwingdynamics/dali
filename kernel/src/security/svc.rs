@@ -9,11 +9,16 @@ use dali::svc::{ExceptionFrame, ServiceId, ServiceStatus};
 use dali_targets::IsolationMemoryProfile;
 
 use crate::logging;
+use crate::security::fault::{self, FaultKind, FaultRecord};
 
 #[exception]
 fn SVCall() {
     let exception_return = read_exception_return();
     if !valid_exception_return(exception_return) {
+        fault::report(FaultRecord::without_frame(
+            FaultKind::InvalidExceptionReturn,
+            exception_return,
+        ));
         return;
     }
     let frame_address = cortex_m::register::psp::read() as usize;
