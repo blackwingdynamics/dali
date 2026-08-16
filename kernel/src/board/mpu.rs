@@ -8,6 +8,16 @@ use dali_targets::MemoryProfile;
 
 /// Smallest region size supported by the ARMv7-M MPU.
 const MINIMUM_REGION_BYTES: u32 = 32;
+const RASR_ENABLE: u32 = 1;
+const RASR_SIZE_SHIFT: u32 = 1;
+const RASR_AP_SHIFT: u32 = 24;
+const RASR_XN: u32 = 1 << 28;
+const RASR_SHAREABLE: u32 = 1 << 18;
+const RASR_CACHEABLE: u32 = 1 << 17;
+const RASR_BUFFERABLE: u32 = 1 << 16;
+const AP_NO_ACCESS: u32 = 0b000 << RASR_AP_SHIFT;
+const AP_READ_ONLY: u32 = 0b110 << RASR_AP_SHIFT;
+const AP_READ_WRITE: u32 = 0b011 << RASR_AP_SHIFT;
 
 /// Access permitted to an application in an MPU region.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -27,6 +37,15 @@ pub enum MpuExecution {
     Allowed,
     /// Instruction fetches are rejected.
     Never,
+}
+
+/// Memory type encoded in ARMv7-M MPU attributes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MpuMemoryType {
+    /// Normal SRAM with cacheable, bufferable attributes.
+    Normal,
+    /// Shareable device registers used by ordinary peripherals.
+    Device,
 }
 
 /// A manifest-declared memory boundary that may require multiple MPU regions.
@@ -49,6 +68,8 @@ pub struct MpuRegion {
     pub access: MpuAccess,
     /// Application instruction-fetch permission.
     pub execution: MpuExecution,
+    /// Memory type encoded in the region attributes.
+    pub memory_type: MpuMemoryType,
 }
 
 impl MpuRegion {
@@ -59,6 +80,17 @@ impl MpuRegion {
         access: MpuAccess,
         execution: MpuExecution,
     ) -> Option<Self> {
+        Self::with_memory_type(base, length, access, execution, MpuMemoryType::Normal)
+    }
+
+    /// Creates a descriptor with an explicit ARMv7-M memory type.
+    pub const fn with_memory_type(
+        base: u32,
+        length: u32,
+        access: MpuAccess,
+        execution: MpuExecution,
+        memory_type: MpuMemoryType,
+    ) -> Option<Self> {
         if length < MINIMUM_REGION_BYTES
             || (length & (length - 1)) != 0
             || !base.is_multiple_of(length)
@@ -66,12 +98,35 @@ impl MpuRegion {
             return None;
         }
 
-        Some(Self {
+        let region = Self {
             base,
             length,
             access,
             execution,
-        })
+            memory_type,
+        };
+        let _ = region.rasr_bits();
+        Some(region)
+    }
+
+    /// Encodes this descriptor as an ARMv7-M RASR value.
+    pub const fn rasr_bits(self) -> u32 {
+        let size = self.length.trailing_zeros() - 1;
+        let access = match self.access {
+            MpuAccess::NoAccess => AP_NO_ACCESS,
+            MpuAccess::ReadOnly => AP_READ_ONLY,
+            MpuAccess::ReadWrite => AP_READ_WRITE,
+        };
+        let memory_type = match self.memory_type {
+            MpuMemoryType::Normal => RASR_CACHEABLE | RASR_BUFFERABLE,
+            MpuMemoryType::Device => RASR_SHAREABLE | RASR_BUFFERABLE,
+        };
+        let execution = match self.execution {
+            MpuExecution::Allowed => 0,
+            MpuExecution::Never => RASR_XN,
+        };
+
+        RASR_ENABLE | (size << RASR_SIZE_SHIFT) | memory_type | access | execution
     }
 }
 
@@ -149,7 +204,13 @@ impl IsolationLayout {
         };
         let peripherals = match (isolation.peripheral_origin, isolation.peripheral_length) {
             (Some(origin), Some(length)) => {
-                match MpuRegion::new(origin, length, MpuAccess::NoAccess, MpuExecution::Never) {
+                match MpuRegion::with_memory_type(
+                    origin,
+                    length,
+                    MpuAccess::NoAccess,
+                    MpuExecution::Never,
+                    MpuMemoryType::Device,
+                ) {
                     Some(region) => region,
                     None => return None,
                 }
@@ -171,7 +232,10 @@ impl IsolationLayout {
 
 #[cfg(test)]
 mod tests {
-    use super::{IsolationLayout, MINIMUM_REGION_BYTES, MpuAccess, MpuExecution, MpuRegion};
+    use super::{
+        AP_READ_ONLY, AP_READ_WRITE, IsolationLayout, MINIMUM_REGION_BYTES, MpuAccess,
+        MpuExecution, MpuMemoryType, MpuRegion, RASR_ENABLE, RASR_XN,
+    };
     use dali_targets::TARGET_F405;
 
     const MISALIGNED_BASE: u32 = 1;
@@ -216,5 +280,32 @@ mod tests {
         assert_eq!(layout.application_code.access, MpuAccess::ReadOnly);
         assert_eq!(layout.application_data.execution, MpuExecution::Never);
         assert_eq!(layout.peripherals.access, MpuAccess::NoAccess);
+        assert_eq!(layout.peripherals.memory_type, MpuMemoryType::Device);
+    }
+
+    #[test]
+    fn encodes_application_permissions_and_execution_policy() {
+        let Some(code) = MpuRegion::new(
+            0x2000_8000,
+            32_768,
+            MpuAccess::ReadOnly,
+            MpuExecution::Allowed,
+        ) else {
+            return;
+        };
+        let Some(data) = MpuRegion::new(
+            0x2001_0000,
+            32_768,
+            MpuAccess::ReadWrite,
+            MpuExecution::Never,
+        ) else {
+            return;
+        };
+
+        assert_eq!(code.rasr_bits() & AP_READ_ONLY, AP_READ_ONLY);
+        assert_eq!(code.rasr_bits() & RASR_XN, 0);
+        assert_eq!(code.rasr_bits() & RASR_ENABLE, RASR_ENABLE);
+        assert_eq!(data.rasr_bits() & AP_READ_WRITE, AP_READ_WRITE);
+        assert_eq!(data.rasr_bits() & RASR_XN, RASR_XN);
     }
 }

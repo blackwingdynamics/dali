@@ -150,6 +150,11 @@ The initial eight-region budget is:
 | 6 | Future shared service memory | reserved |
 | 7 | Future shared service memory | reserved |
 
+The planned MPU encoding treats application SRAM as normal cacheable,
+bufferable memory and the ordinary peripheral window as shareable device
+memory. These attributes are encoded by the board descriptor; writing the MPU
+registers and selecting the unprivileged context remain separate steps.
+
 This budget is a design target, not an enabled configuration. The privileged
 background map and default-memory attributes must be selected so that an
 unprivileged access cannot bypass the no-access boundaries.
