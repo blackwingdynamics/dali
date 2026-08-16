@@ -89,7 +89,7 @@ F405 scope; the next work is to finish the platform backend extraction.
   before adding additional hardware targets.
 - [ ] Move the F405 board implementation fully behind the platform backend
   facade without changing its runtime behavior.
-- [ ] Add generated backend scaffolding and validation for new target profiles.
+- [x] Add generated backend scaffolding and validation for new target profiles.
 
 ### USB CDC handoff boundary
 
