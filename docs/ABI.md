@@ -187,6 +187,12 @@ zero-data range and construct the PSP launch frame. This is a fixed-address
 single-application contract; PIC, relocation, and multiple slots remain
 deferred.
 
+Format version `3` is the planned movable ABI v3 contract. Its host-side
+header and relocation-entry validation is defined in `docs/AMRN_FORMAT.md` and
+implemented in `dali-amrn::v3`; the kernel and CLI do not accept or emit it
+yet. The relocation table is intentionally a new format revision rather than
+an interpretation of v2 address fields.
+
 The launch frame is kernel-generated. Its PC is the validated Thumb entry,
 its PSP is within the declared stack bounds, its unused argument registers are
 cleared, and its link value cannot return into kernel code. The package cannot

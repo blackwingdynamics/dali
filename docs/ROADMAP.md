@@ -588,7 +588,8 @@ Compilation and host tests do not replace hardware evidence.
   with writable data.
 - [x] Choose explicit relocation metadata as the first movable-application
   direction; specify the new AMRN revision before implementation.
-- [ ] Define and test the new AMRN relocation-table header and entry format.
+- [x] Define and test the new AMRN relocation-table header and entry format in
+  `dali-amrn::v3`; loader and CLI support remain deferred.
 - [ ] Implement bounded host-side relocation extraction and validation.
 - [ ] Implement bounded kernel-side relocation application before MPU launch.
 - [ ] Design a slot manager only after the relocation contract and memory map
