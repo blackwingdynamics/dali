@@ -355,6 +355,8 @@ protection boundary is implemented and accepted.
   the prepared PSP frame; keep fault recovery and acceptance evidence pending.
 - [x] Add a feature-gated kernel-stack fault recovery return that terminates the
   application without reusing its PSP; keep hardware fault evidence pending.
+- [x] Add a feature-gated no-frame HardFault recovery path for exception-entry
+  failures where an application stack frame is not valid.
 - [x] Implement MPU and privilege transition for one application only; keep
   hardware fault acceptance pending.
 - [x] Implement the SVC gateway and versioned service dispatch; keep rejection
@@ -367,6 +369,7 @@ protection boundary is implemented and accepted.
 - [x] Add a non-production F405 kernel-memory write fault-injection application.
 - [x] Add a non-production F405 peripheral-access fault-injection application.
 - [x] Add a non-production F405 invalid-execution fault-injection application.
+- [x] Add a non-production F405 invalid-PSP fault-injection application.
 - [ ] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
   execution, PSP bounds, and application service calls.
 - [x] Record first F405 hardware evidence for kernel-RAM read rejection and
@@ -425,6 +428,21 @@ This proves processor-side rejection of instruction fetch from the
 application-data region and return to the kernel recovery path. Fault-frame
 address and PC decoding, invalid vector handling, PSP bounds, DMA isolation,
 and multi-application isolation remain unverified.
+
+The first PSP-boundary run was initially allowed to reach the fixture loop,
+because unprivileged application code cannot change its own PSP. A controlled
+SWD run then set PSP to `0x20010004` immediately before the SVC instruction.
+The observed output was:
+
+```text
+[INFO][APP] Fault injection: invalid PSP bounds
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000010 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves the selected exception-entry stack-boundary fault reaches the
+kernel recovery path. Fault-frame address and PC decoding, invalid vector
+handling, DMA isolation, and multi-application isolation remain unverified.
 
 #### Deferred until isolation foundation is accepted
 
