@@ -11,9 +11,28 @@ use dali_targets::IsolationMemoryProfile;
 use crate::logging;
 use crate::security::fault::{self, FaultKind, FaultRecord};
 
-#[exception]
-fn SVCall() {
-    let exception_return = read_exception_return();
+#[unsafe(export_name = "SVCall")]
+#[unsafe(naked)]
+unsafe extern "C" fn svcall_handler() {
+    // SAFETY: The wrapper preserves the application register used as scratch,
+    // selects the hardware-stacked frame before changing MSP, and restores the
+    // original EXC_RETURN before returning to the processor.
+    core::arch::naked_asm!(
+        "tst lr, #4",
+        "ite eq",
+        "mrseq r0, msp",
+        "mrsne r0, psp",
+        "push {{r4, lr}}",
+        "mov r4, lr",
+        "mov r1, r4",
+        "bl {handler}",
+        "pop {{r4, lr}}",
+        "bx lr",
+        handler = sym handle_svc,
+    );
+}
+
+fn handle_svc(frame_address: u32, exception_return: u32) {
     if !valid_exception_return(exception_return) {
         fault::report(FaultRecord::without_frame(
             FaultKind::InvalidExceptionReturn,
@@ -21,7 +40,7 @@ fn SVCall() {
         ));
         return;
     }
-    let frame_address = cortex_m::register::psp::read() as usize;
+    let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
     let memory = match dali_targets::TARGET_F405.memory.isolation {
         Some(memory) => memory,
@@ -64,20 +83,6 @@ fn BusFault() {
 #[exception]
 fn UsageFault() {
     fault::handle(FaultKind::UsageFault);
-}
-
-fn read_exception_return() -> u32 {
-    let exception_return;
-    unsafe {
-        // SAFETY: The exception handler reads the architectural EXC_RETURN value
-        // from LR before modifying or returning from the handler.
-        core::arch::asm!(
-            "mov {0}, lr",
-            out(reg) exception_return,
-            options(nomem, nostack, preserves_flags)
-        );
-    }
-    exception_return
 }
 
 fn valid_exception_return(value: u32) -> bool {
