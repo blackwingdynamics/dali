@@ -369,6 +369,7 @@ protection boundary is implemented and accepted.
 - [x] Add a non-production F405 kernel-memory write fault-injection application.
 - [x] Add a non-production F405 peripheral-access fault-injection application.
 - [x] Add a non-production F405 peripheral-write fault-injection application.
+- [x] Add a non-production F405 BusFault-address fault-injection application.
 - [x] Add a non-production F405 invalid-execution fault-injection application.
 - [x] Add a non-production F405 invalid-PSP fault-injection application.
 - [x] Add a non-production F405 SVC rejection-matrix application.

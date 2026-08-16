@@ -122,6 +122,58 @@ processor-side rejection of an unprivileged peripheral-MMIO write. The output
 was accepted on the F405 hardware; this does not prove DMA isolation or
 multi-application isolation.
 
+## BusFault address test
+
+Build and package the deterministic BusFault fixture:
+
+```text
+cd apps/dali-app-fault-bus
+dali app build
+```
+
+Copy `target/thumbv7em-none-eabihf/debug/dali-app-fault-bus.amrn` to the
+SD-card root and flash the normal ABI v3 MPU kernel. Before the application
+executes, use the SWD/GDB test harness to temporarily disable the MPU. This is
+a decoder-only test: it allows the invalid external access to reach the
+BusFault handler. The change exists only in the live debug session and is
+never part of the production firmware.
+
+```text
+cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-v3,abi-v3-mpu --target thumbv7em-none-eabihf
+dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-kernel
+```
+
+Expected output is:
+
+```text
+[INFO][APP] Fault injection: BusFault address
+[ERROR][SECURITY] [SECURITY][FAULT] kind=BusFault pc=Some(...) lr=Some(...) address=Some(...)
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+The fixture reads the documented reserved F405 code-region address declared by
+the target manifest (`0x00100000`).
+The temporary MPU disable is a debugger-owned test setup in
+`scripts/gdb/bus-fault-mpu.gdb`; it is not part of the production isolation
+map or firmware image. The harness also clears the sticky fault-status
+register before the access. This test does not prove MPU isolation.
+
+Start `probe-rs gdb` and connect GDB as described in the SWD procedure. Set a
+breakpoint at `dali_kernel::security::launch::enter`, then run:
+
+```text
+source scripts/gdb/bus-fault-mpu.gdb
+continue
+```
+
+The script must be sourced only after the kernel has configured its normal MPU
+regions and the breakpoint at `launch::enter` has stopped execution. Then set
+breakpoints at `dali_kernel::security::fault::handle_hard_fault` and
+`dali_kernel::security::fault::handle_with_frame`, continue, and inspect the
+registers and `CFSR`, `HFSR`, and `BFAR` values when the fault is reached.
+Hardware acceptance remains pending until the decoded `PC`, `LR`, and address
+are observed on the target.
+
 ## Invalid-execution test
 
 Build and package the execute-never fixture:

@@ -124,6 +124,7 @@ The planned isolated ABI may add an optional `[memory.isolation]` table:
 | `data_origin` / `data_length` | integer | together | Aligned writable data and PSP region. |
 | `stack_length` | integer | yes with isolation | PSP stack reservation inside the data region. |
 | `peripheral_origin` / `peripheral_length` | integer | together | Aligned ordinary peripheral register region. |
+| `bus_fault_origin` / `bus_fault_length` | integer | no | Documented reserved F405 code-region range used only by deterministic BusFault test fixtures. |
 
 When present, the code and data regions must be contiguous, begin at
 `application_origin`, and end at the application boundary. They are metadata
@@ -212,6 +213,8 @@ data_origin = 0x2001_0000
 data_length = 32_768
 peripheral_origin = 0x4000_0000
 peripheral_length = 536_870_912
+bus_fault_origin = 0x0010_0000
+bus_fault_length = 32
 
 [status_led]
 port = "PB"
