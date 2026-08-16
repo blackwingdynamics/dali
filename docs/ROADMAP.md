@@ -362,8 +362,8 @@ protection boundary is implemented and accepted.
 - [x] Implement the SVC gateway and versioned service dispatch; rejection
   evidence is recorded below.
 - [x] Implement a privileged fault boundary that records the fault context and
-  terminates the application without corrupting the kernel context; keep F405
-  evidence pending.
+  terminates the application without corrupting the kernel context; F405
+  evidence is recorded below.
 - [x] Add host tests for ABI encoding, service identifiers, and rejected calls.
 - [x] Add a non-production F405 kernel-memory fault-injection application.
 - [x] Add a non-production F405 kernel-memory write fault-injection application.
@@ -463,6 +463,20 @@ No security fault or recovery record was emitted, and the application remained
 alive after the matrix. This proves the selected malformed service requests
 were rejected at the kernel gateway; authorization policy, DMA isolation, and
 multi-application isolation remain unverified.
+
+The fault-context decoder was then verified on 2026-08-16 with the F405 kernel
+and the kernel-memory read fixture. The observed record was:
+
+```text
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=Some(536903926) lr=Some(536903865) address=Some(536870912)
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+The decoded values are `pc=0x200080F6`, `lr=0x200080B9`, and
+`address=0x20000000`. This proves that a valid application exception frame and
+the MMFAR-reported violation address are preserved in the bounded fault record
+before kernel recovery. BusFault address decoding and no-frame fault paths
+remain separately unverified.
 
 #### Deferred until isolation foundation is accepted
 
