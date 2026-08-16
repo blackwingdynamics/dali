@@ -50,6 +50,7 @@ that claims a kernel storage backend.
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
 | `name` | string | yes | Stable CLI/profile identifier. |
+| `backend` | string | yes | Stable hardware backend identifier selected by the platform layer. |
 | `board` | string | yes | Manufacturer board name. |
 | `mcu` | string | yes | Exact MCU identifier. |
 | `rust_target` | string | yes | Rust target triple used by the build. |

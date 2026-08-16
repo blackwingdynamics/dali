@@ -26,6 +26,7 @@ struct Artifacts {
 #[derive(Debug, Deserialize)]
 struct Profile {
     name: String,
+    backend: String,
     board: String,
     mcu: String,
     rust_target: String,
@@ -179,6 +180,7 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
     for (index, manifest) in manifests.iter().enumerate() {
         validate_memory_regions(manifest)?;
         if manifest.profile.name.is_empty()
+            || manifest.profile.backend.is_empty()
             || manifest.profile.board.is_empty()
             || manifest.profile.mcu.is_empty()
             || manifest.profile.rust_target.is_empty()
@@ -441,10 +443,11 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
+        backend = string_literal(&profile.backend),
         board = string_literal(&profile.board),
         mcu = string_literal(&profile.mcu),
         target = string_literal(&profile.rust_target),

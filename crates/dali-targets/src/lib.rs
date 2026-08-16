@@ -7,6 +7,8 @@
 pub struct TargetProfile {
     /// Stable profile name used by Dali commands.
     pub name: &'static str,
+    /// Backend identifier used to select the hardware implementation.
+    pub backend: &'static str,
     /// Generated Rust registry constant used by board scaffolds.
     pub registry_constant: &'static str,
     /// Human-readable board name.
@@ -215,6 +217,7 @@ mod tests {
     fn exposes_manifest_metadata() {
         assert_eq!(SUPPORTED_TARGETS.len(), 1);
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
+        assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
         assert_eq!(
             SUPPORTED_TARGETS[0].dfu,

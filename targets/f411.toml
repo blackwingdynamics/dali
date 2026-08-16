@@ -1,5 +1,6 @@
 [profile]
 name = "f411"
+backend = "stm32f411"
 board = "WeAct BlackPill"
 mcu = "STM32F411CEU6"
 rust_target = "thumbv7em-none-eabihf"
