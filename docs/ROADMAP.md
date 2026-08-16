@@ -375,6 +375,8 @@ protection boundary is implemented and accepted.
   execution, PSP bounds, and application service calls.
 - [x] Record first F405 hardware evidence for kernel-RAM read rejection and
   kernel recovery; broader isolation acceptance remains pending.
+- [x] Record F405 hardware evidence for kernel-RAM write rejection and kernel
+  recovery; broader isolation acceptance remains pending.
 
 The first ABI v3 MPU fault-injection run was performed on 2026-08-16 with the
 F405 programmed through a Raspberry Pi Pico 2 CMSIS-DAP probe. The test
