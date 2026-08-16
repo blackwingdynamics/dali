@@ -61,6 +61,7 @@ where
             }
         },
     )?;
+    launch::materialize(launch_frame);
     Ok(LoadedApplication {
         entry_address,
         psp_top,

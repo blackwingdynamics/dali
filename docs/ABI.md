@@ -220,8 +220,9 @@ the launch context and F405 fault-injection evidence are complete.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
-separate segments and prepares a kernel-owned launch-frame value, but it does
-not write the frame to PSP memory or enter the application. ABI v3 host
-packages cannot be entered through a PSP-backed unprivileged launch path. The
-PSP write, MPU activation, and privilege transition must be implemented before
-that transition.
+separate segments, prepares a kernel-owned launch frame, and materializes its
+basic exception frame inside the validated application stack reservation. It
+does not select PSP, activate MPU protection, or enter the application. ABI v3
+host packages cannot be entered through a PSP-backed unprivileged launch path.
+The PSP selection, MPU activation, and privilege transition must be implemented
+before that transition.

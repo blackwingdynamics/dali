@@ -53,6 +53,16 @@ pub(crate) fn prepare(
     })
 }
 
+/// Materializes the validated frame in the application PSP reservation.
+pub(crate) fn materialize(frame: LaunchFrame) {
+    unsafe {
+        // SAFETY: `LaunchFrame` can only be constructed by `prepare`, which
+        // proves that the destination is aligned and fully inside the declared
+        // application stack reservation.
+        core::ptr::write(frame.frame_address as *mut ExceptionFrame, frame.frame);
+    }
+}
+
 /// Errors found while constructing the kernel-owned launch context.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum LaunchError {
