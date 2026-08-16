@@ -368,6 +368,7 @@ protection boundary is implemented and accepted.
 - [x] Add a non-production F405 kernel-memory fault-injection application.
 - [x] Add a non-production F405 kernel-memory write fault-injection application.
 - [x] Add a non-production F405 peripheral-access fault-injection application.
+- [x] Add a non-production F405 peripheral-write fault-injection application.
 - [x] Add a non-production F405 invalid-execution fault-injection application.
 - [x] Add a non-production F405 invalid-PSP fault-injection application.
 - [x] Add a non-production F405 SVC rejection-matrix application.
@@ -378,6 +379,8 @@ protection boundary is implemented and accepted.
 - [x] Record F405 hardware evidence for kernel-RAM write rejection and kernel
   recovery; broader isolation acceptance remains pending.
 - [x] Record F405 hardware evidence for peripheral-MMIO read rejection and
+  kernel recovery; broader isolation acceptance remains pending.
+- [x] Record F405 hardware evidence for peripheral-MMIO write rejection and
   kernel recovery; broader isolation acceptance remains pending.
 
 The first ABI v3 MPU fault-injection run was performed on 2026-08-16 with the
@@ -421,7 +424,20 @@ and return to the kernel recovery path. Fault-frame address and PC decoding,
 peripheral writes, invalid execution, PSP bounds, DMA isolation, and
 multi-application isolation remain unverified.
 
-A fourth run used the execute-never fixture. The observed output was:
+A fourth run used the dedicated peripheral-write fixture. The observed output
+was:
+
+```text
+[INFO][APP] Fault injection: peripheral memory write
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves processor-side rejection of an unprivileged peripheral-MMIO write
+and return to the kernel recovery path. Fault-frame address and PC decoding,
+invalid execution, PSP bounds, DMA isolation, and multi-application isolation
+remain unverified.
+
+A fifth run used the execute-never fixture. The observed output was:
 
 ```text
 [INFO][APP] Fault injection: execute-never memory
