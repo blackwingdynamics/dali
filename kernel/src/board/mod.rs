@@ -7,6 +7,8 @@ mod stm32f405_sd;
 
 #[cfg(all(feature = "board-stm32f405-sd", not(feature = "abi-v3")))]
 pub use stm32f405_sd::APPLICATION_EXECUTION_SUPPORTED;
+#[cfg(all(feature = "board-stm32f405-sd", feature = "abi-v3"))]
+pub use stm32f405_sd::MEMORY_PROFILE;
 #[cfg(feature = "board-stm32f405-sd")]
 pub use stm32f405_sd::{Board, SYSTEM_CLOCK_MHZ, SdioPins, initialize, set_status_led};
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-v3-mpu"))]

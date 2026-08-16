@@ -42,7 +42,7 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
     }
     let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
-    let memory = match dali_targets::TARGET_F405.memory.isolation {
+    let memory = match crate::board::MEMORY_PROFILE.isolation {
         Some(memory) => memory,
         None => return,
     };
@@ -68,21 +68,6 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
         &mut *(frame_address as *mut ExceptionFrame)
     };
     dispatch(frame, memory);
-}
-
-#[exception]
-fn MemoryManagement() {
-    fault::handle(FaultKind::MemManage);
-}
-
-#[exception]
-fn BusFault() {
-    fault::handle(FaultKind::BusFault);
-}
-
-#[exception]
-fn UsageFault() {
-    fault::handle(FaultKind::UsageFault);
 }
 
 #[exception(trampoline = false)]
