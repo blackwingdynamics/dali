@@ -23,6 +23,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let format_version = manifest
         .format_version
         .unwrap_or(abi_contract.default_format_version);
+    build::validate_target_capabilities(target_profile, abi_version, Some(format_version))?;
     if !abi_contract.supports_format(format_version) {
         return Err(format!(
             "AMRN format version {format_version} is incompatible with ABI version {abi_version}"
