@@ -8,6 +8,12 @@ application_supported = false
 amrn_target_id = 0
 abi_version = 0
 
+[capabilities]
+storage = false
+usb_console = false
+mpu = false
+relocation = false
+
 [clock]
 source = "HSI"
 input_hz = 16_000_000

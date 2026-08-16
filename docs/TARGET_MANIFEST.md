@@ -36,6 +36,7 @@ Every manifest contains:
 - `[profile]` — identity and Dali compatibility;
 - `[artifacts]` — optional conventional build artifact names;
 - `[profile.dfu]` — optional USB DFU identity and download configuration;
+- `[capabilities]` — explicit backend and runtime capability declarations;
 - `[clock]` — oscillator and bus frequencies;
 - `[memory]` — kernel, application, and runtime regions;
 - `[status_led]` — logical status LED mapping;
@@ -44,6 +45,20 @@ Every manifest contains:
 `[storage]` is optional because a board profile may be described before its
 storage transport is supported. Storage must not be omitted from a profile
 that claims a kernel storage backend.
+
+## `[capabilities]`
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `storage` | boolean | yes | Whether the selected backend provides the declared storage path. |
+| `usb_console` | boolean | yes | Whether the target supports Dali USB CDC console operation. |
+| `mpu` | boolean | yes | Whether the target/backend supports the declared MPU protection boundary. |
+| `relocation` | boolean | yes | Whether the target supports the declared relocation package contract. |
+
+The build validates these fields against the rest of the manifest. For
+example, `storage = true` requires a `[storage]` section, and `mpu` or
+`relocation` requires `[memory.isolation]`. Capability declarations describe
+support; they do not replace kernel backend implementation or hardware evidence.
 
 ## `[profile]`
 

@@ -31,6 +31,8 @@ pub struct TargetProfile {
     pub amrn_target_id: u8,
     /// Application ABI version.
     pub abi_version: u8,
+    /// Platform capabilities declared by the target manifest.
+    pub capabilities: CapabilitiesProfile,
     /// Board clock metadata.
     pub clock: ClockProfile,
     /// Board memory regions used by the kernel and applications.
@@ -41,6 +43,19 @@ pub struct TargetProfile {
     pub usb: UsbProfile,
     /// Storage bus metadata.
     pub storage: Option<StorageProfile>,
+}
+
+/// Optional hardware and runtime capabilities declared by a target profile.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CapabilitiesProfile {
+    /// Whether the selected backend provides the declared storage path.
+    pub storage: bool,
+    /// Whether the target provides the Dali USB console path.
+    pub usb_console: bool,
+    /// Whether the processor/backend can enforce the declared MPU boundary.
+    pub mpu: bool,
+    /// Whether the selected ABI supports relocation packages.
+    pub relocation: bool,
 }
 
 /// USB DFU identity declared by a target manifest.
@@ -219,6 +234,10 @@ mod tests {
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
+        assert!(SUPPORTED_TARGETS[0].capabilities.storage);
+        assert!(SUPPORTED_TARGETS[0].capabilities.usb_console);
+        assert!(SUPPORTED_TARGETS[0].capabilities.mpu);
+        assert!(SUPPORTED_TARGETS[0].capabilities.relocation);
         assert_eq!(
             SUPPORTED_TARGETS[0].dfu,
             Some(DfuProfile {

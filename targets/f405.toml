@@ -9,6 +9,12 @@ application_supported = true
 amrn_target_id = 0x02
 abi_version = 2
 
+[capabilities]
+storage = true
+usb_console = true
+mpu = true
+relocation = true
+
 [artifacts]
 kernel_binary = "dali-kernel-f405.bin"
 kernel_elf = "dali-kernel"
