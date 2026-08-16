@@ -383,6 +383,10 @@ protection boundary is implemented and accepted.
   kernel recovery; broader isolation acceptance remains pending.
 - [x] Record F405 hardware evidence for peripheral-MMIO write rejection and
   kernel recovery; broader isolation acceptance remains pending.
+- [x] Record F405 hardware evidence for precise BusFault decoding at the
+  reserved `0x00100000` code-region boundary, including `CFSR=0x00008200`,
+  `BFAR=0x00100000`, stacked `PC=0x2000807A`, stacked `LR=0x2000803D`, and
+  kernel recovery.
 
 The first ABI v3 MPU fault-injection run was performed on 2026-08-16 with the
 F405 programmed through a Raspberry Pi Pico 2 CMSIS-DAP probe. The test
@@ -496,8 +500,21 @@ and the kernel-memory read fixture. The observed record was:
 The decoded values are `pc=0x200080F6`, `lr=0x200080B9`, and
 `address=0x20000000`. This proves that a valid application exception frame and
 the MMFAR-reported violation address are preserved in the bounded fault record
-before kernel recovery. BusFault address decoding and no-frame fault paths
-remain separately unverified.
+before kernel recovery.
+
+The dedicated BusFault fixture was then run on the F405 with the MPU disabled
+only by the SWD test harness. The application read the reserved
+`0x00100000` code-region boundary and produced:
+
+```text
+[INFO][APP] Fault injection: BusFault address
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+GDB confirmed `kind=BusFault`, `CFSR=0x00008200`, `BFAR=0x00100000`, stacked
+`PC=0x2000807A`, and stacked `LR=0x2000803D`. This proves precise BusFault
+decoding and kernel recovery on the F405; no-frame fault paths, DMA isolation,
+and multi-application isolation remain unverified.
 
 #### Deferred until isolation foundation is accepted
 
