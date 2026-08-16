@@ -11,6 +11,7 @@ workspace = true
 dali-amrn = { path = "../dali-amrn" }
 dali-device = { path = "../dali-device" }
 dali-targets = { path = "../dali-targets" }
+object = { version = "0.40", default-features = false, features = ["read", "elf"] }
 
 [[bin]]
 name = "dali"

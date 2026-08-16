@@ -62,9 +62,15 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             &code,
             &data,
         )?;
+        let elf = super::artifacts::elf_path(&project_directory, target, release, &manifest.name);
+        let relocations = super::relocations::extract(&elf)?;
         println!("Built ABI v3 code: {}", code.display());
         println!("Built ABI v3 data: {}", data.display());
         println!("ABI v3 zero-init size: {bss_size} bytes");
+        println!(
+            "Retained ABI v3 relocation records: {}",
+            relocations.relocations.len()
+        );
     } else {
         return Err(format!("unsupported application ABI version {abi_version}"));
     }

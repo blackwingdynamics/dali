@@ -89,6 +89,13 @@ target manifest's alignment, capacity, MPU, and non-overlap constraints.
 6. The kernel rejects the package without copying or jumping if any relocation
    or resulting address is invalid.
 
+The CLI now has a host-side extraction step for retained ARM ELF records. It
+reads the linked .dali_code and .dali_data sections, accepts only the four
+named ARM relocation kinds listed below, resolves symbol or section targets,
+checks AMRN integer widths, and enforces the AMRN relocation-count limit. The
+step reports the retained record count during dali app build; it does not yet
+emit an AMRN v3 package or apply relocations.
+
 ## Required evidence before implementation
 
 The implementation must not start until fixtures prove that the selected
@@ -118,9 +125,9 @@ fixture produced these application relocation kinds:
 - `R_ARM_ABS32`.
 
 This proves that relocation records can be retained and that both code and
-writable-data references are observable. It does not yet approve any kind for
-the package format: each kind still needs a bounded decoder, patch test, and
-rejection test before it can be accepted by the host or kernel.
+writable-data references are observable. The CLI extraction step recognizes
+these records, but each kind still needs a bounded patch decoder, patch test,
+and rejection test before it can be emitted to or applied from an AMRN package.
 
 Build and inspect the fixture from its directory:
 

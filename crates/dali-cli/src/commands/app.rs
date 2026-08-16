@@ -8,6 +8,8 @@ mod init;
 mod new;
 #[path = "app_package.rs"]
 mod package;
+#[path = "app_relocations.rs"]
+mod relocations;
 
 const BUILD_COMMAND: &str = "build";
 const INIT_COMMAND: &str = "init";

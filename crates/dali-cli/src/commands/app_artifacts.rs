@@ -39,6 +39,15 @@ pub(super) fn data_path(
     artifact_path(project_directory, target, release, name, DATA_SUFFIX)
 }
 
+pub(super) fn elf_path(
+    project_directory: &Path,
+    target: &str,
+    release: bool,
+    name: &str,
+) -> PathBuf {
+    artifact_path(project_directory, target, release, name, "")
+}
+
 pub(super) fn extract_v3_sections(
     project_directory: &Path,
     manifest_path: &Path,

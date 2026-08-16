@@ -590,7 +590,10 @@ Compilation and host tests do not replace hardware evidence.
   direction; specify the new AMRN revision before implementation.
 - [x] Define and test the new AMRN relocation-table header and entry format in
   `dali-amrn::v3`; loader and CLI support remain deferred.
-- [ ] Implement bounded host-side relocation extraction and validation.
+- [x] Extract the bounded set of supported ARM relocation records from the
+  retained application ELF in the CLI.
+- [ ] Validate extracted relocation records against the image contract and
+  emit the AMRN v3 package.
 - [ ] Implement bounded kernel-side relocation application before MPU launch.
 - [ ] Design a slot manager only after the relocation contract and memory map
   are stable.
