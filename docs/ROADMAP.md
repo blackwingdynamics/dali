@@ -327,6 +327,8 @@ protection boundary is implemented and accepted.
   that report bounded SCB status and halt without changing ABI v2 behavior.
 - [x] Add a feature-gated descriptor-backed MPU register map with privileged
   default access; keep the unprivileged transition disabled.
+- [ ] Define ABI v3 AMRN compatibility, linker regions, and launch-frame
+  validation before changing application entry or stack semantics.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

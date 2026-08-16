@@ -182,3 +182,8 @@ map during bootstrap for diagnostic bring-up. It keeps privileged default
 memory enabled for kernel operation, and does not perform the unprivileged
 application transition. It must not be treated as application isolation until
 the launch context and F405 fault-injection evidence are complete.
+
+The current loader and SDK still produce ABI v2 packages with the direct
+`ServiceTable` entry contract. They cannot be entered through a PSP-backed
+unprivileged launch path. ABI v3 package metadata, linker regions, launch
+frame, and compatibility rejection must be implemented before that transition.
