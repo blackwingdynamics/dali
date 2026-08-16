@@ -1,213 +1,157 @@
 # Repository File Structure
 
-This document describes the intended repository layout. Files are added in priority order as the roadmap progresses.
+This document describes the files currently tracked in the repository. Build
+outputs under `target/` and application-local generated files are intentionally
+omitted.
 
 ```text
 dali-kernel/
-├── CONTRIBUTING.md            # Contribution, commit, and review workflow
-├── AGENTS.md                  # Coding-agent operating contract
-├── CHANGELOG.md               # Project change history
-├── SECURITY.md                # GitHub security reporting policy
-├── .editorconfig              # Editor formatting defaults
-├── .gitattributes              # Git text and binary handling
-├── cliff.toml                 # Automatic changelog configuration
-├── justfile                    # Build, validation, and flashing commands
+├── AGENTS.md, CONTRIBUTING.md, LICENSE, README.md, SECURITY.md
+├── Cargo.toml, Cargo.lock, rust-toolchain.toml, justfile, lefthook.yml
+├── cliff.toml, .editorconfig, .gitattributes, .gitignore
+├── .cargo/config.toml
 ├── .github/
-│   ├── workflows/
-│   │   ├── ci.yml              # Pull request and push validation
-│   │   └── release.yml         # Automated changelog and release workflow
-│   └── pull_request_template.md # Pull request checklist
-├── lefthook.yml               # Pre-commit and commit-message hooks
-├── scripts/
-│   ├── check-commit-message.sh  # Conventional Commit validator
-│   ├── archive-changelog.sh     # Release changelog archiver
-│   ├── setup-arch.sh            # Complete Arch Linux environment setup
-│   ├── setup-debian.sh          # Complete Debian environment setup
-│   ├── setup-fedora.sh          # Complete Fedora environment setup
-│   ├── setup-macos.sh           # Complete macOS environment setup
-│   └── setup-windows.ps1        # Complete Windows environment setup
-├── simulation/
-│   ├── README.md                 # Simulator scope and evidence boundary
-│   └── renode/
-│       └── dali_blackpill.resc   # Renode STM32F4 development scenario
+│   ├── pull_request_template.md
+│   └── workflows/ci.yml, release.yml
 ├── targets/
-│   ├── f405.toml                  # Declarative F405 board and target metadata
-│   └── f411.toml                  # Generator-only BlackPill board metadata
-├── Cargo.toml                 # Virtual workspace metadata
-├── Cargo.lock                 # Reproducible dependency resolution
-├── rust-toolchain.toml        # Pinned Rust toolchain and embedded target
-├── .cargo/config.toml         # Embedded build and runner configuration
+│   ├── f405.toml                 # Supported STM32F405 target metadata
+│   └── f411.toml                 # Generator-only board metadata
 ├── kernel/
-│   ├── Cargo.toml             # Embedded kernel package
-│   ├── build.rs               # Kernel linker-script search path
-│   ├── memory.x               # Kernel and application SRAM layout
+│   ├── Cargo.toml, build.rs, memory.x
 │   └── src/
-│       ├── main.rs            # Kernel entry point and bootstrap
-│       ├── board/              # Compile-time board selection and backends
-│       │   ├── mod.rs          # Common board facade
-│       │   └── stm32f405_sd.rs   # WeAct STM32F405 SDIO backend
-│       ├── drivers/             # Hardware-specific peripheral drivers
-│       │   ├── mod.rs           # Driver module registry
-│       │   └── sdio.rs          # SDIO block driver
-│       ├── logging/              # Kernel-wide logging facade and backends
-│       │   ├── mod.rs            # Stable logging API
-│       │   ├── rtt.rs            # RTT logging backend
-│       │   └── usb_cdc.rs        # Board-neutral USB CDC logging backend
-│       ├── bootstrap/            # Kernel startup orchestration
-│       │   ├── mod.rs            # Boot sequence
-│       │   └── heartbeat.rs      # Status heartbeat loop
-│       ├── logging.rs          # RTT and later serial logging
-│       ├── storage/            # SD and filesystem subsystem
-│       ├── loader/             # AMRN parsing and execution
-│       └── runtime/            # Post-MVP task and service runtime
+│       ├── main.rs                # Kernel entry and bootstrap call
+│       ├── board/                 # Board facade, MPU, F405 backend
+│       ├── bootstrap/             # Startup, storage status, heartbeat
+│       ├── drivers/               # SDIO and raw SDIO access
+│       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
+│       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
+│       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
+│       ├── logging/               # Facade, RTT, USB CDC backend
+│       ├── security/              # MPU, SVC, launch, and fault recovery
+│       └── storage/               # Block types and read-only filesystem
 ├── apps/
-│   ├── dali-app-hello/        # First independently built demo app
-│   ├── dali-app-fault-kernel/ # Standalone F405 kernel-read fault fixture
-│   └── dali-app-fault-kernel-write/ # Standalone F405 kernel-write fault fixture
-│   └── dali-app-fault-peripheral/ # Standalone F405 peripheral fault fixture
-│   └── dali-app-fault-peripheral-write/ # Standalone F405 peripheral-write fault fixture
-│   └── dali-app-fault-bus/ # Standalone F405 BusFault address fixture
-│   └── dali-app-fault-execution/ # Standalone F405 execute-never fault fixture
-│   └── dali-app-fault-psp/ # Standalone F405 invalid-PSP fault fixture
-│   └── dali-app-svc-rejections/ # Standalone F405 SVC rejection fixture
-│       ├── Cargo.toml
-│       ├── build.rs           # Application linker search path
-│       ├── memory.x           # Reserved application SRAM layout
-│       ├── src/
-│           ├── lib.rs         # SDK-facing application scaffold
-│           └── main.rs        # Native validation payload entry point
+│   ├── dali-app-hello/
+│   ├── dali-app-relocation-fixture/
+│   ├── dali-app-svc-rejections/
+│   ├── dali-app-fault-bus/
+│   ├── dali-app-fault-execution/
+│   ├── dali-app-fault-kernel/
+│   ├── dali-app-fault-kernel-write/
+│   ├── dali-app-fault-peripheral/
+│   ├── dali-app-fault-peripheral-write/
+│   └── dali-app-fault-psp/
 ├── crates/
-│   ├── dali-amrn/             # AMRN format parser and validation
-│   ├── dali-device/           # Hardware-neutral discovery records
-│   ├── dali-targets/          # Build-time generated target registry
-│   ├── dali-sdk/              # Future application SDK
-│   │   ├── Cargo.toml
-│   │   └── src/lib.rs
-│   └── dali-cli/              # Future package and device CLI
-│       ├── Cargo.toml
-│       ├── src/
-│       │   ├── main.rs
-│       │   └── commands/
-│       │       ├── mod.rs
-│       │       ├── app.rs
-│       │       ├── new.rs
-│       │       ├── package.rs
-│       │       └── inspect.rs
-│       └── templates/
-│           └── app/
-│               ├── Cargo.toml.template
-│               ├── dali.toml.template
-│               ├── build.rs.template
-│               ├── memory.x.template
-│               ├── lib.rs.template
-│               └── main.rs.template
+│   ├── dali-amrn/                 # AMRN v1, v2, and v3 contracts
+│   ├── dali-cli/                  # Installed `dali` CLI
+│   │   ├── src/main.rs
+│   │   ├── src/commands/           # One focused module per command
+│   │   └── templates/app/          # Generated application project files
+│   ├── dali-device/               # Hardware-neutral device records
+│   ├── dali-sdk/                  # Application ABI and SVC API
+│   ├── dali-targets/              # TOML validation and generated registry
+│   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── FILE_STRUCTURE.md
-│   ├── DOCUMENTATION_INDEX.md
-│   ├── TARGET_PROFILES.md
-│   ├── TARGET_MANIFEST.md
-│   ├── ROADMAP.md
-│   ├── CODING_STANDARDS.md
-│   ├── AMRN_FORMAT.md         # Binary package specification
-│   ├── ABI.md                 # Kernel/application execution contract
-│   ├── HARDWARE.md            # Board wiring and electrical assumptions
-│   ├── DEVELOPMENT.md         # Build, flash, and debug workflow
-│   ├── APPLICATION_WORKFLOW.md # Application build and AMRN packaging workflow
-│   ├── TESTING.md             # Host and hardware acceptance tests
-│   ├── MVP_ACCEPTANCE.md      # Physical MVP acceptance procedure
-│   ├── VERSIONING.md          # Component and compatibility versioning
-│   ├── SECURITY.md            # Security model and future guarantees
-│   ├── cli/                   # Production CLI documentation
-│   │   ├── README.md
-│   │   ├── INSTALLATION.md
-│   │   ├── QUICKSTART.md
-│   │   ├── COMMANDS.md
-│   │   ├── WORKFLOWS.md
-│   │   ├── OUTPUT.md
-│   │   ├── ERRORS.md
-│   │   ├── EXIT_CODES.md
-│   │   ├── COMPATIBILITY.md
-│   │   ├── TROUBLESHOOTING.md
-│   │   ├── TESTING.md
-│   │   ├── CONTRIBUTING.md
-│   │   ├── APPLICATION_PROJECT.md
-│   │   ├── DEVICE_DISCOVERY.md
-│   │   └── commands/
-│   │       ├── package.md
-│   │       ├── inspect.md
-│   │       ├── app-new.md
-│   │       └── target-info.md
-│   ├── boards/                # Generated board review checklists
-│   └── changelog/             # Archived generated release changelogs
-│       └── README.md
-└── README.md                  # Public project introduction
+│   ├── ARCHITECTURE.md, ABI.md, AMRN_FORMAT.md, HARDWARE.md
+│   ├── ROADMAP.md, TESTING.md, MVP_ACCEPTANCE.md, SECURITY.md
+│   ├── CODING_STANDARDS.md, DEVELOPMENT.md, VERSIONING.md
+│   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
+│   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
+│   ├── RELOCATION.md, FILE_STRUCTURE.md
+│   ├── cli/                        # CLI guides and command references
+│   └── changelog/                  # Archived generated release changelogs
+├── scripts/
+│   ├── console.sh, archive-changelog.sh, check-commit-message.sh
+│   ├── setup-arch.sh, setup-debian.sh, setup-fedora.sh
+│   ├── setup-macos.sh, setup-windows.ps1
+│   └── gdb/bus-fault-mpu.gdb
+└── simulation/
+    ├── README.md
+    └── renode/dali_blackpill.resc
 ```
 
-## Rust file creation order
+## Exact implementation file inventory
 
-The following order keeps each new file focused on one verifiable capability:
+The directory tree above groups related files. The current tracked source
+files inside those groups are:
 
-1. `kernel/src/board/mod.rs` — compile-time board selection facade.
-2. `kernel/src/board/stm32f405_sd.rs` — STM32F405 clock, LED, and SDIO pin ownership.
-4. `kernel/src/logging/mod.rs` — the stable kernel logging facade.
-5. `kernel/src/logging/rtt.rs` — the RTT logging backend.
-6. `kernel/src/bootstrap/mod.rs` — boot sequence orchestration.
-7. `kernel/src/bootstrap/heartbeat.rs` — status heartbeat loop.
-8. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
-9. `kernel/src/drivers/mod.rs` — hardware driver registry.
-10. `kernel/src/drivers/sdio.rs` — SDIO initialization and block reads.
-11. A future board backend may add a board-owned storage driver after its
-    manifest and hardware contract are accepted.
-12. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
-13. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
-14. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
-15. `kernel/src/loader/crc32.rs` — payload CRC32 calculation and validation.
-16. `kernel/src/loader/exec.rs` — bounded SRAM copy and entry-point transfer.
-17. `apps/dali-app-hello/src/main.rs` — first independently built application.
-18. `apps/dali-app-hello/memory.x` — application linker memory layout.
-19. `apps/dali-app-hello/build.rs` — application package preparation, if required.
-20. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
-21. `crates/dali-cli/src/main.rs` — CLI process entry point.
-22. `crates/dali-cli/src/commands/mod.rs` — command dispatch and shared flag parsing.
-23. `crates/dali-cli/src/commands/package.rs` — AMRN package construction command.
-24. `crates/dali-cli/src/commands/inspect.rs` — AMRN package inspection command.
-25. `crates/dali-cli/src/commands/app.rs` — application command group dispatch.
-26. `crates/dali-cli/src/commands/new.rs` — application scaffold creation.
-27. `crates/dali-cli/src/commands/init.rs` — existing directory initialization.
-28. `crates/dali-cli/src/commands/build.rs` — native application payload build.
-29. `crates/dali-cli/templates/app/config.toml.template` — standalone Cargo linker configuration.
-30. `crates/dali-cli/src/commands/app_package.rs` — application payload packaging.
-31. `crates/dali-cli/src/commands/doctor.rs` — host and toolchain diagnostics.
-32. `crates/dali-cli/src/commands/target.rs` — supported application target profiles.
-33. `targets/*.toml` — declarative manufacturer and compatibility metadata.
-34. `crates/dali-targets/` — validated generated target registry shared by host tooling.
-27. `crates/dali-cli/templates/app/` — versioned application scaffold assets.
+```text
+kernel/src/
+├── main.rs
+├── board/{mod.rs,mpu.rs,stm32f405_sd.rs}
+├── bootstrap/{mod.rs,heartbeat.rs,status.rs}
+├── drivers/{mod.rs,sdio.rs,sdio_raw.rs}
+├── loader.rs
+├── loader/{v3.rs,v3_relocatable.rs}
+├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
+├── security/{mod.rs,fault.rs,launch.rs,svc.rs}
+└── storage/{mod.rs,filesystem.rs}
 
-Post-MVP runtime files should be added only after the loader acceptance test passes:
+crates/dali-amrn/src/
+├── lib.rs, builder.rs, stream.rs, tests.rs
+├── v2.rs, v2_tests.rs
+└── v3.rs, v3_apply.rs, v3_codec.rs, v3_tests.rs, v3_wire.rs
 
-1. `kernel/src/runtime/mod.rs` — runtime boundary.
-2. `kernel/src/runtime/task.rs` — task representation.
-3. `kernel/src/runtime/scheduler.rs` — scheduling policy.
-4. `kernel/src/runtime/ipc.rs` — fixed-size channels and event delivery.
-5. `kernel/src/runtime/services.rs` — service registry and capability policy.
-6. `kernel/src/runtime/watchdog.rs` — heartbeat and fault policy.
+crates/dali-cli/src/
+├── main.rs
+└── commands/
+    ├── mod.rs, app.rs, build.rs, init.rs, new.rs, new_tests.rs
+    ├── app_artifacts.rs, app_linker.rs, app_package.rs, app_relocations.rs
+    ├── package.rs, inspect.rs, inspect_v3_tests.rs
+    ├── device.rs, device_attach.rs, device_cdc.rs, device_console.rs
+    ├── device_flash.rs, device_flash_transport.rs, device_info.rs
+    ├── doctor.rs, target.rs, target_info.rs
 
-Every implementation file should have a corresponding test or hardware evidence entry in `docs/TESTING.md` before the next layer is treated as complete.
+crates/dali-cli/templates/app/
+├── Cargo.toml.template, build.rs.template, config.toml.template
+├── dali.toml.template, lib.rs.template, main.rs.template
+└── memory.x.template, memory.v3.x.template
 
-## Priority order
+crates/dali-device/src/lib.rs
+crates/dali-sdk/src/{lib.rs,svc.rs,svc_log.rs}
+crates/dali-targets/src/lib.rs
+crates/dali-targets/build.rs
+crates/dali-usb/src/{lib.rs,tests.rs}
+```
 
-1. `docs/ARCHITECTURE.md`
-2. `docs/FILE_STRUCTURE.md`
-3. `docs/DOCUMENTATION_INDEX.md`
-4. `docs/ROADMAP.md`
-5. `docs/AMRN_FORMAT.md`
-6. `docs/ABI.md`
-7. `docs/HARDWARE.md`
-8. `docs/DEVELOPMENT.md`
-9. `docs/TESTING.md`
-10. `docs/SECURITY.md`
-11. `README.md`
-12. `kernel/src/` and application implementation
+Each application fixture has its own `Cargo.toml`, `build.rs`, `src/lib.rs`,
+and `src/main.rs`. The fault and SVC fixtures additionally have a local
+`.cargo/config.toml`, `Cargo.lock`, and `dali.toml`. The relocation fixture has
+its own `Cargo.lock` but uses the root build configuration. `dali-app-hello`
+also tracks `memory.x`; generated linker scripts are not tracked.
 
-The structure is intentionally aspirational. A file should be created only when its corresponding milestone is ready to be specified or implemented.
+The CLI documentation files currently tracked under `docs/cli/commands/` are:
+
+```text
+app-build.md, app-init.md, app-new.md, app-package.md,
+device-attach.md, device-console.md, device-flash.md, device-info.md,
+doctor.md, inspect.md, package.md, target-info.md, target-list.md,
+target-scaffold.md
+```
+
+## Ownership boundaries
+
+- `kernel/src/board/` owns typed board peripherals, pins, clocks, and MPU
+  layout activation.
+- `kernel/src/storage/` owns SD/filesystem access; package parsing remains in
+  `crates/dali-amrn/` and loading policy remains in `kernel/src/loader.rs`.
+- `kernel/src/security/` owns privileged SVC dispatch, launch frames, and
+  fault recovery.
+- `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
+  board profile should be duplicated in CLI or kernel policy code.
+- `crates/dali-cli/src/commands/` contains command-specific implementation;
+  command documentation lives in `docs/cli/commands/`.
+- `apps/` contains independently built validation applications and fixtures;
+  these are not kernel modules.
+
+## Generated and local-only content
+
+The following are intentionally absent from this tree document:
+
+- Cargo `target/` directories and compiled `.bin`/`.amrn` artifacts;
+- generated linker scripts inside application build directories;
+- editor settings, mounted SD-card paths, and debugger sessions;
+- generated target registry output under Cargo `OUT_DIR`.
+
+When a new tracked module or documentation area is added, update this file in
+the same change so it remains a description of the repository rather than an
+aspirational creation order.
