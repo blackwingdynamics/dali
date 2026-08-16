@@ -1,0 +1,27 @@
+[package]
+name = "dali-app-fault-execution"
+version = "0.1.0-alpha.1"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+dali = { path = "../../crates/dali-sdk", features = ["abi-v3"] }
+dali-targets = { path = "../../crates/dali-targets" }
+
+[build-dependencies]
+dali-targets = { path = "../../crates/dali-targets" }
+
+[features]
+embedded-payload = []
+abi-v3 = ["dali/abi-v3"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "dali-app-fault-execution"
+path = "src/main.rs"
+required-features = ["embedded-payload"]
+test = false
