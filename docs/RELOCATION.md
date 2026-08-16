@@ -103,6 +103,20 @@ The feature-gated kernel loader validates and applies the same operations from
 a bounded SD stream before preparing the MPU launch frame. It currently uses
 the target manifest's declared origins and does not select multiple slots.
 
+## Slot-manager prerequisite
+
+The current F405 memory manifest provides one 32 KiB code region and one
+32 KiB data/PSP region. The selected candidate replaces that with two 16 KiB
+code/data pairs, keeps 32 KiB of DMA-accessible SRAM for kernel transport
+buffers, and moves kernel runtime/static state/stack to the 64 KiB CCM region.
+The candidate also reserves the final 32 KiB for future expansion or an
+explicitly permissioned shared-memory design.
+
+This layout is not active yet. The next implementation task is to add a
+manifest-owned slot table, migrate the linker and every kernel static that
+must remain DMA-visible, then validate the new MPU regions. A slot manager
+must never infer slots from arithmetic on the current single-slot addresses.
+
 ## Required evidence before implementation
 
 The implementation must not start until fixtures prove that the selected

@@ -600,6 +600,11 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Execute a format 3 relocation fixture on F405 hardware at the canonical
   manifest origins.
 - [ ] Execute the same relocation metadata with a non-zero slot delta.
+- [x] Define the candidate F405 multi-slot memory contract: two 16 KiB
+  code/data pairs, 32 KiB DMA-visible SRAM, and CCM kernel runtime storage.
+- [ ] Migrate the F405 linker, kernel statics, DMA buffers, and MPU map to the
+  candidate multi-slot contract.
+- [ ] Add and validate the manifest-owned code/data slot table.
 - [ ] Design a slot manager only after the relocation contract and memory map
   are stable.
 - [ ] Add PSP/PendSV context switching only after one isolated application is
