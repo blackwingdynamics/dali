@@ -17,7 +17,16 @@ pub unsafe extern "C" fn amiran_entry(services: *const ServiceTable) -> ! {
     }) else {
         run_forever();
     };
-    let _message_accepted = dali::log(services, APPLICATION_MESSAGE);
+    let _message_accepted = {
+        #[cfg(feature = "abi-v3")]
+        {
+            dali::log_v3(APPLICATION_MESSAGE)
+        }
+        #[cfg(not(feature = "abi-v3"))]
+        {
+            dali::log(services, APPLICATION_MESSAGE)
+        }
+    };
     run_forever();
 }
 

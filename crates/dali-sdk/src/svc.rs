@@ -1,7 +1,7 @@
-//! Host-testable building blocks for the planned ABI v3 SVC gateway.
+//! Host-testable building blocks for the ABI v3 SVC gateway.
 //!
-//! These types do not activate ABI v3. The current kernel and applications
-//! continue to use the ABI v2 service table until the gateway is implemented.
+//! These types describe the gateway contract. The default SDK API remains the
+//! ABI v2 service table; the feature-gated v3 SDK call is implemented separately.
 
 /// SVC immediate reserved for the Dali application-service gateway.
 pub const GATEWAY_IMMEDIATE: u8 = 0;
@@ -30,7 +30,7 @@ pub const fn contains_range(
     start != 0 && start >= region_start && end <= region_end
 }
 
-/// Versioned service identifiers understood by the planned gateway.
+/// Versioned service identifiers understood by the gateway.
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ServiceId {

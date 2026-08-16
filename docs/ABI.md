@@ -82,10 +82,10 @@ ABI v3 remains a design and host-artifact contract. ABI v2 remains the active
 kernel execution ABI until the implementation and F405 hardware evidence are
 complete.
 
-The repository now contains a feature-gated SVC frame validator and bounded log
-dispatcher behind the kernel `abi-v3` feature. This is an implementation
-scaffold for testing only; it does not enable MPU protection, privilege
-transition, or ABI v3 package execution by default.
+The repository now contains a feature-gated SDK SVC call, kernel SVC frame
+validator, and bounded log dispatcher behind the ABI v3 feature. This is an
+implementation scaffold for testing only; it does not enable MPU protection,
+privilege transition, or ABI v3 package execution by default.
 
 ### Execution mode
 

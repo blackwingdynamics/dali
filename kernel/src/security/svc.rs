@@ -104,7 +104,7 @@ fn dispatch(frame: &mut ExceptionFrame, memory: IsolationMemoryProfile) {
 fn dispatch_log(frame: &ExceptionFrame, memory: IsolationMemoryProfile) -> ServiceStatus {
     let message = frame.r1 as usize;
     let length = frame.r2 as usize;
-    if !contains(memory, message, length) {
+    if length > dali::MAX_LOG_MESSAGE_BYTES || !contains(memory, message, length) {
         return ServiceStatus::rejected();
     }
 

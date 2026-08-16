@@ -340,6 +340,8 @@ protection boundary is implemented and accepted.
 - [x] Add a host-side, no-std-compatible AMRN v2 parser and builder with
   target-contract validation; keep kernel loading on ABI v2 while the CLI can
   emit host-inspectable ABI v3 packages.
+- [x] Add the feature-gated SDK-side ABI v3 SVC logging call; keep generated
+  ABI v2 applications on the direct service-table path.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and
