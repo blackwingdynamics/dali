@@ -20,9 +20,10 @@ dali-kernel/
 │   ├── Cargo.toml, build.rs
 │   └── src/
 │       ├── main.rs                # Kernel entry and bootstrap call
-│       ├── board/                 # Board implementation, MPU, F405 mapping
+│       ├── board/                 # Shared MPU descriptors
 │       ├── platform.rs            # Platform facade and target entry points
 │       ├── platform/stm32f405.rs  # F405 target profile and IRQ bindings
+│       ├── platform/stm32f405_board.rs # F405 hardware backend
 │       ├── bootstrap/             # Startup, storage status, heartbeat
 │       ├── drivers/               # SDIO and raw SDIO access
 │       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
@@ -79,8 +80,8 @@ files inside those groups are:
 ```text
 kernel/src/
 ├── main.rs
-├── board/{mod.rs,mpu.rs,stm32f405_sd.rs}
-├── platform.rs, platform/stm32f405.rs
+├── board/{mod.rs,mpu.rs}
+├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs}
 ├── bootstrap/{mod.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,sdio.rs,sdio_raw.rs}
 ├── loader.rs

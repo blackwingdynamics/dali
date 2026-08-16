@@ -1,4 +1,4 @@
-//! STM32F405 platform-owned target selection and interrupt bindings.
+//! STM32F405 target selection and interrupt bindings.
 
 #[cfg(feature = "abi-v3")]
 use dali_targets::TargetProfile;
