@@ -31,7 +31,10 @@ ranges, clocks, pins, peripherals, package compatibility, and protection
 capabilities. The generated target registry exposes typed metadata to host and
 kernel build code.
 
-The backend maps those facts to executable hardware operations. It must not
+The backend maps those facts to executable hardware operations. The
+`kernel/src/platform.rs` facade exposes only stable kernel-facing operations;
+backend resource structs, PAC types, pin tuples, and clock objects stay behind
+that facade. It must not
 silently duplicate configurable values in Rust. A value that differs between
 targets belongs in the manifest or in a documented processor-specific
 implementation rule.

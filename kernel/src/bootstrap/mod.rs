@@ -40,7 +40,7 @@ pub fn run() -> ! {
     );
 
     // Keep a visible indication active while storage initialization is in progress.
-    platform::set_status_led(&mut board, true);
+    board.set_status_led(true);
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Starting storage initialization"),
@@ -75,8 +75,8 @@ fn emit_boot_banner() {
 }
 
 #[cfg(feature = "sdio")]
-fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
-    let Some((peripheral, pins, clocks)) = board.take_sdio_resources() else {
+fn initialize_storage(board: &mut platform::Platform) -> status::StorageStatus {
+    let Some(mut reader) = board.take_sdio_reader() else {
         logging::error(
             logging::BOOT_SUBSYSTEM,
             format_args!("[STORAGE] SDIO resources unavailable"),
@@ -84,7 +84,6 @@ fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
         return status::StorageStatus::Failure;
     };
 
-    let mut reader = platform::SdioBlockReader::new(peripheral, pins, clocks);
     if let Err(error) = reader.initialize() {
         logging::error(
             logging::BOOT_SUBSYSTEM,
@@ -170,6 +169,6 @@ fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
 }
 
 #[cfg(not(feature = "sdio"))]
-fn initialize_storage(_board: &mut platform::Board) -> status::StorageStatus {
+fn initialize_storage(_board: &mut platform::Platform) -> status::StorageStatus {
     status::StorageStatus::NotDetected
 }
