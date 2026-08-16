@@ -20,6 +20,9 @@ const USB_VENDOR_ID: u16 = 0x1209;
 const USB_PRODUCT_ID: u16 = 0xDA11;
 const ENDPOINT_MEMORY_WORDS: usize = 1_024;
 
+// The endpoint arena is kept in the board's DMA-visible buffer section so a
+// future CCM migration cannot move USB transport memory into CCM by accident.
+#[unsafe(link_section = ".dma_buffer")]
 static mut ENDPOINT_MEMORY: [u32; ENDPOINT_MEMORY_WORDS] = [0; ENDPOINT_MEMORY_WORDS];
 static mut USB_BUS: Option<UsbBusAllocator<ActiveBus>> = None;
 static USB_SERIAL: Mutex<RefCell<Option<SerialPort<'static, ActiveBus>>>> =
