@@ -332,6 +332,8 @@ protection boundary is implemented and accepted.
   packages use AMRN format version 2 with separate code and initialized-data
   segments, explicit zero-data and PSP stack reservations, and a kernel-built
   launch frame; the v1 parser and builder remain unchanged.
+- [x] Add a host-side, no-std-compatible AMRN v2 parser and builder with
+  target-contract validation; keep kernel loading and CLI emission on ABI v2.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

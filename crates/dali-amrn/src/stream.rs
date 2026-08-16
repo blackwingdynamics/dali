@@ -92,3 +92,10 @@ pub(crate) fn checksum(bytes: &[u8]) -> u32 {
     checksum.update(bytes);
     checksum.finish()
 }
+
+pub(crate) fn checksum_parts(first: &[u8], second: &[u8]) -> u32 {
+    let mut checksum = Crc32::new();
+    checksum.update(first);
+    checksum.update(second);
+    checksum.finish()
+}

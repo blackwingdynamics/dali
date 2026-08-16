@@ -164,7 +164,8 @@ unprivileged access cannot bypass the no-access boundaries.
 ABI v3 packages use AMRN format version `2`; the format revision is required
 because the v1 fixed header cannot represent separate code/data segments and
 runtime stack reservations. The v2 package contract is defined in
-`docs/AMRN_FORMAT.md` and is not implemented by the current parser or builder.
+`docs/AMRN_FORMAT.md`. The `dali-amrn` crate provides host-side parsing and
+construction, while the kernel loader and CLI remain ABI v2-only.
 
 For the current F405 target, the linker must emit:
 

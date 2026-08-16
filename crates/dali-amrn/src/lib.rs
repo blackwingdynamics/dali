@@ -4,6 +4,7 @@
 
 mod builder;
 mod stream;
+pub mod v2;
 
 pub use builder::{BuildError, encode_package};
 #[cfg(test)]
