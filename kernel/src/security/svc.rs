@@ -85,6 +85,13 @@ fn UsageFault() {
     fault::handle(FaultKind::UsageFault);
 }
 
+#[exception(trampoline = false)]
+unsafe fn HardFault() -> ! {
+    // SAFETY: The handler does not inspect the potentially invalid stacked
+    // application frame; recovery builds a fresh frame on the kernel MSP.
+    fault::handle(FaultKind::HardFault)
+}
+
 fn valid_exception_return(value: u32) -> bool {
     const EXC_RETURN_SIGNATURE_MASK: u32 = 0xFF00_0000;
     const EXC_RETURN_SIGNATURE: u32 = 0xFF00_0000;

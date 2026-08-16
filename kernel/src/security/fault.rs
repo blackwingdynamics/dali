@@ -14,6 +14,9 @@ pub(crate) enum FaultKind {
     BusFault,
     /// The processor reported invalid execution state or instruction use.
     UsageFault,
+    /// A fault occurred while entering another exception, before its handler
+    /// could receive a valid application frame.
+    HardFault,
     /// The exception return value did not identify the expected app context.
     InvalidExceptionReturn,
 }
