@@ -64,6 +64,7 @@ dali-kernel/
 │   ├── dali-app-hello/        # First independently built demo app
 │   ├── dali-app-fault-kernel/ # Standalone F405 kernel-read fault fixture
 │   └── dali-app-fault-kernel-write/ # Standalone F405 kernel-write fault fixture
+│   └── dali-app-fault-peripheral/ # Standalone F405 peripheral fault fixture
 │       ├── Cargo.toml
 │       ├── build.rs           # Application linker search path
 │       ├── memory.x           # Reserved application SRAM layout

@@ -72,3 +72,27 @@ Expected application output is:
 This proves only processor-side rejection of an unprivileged write into the
 declared kernel region. It does not prove peripheral rejection, invalid
 execution, PSP bounds, DMA isolation, or complete application isolation.
+
+## Peripheral-access test
+
+Build and package the peripheral fixture:
+
+```text
+cd apps/dali-app-fault-peripheral
+dali app build
+```
+
+Copy `target/thumbv7em-none-eabihf/debug/dali-app-fault-peripheral.amrn` to
+the SD-card root, then repeat the same kernel build and flash procedure.
+Expected application output is:
+
+```text
+[INFO][APP] Fault injection: peripheral memory read
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves only processor-side rejection of an unprivileged read from the
+manifest-declared peripheral region. It does not prove peripheral writes,
+invalid execution, PSP bounds, DMA isolation, or complete application
+isolation.
