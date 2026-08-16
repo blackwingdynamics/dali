@@ -38,6 +38,8 @@ Pre-release versions use identifiers such as:
 The first Dali OS MVP release uses the pre-release version
 `0.1.0-alpha.1` because the F405 MVP path is accepted, while production
 hardening and post-MVP platform capabilities are not complete.
+GitHub Releases for `alpha`, `beta`, and `rc` versions must be marked as
+pre-releases automatically by the release workflow.
 
 ## 3. AMRN format version
 

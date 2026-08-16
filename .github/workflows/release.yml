@@ -43,4 +43,14 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" --title "Dali OS ${GITHUB_REF_NAME}" --notes-file "docs/changelog/${GITHUB_REF_NAME}.md"
+        run: |
+          prerelease_flag=""
+          case "${GITHUB_REF_NAME}" in
+            *-alpha.*|*-beta.*|*-rc.*)
+              prerelease_flag="--prerelease"
+              ;;
+          esac
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "Dali OS ${GITHUB_REF_NAME}" \
+            --notes-file "docs/changelog/${GITHUB_REF_NAME}.md" \
+            ${prerelease_flag}
