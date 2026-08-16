@@ -595,7 +595,7 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Validate extracted relocation records through the AMRN v3 host encoder
   and emit/inspect the AMRN v3 package behind an explicit manifest format
   selection.
-- [ ] Add relocation patch decoders and host tests for each supported ARM kind.
+- [x] Add relocation patch decoders and host tests for each supported ARM kind.
 - [ ] Implement bounded kernel-side relocation application before MPU launch.
 - [ ] Design a slot manager only after the relocation contract and memory map
   are stable.

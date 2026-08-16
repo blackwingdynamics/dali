@@ -2,10 +2,13 @@
 
 use crate::{MAGIC, stream::Crc32};
 
+#[path = "v3_apply.rs"]
+mod apply;
 #[path = "v3_codec.rs"]
 mod codec;
 #[path = "v3_wire.rs"]
 mod wire;
+pub use apply::apply;
 pub use codec::{encode, parse};
 
 /// The fixed AMRN v3 header length in bytes.
@@ -235,6 +238,10 @@ pub enum Error {
     InvalidExecutionOffset,
     /// A checked address calculation overflowed.
     AddressOverflow,
+    /// A relocation patch is malformed or cannot be represented.
+    InvalidPatch,
+    /// A relocation target plus its addend is outside the selected image.
+    RelocationOverflow,
     /// The package checksum is invalid.
     CrcMismatch,
     /// The output buffer cannot contain the package.

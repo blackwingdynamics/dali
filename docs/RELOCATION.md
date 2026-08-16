@@ -96,6 +96,11 @@ checks AMRN integer widths, and enforces the AMRN relocation-count limit. The
 step reports the retained record count during dali app build; it does not yet
 emit an AMRN v3 package or apply relocations.
 
+The AMRN crate also contains a host-side patcher for the supported relocation
+operations. It applies code/data deltas to ABS32, Thumb call, Thumb MOVW, and
+Thumb MOVT patches with instruction-shape, range, alignment, and bounds checks.
+The kernel loader has not adopted this patcher yet.
+
 ## Required evidence before implementation
 
 The implementation must not start until fixtures prove that the selected
