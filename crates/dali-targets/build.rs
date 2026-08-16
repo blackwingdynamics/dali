@@ -77,6 +77,18 @@ struct IsolationMemory {
     peripheral_length: Option<u32>,
     bus_fault_origin: Option<u32>,
     bus_fault_length: Option<u32>,
+    #[serde(default)]
+    slots: Vec<IsolationSlot>,
+}
+
+#[derive(Debug, Deserialize)]
+struct IsolationSlot {
+    name: String,
+    code_origin: u32,
+    code_length: u32,
+    data_origin: u32,
+    data_length: u32,
+    stack_length: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -287,6 +299,78 @@ fn validate_isolation_memory(
         )
         .into());
     }
+    validate_slots(manifest, isolation, application_end)?;
+    Ok(())
+}
+
+fn validate_slots(
+    manifest: &Manifest,
+    isolation: &IsolationMemory,
+    application_end: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for (index, slot) in isolation.slots.iter().enumerate() {
+        let code_end = slot
+            .code_origin
+            .checked_add(slot.code_length)
+            .ok_or_else(|| {
+                format!(
+                    "target {} slot {index} code overflows",
+                    manifest.profile.name
+                )
+            })?;
+        let data_end = slot
+            .data_origin
+            .checked_add(slot.data_length)
+            .ok_or_else(|| {
+                format!(
+                    "target {} slot {index} data overflows",
+                    manifest.profile.name
+                )
+            })?;
+        if slot.name.is_empty()
+            || slot.code_length == 0
+            || slot.data_length == 0
+            || slot.stack_length == 0
+            || slot.stack_length > slot.data_length
+            || slot.data_origin != code_end
+            || slot.code_origin < manifest.memory.application_origin
+            || data_end > application_end
+            || !valid_mpu_region(slot.code_origin, slot.code_length)
+            || !valid_mpu_region(slot.data_origin, slot.data_length)
+        {
+            return Err(format!(
+                "target {} slot {index} has invalid aligned code/data bounds",
+                manifest.profile.name
+            )
+            .into());
+        }
+        for previous in &isolation.slots[..index] {
+            let previous_end = previous
+                .data_origin
+                .checked_add(previous.data_length)
+                .ok_or_else(|| format!("target {} slot bounds overflow", manifest.profile.name))?;
+            if slot.name == previous.name || slot.code_origin < previous_end {
+                return Err(format!(
+                    "target {} has duplicate or overlapping isolation slots",
+                    manifest.profile.name
+                )
+                .into());
+            }
+        }
+    }
+    if let Some(first) = isolation.slots.first()
+        && (first.code_origin != isolation.code_origin
+            || first.code_length != isolation.code_length
+            || first.data_origin != isolation.data_origin
+            || first.data_length != isolation.data_length
+            || first.stack_length != isolation.stack_length)
+    {
+        return Err(format!(
+            "target {} slot 0 must preserve the active isolation contract",
+            manifest.profile.name
+        )
+        .into());
+    }
     Ok(())
 }
 
@@ -401,7 +485,7 @@ fn generate_memory(memory: &Memory) -> String {
 
 fn generate_isolation_memory(memory: &IsolationMemory) -> String {
     format!(
-        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {}, peripheral_origin: {}, peripheral_length: {}, bus_fault_origin: {}, bus_fault_length: {} }}",
+        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {}, peripheral_origin: {}, peripheral_length: {}, bus_fault_origin: {}, bus_fault_length: {}, slots: &[{}] }}",
         memory.code_origin,
         memory.code_length,
         memory.data_origin,
@@ -419,6 +503,24 @@ fn generate_isolation_memory(memory: &IsolationMemory) -> String {
         memory
             .bus_fault_length
             .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
+        memory
+            .slots
+            .iter()
+            .map(generate_isolation_slot)
+            .collect::<Vec<_>>()
+            .join(", "),
+    )
+}
+
+fn generate_isolation_slot(slot: &IsolationSlot) -> String {
+    format!(
+        "IsolationSlot {{ name: {}, code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {} }}",
+        string_literal(&slot.name),
+        slot.code_origin,
+        slot.code_length,
+        slot.data_origin,
+        slot.data_length,
+        slot.stack_length,
     )
 }
 

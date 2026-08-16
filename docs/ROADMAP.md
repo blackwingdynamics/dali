@@ -604,7 +604,8 @@ Compilation and host tests do not replace hardware evidence.
   code/data pairs, 32 KiB DMA-visible SRAM, and CCM kernel runtime storage.
 - [ ] Migrate the F405 linker, kernel statics, DMA buffers, and MPU map to the
   candidate multi-slot contract.
-- [ ] Add and validate the manifest-owned code/data slot table.
+- [x] Add and validate the manifest-owned code/data slot table without changing
+  the active single-application loader contract.
 - [ ] Design a slot manager only after the relocation contract and memory map
   are stable.
 - [ ] Add PSP/PendSV context switching only after one isolated application is

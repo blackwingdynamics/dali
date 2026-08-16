@@ -126,6 +126,21 @@ The planned isolated ABI may add an optional `[memory.isolation]` table:
 | `peripheral_origin` / `peripheral_length` | integer | together | Aligned ordinary peripheral register region. |
 | `bus_fault_origin` / `bus_fault_length` | integer | no | Documented reserved F405 code-region range used only by deterministic BusFault test fixtures. |
 
+An isolation manifest may also declare ordered slots with repeated
+`[[memory.isolation.slots]]` tables:
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `name` | string | yes | Stable target-local slot name. |
+| `code_origin` / `code_length` | integer | yes | Aligned executable code region for the slot. |
+| `data_origin` / `data_length` | integer | yes | Aligned writable data and PSP region for the slot. |
+| `stack_length` | integer | yes | PSP reservation inside the slot's data region. |
+
+Slots are ordered by declaration. The first slot must preserve the active
+single-application code/data contract until the loader and MPU switch to slot
+selection. Slot declarations are metadata only until that implementation is
+completed; they do not enable multiple applications or context switching.
+
 When present, the code and data regions must be contiguous, begin at
 `application_origin`, and end at the application boundary. They are metadata
 for the isolated ABI and do not enable MPU protection by themselves. The

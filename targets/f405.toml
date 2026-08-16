@@ -48,6 +48,14 @@ peripheral_length = 536_870_912
 bus_fault_origin = 0x0010_0000
 bus_fault_length = 32
 
+[[memory.isolation.slots]]
+name = "slot0"
+code_origin = 0x2000_8000
+code_length = 32_768
+data_origin = 0x2001_0000
+data_length = 32_768
+stack_length = 4_096
+
 [status_led]
 port = "PB"
 number = 2
