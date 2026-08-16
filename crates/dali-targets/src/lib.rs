@@ -160,6 +160,13 @@ pub fn find_board(name: &str) -> Option<&'static TargetProfile> {
     ALL_TARGETS.iter().find(|target| target.name == name)
 }
 
+/// Finds a declared application target by its AMRN target identifier.
+pub fn find_by_amrn_target_id(target_id: u8) -> Option<&'static TargetProfile> {
+    ALL_TARGETS
+        .iter()
+        .find(|target| target.amrn_target_id == target_id && target.application_supported)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{DfuProfile, SUPPORTED_TARGETS, find_board};

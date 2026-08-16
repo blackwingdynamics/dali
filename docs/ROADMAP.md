@@ -247,6 +247,8 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Document the complete `targets/*.toml` manifest contract and generation workflow.
 - [ ] Add typed kernel backends for additional target profiles after the F405 0.1.0 scope is complete.
 - [x] Add `dali target info <target>` for board, MCU, ABI, AMRN, memory, clock, and transport metadata, with a machine-readable probe-chip field.
+- [x] Add target-registry lookup by AMRN identifier and host-side `dali inspect`
+  validation for the documented AMRN v2 package contract.
 
 #### Device operations
 
