@@ -2,6 +2,7 @@
 
 use dali_amrn::{Crc32, HEADER_SIZE, v2};
 
+use crate::security::launch::{self, LaunchFrame};
 use crate::storage::{self, BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
 
 /// Values retained after an ABI v3 package has been copied into SRAM.
@@ -11,6 +12,8 @@ pub struct LoadedApplication {
     pub entry_address: u32,
     /// Initial PSP value at the top of the declared stack reservation.
     pub psp_top: u32,
+    /// Kernel-generated frame for the future unprivileged exception return.
+    pub(crate) launch_frame: LaunchFrame,
 }
 
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
@@ -36,17 +39,32 @@ where
     }
     validate_payload(&file, header)?;
     copy_segments(&file, header)?;
+    let entry_address = header
+        .code_load_address
+        .checked_add(header.execution_offset)
+        .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
+    let stack_origin = header
+        .data_load_address
+        .checked_add(header.data_init_size)
+        .and_then(|address| address.checked_add(header.data_zero_size))
+        .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
+    let psp_top = stack_origin
+        .checked_add(header.stack_size)
+        .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
+    let launch_frame = launch::prepare(entry_address, stack_origin, header.stack_size).map_err(
+        |error| match error {
+            launch::LaunchError::InvalidEntry => {
+                super::LoaderError::V3Package(v2::Error::InvalidExecutionOffset)
+            }
+            launch::LaunchError::InvalidStack => {
+                super::LoaderError::V3Package(v2::Error::RegionOverflow)
+            }
+        },
+    )?;
     Ok(LoadedApplication {
-        entry_address: header
-            .code_load_address
-            .checked_add(header.execution_offset)
-            .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?,
-        psp_top: header
-            .data_load_address
-            .checked_add(header.data_init_size)
-            .and_then(|address| address.checked_add(header.data_zero_size))
-            .and_then(|address| address.checked_add(header.stack_size))
-            .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?,
+        entry_address,
+        psp_top,
+        launch_frame,
     })
 }
 

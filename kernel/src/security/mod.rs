@@ -4,4 +4,7 @@
 mod fault;
 
 #[cfg(feature = "abi-v3")]
+pub(crate) mod launch;
+
+#[cfg(feature = "abi-v3")]
 pub(crate) mod svc;
