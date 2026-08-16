@@ -119,3 +119,29 @@ Expected application output is:
 This proves only processor-side rejection of instruction fetch from the
 manifest-declared application-data region. It does not prove invalid vector
 handling, PSP bounds, DMA isolation, or complete application isolation.
+
+## Invalid-PSP test
+
+Build and package the invalid-PSP fixture:
+
+```text
+cd apps/dali-app-fault-psp
+dali app build
+```
+
+Copy `target/thumbv7em-none-eabihf/debug/dali-app-fault-psp.amrn` to the
+SD-card root, then repeat the same kernel build and flash procedure. Expected
+application output is:
+
+```text
+[INFO][APP] Fault injection: invalid PSP bounds
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+The fixture places PSP four bytes inside the declared data boundary before
+issuing `SVC`, so exception stacking must cross the MPU boundary. Depending on
+the processor's exception-entry path, the fault is reported as `MemManage` or
+as a no-frame `HardFault`; both must reach kernel recovery. This proves only
+the selected PSP-boundary behavior and does not prove context switching, DMA
+isolation, or multi-application isolation.
