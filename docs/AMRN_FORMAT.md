@@ -145,12 +145,13 @@ The v3 launch frame, PSP bounds, SVC gateway, and fault policy must be tested
 before a kernel may claim ABI v3 support. A v1 package must continue to follow
 the single-image ABI v2 rules above.
 
-## Relocatable package contract (format version 3, not yet loadable)
+## Relocatable package contract (format version 3, feature-gated loader)
 
 Format version `3` is reserved for movable ABI v3 applications. The current
-kernel loader does not accept it. The host-side `dali-amrn::v3` module defines
-the byte contract and validation rules so the extractor and loader can be
-implemented against one specification.
+the default kernel path does not accept it. The feature-gated kernel loader
+validates and applies its bounded relocation table against the target
+manifest's current code and data origins. The host-side `dali-amrn::v3` module
+defines the byte contract used by both sides.
 
 The fixed 80-byte header is followed by code, initialized data, and a bounded
 relocation table:

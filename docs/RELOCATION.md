@@ -1,8 +1,8 @@
 # Dali Application Relocation Contract
 
-This document defines the design boundary for movable ABI v3 applications. It
-does not change the current ABI v3 package format or make existing packages
-relocatable.
+This document defines the design boundary for movable ABI v3 applications.
+Format 3 is host-packagable and feature-gated in the kernel; it is not the
+default production boot mode.
 
 ## Current state
 
@@ -93,13 +93,15 @@ The CLI now has a host-side extraction step for retained ARM ELF records. It
 reads the linked .dali_code and .dali_data sections, accepts only the four
 named ARM relocation kinds listed below, resolves symbol or section targets,
 checks AMRN integer widths, and enforces the AMRN relocation-count limit. The
-step reports the retained record count during dali app build; it does not yet
-emit an AMRN v3 package or apply relocations.
+step reports the retained record count during dali app build and emits an AMRN
+v3 package when selected by the manifest.
 
 The AMRN crate also contains a host-side patcher for the supported relocation
 operations. It applies code/data deltas to ABS32, Thumb call, Thumb MOVW, and
 Thumb MOVT patches with instruction-shape, range, alignment, and bounds checks.
-The kernel loader has not adopted this patcher yet.
+The feature-gated kernel loader validates and applies the same operations from
+a bounded SD stream before preparing the MPU launch frame. It currently uses
+the target manifest's declared origins and does not select multiple slots.
 
 ## Required evidence before implementation
 
