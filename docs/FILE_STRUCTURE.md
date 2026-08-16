@@ -27,7 +27,7 @@ dali-kernel/
 │       ├── platform/stm32f405_board.rs # F405 hardware backend
 │       ├── platform/stm32f405_sdio.rs # F405 SDIO block-device adapter
 │       ├── platform/stm32f405_sdio_raw.rs # F405 SDIO register transport
-│       ├── bootstrap/             # Startup, storage status, heartbeat
+│       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
@@ -86,7 +86,7 @@ kernel/src/
 ├── abi.rs
 ├── board/{mod.rs,mpu.rs}
 ├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs,stm32f405_sdio.rs,stm32f405_sdio_raw.rs}
-├── bootstrap/{mod.rs,heartbeat.rs,status.rs}
+├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs}
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
