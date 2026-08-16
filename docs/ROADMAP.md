@@ -561,7 +561,9 @@ Compilation and host tests do not replace hardware evidence.
 
 - [x] Define the initial explicit-relocation direction and safety contract in
   `docs/RELOCATION.md`; keep ABI v2/v3 fixed-address behavior unchanged.
-- [ ] Produce relocation-aware fixture artifacts with retained linker records.
+- [x] Produce relocation-aware fixture artifacts with retained linker records
+  for code and writable data; record the observed ARM kinds in
+  `docs/RELOCATION.md`.
 - [ ] Test relocation metadata or the selected RWPI/PIC implementation.
 - [ ] Implement and test the SRAM slot manager.
 - [ ] Load two applications into independent slots and verify their boundaries.
