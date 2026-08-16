@@ -364,6 +364,7 @@ protection boundary is implemented and accepted.
   evidence pending.
 - [ ] Add host tests for ABI encoding, service identifiers, and rejected calls.
 - [x] Add a non-production F405 kernel-memory fault-injection application.
+- [x] Add a non-production F405 kernel-memory write fault-injection application.
 - [ ] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
   execution, PSP bounds, and application service calls.
 - [x] Record first F405 hardware evidence for kernel-RAM read rejection and
@@ -381,9 +382,21 @@ The observed output was:
 ```
 
 This proves processor-side rejection of an unprivileged kernel-RAM read and
-return to the kernel recovery path. Fault-frame address and PC decoding, write
-rejection, peripheral rejection, invalid execution, PSP bounds, DMA isolation,
-and multi-application isolation remain unverified.
+return to the kernel recovery path.
+
+A second run used the dedicated kernel-memory write fixture. The observed
+output was:
+
+```text
+[INFO][APP] Fault injection: kernel memory write
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This also proves processor-side rejection of an unprivileged kernel-RAM write
+and return to the kernel recovery path. Fault-frame address and PC decoding,
+peripheral rejection, invalid execution, PSP bounds, DMA isolation, and
+multi-application isolation remain unverified.
 
 #### Deferred until isolation foundation is accepted
 
