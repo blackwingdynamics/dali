@@ -317,6 +317,8 @@ protection boundary is implemented and accepted.
   complete.
 - [x] Add host-testable ABI v3 SVC identifiers and Cortex-M exception-frame
   types without enabling the new ABI in the kernel.
+- [x] Add manifest-backed aligned application code/data boundaries for the
+  planned ABI v3 memory contract.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

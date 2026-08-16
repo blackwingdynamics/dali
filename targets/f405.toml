@@ -35,6 +35,12 @@ application_length = 65_536
 runtime_origin = 0x2001_8000
 runtime_length = 32_768
 
+[memory.isolation]
+code_origin = 0x2000_8000
+code_length = 32_768
+data_origin = 0x2001_0000
+data_length = 32_768
+
 [status_led]
 port = "PB"
 number = 2

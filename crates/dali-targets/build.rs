@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 const MANIFEST_DIRECTORY: &str = "targets";
 const GENERATED_FILE: &str = "target_profiles.rs";
+const MINIMUM_MPU_REGION_BYTES: u32 = 32;
 
 #[derive(Debug, Deserialize)]
 struct Manifest {
@@ -62,6 +63,15 @@ struct Memory {
     application_length: u32,
     runtime_origin: u32,
     runtime_length: u32,
+    isolation: Option<IsolationMemory>,
+}
+
+#[derive(Debug, Deserialize)]
+struct IsolationMemory {
+    code_origin: u32,
+    code_length: u32,
+    data_origin: u32,
+    data_length: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -184,6 +194,9 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
             )
             .into());
         }
+        if let Some(isolation) = &manifest.memory.isolation {
+            validate_isolation_memory(manifest, isolation)?;
+        }
         for other in &manifests[..index] {
             if other.profile.name == manifest.profile.name {
                 return Err(format!("duplicate target profile `{}`", manifest.profile.name).into());
@@ -198,6 +211,61 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         }
     }
     Ok(())
+}
+
+fn validate_isolation_memory(
+    manifest: &Manifest,
+    isolation: &IsolationMemory,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let application_end = manifest
+        .memory
+        .application_origin
+        .checked_add(manifest.memory.application_length)
+        .ok_or_else(|| {
+            format!(
+                "target {} application memory overflows",
+                manifest.profile.name
+            )
+        })?;
+    let code_end = isolation
+        .code_origin
+        .checked_add(isolation.code_length)
+        .ok_or_else(|| {
+            format!(
+                "target {} isolation code memory overflows",
+                manifest.profile.name
+            )
+        })?;
+    let data_end = isolation
+        .data_origin
+        .checked_add(isolation.data_length)
+        .ok_or_else(|| {
+            format!(
+                "target {} isolation data memory overflows",
+                manifest.profile.name
+            )
+        })?;
+    if isolation.code_length == 0
+        || isolation.data_length == 0
+        || isolation.code_origin != manifest.memory.application_origin
+        || isolation.data_origin != code_end
+        || data_end != application_end
+        || !valid_mpu_region(isolation.code_origin, isolation.code_length)
+        || !valid_mpu_region(isolation.data_origin, isolation.data_length)
+    {
+        return Err(format!(
+            "target {} isolation memory must cover application memory contiguously",
+            manifest.profile.name
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn valid_mpu_region(origin: u32, length: u32) -> bool {
+    length >= MINIMUM_MPU_REGION_BYTES
+        && (length & (length - 1)) == 0
+        && origin.is_multiple_of(length)
 }
 
 fn generate_registry(manifests: &[Manifest]) -> String {
@@ -288,13 +356,25 @@ fn generate_clock(clock: &Clock) -> String {
 
 fn generate_memory(memory: &Memory) -> String {
     format!(
-        "MemoryProfile {{ kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {} }}",
+        "MemoryProfile {{ kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, isolation: {} }}",
         memory.kernel_origin,
         memory.kernel_length,
         memory.application_origin,
         memory.application_length,
         memory.runtime_origin,
-        memory.runtime_length
+        memory.runtime_length,
+        memory
+            .isolation
+            .as_ref()
+            .map(generate_isolation_memory)
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})"))
+    )
+}
+
+fn generate_isolation_memory(memory: &IsolationMemory) -> String {
+    format!(
+        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {} }}",
+        memory.code_origin, memory.code_length, memory.data_origin, memory.data_length
     )
 }
 

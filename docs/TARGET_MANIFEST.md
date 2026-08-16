@@ -116,6 +116,17 @@ match the linker script and the AMRN/ABI contracts.
 | `application_origin` / `application_length` | integer | yes | RAM region available to the native AMRN payload. |
 | `runtime_origin` / `runtime_length` | integer | yes | Kernel runtime and stack region. |
 
+The planned isolated ABI may add an optional `[memory.isolation]` table:
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `code_origin` / `code_length` | integer | together | Aligned application code and read-only data region. |
+| `data_origin` / `data_length` | integer | together | Aligned writable data and PSP region. |
+
+When present, these regions must be contiguous, begin at
+`application_origin`, and end at the application boundary. They are metadata
+for the planned ABI and do not enable MPU protection by themselves.
+
 Do not change the application region for the current AMRN v1 contract without
 updating `AMRN_FORMAT.md`, `ABI.md`, the linker scripts, tests, and roadmap.
 
@@ -188,6 +199,12 @@ application_origin = 0x2000_8000
 application_length = 65_536
 runtime_origin = 0x2001_8000
 runtime_length = 32_768
+
+[memory.isolation]
+code_origin = 0x2000_8000
+code_length = 32_768
+data_origin = 0x2001_0000
+data_length = 32_768
 
 [status_led]
 port = "PB"

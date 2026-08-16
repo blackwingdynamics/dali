@@ -88,6 +88,21 @@ pub struct MemoryProfile {
     pub runtime_origin: u32,
     /// Size of the runtime and stack region in bytes.
     pub runtime_length: u32,
+    /// Optional code/data split for a future isolated application ABI.
+    pub isolation: Option<IsolationMemoryProfile>,
+}
+
+/// Application code and data boundaries used by the planned isolated ABI.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct IsolationMemoryProfile {
+    /// Start of the application code region.
+    pub code_origin: u32,
+    /// Size of the application code region in bytes.
+    pub code_length: u32,
+    /// Start of the application data and PSP region.
+    pub data_origin: u32,
+    /// Size of the application data and PSP region in bytes.
+    pub data_length: u32,
 }
 
 /// A named GPIO pin declared by a board manifest.
@@ -168,5 +183,6 @@ mod tests {
             Some(4)
         );
         assert!(find_board("f411").is_some());
+        assert!(SUPPORTED_TARGETS[0].memory.isolation.is_some());
     }
 }

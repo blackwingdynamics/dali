@@ -14,6 +14,8 @@ const MINIMUM_REGION_BYTES: u32 = 32;
 pub enum MpuAccess {
     /// All application accesses are rejected.
     NoAccess,
+    /// Application reads are allowed, but writes are rejected.
+    ReadOnly,
     /// Application reads and writes are allowed.
     ReadWrite,
 }
@@ -82,6 +84,10 @@ pub struct IsolationLayout {
     pub application: MemoryRegion,
     /// Single-region mapping when the manifest boundary satisfies MPU rules.
     pub application_single_region: Option<MpuRegion>,
+    /// Application code region with read/execute permissions.
+    pub application_code: MpuRegion,
+    /// Application data and PSP region with read/write, execute-never permissions.
+    pub application_data: MpuRegion,
     /// Kernel runtime and stack memory, inaccessible to the application.
     pub runtime: MpuRegion,
 }
@@ -108,6 +114,28 @@ impl IsolationLayout {
             MpuAccess::ReadWrite,
             MpuExecution::Allowed,
         );
+        let isolation = match memory.isolation {
+            Some(isolation) => isolation,
+            None => return None,
+        };
+        let application_code = match MpuRegion::new(
+            isolation.code_origin,
+            isolation.code_length,
+            MpuAccess::ReadOnly,
+            MpuExecution::Allowed,
+        ) {
+            Some(region) => region,
+            None => return None,
+        };
+        let application_data = match MpuRegion::new(
+            isolation.data_origin,
+            isolation.data_length,
+            MpuAccess::ReadWrite,
+            MpuExecution::Never,
+        ) {
+            Some(region) => region,
+            None => return None,
+        };
         let runtime = match MpuRegion::new(
             memory.runtime_origin,
             memory.runtime_length,
@@ -122,6 +150,8 @@ impl IsolationLayout {
             kernel,
             application,
             application_single_region,
+            application_code,
+            application_data,
             runtime,
         })
     }
@@ -171,5 +201,7 @@ mod tests {
         );
         assert_eq!(layout.kernel.access, MpuAccess::NoAccess);
         assert!(layout.application_single_region.is_none());
+        assert_eq!(layout.application_code.access, MpuAccess::ReadOnly);
+        assert_eq!(layout.application_data.execution, MpuExecution::Never);
     }
 }
