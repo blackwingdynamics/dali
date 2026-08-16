@@ -8,6 +8,12 @@ use crate::logging;
 /// Fault sources that must terminate an isolated application.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum FaultKind {
+    /// The MPU rejected an access.
+    MemManage,
+    /// The processor reported an instruction or data bus fault.
+    BusFault,
+    /// The processor reported invalid execution state or instruction use.
+    UsageFault,
     /// The exception return value did not identify the expected app context.
     InvalidExceptionReturn,
 }
@@ -49,4 +55,18 @@ pub(crate) fn report(record: FaultRecord) {
             record.kind, record.status, record.stacked_pc, record.stacked_lr, record.fault_address
         ),
     );
+}
+
+/// Captures a fault status and halts the feature-gated diagnostic path.
+pub(crate) fn handle(kind: FaultKind) -> ! {
+    let status = unsafe {
+        // SAFETY: Cortex-M4 exposes SCB at this architectural address and the
+        // exception handler owns the read-only diagnostic access.
+        (&*cortex_m::peripheral::SCB::PTR).cfsr.read()
+    };
+    report(FaultRecord::without_frame(kind, status));
+    cortex_m::asm::bkpt();
+    loop {
+        cortex_m::asm::wfi();
+    }
 }

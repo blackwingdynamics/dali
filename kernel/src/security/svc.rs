@@ -51,6 +51,21 @@ fn SVCall() {
     dispatch(frame, memory);
 }
 
+#[exception]
+fn MemoryManagement() {
+    fault::handle(FaultKind::MemManage);
+}
+
+#[exception]
+fn BusFault() {
+    fault::handle(FaultKind::BusFault);
+}
+
+#[exception]
+fn UsageFault() {
+    fault::handle(FaultKind::UsageFault);
+}
+
 fn read_exception_return() -> u32 {
     let exception_return;
     unsafe {

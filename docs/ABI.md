@@ -167,6 +167,7 @@ record, marks the current application terminated, and returns to a kernel-owned
 control path. It must not unwind or reuse an application PSP as a kernel stack.
 The exact recovery assembly and fault record layout remain implementation work.
 
-The feature-gated kernel now defines a bounded `FaultRecord` for invalid
-exception-return rejection. The record is not installed as a hardware fault
-handler and does not change ABI v2 behavior.
+The feature-gated kernel now defines a bounded `FaultRecord` and diagnostic
+MemManage, BusFault, and UsageFault handlers. These handlers report the SCB
+status and halt the diagnostic path; they do not yet recover an application or
+return to a scheduler. They do not change ABI v2 behavior.
