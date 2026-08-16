@@ -135,7 +135,16 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                     #[cfg(feature = "abi-v3")]
                     {
                         #[cfg(feature = "abi-v3-mpu")]
-                        crate::security::launch::enter(package.launch_frame);
+                        {
+                            if board::activate_application_regions() {
+                                crate::security::launch::enter(package.launch_frame);
+                            }
+                            logging::error(
+                                logging::SECURITY_SUBSYSTEM,
+                                format_args!("[SECURITY] Application MPU layout unavailable"),
+                            );
+                            status::StorageStatus::Failure
+                        }
                         #[cfg(not(feature = "abi-v3-mpu"))]
                         {
                             let _ = package;

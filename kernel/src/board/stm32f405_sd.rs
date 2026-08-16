@@ -8,6 +8,16 @@ pub const ISOLATION_LAYOUT: Option<super::mpu::IsolationLayout> =
     super::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
 const _: () = assert!(ISOLATION_LAYOUT.is_some());
 
+/// Activates unprivileged application permissions after the loader finishes.
+#[cfg(feature = "abi-v3-mpu")]
+pub fn activate_application_regions() -> bool {
+    let Some(layout) = ISOLATION_LAYOUT else {
+        return false;
+    };
+    super::mpu::activate_application_regions(layout);
+    true
+}
+
 /// The current MVP board supports AMRN native application execution.
 #[cfg(not(feature = "abi-v3"))]
 pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;

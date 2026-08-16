@@ -249,29 +249,61 @@ impl IsolationLayout {
 /// Programs the planned single-application MPU map.
 #[cfg(feature = "abi-v3-mpu")]
 pub fn configure_hardware(layout: IsolationLayout) {
+    let application_code = loader_region(layout.application_code);
+    let application_data = loader_region(layout.application_data);
     let regions = [
         (REGION_KERNEL, layout.kernel),
         (REGION_RUNTIME, layout.runtime),
-        (REGION_APPLICATION_CODE, layout.application_code),
-        (REGION_APPLICATION_DATA, layout.application_data),
+        (REGION_APPLICATION_CODE, application_code),
+        (REGION_APPLICATION_DATA, application_data),
         (REGION_PERIPHERALS, layout.peripherals),
     ];
+    write_regions(&regions, false);
+}
+
+/// Changes application regions from loader permissions to user permissions.
+#[cfg(feature = "abi-v3-mpu")]
+pub fn activate_application_regions(layout: IsolationLayout) {
+    let regions = [
+        (REGION_APPLICATION_CODE, layout.application_code),
+        (REGION_APPLICATION_DATA, layout.application_data),
+    ];
+    write_regions(&regions, true);
+}
+
+#[cfg(feature = "abi-v3-mpu")]
+const fn loader_region(region: MpuRegion) -> MpuRegion {
+    MpuRegion {
+        base: region.base,
+        length: region.length,
+        access: MpuAccess::PrivilegedOnly,
+        execution: MpuExecution::Never,
+        memory_type: region.memory_type,
+    }
+}
+
+#[cfg(feature = "abi-v3-mpu")]
+fn write_regions(regions: &[(u32, MpuRegion)], enable: bool) {
     let mpu = unsafe {
         // SAFETY: The Cortex-M4 MPU is a unique architectural peripheral and
-        // this function is called by privileged kernel code only.
+        // these functions are called by privileged kernel code only.
         &*cortex_m::peripheral::MPU::PTR
     };
     unsafe {
         // SAFETY: `mpu` points to the unique Cortex-M4 MPU register block and
         // all writes are performed by privileged kernel code.
-        mpu.ctrl.write(0);
-        for (number, region) in regions {
+        if !enable {
+            mpu.ctrl.write(0);
+        }
+        for &(number, region) in regions {
             mpu.rnr.write(number);
             mpu.rbar.write(region.base & REGION_BASE_MASK);
             mpu.rasr.write(region.rasr_bits());
         }
-        mpu.ctrl
-            .write(MPU_CONTROL_ENABLE | MPU_CONTROL_PRIVILEGED_DEFAULT);
+        if !enable {
+            mpu.ctrl
+                .write(MPU_CONTROL_ENABLE | MPU_CONTROL_PRIVILEGED_DEFAULT);
+        }
     }
     cortex_m::asm::dsb();
     cortex_m::asm::isb();

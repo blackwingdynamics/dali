@@ -332,6 +332,10 @@ protection boundary is implemented and accepted.
   that report bounded SCB status and halt without changing ABI v2 behavior.
 - [x] Add a feature-gated descriptor-backed MPU register map with privileged
   default access; keep the unprivileged transition disabled.
+- [x] Define the two-phase MPU map required for privileged ABI v3 loading:
+  application code/data remain kernel-only and non-executable during copying,
+  then receive their unprivileged execution permissions immediately before
+  the PSP transition.
 - [x] Define ABI v3 AMRN compatibility, linker regions, and launch-frame
   validation before changing application entry or stack semantics. ABI v3
   packages use AMRN format version 2 with separate code and initialized-data

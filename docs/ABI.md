@@ -216,9 +216,15 @@ and they do not change ABI v2 behavior.
 
 The additional kernel feature `abi-v3-mpu` programs the descriptor-backed MPU
 map during bootstrap and provides the feature-gated PendSV transition into the
-prepared PSP frame. The default kernel does not enable this path. It must not
-be treated as application isolation until fault recovery and F405
-fault-injection evidence are complete.
+prepared PSP frame. MPU activation is two-phase: while the privileged loader
+copies the validated code and data segments, both application regions are
+kernel-only and non-executable; after copying and zero-initialization complete,
+the kernel changes the code region to unprivileged read/execute and the data
+region to unprivileged read/write, execute-never, before entering the PSP
+context. This ordering prevents the protection map from blocking a valid
+kernel-owned load. The default kernel does not enable this path. It must not be
+treated as application isolation until fault recovery and F405 fault-injection
+evidence are complete.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
