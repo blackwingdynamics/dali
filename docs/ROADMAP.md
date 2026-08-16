@@ -349,6 +349,8 @@ protection boundary is implemented and accepted.
   not enter it yet.
 - [x] Add an explicitly disabled-by-default PendSV transition primitive for
   the prepared PSP frame; keep fault recovery and acceptance evidence pending.
+- [x] Add a feature-gated kernel-stack fault recovery return that terminates the
+  application without reusing its PSP; keep hardware fault evidence pending.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

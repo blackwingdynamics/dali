@@ -65,8 +65,5 @@ pub(crate) fn handle(kind: FaultKind) -> ! {
         (&*cortex_m::peripheral::SCB::PTR).cfsr.read()
     };
     report(FaultRecord::without_frame(kind, status));
-    cortex_m::asm::bkpt();
-    loop {
-        cortex_m::asm::wfi();
-    }
+    super::launch::recover()
 }

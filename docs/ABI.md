@@ -205,12 +205,14 @@ MemManage, BusFault, UsageFault, and invalid exception-return paths must enter
 a privileged kernel fault boundary. The boundary records a bounded fault
 record, marks the current application terminated, and returns to a kernel-owned
 control path. It must not unwind or reuse an application PSP as a kernel stack.
-The exact recovery assembly and fault record layout remain implementation work.
+The recovery assembly uses a kernel-stack frame and does not reuse the
+application PSP.
 
 The feature-gated kernel now defines a bounded `FaultRecord` and diagnostic
 MemManage, BusFault, and UsageFault handlers. These handlers report the SCB
-status and halt the diagnostic path; they do not yet recover an application or
-return to a scheduler. They do not change ABI v2 behavior.
+status and return through a kernel-stack recovery frame to a bounded
+kernel-owned recovery loop. They do not return to an application or scheduler,
+and they do not change ABI v2 behavior.
 
 The additional kernel feature `abi-v3-mpu` programs the descriptor-backed MPU
 map during bootstrap and provides the feature-gated PendSV transition into the

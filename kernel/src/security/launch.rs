@@ -4,9 +4,11 @@ use dali::svc::ExceptionFrame;
 
 const THUMB_STATE_BIT: u32 = 1 << 24;
 const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
+const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
 const NON_RETURNING_LINK: u32 = 0;
 #[cfg(feature = "abi-v3-mpu")]
 const CONTROL_UNPRIVILEGED_PSP: u32 = 0b11;
+const CONTROL_PRIVILEGED_MSP: u32 = 0;
 
 /// A validated basic exception frame and its architectural return selector.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -75,6 +77,44 @@ pub(crate) fn enter(frame: LaunchFrame) -> ! {
         cortex_m::register::psp::write(frame.psp);
     }
     cortex_m::peripheral::SCB::set_pendsv();
+    loop {
+        cortex_m::asm::wfi();
+    }
+}
+
+/// Returns from an application fault to a kernel-owned recovery loop.
+pub(crate) fn recover() -> ! {
+    let frame = ExceptionFrame {
+        lr: NON_RETURNING_LINK,
+        pc: (fault_recovery as *const () as usize as u32) | 1,
+        xpsr: THUMB_STATE_BIT,
+        ..ExceptionFrame::default()
+    };
+    let frame_address = (&frame as *const ExceptionFrame) as usize as u32;
+    unsafe {
+        // SAFETY: `frame` is a live kernel-stack object. This non-returning
+        // sequence changes MSP to that object, restores privileged Thread mode,
+        // and immediately exception-returns before the object can be dropped.
+        core::arch::asm!(
+            "msr MSP, {frame_address}",
+            "mov r0, {control}",
+            "msr CONTROL, r0",
+            "isb",
+            "mov lr, {exception_return}",
+            "bx lr",
+            frame_address = in(reg) frame_address,
+            control = const CONTROL_PRIVILEGED_MSP,
+            exception_return = const EXC_RETURN_THREAD_MSP_BASIC,
+            options(noreturn),
+        );
+    }
+}
+
+extern "C" fn fault_recovery() -> ! {
+    crate::logging::error(
+        crate::logging::SECURITY_SUBSYSTEM,
+        format_args!("[SECURITY][FAULT] Application terminated; kernel recovery active"),
+    );
     loop {
         cortex_m::asm::wfi();
     }
