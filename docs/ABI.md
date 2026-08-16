@@ -76,16 +76,16 @@ The exact SVC frame, service identifier encoding, PSP layout, fault recovery
 state, and application memory regions must be specified and tested before an
 ABI version increment or package compatibility change.
 
-## Planned ABI v3 boundary
+## Feature-gated ABI v3 boundary
 
-ABI v3 remains a design and host-artifact contract. ABI v2 remains the active
-kernel execution ABI until the implementation and F405 hardware evidence are
-complete.
+ABI v3 is feature-gated and is not the default kernel execution path. ABI v2
+remains the default until the implementation receives complete F405 hardware
+fault-injection evidence.
 
-The repository now contains a feature-gated SDK SVC call, kernel SVC frame
-validator, and bounded log dispatcher behind the ABI v3 feature. This is an
-implementation scaffold for testing only; it does not enable MPU protection,
-privilege transition, or ABI v3 package execution by default.
+The repository contains a feature-gated SDK SVC call, kernel SVC frame
+validator, bounded log dispatcher, MPU map, PSP transition, and kernel-owned
+fault recovery behind the ABI v3 and `abi-v3-mpu` features. These mechanisms
+are available for controlled F405 testing but are not enabled by default.
 
 ### Execution mode
 

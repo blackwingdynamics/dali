@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-15
+## Current Status — 2026-08-16
 
 ### Completed and evidenced
 
@@ -355,14 +355,35 @@ protection boundary is implemented and accepted.
   the prepared PSP frame; keep fault recovery and acceptance evidence pending.
 - [x] Add a feature-gated kernel-stack fault recovery return that terminates the
   application without reusing its PSP; keep hardware fault evidence pending.
-- [ ] Implement MPU and privilege transition for one application only.
-- [ ] Implement the SVC gateway and versioned service dispatch.
-- [ ] Implement a privileged fault boundary that records the fault context and
-  terminates the application without corrupting the kernel context.
+- [x] Implement MPU and privilege transition for one application only; keep
+  hardware fault acceptance pending.
+- [x] Implement the SVC gateway and versioned service dispatch; keep rejection
+  and recovery evidence pending.
+- [x] Implement a privileged fault boundary that records the fault context and
+  terminates the application without corrupting the kernel context; keep F405
+  evidence pending.
 - [ ] Add host tests for ABI encoding, service identifiers, and rejected calls.
+- [x] Add a non-production F405 kernel-memory fault-injection application.
 - [ ] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
   execution, PSP bounds, and application service calls.
-- [ ] Record hardware evidence before claiming application isolation.
+- [x] Record first F405 hardware evidence for kernel-RAM read rejection and
+  kernel recovery; broader isolation acceptance remains pending.
+
+The first ABI v3 MPU fault-injection run was performed on 2026-08-16 with the
+F405 programmed through a Raspberry Pi Pico 2 CMSIS-DAP probe. The test
+application attempted to read `0x20000000`, the declared kernel-RAM boundary.
+The observed output was:
+
+```text
+[INFO][APP] Fault injection: kernel memory read
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves processor-side rejection of an unprivileged kernel-RAM read and
+return to the kernel recovery path. Fault-frame address and PC decoding, write
+rejection, peripheral rejection, invalid execution, PSP bounds, DMA isolation,
+and multi-application isolation remain unverified.
 
 #### Deferred until isolation foundation is accepted
 
