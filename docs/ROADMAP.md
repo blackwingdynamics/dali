@@ -373,7 +373,7 @@ protection boundary is implemented and accepted.
 - [x] Add a non-production F405 invalid-execution fault-injection application.
 - [x] Add a non-production F405 invalid-PSP fault-injection application.
 - [x] Add a non-production F405 SVC rejection-matrix application.
-- [ ] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
+- [x] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
   execution, PSP bounds, and application service calls.
 - [x] Record first F405 hardware evidence for kernel-RAM read rejection and
   kernel recovery; broader isolation acceptance remains pending.
@@ -387,6 +387,11 @@ protection boundary is implemented and accepted.
   reserved `0x00100000` code-region boundary, including `CFSR=0x00008200`,
   `BFAR=0x00100000`, stacked `PC=0x2000807A`, stacked `LR=0x2000803D`, and
   kernel recovery.
+- [x] Record F405 hardware evidence for execute-never instruction rejection
+  and kernel recovery.
+- [x] Record F405 hardware evidence for invalid-PSP exception-entry rejection
+  and kernel recovery.
+- [x] Record F405 hardware evidence for the ABI v3 SVC rejection matrix.
 
 The first ABI v3 MPU fault-injection run was performed on 2026-08-16 with the
 F405 programmed through a Raspberry Pi Pico 2 CMSIS-DAP probe. The test
@@ -515,6 +520,63 @@ GDB confirmed `kind=BusFault`, `CFSR=0x00008200`, `BFAR=0x00100000`, stacked
 `PC=0x2000807A`, and stacked `LR=0x2000803D`. This proves precise BusFault
 decoding and kernel recovery on the F405; no-frame fault paths, DMA isolation,
 and multi-application isolation remain unverified.
+
+## Test Matrix
+
+This matrix records the evidence boundary for the current F405 isolation work.
+Compilation and host tests do not replace hardware evidence.
+
+### Passed
+
+- [x] Formatting, host workspace checks, host tests, and strict host Clippy.
+- [x] STM32F405 target check, embedded build, and embedded Clippy.
+- [x] F405 DFU flashing and Pico 2 CMSIS-DAP SWD flashing.
+- [x] F405 clock, LED, SDIO initialization, and block-zero read.
+- [x] FAT32 root scan and `.amrn` package discovery from the SD card.
+- [x] AMRN header, bounds, entry-point, payload, and CRC32 validation.
+- [x] Native application load, entry transfer, three-flash/long-pause LED proof,
+  and ABI v2 application logging.
+- [x] USB CDC boot/application logs after reset and reconnect.
+- [x] ABI v3 application launch with unprivileged Thread mode and PSP.
+- [x] Kernel-RAM read rejection with `MemManage` and kernel recovery.
+- [x] Kernel-RAM write rejection with `MemManage` and kernel recovery.
+- [x] Peripheral-MMIO read rejection with `MemManage` and kernel recovery.
+- [x] Peripheral-MMIO write rejection with `MemManage` and kernel recovery.
+- [x] Execute-never instruction rejection with `MemManage` and recovery.
+- [x] Invalid-PSP exception-entry rejection with recovery.
+- [x] SVC rejection matrix for unknown services, invalid pointers, oversized
+  messages, and invalid UTF-8.
+- [x] Precise F405 BusFault decoding with `CFSR`, `BFAR`, stacked `PC/LR`, and
+  kernel recovery.
+
+### Remaining single-application isolation tests
+
+- [ ] Hardware verification of no-frame HardFault recovery when exception
+  entry cannot produce a valid application frame.
+- [ ] Verify valid SVC calls and service authorization/capability policy.
+- [ ] Verify watchdog behavior after application termination and recovery.
+- [ ] Verify fault-status clearing and repeatability across repeated resets.
+
+### Future multi-application and memory tests
+
+- [ ] Define and test the PIC/relocation contract for movable applications.
+- [ ] Test relocation metadata or the selected RWPI/PIC implementation.
+- [ ] Implement and test the SRAM slot manager.
+- [ ] Load two applications into independent slots and verify their boundaries.
+- [ ] Implement and test PendSV/SysTick context switching.
+- [ ] Verify MPU region switching during application context switches.
+- [ ] Verify application-to-application memory isolation.
+- [ ] Verify DMA isolation and reject unauthorized DMA configuration.
+- [ ] Test application crash, restart, timeout, and watchdog lifecycle policy.
+
+### Future package and platform security tests
+
+- [ ] Test package installation, selection, replacement, and removal semantics
+  after writable filesystem support exists.
+- [ ] Test signed package verification and rejected signatures.
+- [ ] Test secure boot and kernel image authenticity.
+- [ ] Test version compatibility, anti-rollback, update, and rollback flows.
+- [ ] Add end-to-end CLI device and application lifecycle tests.
 
 #### Deferred until isolation foundation is accepted
 
