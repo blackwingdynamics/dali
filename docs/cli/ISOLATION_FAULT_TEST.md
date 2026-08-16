@@ -145,3 +145,35 @@ the processor's exception-entry path, the fault is reported as `MemManage` or
 as a no-frame `HardFault`; both must reach kernel recovery. This proves only
 the selected PSP-boundary behavior and does not prove context switching, DMA
 isolation, or multi-application isolation.
+
+## SVC rejection-matrix test
+
+Build and package the non-production SVC fixture:
+
+```text
+cd apps/dali-app-svc-rejections
+dali app build
+```
+
+Copy `target/thumbv7em-none-eabihf/debug/dali-app-svc-rejections.amrn` to the
+SD-card root, then repeat the same kernel build and flash procedure above.
+The fixture sends an unknown service ID, kernel and peripheral pointers, an
+oversized message length, and invalid UTF-8 through the raw ABI v3 SVC gateway.
+Each result is logged only when the kernel returns the documented rejection
+status; an accepted malformed request therefore produces no matching success
+line.
+
+Expected output is:
+
+```text
+[INFO][APP] SVC rejected unknown service
+[INFO][APP] SVC rejected kernel pointer
+[INFO][APP] SVC rejected peripheral pointer
+[INFO][APP] SVC rejected oversized message
+[INFO][APP] SVC rejected invalid UTF-8
+[INFO][APP] SVC rejection matrix complete
+```
+
+The application remains alive after the matrix. This proves bounded rejection
+of the selected malformed service requests; it does not prove authorization,
+DMA isolation, or multi-application isolation.
