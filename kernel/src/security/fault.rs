@@ -1,7 +1,7 @@
 //! Kernel-owned fault context for the planned isolated application boundary.
 //!
-//! This module defines the bounded record used by future exception handlers. It
-//! does not install handlers or attempt recovery while ABI v2 remains active.
+//! This module defines the bounded record and recovery path for feature-gated
+//! application fault handlers. ABI v2 remains unchanged.
 
 use crate::logging;
 

@@ -1,8 +1,7 @@
 //! Board-owned memory protection descriptors.
 //!
-//! This module describes the first F405 isolation layout without enabling the
-//! MPU. Hardware activation is intentionally deferred until the SVC, PSP, and
-//! fault-recovery contracts are implemented together.
+//! This module owns the first F405 isolation layout and its privileged MPU
+//! programming sequence.
 
 use dali_targets::MemoryProfile;
 
@@ -249,6 +248,7 @@ impl IsolationLayout {
 /// Programs the planned single-application MPU map.
 #[cfg(feature = "abi-v3-mpu")]
 pub fn configure_hardware(layout: IsolationLayout) {
+    enable_fault_handlers();
     let application_code = loader_region(layout.application_code);
     let application_data = loader_region(layout.application_data);
     let regions = [
@@ -259,6 +259,18 @@ pub fn configure_hardware(layout: IsolationLayout) {
         (REGION_PERIPHERALS, layout.peripherals),
     ];
     write_regions(&regions, false);
+}
+
+#[cfg(feature = "abi-v3-mpu")]
+fn enable_fault_handlers() {
+    let mut scb = unsafe {
+        // SAFETY: Bootstrap runs in privileged reset context before the
+        // application can execute; no other code accesses this SCB token.
+        cortex_m::Peripherals::steal().SCB
+    };
+    scb.enable(cortex_m::peripheral::scb::Exception::MemoryManagement);
+    scb.enable(cortex_m::peripheral::scb::Exception::BusFault);
+    scb.enable(cortex_m::peripheral::scb::Exception::UsageFault);
 }
 
 /// Changes application regions from loader permissions to user permissions.
