@@ -312,6 +312,9 @@ protection boundary is implemented and accepted.
 
 #### Implementation and evidence order
 
+- [x] Add a board-owned typed MPU layout descriptor sourced from the F405
+  target manifest; keep hardware activation deferred until the ABI boundary is
+  complete.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

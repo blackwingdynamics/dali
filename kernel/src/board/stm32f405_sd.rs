@@ -3,6 +3,11 @@
 use dali_targets::TARGET_F405;
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
+/// First planned single-application F405 isolation layout.
+pub const ISOLATION_LAYOUT: Option<super::mpu::IsolationLayout> =
+    super::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
+const _: () = assert!(ISOLATION_LAYOUT.is_some());
+
 /// The current MVP board supports AMRN native application execution.
 pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
 

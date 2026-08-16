@@ -1,5 +1,7 @@
 //! Compile-time board selection and common board bootstrap interface.
 
+pub mod mpu;
+
 #[cfg(feature = "board-stm32f405-sd")]
 mod stm32f405_sd;
 
