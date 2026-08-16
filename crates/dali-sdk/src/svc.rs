@@ -12,6 +12,24 @@ pub const STATUS_OK: u32 = 0;
 /// Status returned when a service request is rejected.
 pub const STATUS_REJECTED: u32 = 1;
 
+/// Returns whether a non-null range is fully contained in a declared region.
+pub const fn contains_range(
+    start: u32,
+    length: u32,
+    region_start: u32,
+    region_length: u32,
+) -> bool {
+    let end = match start.checked_add(length) {
+        Some(end) => end,
+        None => return false,
+    };
+    let region_end = match region_start.checked_add(region_length) {
+        Some(end) => end,
+        None => return false,
+    };
+    start != 0 && start >= region_start && end <= region_end
+}
+
 /// Versioned service identifiers understood by the planned gateway.
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -76,9 +94,11 @@ impl ServiceStatus {
 
 #[cfg(test)]
 mod tests {
-    use super::{ExceptionFrame, STATUS_OK, ServiceId, ServiceStatus};
+    use super::{ExceptionFrame, STATUS_OK, ServiceId, ServiceStatus, contains_range};
 
     const UNKNOWN_SERVICE_ID: u32 = u32::MAX;
+    const REGION_START: u32 = 0x2000_8000;
+    const REGION_LENGTH: u32 = 32_768;
 
     #[test]
     fn decodes_only_declared_service_identifiers() {
@@ -102,5 +122,18 @@ mod tests {
         assert_eq!(ServiceStatus::accepted().0, STATUS_OK);
         assert!(ServiceStatus::accepted().is_accepted());
         assert!(!ServiceStatus::rejected().is_accepted());
+    }
+
+    #[test]
+    fn validates_bounded_non_null_ranges() {
+        assert!(contains_range(REGION_START, 1, REGION_START, REGION_LENGTH));
+        assert!(!contains_range(0, 1, REGION_START, REGION_LENGTH));
+        assert!(!contains_range(
+            REGION_START + REGION_LENGTH,
+            1,
+            REGION_START,
+            REGION_LENGTH
+        ));
+        assert!(!contains_range(u32::MAX, 1, REGION_START, REGION_LENGTH));
     }
 }

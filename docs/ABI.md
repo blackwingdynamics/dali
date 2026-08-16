@@ -81,6 +81,11 @@ ABI version increment or package compatibility change.
 ABI v3 is a design contract only. ABI v2 remains the active MVP ABI until the
 implementation and F405 hardware evidence are complete.
 
+The repository now contains a feature-gated SVC frame validator and bounded log
+dispatcher behind the kernel `abi-v3` feature. This is an implementation
+scaffold for testing only; it does not enable MPU protection, privilege
+transition, or ABI v3 package execution by default.
+
 ### Execution mode
 
 - Kernel bootstrap starts privileged and owns the MSP.

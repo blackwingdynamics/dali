@@ -8,6 +8,9 @@ pub mod loader;
 pub mod logging;
 pub mod storage;
 
+#[cfg(feature = "abi-v3")]
+mod security;
+
 use cortex_m_rt::entry;
 use panic_halt as _;
 

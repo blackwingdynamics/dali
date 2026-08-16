@@ -319,6 +319,8 @@ protection boundary is implemented and accepted.
   types without enabling the new ABI in the kernel.
 - [x] Add manifest-backed aligned application code/data boundaries for the
   planned ABI v3 memory contract.
+- [x] Add a feature-gated kernel SVC frame validator and bounded log dispatch;
+  keep it disabled in the default ABI v2 MVP.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and
