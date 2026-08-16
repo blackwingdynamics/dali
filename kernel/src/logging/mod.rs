@@ -67,7 +67,7 @@ pub fn initialize() {
 
 /// Initializes the optional USB CDC logging backend.
 #[cfg(feature = "usb-cdc")]
-pub fn initialize_usb(resources: crate::board::UsbResources) {
+pub fn initialize_usb(resources: crate::platform::UsbResources) {
     usb_cdc::initialize(resources);
 }
 

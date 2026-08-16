@@ -41,7 +41,7 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
     }
     let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
-    let memory = match crate::board::MEMORY_PROFILE.isolation {
+    let memory = match crate::platform::MEMORY_PROFILE.isolation {
         Some(memory) => memory,
         None => return,
     };

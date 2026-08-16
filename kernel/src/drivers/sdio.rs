@@ -1,6 +1,6 @@
 //! STM32 hardware SDIO transport for the F405 board backend.
 
-use crate::board::SdioPins;
+use crate::platform::SdioPins;
 use core::cell::{Cell, RefCell};
 
 use super::sdio_raw::RawSdioReader;
