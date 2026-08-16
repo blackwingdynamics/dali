@@ -4,6 +4,7 @@
 pub(crate) mod abi;
 pub(crate) mod board;
 mod bootstrap;
+pub(crate) mod drivers;
 pub mod loader;
 pub mod logging;
 pub(crate) mod platform;

@@ -28,6 +28,7 @@ dali-kernel/
 │       ├── platform/stm32f405_sdio.rs # F405 SDIO block-device adapter
 │       ├── platform/stm32f405_sdio_raw.rs # F405 SDIO register transport
 │       ├── bootstrap/             # Startup, storage status, heartbeat
+│       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
@@ -86,6 +87,7 @@ kernel/src/
 ├── board/{mod.rs,mpu.rs}
 ├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs,stm32f405_sdio.rs,stm32f405_sdio_raw.rs}
 ├── bootstrap/{mod.rs,heartbeat.rs,status.rs}
+├── drivers/{mod.rs}
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
@@ -144,6 +146,8 @@ target-scaffold.md
   `docs/PLATFORM_BACKENDS.md`.
 - `kernel/src/platform/stm32f405_sdio*.rs` owns the F405 PAC/HAL SDIO transport;
   bootstrap consumes it only through the platform facade.
+- `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
+  it must not import a board PAC or HAL.
 - `targets/*.toml` owns declarative target facts; hardware implementations must
   consume those facts through generated target metadata instead of copying
   board constants into kernel policy.

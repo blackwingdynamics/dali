@@ -4,7 +4,10 @@ mod heartbeat;
 mod status;
 
 #[cfg(feature = "sdio")]
-use crate::storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader};
+use crate::{
+    drivers::BlockDeviceAdapter,
+    storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader},
+};
 use crate::{logging, platform};
 
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
@@ -108,12 +111,12 @@ fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
             #[cfg(feature = "abi-current")]
-            let package = crate::loader::load_abi_v3(reader);
+            let package = crate::loader::load_abi_v3(BlockDeviceAdapter::new(reader));
             #[cfg(not(feature = "abi-current"))]
             let package = if platform::APPLICATION_EXECUTION_SUPPORTED {
-                crate::loader::load_amrn_file(reader)
+                crate::loader::load_amrn_file(BlockDeviceAdapter::new(reader))
             } else {
-                crate::loader::validate_amrn_file(reader)
+                crate::loader::validate_amrn_file(BlockDeviceAdapter::new(reader))
             };
             match package {
                 Ok(package) => {

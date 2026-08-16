@@ -5,7 +5,6 @@ use core::cell::{Cell, RefCell};
 
 use super::stm32f405_sdio_raw::RawSdioReader;
 use crate::storage::{Block, BlockAddress, BlockReader, StorageError};
-use embedded_sdmmc::{Block as FilesystemBlock, BlockCount, BlockDevice, BlockIdx};
 use stm32f4xx_hal::{
     pac,
     rcc::Clocks,
@@ -65,50 +64,8 @@ impl BlockReader for SdioBlockReader {
             Ok(())
         })
     }
-}
-
-impl BlockDevice for SdioBlockReader {
-    type Error = StorageError;
-
-    fn read(
-        &self,
-        blocks: &mut [FilesystemBlock],
-        start_block_idx: BlockIdx,
-    ) -> Result<(), Self::Error> {
-        let mut device = self.raw.borrow_mut();
-        for (offset, block) in blocks.iter_mut().enumerate() {
-            let offset = u32::try_from(offset).map_err(|_| StorageError::InvalidBlockAddress)?;
-            let address = start_block_idx
-                .0
-                .checked_add(offset)
-                .ok_or(StorageError::InvalidBlockAddress)?;
-            cortex_m::interrupt::free(|_| unsafe {
-                // SAFETY: the bounded DMA scratch buffer is exclusively used
-                // for this one SDIO transfer at a time.
-                let dma_buffer = &mut *core::ptr::addr_of_mut!(DMA_BLOCK.0);
-                device.read_block(BlockAddress::new(address), dma_buffer)?;
-                block
-                    .contents
-                    .copy_from_slice(&*core::ptr::addr_of!(DMA_BLOCK.0));
-                Ok::<(), StorageError>(())
-            })?;
-        }
-        Ok(())
-    }
-
-    fn write(
-        &self,
-        _blocks: &[FilesystemBlock],
-        _start_block_idx: BlockIdx,
-    ) -> Result<(), Self::Error> {
-        Err(StorageError::Unsupported)
-    }
-
-    fn num_blocks(&self) -> Result<BlockCount, Self::Error> {
-        self.block_count
-            .get()
-            .map(BlockCount)
-            .ok_or(StorageError::NotReady)
+    fn block_count(&self) -> Result<u32, StorageError> {
+        self.block_count.get().ok_or(StorageError::NotReady)
     }
 }
 

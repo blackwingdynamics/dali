@@ -64,4 +64,7 @@ pub trait BlockReader {
     /// error, the buffer contents are unspecified and must not be parsed.
     fn read_block(&mut self, address: BlockAddress, buffer: &mut Block)
     -> Result<(), StorageError>;
+
+    /// Returns the number of addressable blocks after initialization.
+    fn block_count(&self) -> Result<u32, StorageError>;
 }
