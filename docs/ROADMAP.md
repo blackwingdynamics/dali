@@ -62,27 +62,31 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
   the inserted card produced three short application flashes followed by a
   long pause. The STM32 CDC console also repeated the boot and application
   logs after reset and reconnect.
+- On 2026-08-16, the complete F405 MVP acceptance record was closed as PASS.
+  The exact `hello.amrn` package used by the SD-card run was inspected from
+  the FAT32 card: 3999 bytes total, 3967-byte payload, CRC32
+  `0xBFDB25F5`, format version 1, target ID `0x02`, and ABI version 2.
 
 ### Incomplete or not yet accepted
 
-- USB CDC boot logs are observable through the terminal after reset, and the targeted reset/reconnect test has passed. Formal MVP acceptance recording remains incomplete.
+- USB CDC boot logs are observable through the terminal after reset, and the targeted reset/reconnect test has passed.
 - The interrupt-driven USB servicing strategy has completed the targeted F405 enumeration, reset, reconnect, and boot-log test; broader MVP acceptance remains a separate gate.
 - On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
-- The F405 SDIO path has not completed the documented hardware acceptance evidence.
-- The corrected three-flash/long-pause application LED pattern has been observed on F405 hardware; formal MVP acceptance recording remains a separate gate.
+- The F405 SDIO path has completed the documented hardware acceptance evidence.
+- The corrected three-flash/long-pause application LED pattern has been observed and recorded on F405 hardware.
 - SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
-- Full MVP acceptance remains incomplete despite hardware evidence for application logging, reset-to-application execution, and USB reconnect behavior; the formal acceptance record still requires the complete documented procedure.
+- Full MVP acceptance is complete for the documented F405 path. Future work is
+  release preparation and post-MVP platform capability.
 - The F411 profile is intentionally not part of current kernel execution work.
 
 ### Current priority
 
 **Current priority — Prepare the F405-based 0.1.0 release boundary.**
 
-The USB implementation phase is complete at the targeted hardware-evidence
-boundary. RP2350/Pico kernel support remains deferred until after 0.1.0; the
-Pico is currently used only as an external SWD probe. The next work is the
-formal MVP acceptance record, release-scope cleanup, and the remaining CLI
-diagnostic commands.
+The USB implementation phase and formal F405 MVP acceptance are complete.
+RP2350/Pico kernel support remains deferred until after 0.1.0; the Pico is
+currently used only as an external SWD probe. The next work is release-scope
+cleanup and post-MVP platform capability.
 
 ### USB CDC handoff boundary
 
@@ -146,7 +150,7 @@ diagnostic commands.
 - [x] Document the RTT and USB CDC logging channels used for acceptance testing.
 - [x] Review all MVP claims for unsupported security language.
 - [x] Add the compile-time STM32F405 SDIO board backend.
-- [ ] Complete the formal STM32F405 wiring and MVP acceptance evidence record.
+- [x] Complete the formal STM32F405 wiring and MVP acceptance evidence record.
 
 ## Phase 1 — Kernel bootstrap
 

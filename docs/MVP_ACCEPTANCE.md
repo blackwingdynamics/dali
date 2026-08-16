@@ -121,21 +121,21 @@ The application must not return from its entry point.
 
 The test passes only when all criteria are true:
 
-- [ ] The kernel image boots on the reference board.
-- [ ] The system clock reaches the documented target.
-- [ ] The status LED shows the correct storage status.
-- [ ] The SD card initializes over SDIO.
-- [ ] The FAT16/FAT32 filesystem is read successfully.
-- [ ] Exactly one root `.amrn` package is discovered.
-- [ ] The 32-byte header is accepted.
-- [ ] The target and fixed load address are accepted.
-- [ ] The payload size is within the 64 KiB limit.
-- [ ] The CRC32 matches.
-- [ ] The payload is copied to the reserved SRAM region.
-- [ ] The entry address is validated and the Thumb bit is set.
-- [ ] Control is transferred to the application.
-- [ ] Three `[INFO][APP] Hello World from AMRN` messages are delivered.
-- [ ] The application produces the documented three-flash LED pattern.
+- [x] The kernel image boots on the reference board.
+- [x] The system clock reaches the documented target.
+- [x] The status LED shows the correct storage status.
+- [x] The SD card initializes over SDIO.
+- [x] The FAT16/FAT32 filesystem is read successfully.
+- [x] Exactly one root `.amrn` package is discovered.
+- [x] The 32-byte header is accepted.
+- [x] The target and fixed load address are accepted.
+- [x] The payload size is within the 64 KiB limit.
+- [x] The CRC32 matches.
+- [x] The payload is copied to the reserved SRAM region.
+- [x] The entry address is validated and the Thumb bit is set.
+- [x] Control is transferred to the application.
+- [x] Three `[INFO][APP] Hello World from AMRN` messages are delivered.
+- [x] The application produces the documented three-flash LED pattern.
 
 Build success, a valid parser test, or a simulated function-pointer call is not sufficient for an MVP pass.
 
@@ -218,3 +218,27 @@ and application logs again. This is hardware evidence for the storage-status
 and application LED distinction and CDC reset/reconnect behavior. The formal
 acceptance record still requires the board revision, power source, exact
 package revision and CRC32, and tester fields.
+
+### Acceptance evidence record — 2026-08-16
+
+```text
+Date: 2026-08-16 01:56
+Tester: Giorgi Magradze
+Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Board revision: v1.1
+Probe: Raspberry Pi Pico 2 running CMSIS-DAP
+Power source: STM32 USB and Pico USB
+SD card and filesystem: 128 GB microSD, FAT32
+Kernel revision: 4fb7b41
+Application package revision: hello.amrn
+Package size: 3999 bytes
+Package CRC32: 0xBFDB25F5
+Observed log: Complete boot, SDIO, AMRN validation, and three application log records
+Observed LED pattern: Slow storage blink without SD card; three short flashes and
+  a long pause with the SD card inserted
+Result: PASS
+Known issues: None for the documented MVP acceptance path.
+```
+
+The package metadata was recovered from the exact `hello.amrn` file retained
+on the FAT32 SD card used for the hardware run.
