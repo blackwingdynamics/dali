@@ -115,6 +115,9 @@ match the linker script and the AMRN/ABI contracts.
 | `kernel_origin` / `kernel_length` | integer | yes | Kernel-reserved RAM region. |
 | `application_origin` / `application_length` | integer | yes | RAM region available to the native AMRN payload. |
 | `runtime_origin` / `runtime_length` | integer | yes | Kernel runtime and stack region. |
+| `flash.origin` / `flash.length` | integer | yes | Kernel flash image region used by the linker. |
+| `dma.origin` / `dma.length` | integer | yes | SRAM region that remains available to peripheral DMA. |
+| `ccm.origin` / `ccm.length` | integer | no | Optional core-coupled memory for privileged runtime state and stack. |
 
 The planned isolated ABI may add an optional `[memory.isolation]` table:
 

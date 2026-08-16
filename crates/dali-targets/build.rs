@@ -57,13 +57,22 @@ struct Clock {
 
 #[derive(Debug, Deserialize)]
 struct Memory {
+    flash: TargetMemoryRegion,
     kernel_origin: u32,
     kernel_length: u32,
     application_origin: u32,
     application_length: u32,
     runtime_origin: u32,
     runtime_length: u32,
+    dma: TargetMemoryRegion,
+    ccm: Option<TargetMemoryRegion>,
     isolation: Option<IsolationMemory>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TargetMemoryRegion {
+    origin: u32,
+    length: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -168,6 +177,7 @@ fn read_manifest(path: &PathBuf) -> Result<Manifest, Box<dyn std::error::Error>>
 
 fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::Error>> {
     for (index, manifest) in manifests.iter().enumerate() {
+        validate_memory_regions(manifest)?;
         if manifest.profile.name.is_empty()
             || manifest.profile.board.is_empty()
             || manifest.profile.mcu.is_empty()
@@ -226,6 +236,32 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
                 );
             }
         }
+    }
+    Ok(())
+}
+
+fn validate_memory_regions(manifest: &Manifest) -> Result<(), Box<dyn std::error::Error>> {
+    let regions = [
+        ("flash", &manifest.memory.flash),
+        ("dma", &manifest.memory.dma),
+    ];
+    for (name, region) in regions {
+        if region.length == 0 || region.origin.checked_add(region.length).is_none() {
+            return Err(format!(
+                "target {} has invalid {name} memory bounds",
+                manifest.profile.name
+            )
+            .into());
+        }
+    }
+    if let Some(region) = &manifest.memory.ccm
+        && (region.length == 0 || region.origin.checked_add(region.length).is_none())
+    {
+        return Err(format!(
+            "target {} has invalid ccm memory bounds",
+            manifest.profile.name
+        )
+        .into());
     }
     Ok(())
 }
@@ -468,18 +504,32 @@ fn generate_clock(clock: &Clock) -> String {
 
 fn generate_memory(memory: &Memory) -> String {
     format!(
-        "MemoryProfile {{ kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, isolation: {} }}",
+        "MemoryProfile {{ flash: {}, kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, dma: {}, ccm: {}, isolation: {} }}",
+        generate_target_memory_region(&memory.flash),
         memory.kernel_origin,
         memory.kernel_length,
         memory.application_origin,
         memory.application_length,
         memory.runtime_origin,
         memory.runtime_length,
+        generate_target_memory_region(&memory.dma),
+        memory
+            .ccm
+            .as_ref()
+            .map(generate_target_memory_region)
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
         memory
             .isolation
             .as_ref()
             .map(generate_isolation_memory)
             .map_or_else(|| "None".to_owned(), |value| format!("Some({value})"))
+    )
+}
+
+fn generate_target_memory_region(region: &TargetMemoryRegion) -> String {
+    format!(
+        "TargetMemoryRegion {{ origin: 0x{:08X}, length: {} }}",
+        region.origin, region.length
     )
 }
 

@@ -76,6 +76,8 @@ pub struct ClockProfile {
 /// SRAM regions declared by a board manifest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MemoryProfile {
+    /// Start and size of the kernel flash image region.
+    pub flash: TargetMemoryRegion,
     /// Start of the kernel-reserved region.
     pub kernel_origin: u32,
     /// Size of the kernel-reserved region in bytes.
@@ -88,8 +90,21 @@ pub struct MemoryProfile {
     pub runtime_origin: u32,
     /// Size of the runtime and stack region in bytes.
     pub runtime_length: u32,
+    /// DMA-visible SRAM region reserved for transport buffers.
+    pub dma: TargetMemoryRegion,
+    /// Optional core-coupled memory region for privileged runtime state.
+    pub ccm: Option<TargetMemoryRegion>,
     /// Optional code/data split for a future isolated application ABI.
     pub isolation: Option<IsolationMemoryProfile>,
+}
+
+/// A physical memory region declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TargetMemoryRegion {
+    /// Start address of the region.
+    pub origin: u32,
+    /// Size of the region in bytes.
+    pub length: u32,
 }
 
 /// Application code and data boundaries used by the planned isolated ABI.
