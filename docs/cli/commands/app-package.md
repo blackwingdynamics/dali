@@ -30,6 +30,10 @@ recomputes the zero-initialized data size from the linked symbols.
 
 ## Workflow
 
+ABI v3 defaults to AMRN format version 2. Setting build.format_version to 3
+reads retained ARM relocation records from the linked ELF and emits AMRN
+format version 3. The kernel loader does not accept that format yet.
+
 ```text
 dali app build
 dali inspect --input target/thumbv7em-none-eabihf/debug/telemetry.amrn

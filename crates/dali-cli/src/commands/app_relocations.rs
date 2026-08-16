@@ -41,6 +41,7 @@ fn collect_section_relocations<'data, 'file, F: Object<'data>>(
     segment: Segment,
     output: &mut Vec<Relocation>,
 ) -> Result<(), String> {
+    let section_base = section.address();
     for (offset, relocation) in section.relocations() {
         if output.len() >= dali_amrn::v3::MAX_RELOCATION_ENTRIES {
             return Err(format!(
@@ -52,7 +53,10 @@ fn collect_section_relocations<'data, 'file, F: Object<'data>>(
             return Err("relocation has an absolute target without a symbol".to_owned());
         }
         let kind = relocation_kind(&relocation)?;
-        let patch_offset = checked_address(offset, "relocation offset")?;
+        let patch_offset = offset
+            .checked_sub(section_base)
+            .ok_or_else(|| "relocation offset precedes its section".to_owned())
+            .and_then(|value| checked_address(value, "relocation offset"))?;
         let linked_target = linked_target(file, relocation.target())?;
         let addend = i32::try_from(relocation.addend())
             .map_err(|_| "relocation addend does not fit in AMRN i32".to_owned())?;

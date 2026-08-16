@@ -65,6 +65,7 @@ build configuration that must remain configurable:
 - package output name;
 - entry symbol and entry offset policy.
 - requested application ABI version; omit it to use the target profile default.
+- requested AMRN format version; omit it to use the ABI-compatible default.
 
 The generated project currently uses the `f405` target profile. The build
 command passes this manifest-owned value to Cargo and does not embed a board

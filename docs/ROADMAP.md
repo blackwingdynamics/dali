@@ -592,8 +592,10 @@ Compilation and host tests do not replace hardware evidence.
   `dali-amrn::v3`; loader and CLI support remain deferred.
 - [x] Extract the bounded set of supported ARM relocation records from the
   retained application ELF in the CLI.
-- [ ] Validate extracted relocation records against the image contract and
-  emit the AMRN v3 package.
+- [x] Validate extracted relocation records through the AMRN v3 host encoder
+  and emit/inspect the AMRN v3 package behind an explicit manifest format
+  selection.
+- [ ] Add relocation patch decoders and host tests for each supported ARM kind.
 - [ ] Implement bounded kernel-side relocation application before MPU launch.
 - [ ] Design a slot manager only after the relocation contract and memory map
   are stable.

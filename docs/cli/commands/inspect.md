@@ -33,17 +33,18 @@ The command validates:
 - exact file length with no trailing bytes;
 - payload CRC32.
 
-For AMRN format version 2, the command resolves the target identifier through
+For AMRN format versions 2 and 3, the command resolves the target identifier through
 the repository target registry and validates the declared code/data regions,
 zero-initialized data, PSP stack reservation, segment layout, and ABI v3 CRC32.
-It reports the v2 segment and launch fields separately. Inspection does not
-enable ABI v3 execution or create an ABI v3 package.
+For format version 3 it additionally validates and reports linked bases and
+the relocation count. Inspection does not enable ABI v3 execution.
 
 ## Output
 
 On success, output includes the format version, target ID, header and payload
-sizes, load and entry addresses, ABI version, and CRC32. Format version 2 also
-includes code size, initialized-data size, zero-data size, and stack size.
+sizes, load and entry addresses, ABI version, and CRC32. Format versions 2 and
+3 also include code size, initialized-data size, zero-data size, and stack
+size; format version 3 includes relocation metadata.
 
 ## Example
 

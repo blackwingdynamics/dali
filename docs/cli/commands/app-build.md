@@ -25,6 +25,10 @@ does not embed a board-specific target mapping.
 
 ## Output
 
+The optional build.format_version field selects the AMRN package format. ABI
+v3 defaults to format version 2; setting it to 3 enables the relocatable
+package pipeline.
+
 For ABI v2, the command runs Cargo with the `embedded-payload` feature, uses
 `cargo objcopy` to write the native payload, and then creates the AMRN package
 from that payload. It writes:
@@ -54,6 +58,10 @@ The package records the linker-defined zero-initialized data size and the
 target manifest's PSP stack reservation. ABI v3 output is currently suitable
 for host inspection and contract testing only; kernel launch support is a
 separate roadmap task.
+
+When build.format_version is 3, the command retains supported ARM relocation
+records from the linked ELF and emits an AMRN format version 3 package. This
+package is host-inspectable but is not accepted by the kernel loader yet.
 
 ## Failure behavior
 

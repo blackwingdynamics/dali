@@ -17,6 +17,7 @@ pub(super) struct ApplicationManifest {
     pub(super) profile: String,
     pub(super) entry_offset: u32,
     pub(super) abi_version: Option<u8>,
+    pub(super) format_version: Option<u8>,
 }
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
@@ -103,12 +104,20 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
                 .map_err(|_| "dali.toml contains an invalid `abi_version`".to_owned())
         })
         .transpose()?;
+    let format_version = optional_value(contents, "format_version")
+        .map(|value| {
+            value
+                .parse::<u8>()
+                .map_err(|_| "dali.toml contains an invalid format_version".to_owned())
+        })
+        .transpose()?;
     Ok(ApplicationManifest {
         name,
         target_profile,
         profile,
         entry_offset,
         abi_version,
+        format_version,
     })
 }
 
@@ -243,6 +252,7 @@ mod tests {
         assert_eq!(manifest.target_profile, "f405");
         assert_eq!(manifest.profile, RELEASE_PROFILE);
         assert_eq!(manifest.entry_offset, 0);
+        assert_eq!(manifest.format_version, None);
     }
 
     #[test]
@@ -256,5 +266,14 @@ mod tests {
     #[test]
     fn rejects_unknown_profiles() {
         assert!(cargo_profile_is_release("custom").is_err());
+    }
+
+    #[test]
+    fn parses_explicit_relocation_format() {
+        let manifest = parse_manifest(
+            "name = \"telemetry\"\ntarget_profile = \"f405\"\nentry_offset = 0\nformat_version = 3",
+        )
+        .expect("manifest should parse");
+        assert_eq!(manifest.format_version, Some(3));
     }
 }
