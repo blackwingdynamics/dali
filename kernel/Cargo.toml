@@ -17,9 +17,6 @@ usb-cdc = ["stm32f4xx-hal/otg-fs", "stm32f4xx-hal/usb_fs", "dep:usb-device", "de
 abi-current = []
 abi-mpu = ["abi-current"]
 abi-relocation = ["abi-mpu"]
-abi-v3 = ["abi-current"]
-abi-v3-mpu = ["abi-mpu"]
-abi-v3-relocation = ["abi-relocation"]
 
 [lints]
 workspace = true

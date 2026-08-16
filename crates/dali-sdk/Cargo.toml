@@ -6,7 +6,6 @@ publish = false
 
 [features]
 abi-current = []
-abi-v3 = ["abi-current"]
 
 [lib]
 path = "src/lib.rs"

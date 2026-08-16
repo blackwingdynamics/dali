@@ -83,15 +83,17 @@ remains the default until the implementation receives complete F405 hardware
 fault-injection evidence.
 
 The source code uses the central `abi-current` selector and the version-neutral
-`abi-mpu` and `abi-relocation` capabilities. The public `abi-v3`,
-`abi-v3-mpu`, and `abi-v3-relocation` Cargo features remain compatibility
-aliases for existing build commands. A future ABI version changes the selector
-and adds only the implementation-specific contract code; ordinary kernel
-modules do not need a version-name replacement.
+`abi-mpu` and `abi-relocation` capabilities. These are the only ABI-related
+Cargo features; version names are not repeated in feature names. A future ABI
+version changes the selector and adds only the implementation-specific contract
+code; ordinary kernel modules do not need a version-name replacement.
+The selector is enabled by `kernel/Cargo.toml`, while
+`kernel/src/abi.rs` is the single source that maps the selected implementation
+to its numeric package ABI version.
 
 The repository contains a feature-gated SDK SVC call, kernel SVC frame
 validator, bounded log dispatcher, MPU map, PSP transition, and kernel-owned
-fault recovery behind the ABI v3 and `abi-v3-mpu` features. These mechanisms
+fault recovery behind the ABI v3 and `abi-mpu` features. These mechanisms
 are available for controlled F405 testing but are not enabled by default.
 
 ### Execution mode
@@ -198,7 +200,7 @@ Format version 3 is the movable ABI v3 contract. Its host-side header,
 relocation-entry validation, CLI extraction, package emission, and inspection
 are defined in docs/AMRN_FORMAT.md and implemented in dali-amrn::v3 and the
 CLI. The kernel accepts and applies it only with the explicit
-`abi-v3-relocation` feature; the default kernel path remains unchanged. The
+`abi-relocation` feature; the default kernel path remains unchanged. The
 current feature-gated loader still uses the target manifest's declared origins
 and does not select multiple application slots. The relocation table is
 intentionally a new format revision rather than an interpretation of v2
@@ -231,7 +233,7 @@ status and return through a kernel-stack recovery frame to a bounded
 kernel-owned recovery loop. They do not return to an application or scheduler,
 and they do not change ABI v2 behavior.
 
-The additional kernel feature `abi-v3-mpu` programs the descriptor-backed MPU
+The additional kernel feature `abi-mpu` programs the descriptor-backed MPU
 map during bootstrap and provides the feature-gated PendSV transition into the
 prepared PSP frame. MPU activation is two-phase: while the privileged loader
 copies the validated code and data segments, both application regions are
@@ -247,7 +249,7 @@ The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
 separate segments, prepares a kernel-owned launch frame, and materializes its
 basic exception frame inside the validated application stack reservation. Only
-the explicitly enabled `abi-v3-mpu` path selects PSP, activates the descriptor
+the explicitly enabled `abi-mpu` path selects PSP, activates the descriptor
 backed MPU map, and enters through PendSV; the default kernel does none of
 these. ABI v3 host packages cannot be treated as isolated until fault recovery
 and F405 fault-injection evidence are complete.

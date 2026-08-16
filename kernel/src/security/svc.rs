@@ -1,7 +1,7 @@
 //! Feature-gated SVC gateway and exception-frame validation.
 //!
 //! The gateway is not part of the default MVP execution path. It is compiled
-//! only with `abi-v3` while the privilege transition and MPU activation remain
+//! only with `abi-current` while the privilege transition and MPU activation remain
 //! separate implementation steps.
 
 use dali::svc::{ExceptionFrame, ServiceId, ServiceStatus};

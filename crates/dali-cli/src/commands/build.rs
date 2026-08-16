@@ -169,7 +169,7 @@ fn run_cargo_build(
 pub(super) fn features_for_abi(abi_version: u8) -> Result<String, String> {
     match abi_version {
         dali_amrn::ABI_VERSION => Ok(EMBEDDED_PAYLOAD_FEATURE.to_owned()),
-        dali_amrn::v2::ABI_VERSION => Ok(format!("{EMBEDDED_PAYLOAD_FEATURE},abi-v3")),
+        dali_amrn::v2::ABI_VERSION => Ok(format!("{EMBEDDED_PAYLOAD_FEATURE},abi-current")),
         _ => Err(format!("unsupported application ABI version {abi_version}")),
     }
 }

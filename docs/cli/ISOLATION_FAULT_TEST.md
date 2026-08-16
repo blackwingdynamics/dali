@@ -29,11 +29,11 @@ and insert it into the F405 board.
 
 ## Hardware procedure
 
-Build the kernel with `abi-v3-mpu`, connect the Pico as the SWD probe, and
+Build the kernel with `abi-mpu`, connect the Pico as the SWD probe, and
 flash the kernel through the probe. Keep RTT output visible:
 
 ```text
-cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-v3,abi-v3-mpu --target thumbv7em-none-eabihf
+cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-current,abi-mpu --target thumbv7em-none-eabihf
 dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-kernel
 ```
 
@@ -139,7 +139,7 @@ BusFault handler. The change exists only in the live debug session and is
 never part of the production firmware.
 
 ```text
-cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-v3,abi-v3-mpu --target thumbv7em-none-eabihf
+cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-current,abi-mpu --target thumbv7em-none-eabihf
 dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-kernel
 ```
 
