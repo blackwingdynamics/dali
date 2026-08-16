@@ -4,9 +4,18 @@
 mod stm32f405;
 #[cfg(feature = "board-stm32f405-sd")]
 mod stm32f405_board;
+#[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
+mod stm32f405_sdio;
+#[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
+mod stm32f405_sdio_raw;
 
 #[cfg(feature = "board-stm32f405-sd")]
-pub(crate) use stm32f405_board::{Board, SYSTEM_CLOCK_MHZ, SdioPins, initialize, set_status_led};
+pub(crate) use stm32f405_board::{
+    Board, SYSTEM_CLOCK_MHZ, SdioPins, initialize, pend_usb_irq, set_status_led, unmask_usb_irq,
+};
+
+#[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
+pub(crate) use stm32f405_sdio::SdioBlockReader;
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
 pub(crate) use stm32f405_board::MEMORY_PROFILE;

@@ -124,7 +124,11 @@ impl Board {
 }
 
 /// Takes singleton peripherals and initializes the STM32F405 board hardware.
-pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Board {
+pub fn initialize() -> Board {
+    // The platform backend owns singleton acquisition so the kernel core does
+    // not depend on the STM32 PAC or the reset-time peripheral topology.
+    let device = pac::Peripherals::take().unwrap();
+    let core = cortex_m::Peripherals::take().unwrap();
     let rcc = device.RCC.constrain();
     let clocks = rcc
         .cfgr
@@ -183,4 +187,18 @@ pub fn set_status_led(board: &mut Board, on: bool) {
     } else {
         board.status_led.set_low();
     }
+}
+
+/// Enables the board's USB interrupt after the CDC backend is initialized.
+#[cfg(feature = "usb-cdc")]
+pub fn unmask_usb_irq() {
+    // SAFETY: The backend initializes USB state before unmasking its sole IRQ.
+    unsafe { cortex_m::peripheral::NVIC::unmask(pac::Interrupt::OTG_FS) };
+}
+
+/// Wakes the board's USB backend after a main-context log enqueue.
+#[cfg(feature = "usb-cdc")]
+pub fn pend_usb_irq() {
+    // SAFETY: PENDING is a software wake-up for the initialized USB owner.
+    cortex_m::peripheral::NVIC::pend(pac::Interrupt::OTG_FS);
 }

@@ -4,19 +4,12 @@ mod heartbeat;
 mod status;
 
 #[cfg(feature = "sdio")]
-use crate::{
-    drivers::sdio::SdioBlockReader,
-    storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader},
-};
+use crate::storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader};
 use crate::{logging, platform};
-use stm32f4xx_hal::pac;
 
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
 pub fn run() -> ! {
-    // The reset entry point runs once, so both peripheral singleton tokens are available.
-    let device = pac::Peripherals::take().unwrap();
-    let core = cortex_m::Peripherals::take().unwrap();
-    let mut board = platform::initialize(device, core);
+    let mut board = platform::initialize();
     #[cfg(feature = "abi-mpu")]
     if let Some(layout) = platform::ISOLATION_LAYOUT {
         platform::mpu::configure_hardware(layout);
@@ -88,7 +81,7 @@ fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
         return status::StorageStatus::Failure;
     };
 
-    let mut reader = SdioBlockReader::new(peripheral, pins, clocks);
+    let mut reader = platform::SdioBlockReader::new(peripheral, pins, clocks);
     if let Err(error) = reader.initialize() {
         logging::error(
             logging::BOOT_SUBSYSTEM,

@@ -3,7 +3,7 @@
 use crate::platform::SdioPins;
 use core::cell::{Cell, RefCell};
 
-use super::sdio_raw::RawSdioReader;
+use super::stm32f405_sdio_raw::RawSdioReader;
 use crate::storage::{Block, BlockAddress, BlockReader, StorageError};
 use embedded_sdmmc::{Block as FilesystemBlock, BlockCount, BlockDevice, BlockIdx};
 use stm32f4xx_hal::{

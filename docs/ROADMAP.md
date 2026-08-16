@@ -91,6 +91,16 @@ F405 scope; the next work is to finish the platform backend extraction.
   facade without changing its runtime behavior.
 - [x] Add generated backend scaffolding and validation for new target profiles.
 
+#### Recorded architecture debt
+
+- [ ] Restore `kernel/src/drivers/` as the hardware-neutral driver layer after
+  the platform refactor is complete.
+- [ ] Define generic storage and transport traits in `kernel/src/drivers/` and
+  make the F405 SDIO adapter implement them without exposing PAC or HAL types
+  to kernel policy.
+- [ ] Add host tests for the generic driver contracts and target checks for the
+  F405 adapter before marking the driver boundary complete.
+
 ### ABI selector foundation
 
 - [x] Centralize the active ABI selector and keep versioned Cargo feature names

@@ -60,8 +60,8 @@ pub(super) fn initialize(resources: crate::platform::UsbResources) {
         });
 
         // SAFETY: USB resources and shared state are initialized before the
-        // OTG_FS handler is unmasked; the handler is the sole USB owner.
-        cortex_m::peripheral::NVIC::unmask(stm32f4xx_hal::pac::Interrupt::OTG_FS);
+        // platform backend unmasks the sole USB owner.
+        crate::platform::unmask_usb_irq();
     }
 }
 

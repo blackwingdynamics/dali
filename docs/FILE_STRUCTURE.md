@@ -25,8 +25,9 @@ dali-kernel/
 │       ├── platform.rs            # Platform facade and target entry points
 │       ├── platform/stm32f405.rs  # F405 target profile and IRQ bindings
 │       ├── platform/stm32f405_board.rs # F405 hardware backend
+│       ├── platform/stm32f405_sdio.rs # F405 SDIO block-device adapter
+│       ├── platform/stm32f405_sdio_raw.rs # F405 SDIO register transport
 │       ├── bootstrap/             # Startup, storage status, heartbeat
-│       ├── drivers/               # SDIO and raw SDIO access
 │       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
@@ -83,9 +84,8 @@ kernel/src/
 ├── main.rs
 ├── abi.rs
 ├── board/{mod.rs,mpu.rs}
-├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs}
+├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs,stm32f405_sdio.rs,stm32f405_sdio_raw.rs}
 ├── bootstrap/{mod.rs,heartbeat.rs,status.rs}
-├── drivers/{mod.rs,sdio.rs,sdio_raw.rs}
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
@@ -137,11 +137,13 @@ target-scaffold.md
 
 ## Ownership boundaries
 
-- `kernel/src/board/` owns typed board peripherals, pins, clocks, and MPU
-  layout activation.
+- `kernel/src/board/` owns processor-neutral MPU descriptors and activation
+  helpers shared by the selected platform backend.
 - `kernel/src/platform.rs` and `kernel/src/platform/` own the platform facade
   and target-specific entry points; backend ownership and contributor workflow are defined in
   `docs/PLATFORM_BACKENDS.md`.
+- `kernel/src/platform/stm32f405_sdio*.rs` owns the F405 PAC/HAL SDIO transport;
+  bootstrap consumes it only through the platform facade.
 - `targets/*.toml` owns declarative target facts; hardware implementations must
   consume those facts through generated target metadata instead of copying
   board constants into kernel policy.
