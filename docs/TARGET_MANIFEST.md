@@ -12,7 +12,7 @@ Add one manifest for each board profile. The profile must describe facts from
 the board and MCU documentation, not values guessed from another board.
 
 Adding a manifest alone does not add kernel support. An accepted board also
-requires a reviewed `kernel/src/board/` backend, target checks, documentation,
+requires a reviewed `kernel/src/platform/` backend, target checks, documentation,
 and hardware evidence. Do not copy values into CLI commands or ordinary
 implementation modules.
 
@@ -273,4 +273,4 @@ dali target scaffold f405 --output <existing-directory>
 The scaffold command creates a `.rs.template` and a board review document. It
 renders the manifest values as named constants, but it does not register or
 compile a backend automatically. Review the generated mapping before adding a
-module to `kernel/src/board/mod.rs`.
+module to the platform facade.

@@ -97,7 +97,7 @@ fn backend_template(profile: &dali_targets::TargetProfile) -> String {
     let metadata = metadata_template(profile);
     format!(
         "//! Review scaffold generated from targets/{name}.toml.\n\
-//! Map the profile to typed HAL resources before adding this backend to board/mod.rs.\n\
+//! Map the profile to typed HAL resources before adding this backend to the platform facade.\n\
 //!\n\
 //! Required review areas:\n\
 //! - clock and reset configuration\n\
@@ -110,9 +110,11 @@ fn backend_template(profile: &dali_targets::TargetProfile) -> String {
 use dali_targets::{constant};\n\
 \n\
 /// Declarative profile selected for this backend.\n\
-pub const TARGET_PROFILE: &dali_targets::TargetProfile = &{constant};\n",
+pub const TARGET_PROFILE: &dali_targets::TargetProfile = &{constant};\n\
+pub const BACKEND: &str = {backend:?};\n",
         name = profile.name,
         constant = profile.registry_constant,
+        backend = profile.backend,
         metadata = metadata
     )
 }
@@ -236,6 +238,7 @@ fn print_targets() -> Result<(), String> {
     println!("Supported Dali targets:");
     for target in dali_targets::SUPPORTED_TARGETS {
         println!("- {}", target.name);
+        println!("  backend: {}", target.backend);
         println!("  board: {}", target.board);
         println!("  mcu: {}", target.mcu);
         println!("  rust_target: {}", target.rust_target);
@@ -269,6 +272,7 @@ mod tests {
         assert!(f405.contains("DFU_VENDOR_ID: u16 = 0x0483"));
         assert!(f405.contains("STATUS_LED_PORT: &str = \"PB\""));
         assert!(f405.contains("STORAGE_DATA_3_NUMBER: u8 = 11"));
+        assert!(f405.contains("BACKEND: &str = \"stm32f405\""));
 
         let f411 = backend_template(find_board("f411").expect("generated test profile"));
         assert!(f411.contains("STORAGE_SUPPORTED: bool = false"));
