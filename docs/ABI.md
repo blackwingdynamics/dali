@@ -159,6 +159,37 @@ This budget is a design target, not an enabled configuration. The privileged
 background map and default-memory attributes must be selected so that an
 unprivileged access cannot bypass the no-access boundaries.
 
+### ABI v3 package and linker contract
+
+ABI v3 packages use AMRN format version `2`; the format revision is required
+because the v1 fixed header cannot represent separate code/data segments and
+runtime stack reservations. The v2 package contract is defined in
+`docs/AMRN_FORMAT.md` and is not implemented by the current parser or builder.
+
+For the current F405 target, the linker must emit:
+
+- code and read-only data at `0x20008000` within a 32 KiB region;
+- initialized data at `0x20010000` within a 32 KiB region;
+- zero-initialized data followed by the PSP stack within that same data
+  region;
+- a word-aligned entry offset relative to the code origin;
+- metadata sufficient to validate code size, initialized-data size,
+  zero-data size, and PSP stack size.
+
+The package payload stores code followed by initialized data. Zero data and
+the PSP stack are reservations, not file bytes. The loader must copy the two
+file segments only after validating every region bound, then clear the
+zero-data range and construct the PSP launch frame. This is a fixed-address
+single-application contract; PIC, relocation, and multiple slots remain
+deferred.
+
+The launch frame is kernel-generated. Its PC is the validated Thumb entry,
+its PSP is within the declared stack bounds, its unused argument registers are
+cleared, and its link value cannot return into kernel code. The package cannot
+provide an exception-return value or a privileged function pointer. ABI v2
+packages remain on the existing direct `ServiceTable` entry path and must not
+be interpreted as ABI v3 packages.
+
 Kernel SRAM, kernel runtime/stack SRAM, and ordinary peripheral registers are
 not application-accessible. The v3 design does not claim DMA isolation,
 confidentiality of readable Flash, package authenticity, or recovery from
