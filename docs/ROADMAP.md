@@ -359,17 +359,18 @@ protection boundary is implemented and accepted.
   failures where an application stack frame is not valid.
 - [x] Implement MPU and privilege transition for one application only; keep
   hardware fault acceptance pending.
-- [x] Implement the SVC gateway and versioned service dispatch; keep rejection
-  and recovery evidence pending.
+- [x] Implement the SVC gateway and versioned service dispatch; rejection
+  evidence is recorded below.
 - [x] Implement a privileged fault boundary that records the fault context and
   terminates the application without corrupting the kernel context; keep F405
   evidence pending.
-- [ ] Add host tests for ABI encoding, service identifiers, and rejected calls.
+- [x] Add host tests for ABI encoding, service identifiers, and rejected calls.
 - [x] Add a non-production F405 kernel-memory fault-injection application.
 - [x] Add a non-production F405 kernel-memory write fault-injection application.
 - [x] Add a non-production F405 peripheral-access fault-injection application.
 - [x] Add a non-production F405 invalid-execution fault-injection application.
 - [x] Add a non-production F405 invalid-PSP fault-injection application.
+- [x] Add a non-production F405 SVC rejection-matrix application.
 - [ ] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
   execution, PSP bounds, and application service calls.
 - [x] Record first F405 hardware evidence for kernel-RAM read rejection and
@@ -443,6 +444,25 @@ The observed output was:
 This proves the selected exception-entry stack-boundary fault reaches the
 kernel recovery path. Fault-frame address and PC decoding, invalid vector
 handling, DMA isolation, and multi-application isolation remain unverified.
+
+The SVC rejection matrix was run on 2026-08-16 on the F405 using the
+`dali-app-svc-rejections` package and the Pico CMSIS-DAP probe. The application
+sent an unknown service ID, kernel and peripheral pointers, an oversized
+message, and invalid UTF-8 through the ABI v3 gateway. The observed output was:
+
+```text
+[INFO][APP] SVC rejected unknown service
+[INFO][APP] SVC rejected kernel pointer
+[INFO][APP] SVC rejected peripheral pointer
+[INFO][APP] SVC rejected oversized message
+[INFO][APP] SVC rejected invalid UTF-8
+[INFO][APP] SVC rejection matrix complete
+```
+
+No security fault or recovery record was emitted, and the application remained
+alive after the matrix. This proves the selected malformed service requests
+were rejected at the kernel gateway; authorization policy, DMA isolation, and
+multi-application isolation remain unverified.
 
 #### Deferred until isolation foundation is accepted
 
