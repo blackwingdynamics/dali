@@ -249,6 +249,8 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Add `dali target info <target>` for board, MCU, ABI, AMRN, memory, clock, and transport metadata, with a machine-readable probe-chip field.
 - [x] Add target-registry lookup by AMRN identifier and host-side `dali inspect`
   validation for the documented AMRN v2 package contract.
+- [x] Generate a reviewable ABI v3 linker layout artifact from target isolation
+  metadata without enabling ABI v3 application builds.
 
 #### Device operations
 

@@ -3,15 +3,20 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
+#[path = "app_linker.rs"]
+mod app_linker;
+
 const SDK_CRATE_RELATIVE_PATH: &str = "crates/dali-sdk";
 const SDK_PATH_FLAG: &str = "--sdk-path";
 const APPLICATION_NAME_TOKEN: &str = "{{ application_name }}";
 const SDK_PATH_TOKEN: &str = "{{ sdk_path }}";
+const TARGET_PROFILE_TOKEN: &str = "{{ target_profile }}";
 
 const CARGO_TEMPLATE: &str = include_str!("../../templates/app/Cargo.toml.template");
 const MANIFEST_TEMPLATE: &str = include_str!("../../templates/app/dali.toml.template");
 const BUILD_TEMPLATE: &str = include_str!("../../templates/app/build.rs.template");
 const MEMORY_TEMPLATE: &str = include_str!("../../templates/app/memory.x.template");
+const V3_MEMORY_TEMPLATE: &str = include_str!("../../templates/app/memory.v3.x.template");
 const LIB_TEMPLATE: &str = include_str!("../../templates/app/lib.rs.template");
 const MAIN_TEMPLATE: &str = include_str!("../../templates/app/main.rs.template");
 const CARGO_CONFIG_TEMPLATE: &str = include_str!("../../templates/app/config.toml.template");
@@ -35,8 +40,12 @@ const TEMPLATES: &[Template] = &[
         contents: BUILD_TEMPLATE,
     },
     Template {
-        relative_path: "memory.x",
+        relative_path: app_linker::V2_MEMORY_FILE,
         contents: MEMORY_TEMPLATE,
+    },
+    Template {
+        relative_path: app_linker::V3_MEMORY_FILE,
+        contents: V3_MEMORY_TEMPLATE,
     },
     Template {
         relative_path: "src/lib.rs",
@@ -183,7 +192,7 @@ fn create_project(parent: &Path, name: &str, sdk_path: &str) -> Result<(), Strin
             fs::create_dir_all(parent)
                 .map_err(|error| format!("cannot create {}: {error}", parent.display()))?;
         }
-        let contents = render(template.contents, name, sdk_path);
+        let contents = render_template(template, name, sdk_path)?;
         fs::write(&destination, contents)
             .map_err(|error| format!("cannot write {}: {error}", destination.display()))?;
     }
@@ -211,17 +220,29 @@ pub(super) fn initialize_project(
             fs::create_dir_all(parent)
                 .map_err(|error| format!("cannot create {}: {error}", parent.display()))?;
         }
-        let contents = render(template.contents, name, sdk_path);
+        let contents = render_template(template, name, sdk_path)?;
         fs::write(&destination, contents)
             .map_err(|error| format!("cannot write {}: {error}", destination.display()))?;
     }
     Ok(())
 }
 
-fn render(template: &str, name: &str, sdk_path: &str) -> String {
+fn render_template(template: &Template, name: &str, sdk_path: &str) -> Result<String, String> {
+    if template.relative_path == app_linker::V3_MEMORY_FILE {
+        return app_linker::render_v3_memory_script(template.contents);
+    }
+    if template.relative_path == app_linker::V2_MEMORY_FILE {
+        return app_linker::render_v2_memory_script(template.contents);
+    }
+    let target = app_linker::default_target()?;
+    Ok(render(template.contents, name, sdk_path, target.name))
+}
+
+fn render(template: &str, name: &str, sdk_path: &str, target_profile: &str) -> String {
     template
         .replace(APPLICATION_NAME_TOKEN, name)
         .replace(SDK_PATH_TOKEN, sdk_path)
+        .replace(TARGET_PROFILE_TOKEN, target_profile)
 }
 
 fn usage() -> String {
@@ -229,62 +250,5 @@ fn usage() -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{create_project, initialize_project, render, validate_name};
-    use std::{
-        env, fs,
-        time::{SystemTime, UNIX_EPOCH},
-    };
-
-    #[test]
-    fn accepts_cargo_style_application_names() {
-        assert!(validate_name("telemetry_app").is_ok());
-        assert!(validate_name("telemetry-app").is_ok());
-    }
-
-    #[test]
-    fn rejects_paths_and_empty_names() {
-        assert!(validate_name("").is_err());
-        assert!(validate_name("../telemetry").is_err());
-        assert!(validate_name("telemetry/app").is_err());
-        assert!(validate_name("telemetry app").is_err());
-    }
-
-    #[test]
-    fn renders_application_name_and_sdk_path() {
-        let rendered = render(
-            "name={{ application_name }} sdk={{ sdk_path }}",
-            "demo",
-            "../sdk",
-        );
-        assert_eq!(rendered, "name=demo sdk=../sdk");
-    }
-
-    #[test]
-    fn creates_the_documented_project_files() -> Result<(), Box<dyn std::error::Error>> {
-        let suffix = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
-        let root = env::temp_dir().join(format!("dali-cli-app-new-{suffix}"));
-        fs::create_dir(&root)?;
-        create_project(&root, "demo", "../crates/dali-sdk")?;
-        assert!(root.join("demo/Cargo.toml").is_file());
-        assert!(root.join("demo/dali.toml").is_file());
-        assert!(root.join("demo/src/main.rs").is_file());
-        fs::remove_dir_all(root)?;
-        Ok(())
-    }
-
-    #[test]
-    fn initializes_only_an_empty_managed_project() -> Result<(), Box<dyn std::error::Error>> {
-        let suffix = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
-        let root = env::temp_dir().join(format!("dali-cli-app-init-{suffix}"));
-        fs::create_dir(&root)?;
-        fs::write(root.join("README.md"), "user content")?;
-        initialize_project(&root, "demo", "../crates/dali-sdk")?;
-        assert!(root.join("Cargo.toml").is_file());
-        assert!(root.join("README.md").is_file());
-        let result = initialize_project(&root, "demo", "../crates/dali-sdk");
-        assert!(result.is_err());
-        fs::remove_dir_all(root)?;
-        Ok(())
-    }
-}
+#[path = "new_tests.rs"]
+mod tests;

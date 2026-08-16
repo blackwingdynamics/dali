@@ -32,6 +32,7 @@ The scaffold must contain:
 ├── dali.toml
 ├── build.rs
 ├── memory.x
+├── memory.v3.x
 ├── .cargo/
 │   └── config.toml
 └── src/
@@ -49,6 +50,11 @@ member set.
 The generated Cargo configuration adds the application linker script for the
 documented embedded target. This keeps standalone projects outside the Dali
 repository aligned with the same linker contract.
+
+`memory.v3.x` is a target-manifest-generated, reviewable ABI v3 code/data
+layout artifact. The current build pipeline does not select it; `memory.x`
+remains the active ABI v2 linker script until the v3 SDK and artifact pipeline
+are implemented.
 
 `dali.toml` is the Dali project manifest. It owns application metadata and
 build configuration that must remain configurable:

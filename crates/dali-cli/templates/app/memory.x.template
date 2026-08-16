@@ -1,6 +1,6 @@
 MEMORY
 {
-    APP (rx) : ORIGIN = 0x20008000, LENGTH = 64K
+    APP (rx) : ORIGIN = {{ application_origin }}, LENGTH = {{ application_length }}
 }
 
 ENTRY(amiran_entry)
