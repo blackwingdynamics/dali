@@ -64,9 +64,10 @@ where
 }
 
 fn target_contract() -> Option<v3::Contract> {
-    let isolation = dali_targets::TARGET_F405.memory.isolation?;
+    let target = crate::platform::TARGET_PROFILE;
+    let isolation = target.memory.isolation?;
     Some(v3::Contract {
-        target_id: dali_targets::TARGET_F405.amrn_target_id,
+        target_id: target.amrn_target_id,
         code_load_address: isolation.code_origin,
         code_capacity: isolation.code_length,
         data_load_address: isolation.data_origin,

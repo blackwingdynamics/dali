@@ -6,6 +6,7 @@ mod bootstrap;
 pub mod drivers;
 pub mod loader;
 pub mod logging;
+pub(crate) mod platform;
 pub mod storage;
 
 #[cfg(feature = "abi-v3")]
@@ -13,15 +14,6 @@ mod security;
 
 use cortex_m_rt::entry;
 use panic_halt as _;
-
-#[cfg(feature = "usb-cdc")]
-use stm32f4xx_hal::pac::interrupt;
-
-#[cfg(feature = "usb-cdc")]
-#[interrupt]
-fn OTG_FS() {
-    logging::service_usb_irq();
-}
 
 #[entry]
 fn main() -> ! {
