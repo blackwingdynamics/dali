@@ -86,6 +86,11 @@ Interrupt ownership: kernel-controlled
 
 The ABI version must change when entry semantics, calling convention, memory ownership, interrupt ownership, lifecycle behavior, service-table layout, or shared data structures change.
 
+The planned MPU and unprivileged execution boundary changes entry semantics,
+service dispatch, memory ownership, and fault handling. It therefore requires
+a new ABI version and an AMRN compatibility decision; it must not be shipped
+as an ABI v2-compatible implementation.
+
 The package format carries the ABI version at header offset `0x18`.
 
 ## 5. Compatibility rules

@@ -56,3 +56,22 @@ Before `dali` is published, specify application context, task creation,
 service discovery, shutdown, health reporting, capability handles, version
 compatibility, and error representation. The v2 logging service is intentionally
 the smallest initial service surface.
+
+## Planned isolation ABI (not implemented)
+
+The F405 isolation milestone will introduce a new ABI version rather than
+silently changing ABI v2. The planned boundary is:
+
+- application code runs in unprivileged Thread mode using a PSP;
+- the kernel retains privileged Handler mode and MSP ownership;
+- application services cross an SVC gateway with versioned service identifiers;
+- applications cannot call privileged kernel functions through ordinary
+  function pointers;
+- MemManage, BusFault, UsageFault, and invalid exception returns are handled by
+  a kernel-owned fault boundary;
+- shared memory and application scheduling remain unsupported until their
+  layouts and ownership rules are separately specified.
+
+The exact SVC frame, service identifier encoding, PSP layout, fault recovery
+state, and application memory regions must be specified and tested before an
+ABI version increment or package compatibility change.

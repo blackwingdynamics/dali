@@ -24,17 +24,7 @@ generator input and has no kernel backend.
 
 The application load address is fixed at `0x20008000` for the MVP.
 
-## MVP pins
-
-| Function | Pin |
-| --- | --- |
-| Status LED | PC13 |
-| SPI1 SCK | PA5 |
-| SPI1 MISO | PA6 |
-| SPI1 MOSI | PA7 |
-| SD chip select | PA4 |
-
-### Current MVP SDIO board
+## Current MVP SDIO board
 
 - Board: WeAct Studio STM32F405RGT6 Core Board, 64-pin
 - MCU: STM32F405RGT6
@@ -67,16 +57,19 @@ performs compile-time checks against the AMRN load-region and ABI contracts.
 Typed GPIO and peripheral ownership remains explicit in the backend because
 the HAL requires compile-time pin types and singleton peripheral ownership.
 
+The STM32F405 also provides CCM RAM at `0x10000000`. Its suitability for the
+privileged kernel runtime and stack is a future isolation design question;
+peripheral DMA buffers must remain in DMA-accessible SRAM.
+
 ## Electrical requirements
 
 The SD interface must use the board's correct 3.3 V logic levels. The SD module, wiring, power supply, and chip-select pull-up behavior must be verified on the actual hardware before acceptance testing.
 
 ## Clock and logging
 
-The reference kernel targets a 100 MHz system clock and supports both RTT and
-USB CDC logging. The F405 backend targets 168 MHz from its 8 MHz HSE. Both
-backends configure the USB FS 48 MHz clock domain and use PA11/PA12 for USB
-D-/D+.
+The reference kernel targets the F405 168 MHz system clock from its 8 MHz HSE
+and supports both RTT and USB CDC logging. The backend configures the USB FS
+48 MHz clock domain and uses PA11/PA12 for USB D-/D+.
 
 ## Hardware acceptance evidence
 
