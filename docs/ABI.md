@@ -213,16 +213,16 @@ status and halt the diagnostic path; they do not yet recover an application or
 return to a scheduler. They do not change ABI v2 behavior.
 
 The additional kernel feature `abi-v3-mpu` programs the descriptor-backed MPU
-map during bootstrap for diagnostic bring-up. It keeps privileged default
-memory enabled for kernel operation, and does not perform the unprivileged
-application transition. It must not be treated as application isolation until
-the launch context and F405 fault-injection evidence are complete.
+map during bootstrap and provides the feature-gated PendSV transition into the
+prepared PSP frame. The default kernel does not enable this path. It must not
+be treated as application isolation until fault recovery and F405
+fault-injection evidence are complete.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
 separate segments, prepares a kernel-owned launch frame, and materializes its
-basic exception frame inside the validated application stack reservation. It
-does not select PSP, activate MPU protection, or enter the application. ABI v3
-host packages cannot be entered through a PSP-backed unprivileged launch path.
-The PSP selection, MPU activation, and privilege transition must be implemented
-before that transition.
+basic exception frame inside the validated application stack reservation. Only
+the explicitly enabled `abi-v3-mpu` path selects PSP, activates the descriptor
+backed MPU map, and enters through PendSV; the default kernel does none of
+these. ABI v3 host packages cannot be treated as isolated until fault recovery
+and F405 fault-injection evidence are complete.

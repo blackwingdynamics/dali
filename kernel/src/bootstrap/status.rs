@@ -6,7 +6,7 @@ pub enum StorageStatus {
     /// No storage medium was detected or the transport is not configured.
     NotDetected,
     /// The card initialized and block zero was read successfully.
-    #[cfg(feature = "sdio")]
+    #[cfg(all(feature = "sdio", not(feature = "abi-v3-mpu")))]
     Ready,
     /// The card or transport reported an operational failure.
     #[cfg(feature = "sdio")]

@@ -13,7 +13,7 @@ pub fn run(mut board: board::Board, storage_status: StorageStatus) -> ! {
 
     loop {
         match storage_status {
-            #[cfg(feature = "sdio")]
+            #[cfg(all(feature = "sdio", not(feature = "abi-v3-mpu")))]
             StorageStatus::Ready => {
                 board::set_status_led(&mut board, true);
             }

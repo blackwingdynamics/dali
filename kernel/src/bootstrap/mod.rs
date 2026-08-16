@@ -133,7 +133,16 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                         crate::loader::start_application(package);
                     }
                     #[cfg(feature = "abi-v3")]
-                    let _ = package;
+                    {
+                        #[cfg(feature = "abi-v3-mpu")]
+                        crate::security::launch::enter(package.launch_frame);
+                        #[cfg(not(feature = "abi-v3-mpu"))]
+                        {
+                            let _ = package;
+                            status::StorageStatus::Ready
+                        }
+                    }
+                    #[cfg(not(feature = "abi-v3"))]
                     status::StorageStatus::Ready
                 }
                 Err(error) => {

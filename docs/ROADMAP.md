@@ -347,6 +347,8 @@ protection boundary is implemented and accepted.
 - [x] Prepare and materialize a kernel-generated ABI v3 basic exception frame
   with validated PSP bounds and a kernel-owned exception-return selector; do
   not enter it yet.
+- [x] Add an explicitly disabled-by-default PendSV transition primitive for
+  the prepared PSP frame; keep fault recovery and acceptance evidence pending.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and
