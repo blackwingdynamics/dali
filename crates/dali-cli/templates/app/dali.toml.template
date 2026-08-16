@@ -5,6 +5,7 @@ sdk = "dali"
 
 [build]
 target_profile = "{{ target_profile }}"
+abi_version = {{ abi_version }}
 profile = "dev"
 entry_symbol = "amiran_entry"
 entry_offset = 0

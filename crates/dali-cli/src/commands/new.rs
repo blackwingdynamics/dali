@@ -11,6 +11,7 @@ const SDK_PATH_FLAG: &str = "--sdk-path";
 const APPLICATION_NAME_TOKEN: &str = "{{ application_name }}";
 const SDK_PATH_TOKEN: &str = "{{ sdk_path }}";
 const TARGET_PROFILE_TOKEN: &str = "{{ target_profile }}";
+const ABI_VERSION_TOKEN: &str = "{{ abi_version }}";
 
 const CARGO_TEMPLATE: &str = include_str!("../../templates/app/Cargo.toml.template");
 const MANIFEST_TEMPLATE: &str = include_str!("../../templates/app/dali.toml.template");
@@ -235,14 +236,27 @@ fn render_template(template: &Template, name: &str, sdk_path: &str) -> Result<St
         return app_linker::render_v2_memory_script(template.contents);
     }
     let target = app_linker::default_target()?;
-    Ok(render(template.contents, name, sdk_path, target.name))
+    Ok(render(
+        template.contents,
+        name,
+        sdk_path,
+        target.name,
+        target.abi_version,
+    ))
 }
 
-fn render(template: &str, name: &str, sdk_path: &str, target_profile: &str) -> String {
+fn render(
+    template: &str,
+    name: &str,
+    sdk_path: &str,
+    target_profile: &str,
+    abi_version: u8,
+) -> String {
     template
         .replace(APPLICATION_NAME_TOKEN, name)
         .replace(SDK_PATH_TOKEN, sdk_path)
         .replace(TARGET_PROFILE_TOKEN, target_profile)
+        .replace(ABI_VERSION_TOKEN, &abi_version.to_string())
 }
 
 fn usage() -> String {

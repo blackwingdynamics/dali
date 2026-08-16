@@ -25,6 +25,7 @@ fn renders_application_name_and_sdk_path() {
         "demo",
         "../sdk",
         "test-target",
+        2,
     );
     assert_eq!(rendered, "name=demo sdk=../sdk target=test-target");
 }

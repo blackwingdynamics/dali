@@ -51,10 +51,10 @@ The generated Cargo configuration adds the application linker script for the
 documented embedded target. This keeps standalone projects outside the Dali
 repository aligned with the same linker contract.
 
-`memory.v3.x` is a target-manifest-generated, reviewable ABI v3 code/data
-layout artifact. The current build pipeline does not select it; `memory.x`
-remains the active ABI v2 linker script until the v3 SDK and artifact pipeline
-are implemented.
+`memory.v3.x` is a target-manifest-generated ABI v3 code/data layout artifact.
+It is selected when `build.abi_version = 3`; the default remains the target's
+declared ABI version. ABI v3 packaging is host-validated, but the F405 kernel
+does not execute ABI v3 packages until the MPU launch path is complete.
 
 `dali.toml` is the Dali project manifest. It owns application metadata and
 build configuration that must remain configurable:
@@ -64,6 +64,7 @@ build configuration that must remain configurable:
 - target profile, expressed as the documented Rust compilation target;
 - package output name;
 - entry symbol and entry offset policy.
+- requested application ABI version; omit it to use the target profile default.
 
 The generated project currently uses the `f405` target profile. The build
 command passes this manifest-owned value to Cargo and does not embed a board

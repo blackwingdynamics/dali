@@ -9,6 +9,7 @@ dali = { path = "{{ sdk_path }}" }
 
 [features]
 embedded-payload = []
+abi-v3 = []
 
 [lib]
 path = "src/lib.rs"

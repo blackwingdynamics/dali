@@ -78,8 +78,9 @@ ABI version increment or package compatibility change.
 
 ## Planned ABI v3 boundary
 
-ABI v3 is a design contract only. ABI v2 remains the active MVP ABI until the
-implementation and F405 hardware evidence are complete.
+ABI v3 remains a design and host-artifact contract. ABI v2 remains the active
+kernel execution ABI until the implementation and F405 hardware evidence are
+complete.
 
 The repository now contains a feature-gated SVC frame validator and bounded log
 dispatcher behind the kernel `abi-v3` feature. This is an implementation
@@ -165,7 +166,8 @@ ABI v3 packages use AMRN format version `2`; the format revision is required
 because the v1 fixed header cannot represent separate code/data segments and
 runtime stack reservations. The v2 package contract is defined in
 `docs/AMRN_FORMAT.md`. The `dali-amrn` crate provides host-side parsing and
-construction, while the kernel loader and CLI remain ABI v2-only.
+construction. The CLI can build and inspect ABI v3 packages, while the kernel
+loader remains ABI v2-only.
 
 For the current F405 target, the linker must emit:
 
@@ -215,7 +217,8 @@ memory enabled for kernel operation, and does not perform the unprivileged
 application transition. It must not be treated as application isolation until
 the launch context and F405 fault-injection evidence are complete.
 
-The current loader and SDK still produce ABI v2 packages with the direct
-`ServiceTable` entry contract. They cannot be entered through a PSP-backed
-unprivileged launch path. ABI v3 package metadata, linker regions, launch
-frame, and compatibility rejection must be implemented before that transition.
+The current loader and SDK default to ABI v2 packages with the direct
+`ServiceTable` entry contract. ABI v3 host packages cannot be entered through
+a PSP-backed unprivileged launch path. ABI v3 launch metadata, linker regions,
+launch frame, and compatibility rejection must be implemented before that
+transition.

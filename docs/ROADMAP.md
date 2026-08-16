@@ -249,8 +249,9 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Add `dali target info <target>` for board, MCU, ABI, AMRN, memory, clock, and transport metadata, with a machine-readable probe-chip field.
 - [x] Add target-registry lookup by AMRN identifier and host-side `dali inspect`
   validation for the documented AMRN v2 package contract.
-- [x] Generate a reviewable ABI v3 linker layout artifact from target isolation
-  metadata without enabling ABI v3 application builds.
+- [x] Generate an ABI v3 linker layout from target isolation metadata and
+  produce host-inspectable code/data AMRN v2 packages; kernel execution remains
+  disabled until the launch path is implemented.
 
 #### Device operations
 
@@ -337,7 +338,8 @@ protection boundary is implemented and accepted.
   segments, explicit zero-data and PSP stack reservations, and a kernel-built
   launch frame; the v1 parser and builder remain unchanged.
 - [x] Add a host-side, no-std-compatible AMRN v2 parser and builder with
-  target-contract validation; keep kernel loading and CLI emission on ABI v2.
+  target-contract validation; keep kernel loading on ABI v2 while the CLI can
+  emit host-inspectable ABI v3 packages.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

@@ -1,4 +1,4 @@
-/* Generated ABI v3 layout. It is not selected by the current build pipeline. */
+/* Generated ABI v3 application layout. */
 MEMORY
 {
     DALI_CODE (rx) : ORIGIN = {{ code_origin }}, LENGTH = {{ code_length }}

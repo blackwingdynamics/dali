@@ -1,3 +1,5 @@
+#[path = "app_artifacts.rs"]
+mod artifacts;
 #[path = "build.rs"]
 mod build;
 #[path = "init.rs"]
