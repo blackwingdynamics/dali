@@ -65,6 +65,7 @@ dali-kernel/
 │   ├── dali-app-fault-kernel/ # Standalone F405 kernel-read fault fixture
 │   └── dali-app-fault-kernel-write/ # Standalone F405 kernel-write fault fixture
 │   └── dali-app-fault-peripheral/ # Standalone F405 peripheral fault fixture
+│   └── dali-app-fault-peripheral-write/ # Standalone F405 peripheral-write fault fixture
 │   └── dali-app-fault-execution/ # Standalone F405 execute-never fault fixture
 │   └── dali-app-fault-psp/ # Standalone F405 invalid-PSP fault fixture
 │   └── dali-app-svc-rejections/ # Standalone F405 SVC rejection fixture

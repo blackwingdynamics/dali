@@ -97,6 +97,31 @@ manifest-declared peripheral region. It does not prove peripheral writes,
 invalid execution, PSP bounds, DMA isolation, or complete application
 isolation.
 
+## Peripheral-write test
+
+Build and package the dedicated peripheral-write fixture:
+
+```text
+cd apps/dali-app-fault-peripheral-write
+dali app build
+```
+
+Copy `target/thumbv7em-none-eabihf/debug/dali-app-fault-peripheral-write.amrn`
+to the SD-card root, then repeat the same kernel build and flash procedure.
+Expected application output is:
+
+```text
+[INFO][APP] Fault injection: peripheral memory write
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This fixture intentionally writes a named test value to the peripheral origin
+declared by the F405 target metadata. The expected result proves only
+processor-side rejection of an unprivileged peripheral-MMIO write. The output
+was accepted on the F405 hardware; this does not prove DMA isolation or
+multi-application isolation.
+
 ## Invalid-execution test
 
 Build and package the execute-never fixture:
