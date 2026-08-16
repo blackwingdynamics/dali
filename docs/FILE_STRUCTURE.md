@@ -20,7 +20,9 @@ dali-kernel/
 │   ├── Cargo.toml, build.rs
 │   └── src/
 │       ├── main.rs                # Kernel entry and bootstrap call
-│       ├── board/                 # Board facade, MPU, F405 backend
+│       ├── board/                 # Board implementation, MPU, F405 mapping
+│       ├── platform.rs            # Platform facade and target entry points
+│       ├── platform/stm32f405.rs  # F405 target profile and IRQ bindings
 │       ├── bootstrap/             # Startup, storage status, heartbeat
 │       ├── drivers/               # SDIO and raw SDIO access
 │       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
@@ -78,6 +80,7 @@ files inside those groups are:
 kernel/src/
 ├── main.rs
 ├── board/{mod.rs,mpu.rs,stm32f405_sd.rs}
+├── platform.rs, platform/stm32f405.rs
 ├── bootstrap/{mod.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,sdio.rs,sdio_raw.rs}
 ├── loader.rs
@@ -133,6 +136,12 @@ target-scaffold.md
 
 - `kernel/src/board/` owns typed board peripherals, pins, clocks, and MPU
   layout activation.
+- `kernel/src/platform.rs` and `kernel/src/platform/` own the platform facade
+  and target-specific entry points; backend ownership and contributor workflow are defined in
+  `docs/PLATFORM_BACKENDS.md`.
+- `targets/*.toml` owns declarative target facts; hardware implementations must
+  consume those facts through generated target metadata instead of copying
+  board constants into kernel policy.
 - `kernel/src/storage/` owns SD/filesystem access; package parsing remains in
   `crates/dali-amrn/` and loading policy remains in `kernel/src/loader.rs`.
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, and

@@ -24,5 +24,6 @@ Read the documents in this order:
 14. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
 15. [Target Profiles](TARGET_PROFILES.md) — declarative board metadata and kernel mapping ownership.
 16. [Target Manifest Reference](TARGET_MANIFEST.md) — complete TOML schema, field rules, and F405 example.
+17. [Platform Backend Contract](PLATFORM_BACKENDS.md) — ownership boundaries and the workflow for adding a target backend.
 
 The architecture and MVP documents are the source of truth until the more detailed specifications are created.

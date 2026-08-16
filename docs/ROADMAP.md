@@ -75,12 +75,21 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 ### Current priority
 
-**Current priority — Build the F405 single-application isolation foundation.**
+**Current priority — Complete the scalable platform/backend boundary.**
 
 The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.1
 release boundary are complete. RP2350/Pico kernel support remains deferred;
-the Pico is currently used only as an external SWD probe. The next work is the
-ABI v3 implementation and its host/SWD evidence.
+the Pico is currently used only as an external SWD probe. ABI v3, relocation,
+and the single-application isolation evidence are complete for the current
+F405 scope; the next work is to finish the platform backend extraction.
+
+### Platform scalability foundation
+
+- [x] Define the platform/backend ownership boundary and contributor workflow
+  before adding additional hardware targets.
+- [ ] Move the F405 board implementation fully behind the platform backend
+  facade without changing its runtime behavior.
+- [ ] Add generated backend scaffolding and validation for new target profiles.
 
 ### USB CDC handoff boundary
 
