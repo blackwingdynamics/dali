@@ -61,7 +61,8 @@ dali-kernel/
 │       ├── loader/             # AMRN parsing and execution
 │       └── runtime/            # Post-MVP task and service runtime
 ├── apps/
-│   └── dali-app-hello/        # First independently built demo app
+│   ├── dali-app-hello/        # First independently built demo app
+│   └── dali-app-fault-kernel/ # Standalone F405 isolation fault fixture
 │       ├── Cargo.toml
 │       ├── build.rs           # Application linker search path
 │       ├── memory.x           # Reserved application SRAM layout

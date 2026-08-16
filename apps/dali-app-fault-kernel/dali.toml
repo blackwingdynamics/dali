@@ -1,0 +1,11 @@
+[application]
+name = "dali-app-fault-kernel"
+version = "0.1.0-alpha.1"
+sdk = "dali"
+
+[build]
+target_profile = "f405"
+abi_version = 3
+profile = "dev"
+entry_symbol = "amiran_entry"
+entry_offset = 0
