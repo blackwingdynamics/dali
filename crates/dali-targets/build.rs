@@ -72,6 +72,7 @@ struct IsolationMemory {
     code_length: u32,
     data_origin: u32,
     data_length: u32,
+    stack_length: u32,
     peripheral_origin: Option<u32>,
     peripheral_length: Option<u32>,
 }
@@ -259,6 +260,8 @@ fn validate_isolation_memory(
     }
     if isolation.code_length == 0
         || isolation.data_length == 0
+        || isolation.stack_length == 0
+        || isolation.stack_length > isolation.data_length
         || isolation.code_origin != manifest.memory.application_origin
         || isolation.data_origin != code_end
         || data_end != application_end
@@ -385,11 +388,12 @@ fn generate_memory(memory: &Memory) -> String {
 
 fn generate_isolation_memory(memory: &IsolationMemory) -> String {
     format!(
-        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, peripheral_origin: {}, peripheral_length: {} }}",
+        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {}, peripheral_origin: {}, peripheral_length: {} }}",
         memory.code_origin,
         memory.code_length,
         memory.data_origin,
         memory.data_length,
+        memory.stack_length,
         memory
             .peripheral_origin
             .map_or_else(|| "None".to_owned(), |value| format!("Some(0x{value:08X})")),

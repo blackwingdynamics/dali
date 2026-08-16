@@ -103,6 +103,8 @@ pub struct IsolationMemoryProfile {
     pub data_origin: u32,
     /// Size of the application data and PSP region in bytes.
     pub data_length: u32,
+    /// PSP stack reservation inside the application data region.
+    pub stack_length: u32,
     /// Start of the ordinary peripheral register region, when declared.
     pub peripheral_origin: Option<u32>,
     /// Size of the ordinary peripheral register region, when declared.
