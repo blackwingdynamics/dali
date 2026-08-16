@@ -1,9 +1,14 @@
 //! Central ABI selector for the kernel build.
 
-/// ABI version selected for this kernel build.
-#[cfg(feature = "abi-current")]
-pub(crate) const CURRENT_VERSION: u8 = dali_amrn::v2::ABI_VERSION;
+use dali_amrn::compatibility;
 
-/// Legacy MVP ABI version selected when the isolation ABI is disabled.
+/// Compatibility contract selected by the current kernel ABI feature.
+#[cfg(feature = "abi-current")]
+pub(crate) const CURRENT_CONTRACT: compatibility::AbiContract = compatibility::ISOLATION;
+
+/// Compatibility contract selected by the legacy kernel ABI configuration.
 #[cfg(not(feature = "abi-current"))]
-pub(crate) const CURRENT_VERSION: u8 = dali_amrn::ABI_VERSION;
+pub(crate) const CURRENT_CONTRACT: compatibility::AbiContract = compatibility::LEGACY;
+
+/// ABI version selected for this kernel build.
+pub(crate) const CURRENT_VERSION: u8 = CURRENT_CONTRACT.abi_version;

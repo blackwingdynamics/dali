@@ -3,6 +3,7 @@
 //! Hardware-independent AMRN v1 header and payload validation.
 
 mod builder;
+pub mod compatibility;
 mod stream;
 pub mod v2;
 pub mod v3;

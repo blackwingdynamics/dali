@@ -167,10 +167,13 @@ fn run_cargo_build(
 }
 
 pub(super) fn features_for_abi(abi_version: u8) -> Result<String, String> {
-    match abi_version {
-        dali_amrn::ABI_VERSION => Ok(EMBEDDED_PAYLOAD_FEATURE.to_owned()),
-        dali_amrn::v2::ABI_VERSION => Ok(format!("{EMBEDDED_PAYLOAD_FEATURE},abi-current")),
-        _ => Err(format!("unsupported application ABI version {abi_version}")),
+    let contract = dali_amrn::compatibility::for_abi(abi_version)
+        .ok_or_else(|| format!("unsupported application ABI version {abi_version}"))?;
+    match contract.family {
+        dali_amrn::compatibility::AbiFamily::Legacy => Ok(EMBEDDED_PAYLOAD_FEATURE.to_owned()),
+        dali_amrn::compatibility::AbiFamily::Isolation => {
+            Ok(format!("{EMBEDDED_PAYLOAD_FEATURE},abi-current"))
+        }
     }
 }
 

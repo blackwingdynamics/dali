@@ -87,6 +87,10 @@ The source code uses the central `abi-current` selector and the version-neutral
 Cargo features; version names are not repeated in feature names. A future ABI
 version changes the selector and adds only the implementation-specific contract
 code; ordinary kernel modules do not need a version-name replacement.
+The `dali-amrn::compatibility` module is the shared ABI-family and
+AMRN-format compatibility table used by the kernel-facing build contracts and
+the CLI. It rejects unknown ABI versions and incompatible explicit format
+requests before package construction.
 The selector is enabled by `kernel/Cargo.toml`, while
 `kernel/src/abi.rs` is the single source that maps the selected implementation
 to its numeric package ABI version.
