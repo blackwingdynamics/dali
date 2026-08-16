@@ -282,5 +282,53 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [ ] Add signed package verification.
 - [ ] Add kernel secure boot.
 - [ ] Add version compatibility and anti-rollback.
-- [ ] Add MPU-backed isolation where supported.
 - [ ] Add update and rollback support.
+
+### Phase 6A — F405 application isolation foundation
+
+This phase is intentionally limited to the existing STM32F405 target. It does
+not add another board, relocation, or multitasking until the single-application
+protection boundary is implemented and accepted.
+
+#### Design constraints
+
+- [ ] Update `docs/ABI.md`, `docs/ARCHITECTURE.md`, `docs/HARDWARE.md`,
+  `docs/SECURITY.md`, and `docs/VERSIONING.md` before implementation.
+- [ ] Define ABI v3 around an SVC-based service gateway; direct calls into
+  privileged kernel functions are not an isolation boundary.
+- [ ] Define the privileged kernel Thread-mode bootstrap, unprivileged
+  application Thread mode, MSP ownership, and application PSP ownership.
+- [ ] Define the MPU region budget for kernel RAM, runtime stack, application
+  code, application data/stack, peripherals, and future shared memory.
+- [ ] Reconcile MPU power-of-two alignment with the current application region;
+  do not assume `0x20008000` can represent one 64 KiB MPU region.
+- [ ] Evaluate the STM32F405 CCM RAM (`0x10000000`) for kernel stack/runtime
+  use, while keeping SDIO and USB DMA buffers in DMA-accessible SRAM.
+- [ ] Define whether application code may read or execute from kernel Flash;
+  `Read-Only` is not equivalent to confidentiality or complete kernel
+  protection.
+- [ ] Define the fault policy for MemManage, BusFault, UsageFault, and
+  exception-return failures without claiming automatic recovery.
+
+#### Implementation and evidence order
+
+- [ ] Implement MPU and privilege transition for one application only.
+- [ ] Implement the SVC gateway and versioned service dispatch.
+- [ ] Implement a privileged fault boundary that records the fault context and
+  terminates the application without corrupting the kernel context.
+- [ ] Add host tests for ABI encoding, service identifiers, and rejected calls.
+- [ ] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
+  execution, PSP bounds, and application service calls.
+- [ ] Record hardware evidence before claiming application isolation.
+
+#### Deferred until isolation foundation is accepted
+
+- [ ] Define a true position-independent application contract; compiler PIC
+  flags alone are not sufficient for raw AMRN images with writable data.
+- [ ] Choose between a documented RWPI/PIC model and explicit relocation
+  metadata in a new AMRN format revision.
+- [ ] Design a slot manager only after the relocation contract and memory map
+  are stable.
+- [ ] Add PSP/PendSV context switching only after one isolated application is
+  stable and its fault boundary is tested.
+- [ ] Add multiple application slots and concurrent application execution.
