@@ -559,7 +559,9 @@ Compilation and host tests do not replace hardware evidence.
 
 ### Future multi-application and memory tests
 
-- [ ] Define and test the PIC/relocation contract for movable applications.
+- [x] Define the initial explicit-relocation direction and safety contract in
+  `docs/RELOCATION.md`; keep ABI v2/v3 fixed-address behavior unchanged.
+- [ ] Produce relocation-aware fixture artifacts with retained linker records.
 - [ ] Test relocation metadata or the selected RWPI/PIC implementation.
 - [ ] Implement and test the SRAM slot manager.
 - [ ] Load two applications into independent slots and verify their boundaries.
@@ -580,10 +582,13 @@ Compilation and host tests do not replace hardware evidence.
 
 #### Deferred until isolation foundation is accepted
 
-- [ ] Define a true position-independent application contract; compiler PIC
-  flags alone are not sufficient for raw AMRN images with writable data.
-- [ ] Choose between a documented RWPI/PIC model and explicit relocation
-  metadata in a new AMRN format revision.
+- [x] Record why compiler PIC flags alone are insufficient for raw AMRN images
+  with writable data.
+- [x] Choose explicit relocation metadata as the first movable-application
+  direction; specify the new AMRN revision before implementation.
+- [ ] Define and test the new AMRN relocation-table header and entry format.
+- [ ] Implement bounded host-side relocation extraction and validation.
+- [ ] Implement bounded kernel-side relocation application before MPU launch.
 - [ ] Design a slot manager only after the relocation contract and memory map
   are stable.
 - [ ] Add PSP/PendSV context switching only after one isolated application is
