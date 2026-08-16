@@ -1,6 +1,5 @@
 # Archived Dali OS Changelogs
 
-Release changelogs are generated automatically from Conventional Commits by the release workflow.
+Release changelogs are generated automatically from Conventional Commits.
 
-The first archived release will be added when the first `vX.Y.Z` or
-`vX.Y.Z-alpha.N` tag is published.
+- [v0.1.0-alpha.1](docs/changelog/v0.1.0-alpha.1.md)
