@@ -230,7 +230,7 @@ docs(amrn): define the CRC32 field
 
 Keep commits atomic. Do not combine unrelated formatting, dependencies, behavior, or documentation changes.
 
-Changelogs are generated from commit history by `git-cliff`. Do not edit release changelogs manually. Release tags use `vX.Y.Z`; the release workflow creates the archived changelog and GitHub Release.
+Changelogs are generated from commit history by `git-cliff`. Do not edit release changelogs manually. Release tags use `vX.Y.Z` or `vX.Y.Z-alpha.N`; the release workflow creates the archived changelog and GitHub Release.
 
 ## 11. Things an agent must not do
 

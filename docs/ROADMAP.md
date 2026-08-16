@@ -67,24 +67,18 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
   the FAT32 card: 3999 bytes total, 3967-byte payload, CRC32
   `0xBFDB25F5`, format version 1, target ID `0x02`, and ABI version 2.
 
-### Incomplete or not yet accepted
+### Historical evidence and remaining limitations
 
-- USB CDC boot logs are observable through the terminal after reset, and the targeted reset/reconnect test has passed.
-- The interrupt-driven USB servicing strategy has completed the targeted F405 enumeration, reset, reconnect, and boot-log test; broader MVP acceptance remains a separate gate.
-- On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
-- The F405 SDIO path has completed the documented hardware acceptance evidence.
-- The corrected three-flash/long-pause application LED pattern has been observed and recorded on F405 hardware.
-- SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
-- Full MVP acceptance is complete for the documented F405 path. Future work is
-  release preparation and post-MVP platform capability.
+- On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. Later firmware and hardware testing resolved the documented MVP path; this remains historical evidence, not an open acceptance failure.
+- SDK application APIs remain intentionally limited; the F405 loader and native LED execution path are the accepted MVP boundary.
 - The F411 profile is intentionally not part of current kernel execution work.
 
 ### Current priority
 
-**Current priority — Prepare the F405-based 0.1.0 release boundary.**
+**Current priority — Prepare the F405-based 0.1.0-alpha.1 release boundary.**
 
 The USB implementation phase and formal F405 MVP acceptance are complete.
-RP2350/Pico kernel support remains deferred until after 0.1.0; the Pico is
+RP2350/Pico kernel support remains deferred until after 0.1.0-alpha.1; the Pico is
 currently used only as an external SWD probe. The next work is release-scope
 cleanup and post-MVP platform capability.
 
@@ -104,10 +98,9 @@ cleanup and post-MVP platform capability.
   device; `picocom` reported `Terminal ready` and received the complete boot,
   AMRN validation, and three application records. A reset with the console
   open repeated the sequence, and a USB disconnect/reconnect repeated it again.
-- Current fault boundary: the targeted CDC reset/reconnect behavior is working.
-  Formal MVP acceptance remains the remaining evidence gate.
-- Required next input: record the complete MVP acceptance result using the
-  documented procedure.
+- Current fault boundary: the targeted CDC reset/reconnect behavior and formal
+  F405 MVP acceptance are complete.
+- Required next input: release validation and post-MVP platform work.
 
 ### Next atomic tasks
 

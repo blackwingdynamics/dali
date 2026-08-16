@@ -106,22 +106,22 @@ checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 
 [[package]]
 name = "dali"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 
 [[package]]
 name = "dali-amrn"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 
 [[package]]
 name = "dali-app-hello"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "dali",
 ]
 
 [[package]]
 name = "dali-cli"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "dali-amrn",
  "dali-device",
@@ -130,11 +130,11 @@ dependencies = [
 
 [[package]]
 name = "dali-device"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 
 [[package]]
 name = "dali-kernel"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -152,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = "dali-targets"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "serde",
  "toml",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "dali-usb"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 
 [[package]]
 name = "deranged"
