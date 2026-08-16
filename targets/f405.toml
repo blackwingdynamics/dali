@@ -28,12 +28,36 @@ pclk2_hz = 84_000_000
 usb_hz = 48_000_000
 
 [memory]
+flash = { origin = 0x0800_0000, length = 524_288 }
 kernel_origin = 0x2000_0000
 kernel_length = 32_768
 application_origin = 0x2000_8000
 application_length = 65_536
 runtime_origin = 0x2001_8000
 runtime_length = 32_768
+dma = { origin = 0x2000_0000, length = 32_768 }
+ccm = { origin = 0x1000_0000, length = 65_536 }
+
+[memory.isolation]
+code_origin = 0x2000_8000
+code_length = 32_768
+data_origin = 0x2001_0000
+data_length = 32_768
+stack_length = 4_096
+peripheral_origin = 0x4000_0000
+peripheral_length = 536_870_912
+# RM0090 Table 3: 1 MiB flash ends at 0x000F_FFFF; the next code-region
+# address is reserved and is used only by the BusFault decoder fixture.
+bus_fault_origin = 0x0010_0000
+bus_fault_length = 32
+
+[[memory.isolation.slots]]
+name = "slot0"
+code_origin = 0x2000_8000
+code_length = 32_768
+data_origin = 0x2001_0000
+data_length = 32_768
+stack_length = 4_096
 
 [status_led]
 port = "PB"

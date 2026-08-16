@@ -15,6 +15,15 @@ const DMA_WORD_SIZE: u8 = 2;
 const CMD_SET_BLOCK_LENGTH: u8 = 16;
 const CMD_READ_SINGLE_BLOCK: u8 = 17;
 
+#[repr(C, align(4))]
+struct AlignedDmaWords([u32; DATA_WORD_COUNT as usize]);
+
+// SDIO DMA cannot access the F405 CCM region where the kernel stack lives.
+// Keep the transfer words in the manifest-generated DMA-visible SRAM section.
+#[used]
+#[unsafe(link_section = ".dma_buffer")]
+static mut DMA_WORDS: AlignedDmaWords = AlignedDmaWords([0; DATA_WORD_COUNT as usize]);
+
 /// Reads SDIO blocks without the HAL half-full FIFO tail deadlock.
 pub(crate) struct RawSdioReader {
     high_capacity: bool,
@@ -41,17 +50,22 @@ impl RawSdioReader {
         let registers = Self::registers();
 
         Self::send_command(registers, CMD_SET_BLOCK_LENGTH, BLOCK_BYTES as u32)?;
-        let mut words = [0u32; DATA_WORD_COUNT as usize];
-        Self::configure_dma(registers, &mut words);
-        Self::start_receive(registers);
-        Self::start_read_command(registers, argument);
-        let result = Self::receive_block(registers, &mut words);
-        Self::stop_dma();
-        result?;
-        for (index, word) in words.iter().enumerate() {
-            let bytes = word.to_le_bytes();
-            let offset = index * bytes.len();
-            block[offset..offset + bytes.len()].copy_from_slice(&bytes);
+        unsafe {
+            // SAFETY: The public SDIO wrapper executes this method inside a
+            // critical section, so this single DMA scratch buffer has one
+            // active owner for the complete transfer and copy.
+            let words = &mut *core::ptr::addr_of_mut!(DMA_WORDS.0);
+            Self::configure_dma(registers, words);
+            Self::start_receive(registers);
+            Self::start_read_command(registers, argument);
+            let result = Self::receive_block(registers, words);
+            Self::stop_dma();
+            result?;
+            for (index, word) in words.iter().enumerate() {
+                let bytes = word.to_le_bytes();
+                let offset = index * bytes.len();
+                block[offset..offset + bytes.len()].copy_from_slice(&bytes);
+            }
         }
         Ok(())
     }

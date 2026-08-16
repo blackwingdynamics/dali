@@ -30,6 +30,8 @@ const USB_FLUSH_FAILURE_WARNING: &str =
 pub const BOOT_SUBSYSTEM: &str = "BOOT";
 /// Subsystem label for messages submitted by a native application.
 pub const APPLICATION_SUBSYSTEM: &str = "APP";
+/// Subsystem label for kernel security-boundary events.
+pub const SECURITY_SUBSYSTEM: &str = "SECURITY";
 
 /// Message severity used by the kernel logging facade.
 #[derive(Clone, Copy)]

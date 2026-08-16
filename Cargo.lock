@@ -126,6 +126,7 @@ dependencies = [
  "dali-amrn",
  "dali-device",
  "dali-targets",
+ "object",
 ]
 
 [[package]]
@@ -394,6 +395,15 @@ name = "num-conv"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "521739c6d2bac4aa25192232afe6841231376b2b26d4d9fae5ecf8ca5772e441"
+
+[[package]]
+name = "object"
+version = "0.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd229a0361b9d0d4396176e02d65897f487eebeab7caa6d443855ee152ca0b9c"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "panic-halt"

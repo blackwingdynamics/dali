@@ -76,6 +76,8 @@ pub struct ClockProfile {
 /// SRAM regions declared by a board manifest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MemoryProfile {
+    /// Start and size of the kernel flash image region.
+    pub flash: TargetMemoryRegion,
     /// Start of the kernel-reserved region.
     pub kernel_origin: u32,
     /// Size of the kernel-reserved region in bytes.
@@ -88,6 +90,63 @@ pub struct MemoryProfile {
     pub runtime_origin: u32,
     /// Size of the runtime and stack region in bytes.
     pub runtime_length: u32,
+    /// DMA-visible SRAM region reserved for transport buffers.
+    pub dma: TargetMemoryRegion,
+    /// Optional core-coupled memory region for privileged runtime state.
+    pub ccm: Option<TargetMemoryRegion>,
+    /// Optional code/data split for a future isolated application ABI.
+    pub isolation: Option<IsolationMemoryProfile>,
+}
+
+/// A physical memory region declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TargetMemoryRegion {
+    /// Start address of the region.
+    pub origin: u32,
+    /// Size of the region in bytes.
+    pub length: u32,
+}
+
+/// Application code and data boundaries used by the planned isolated ABI.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct IsolationMemoryProfile {
+    /// Start of the application code region.
+    pub code_origin: u32,
+    /// Size of the application code region in bytes.
+    pub code_length: u32,
+    /// Start of the application data and PSP region.
+    pub data_origin: u32,
+    /// Size of the application data and PSP region in bytes.
+    pub data_length: u32,
+    /// PSP stack reservation inside the application data region.
+    pub stack_length: u32,
+    /// Start of the ordinary peripheral register region, when declared.
+    pub peripheral_origin: Option<u32>,
+    /// Size of the ordinary peripheral register region, when declared.
+    pub peripheral_length: Option<u32>,
+    /// Address reserved by the target for a deterministic BusFault fixture.
+    pub bus_fault_origin: Option<u32>,
+    /// Minimum aligned range declared for the BusFault fixture.
+    pub bus_fault_length: Option<u32>,
+    /// Ordered application slots declared by the target manifest.
+    pub slots: &'static [IsolationSlot],
+}
+
+/// A manifest-owned application code/data slot.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct IsolationSlot {
+    /// Stable slot name used by target-aware tooling.
+    pub name: &'static str,
+    /// Start of the slot's executable code region.
+    pub code_origin: u32,
+    /// Size of the slot's executable code region in bytes.
+    pub code_length: u32,
+    /// Start of the slot's writable data and PSP region.
+    pub data_origin: u32,
+    /// Size of the slot's writable data and PSP region in bytes.
+    pub data_length: u32,
+    /// PSP stack reservation inside the slot's data region.
+    pub stack_length: u32,
 }
 
 /// A named GPIO pin declared by a board manifest.
@@ -141,6 +200,13 @@ pub fn find_board(name: &str) -> Option<&'static TargetProfile> {
     ALL_TARGETS.iter().find(|target| target.name == name)
 }
 
+/// Finds a declared application target by its AMRN target identifier.
+pub fn find_by_amrn_target_id(target_id: u8) -> Option<&'static TargetProfile> {
+    ALL_TARGETS
+        .iter()
+        .find(|target| target.amrn_target_id == target_id && target.application_supported)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{DfuProfile, SUPPORTED_TARGETS, find_board};
@@ -168,5 +234,12 @@ mod tests {
             Some(4)
         );
         assert!(find_board("f411").is_some());
+        let isolation = SUPPORTED_TARGETS[0]
+            .memory
+            .isolation
+            .expect("isolation metadata");
+        assert_eq!(isolation.slots.len(), 1);
+        assert_eq!(isolation.slots[0].name, "slot0");
+        assert_eq!(isolation.slots[0].code_origin, isolation.code_origin);
     }
 }

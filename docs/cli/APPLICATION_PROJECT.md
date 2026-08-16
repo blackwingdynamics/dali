@@ -32,6 +32,7 @@ The scaffold must contain:
 ├── dali.toml
 ├── build.rs
 ├── memory.x
+├── memory.v3.x
 ├── .cargo/
 │   └── config.toml
 └── src/
@@ -50,6 +51,11 @@ The generated Cargo configuration adds the application linker script for the
 documented embedded target. This keeps standalone projects outside the Dali
 repository aligned with the same linker contract.
 
+`memory.v3.x` is a target-manifest-generated ABI v3 code/data layout artifact.
+It is selected when `build.abi_version = 3`; the default remains the target's
+declared ABI version. ABI v3 packaging is host-validated, but the F405 kernel
+does not execute ABI v3 packages until the MPU launch path is complete.
+
 `dali.toml` is the Dali project manifest. It owns application metadata and
 build configuration that must remain configurable:
 
@@ -58,6 +64,8 @@ build configuration that must remain configurable:
 - target profile, expressed as the documented Rust compilation target;
 - package output name;
 - entry symbol and entry offset policy.
+- requested application ABI version; omit it to use the target profile default.
+- requested AMRN format version; omit it to use the ABI-compatible default.
 
 The generated project currently uses the `f405` target profile. The build
 command passes this manifest-owned value to Cargo and does not embed a board

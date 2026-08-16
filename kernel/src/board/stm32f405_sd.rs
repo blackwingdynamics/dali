@@ -1,13 +1,34 @@
 //! WeAct Studio STM32F405RGT6 Core Board support.
 
 use dali_targets::TARGET_F405;
+
+#[cfg(feature = "abi-v3")]
+use dali_targets::MemoryProfile;
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
+/// First planned single-application F405 isolation layout.
+pub const ISOLATION_LAYOUT: Option<super::mpu::IsolationLayout> =
+    super::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
+const _: () = assert!(ISOLATION_LAYOUT.is_some());
+
+/// Activates unprivileged application permissions after the loader finishes.
+#[cfg(feature = "abi-v3-mpu")]
+pub fn activate_application_regions() -> bool {
+    let Some(layout) = ISOLATION_LAYOUT else {
+        return false;
+    };
+    super::mpu::activate_application_regions(layout);
+    true
+}
+
 /// The current MVP board supports AMRN native application execution.
+#[cfg(not(feature = "abi-v3"))]
 pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
 
 /// System clock target derived from the declarative F405 target profile.
 pub const SYSTEM_CLOCK_HZ: u32 = TARGET_F405.clock.system_hz;
+#[cfg(feature = "abi-v3")]
+pub const MEMORY_PROFILE: MemoryProfile = TARGET_F405.memory;
 /// Unit conversion used by the boot log's human-readable clock value.
 const HZ_PER_MHZ: u32 = 1_000_000;
 /// System clock in megahertz for the common board facade.

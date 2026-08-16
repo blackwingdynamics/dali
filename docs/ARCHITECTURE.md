@@ -47,6 +47,12 @@ The first milestone proves one complete path on a single reference board:
 
 The MVP application is a RAM-loaded native module, not a sandboxed process. Kernel and application isolation is a later capability. The first application does not use interrupts or a scheduler; its only kernel service is the bounded logging entry defined by ABI v2.
 
+The first post-MVP isolation milestone remains a single-application F405
+execution mode. It will add privileged kernel bootstrap, unprivileged
+application Thread mode, PSP ownership, MPU regions, SVC-based services, and a
+kernel-owned fault boundary. It must not be described as a microkernel, secure
+boot, or complete sandbox until those mechanisms are implemented and tested.
+
 ## 4. Reference platform
 
 - MCU: STM32F405RGT6;
@@ -276,7 +282,7 @@ F405 target.
 
 The storage subsystem is responsible for:
 
-- SPI1 initialization and SD-card communication;
+- SDIO initialization and SD-card communication;
 - SD-card initialization at a safe low SPI frequency;
 - block reads;
 - FAT16/FAT32 read-only filesystem access;
@@ -318,6 +324,20 @@ After the MVP, the platform can grow toward:
 - `dali` CLI workflows.
 
 Safety-critical behavior such as emergency stop, watchdog policy, power handling, and actuator limits must remain kernel-owned even when mission logic is supplied by an application.
+
+### Isolation design constraints
+
+The STM32F405 Cortex-M4 provides eight unified MPU regions. The current
+application region starts at `0x20008000` and spans 64 KiB, so an isolation
+implementation must represent it with aligned power-of-two regions or change
+the memory contract. Code, writable data, and the application PSP stack may
+require different permissions and execute-never attributes.
+
+The F405 also exposes CCM RAM at `0x10000000`. It may be evaluated for kernel
+runtime and stack storage, but SDIO and USB DMA buffers must remain in
+DMA-accessible SRAM. PIC compiler flags alone do not define a relocatable raw
+AMRN contract; relocation metadata or a separately specified PIC/RWPI ABI is
+required before slot allocation.
 
 ## 12. Architectural principles
 

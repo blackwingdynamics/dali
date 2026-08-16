@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 const MANIFEST_DIRECTORY: &str = "targets";
 const GENERATED_FILE: &str = "target_profiles.rs";
+const MINIMUM_MPU_REGION_BYTES: u32 = 32;
 
 #[derive(Debug, Deserialize)]
 struct Manifest {
@@ -56,12 +57,47 @@ struct Clock {
 
 #[derive(Debug, Deserialize)]
 struct Memory {
+    flash: TargetMemoryRegion,
     kernel_origin: u32,
     kernel_length: u32,
     application_origin: u32,
     application_length: u32,
     runtime_origin: u32,
     runtime_length: u32,
+    dma: TargetMemoryRegion,
+    ccm: Option<TargetMemoryRegion>,
+    isolation: Option<IsolationMemory>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TargetMemoryRegion {
+    origin: u32,
+    length: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct IsolationMemory {
+    code_origin: u32,
+    code_length: u32,
+    data_origin: u32,
+    data_length: u32,
+    stack_length: u32,
+    peripheral_origin: Option<u32>,
+    peripheral_length: Option<u32>,
+    bus_fault_origin: Option<u32>,
+    bus_fault_length: Option<u32>,
+    #[serde(default)]
+    slots: Vec<IsolationSlot>,
+}
+
+#[derive(Debug, Deserialize)]
+struct IsolationSlot {
+    name: String,
+    code_origin: u32,
+    code_length: u32,
+    data_origin: u32,
+    data_length: u32,
+    stack_length: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -141,6 +177,7 @@ fn read_manifest(path: &PathBuf) -> Result<Manifest, Box<dyn std::error::Error>>
 
 fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::Error>> {
     for (index, manifest) in manifests.iter().enumerate() {
+        validate_memory_regions(manifest)?;
         if manifest.profile.name.is_empty()
             || manifest.profile.board.is_empty()
             || manifest.profile.mcu.is_empty()
@@ -184,6 +221,9 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
             )
             .into());
         }
+        if let Some(isolation) = &manifest.memory.isolation {
+            validate_isolation_memory(manifest, isolation)?;
+        }
         for other in &manifests[..index] {
             if other.profile.name == manifest.profile.name {
                 return Err(format!("duplicate target profile `{}`", manifest.profile.name).into());
@@ -198,6 +238,182 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         }
     }
     Ok(())
+}
+
+fn validate_memory_regions(manifest: &Manifest) -> Result<(), Box<dyn std::error::Error>> {
+    let regions = [
+        ("flash", &manifest.memory.flash),
+        ("dma", &manifest.memory.dma),
+    ];
+    for (name, region) in regions {
+        if region.length == 0 || region.origin.checked_add(region.length).is_none() {
+            return Err(format!(
+                "target {} has invalid {name} memory bounds",
+                manifest.profile.name
+            )
+            .into());
+        }
+    }
+    if let Some(region) = &manifest.memory.ccm
+        && (region.length == 0 || region.origin.checked_add(region.length).is_none())
+    {
+        return Err(format!(
+            "target {} has invalid ccm memory bounds",
+            manifest.profile.name
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn validate_isolation_memory(
+    manifest: &Manifest,
+    isolation: &IsolationMemory,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let application_end = manifest
+        .memory
+        .application_origin
+        .checked_add(manifest.memory.application_length)
+        .ok_or_else(|| {
+            format!(
+                "target {} application memory overflows",
+                manifest.profile.name
+            )
+        })?;
+    let code_end = isolation
+        .code_origin
+        .checked_add(isolation.code_length)
+        .ok_or_else(|| {
+            format!(
+                "target {} isolation code memory overflows",
+                manifest.profile.name
+            )
+        })?;
+    let data_end = isolation
+        .data_origin
+        .checked_add(isolation.data_length)
+        .ok_or_else(|| {
+            format!(
+                "target {} isolation data memory overflows",
+                manifest.profile.name
+            )
+        })?;
+    match (isolation.peripheral_origin, isolation.peripheral_length) {
+        (Some(origin), Some(length)) if valid_mpu_region(origin, length) => {}
+        _ => {
+            return Err(format!(
+                "target {} isolation memory must declare an aligned peripheral region",
+                manifest.profile.name
+            )
+            .into());
+        }
+    }
+    match (isolation.bus_fault_origin, isolation.bus_fault_length) {
+        (Some(origin), Some(length)) if valid_mpu_region(origin, length) => {}
+        (None, None) => {}
+        _ => {
+            return Err(format!(
+                "target {} BusFault fixture range must be declared as an aligned pair",
+                manifest.profile.name
+            )
+            .into());
+        }
+    }
+    if isolation.code_length == 0
+        || isolation.data_length == 0
+        || isolation.stack_length == 0
+        || isolation.stack_length > isolation.data_length
+        || isolation.code_origin != manifest.memory.application_origin
+        || isolation.data_origin != code_end
+        || data_end != application_end
+        || !valid_mpu_region(isolation.code_origin, isolation.code_length)
+        || !valid_mpu_region(isolation.data_origin, isolation.data_length)
+    {
+        return Err(format!(
+            "target {} isolation memory must cover application memory contiguously",
+            manifest.profile.name
+        )
+        .into());
+    }
+    validate_slots(manifest, isolation, application_end)?;
+    Ok(())
+}
+
+fn validate_slots(
+    manifest: &Manifest,
+    isolation: &IsolationMemory,
+    application_end: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for (index, slot) in isolation.slots.iter().enumerate() {
+        let code_end = slot
+            .code_origin
+            .checked_add(slot.code_length)
+            .ok_or_else(|| {
+                format!(
+                    "target {} slot {index} code overflows",
+                    manifest.profile.name
+                )
+            })?;
+        let data_end = slot
+            .data_origin
+            .checked_add(slot.data_length)
+            .ok_or_else(|| {
+                format!(
+                    "target {} slot {index} data overflows",
+                    manifest.profile.name
+                )
+            })?;
+        if slot.name.is_empty()
+            || slot.code_length == 0
+            || slot.data_length == 0
+            || slot.stack_length == 0
+            || slot.stack_length > slot.data_length
+            || slot.data_origin != code_end
+            || slot.code_origin < manifest.memory.application_origin
+            || data_end > application_end
+            || !valid_mpu_region(slot.code_origin, slot.code_length)
+            || !valid_mpu_region(slot.data_origin, slot.data_length)
+        {
+            return Err(format!(
+                "target {} slot {index} has invalid aligned code/data bounds",
+                manifest.profile.name
+            )
+            .into());
+        }
+        for previous in &isolation.slots[..index] {
+            let previous_end = previous
+                .data_origin
+                .checked_add(previous.data_length)
+                .ok_or_else(|| format!("target {} slot bounds overflow", manifest.profile.name))?;
+            if slot.name == previous.name || slot.code_origin < previous_end {
+                return Err(format!(
+                    "target {} has duplicate or overlapping isolation slots",
+                    manifest.profile.name
+                )
+                .into());
+            }
+        }
+    }
+    if let Some(first) = isolation.slots.first()
+        && (first.code_origin != isolation.code_origin
+            || first.code_length != isolation.code_length
+            || first.data_origin != isolation.data_origin
+            || first.data_length != isolation.data_length
+            || first.stack_length != isolation.stack_length)
+    {
+        return Err(format!(
+            "target {} slot 0 must preserve the active isolation contract",
+            manifest.profile.name
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn valid_mpu_region(origin: u32, length: u32) -> bool {
+    length >= MINIMUM_MPU_REGION_BYTES
+        && (length & (length - 1)) == 0
+        && origin.is_multiple_of(length)
 }
 
 fn generate_registry(manifests: &[Manifest]) -> String {
@@ -288,13 +504,73 @@ fn generate_clock(clock: &Clock) -> String {
 
 fn generate_memory(memory: &Memory) -> String {
     format!(
-        "MemoryProfile {{ kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {} }}",
+        "MemoryProfile {{ flash: {}, kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, dma: {}, ccm: {}, isolation: {} }}",
+        generate_target_memory_region(&memory.flash),
         memory.kernel_origin,
         memory.kernel_length,
         memory.application_origin,
         memory.application_length,
         memory.runtime_origin,
-        memory.runtime_length
+        memory.runtime_length,
+        generate_target_memory_region(&memory.dma),
+        memory
+            .ccm
+            .as_ref()
+            .map(generate_target_memory_region)
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
+        memory
+            .isolation
+            .as_ref()
+            .map(generate_isolation_memory)
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})"))
+    )
+}
+
+fn generate_target_memory_region(region: &TargetMemoryRegion) -> String {
+    format!(
+        "TargetMemoryRegion {{ origin: 0x{:08X}, length: {} }}",
+        region.origin, region.length
+    )
+}
+
+fn generate_isolation_memory(memory: &IsolationMemory) -> String {
+    format!(
+        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {}, peripheral_origin: {}, peripheral_length: {}, bus_fault_origin: {}, bus_fault_length: {}, slots: &[{}] }}",
+        memory.code_origin,
+        memory.code_length,
+        memory.data_origin,
+        memory.data_length,
+        memory.stack_length,
+        memory
+            .peripheral_origin
+            .map_or_else(|| "None".to_owned(), |value| format!("Some(0x{value:08X})")),
+        memory
+            .peripheral_length
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
+        memory
+            .bus_fault_origin
+            .map_or_else(|| "None".to_owned(), |value| format!("Some(0x{value:08X})")),
+        memory
+            .bus_fault_length
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
+        memory
+            .slots
+            .iter()
+            .map(generate_isolation_slot)
+            .collect::<Vec<_>>()
+            .join(", "),
+    )
+}
+
+fn generate_isolation_slot(slot: &IsolationSlot) -> String {
+    format!(
+        "IsolationSlot {{ name: {}, code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {} }}",
+        string_literal(&slot.name),
+        slot.code_origin,
+        slot.code_length,
+        slot.data_origin,
+        slot.data_length,
+        slot.stack_length,
     )
 }
 

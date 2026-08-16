@@ -22,6 +22,10 @@ The current package profile is AMRN format version 1, STM32F405 target
 identifier 0x02, and ABI version 2. These values come from the shared
 dali-amrn contract and must not be independently redefined by the CLI.
 
+`dali inspect` can also validate the host-side AMRN format version 2 contract
+for a target that declares isolation memory metadata. This is inspection-only:
+the CLI does not build v3 packages, and the kernel does not execute them yet.
+
 ## Breaking changes
 
 Changes to package bytes, validation rules, output semantics, or exit codes

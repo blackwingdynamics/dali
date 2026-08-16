@@ -2,6 +2,11 @@
 
 //! Dali OS application SDK and kernel-service ABI.
 
+pub mod svc;
+
+#[cfg(feature = "abi-v3")]
+mod svc_log;
+
 /// Maximum UTF-8 message length accepted by the initial application logger.
 pub const MAX_LOG_MESSAGE_BYTES: usize = 96;
 /// Return code for a service call that was accepted by the kernel.
@@ -27,6 +32,12 @@ pub fn log(services: &ServiceTable, message: &str) -> bool {
         (services.log)(message.as_ptr(), message.len())
     };
     result == LOG_OK
+}
+
+/// Submits one bounded message through the ABI v3 SVC gateway.
+#[cfg(feature = "abi-v3")]
+pub fn log_v3(message: &str) -> bool {
+    svc_log::log(message)
 }
 
 #[cfg(test)]

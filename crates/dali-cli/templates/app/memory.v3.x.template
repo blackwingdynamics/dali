@@ -1,0 +1,40 @@
+/* Generated ABI v3 application layout. */
+MEMORY
+{
+    DALI_CODE (rx) : ORIGIN = {{ code_origin }}, LENGTH = {{ code_length }}
+    DALI_DATA (rw) : ORIGIN = {{ data_origin }}, LENGTH = {{ data_length }}
+}
+
+ENTRY(amiran_entry)
+
+SECTIONS
+{
+    .dali_code : ALIGN(4)
+    {
+        KEEP(*(.text.amiran_entry))
+        *(.text*)
+        *(.rodata*)
+    } > DALI_CODE
+
+    .dali_data : ALIGN(4)
+    {
+        __dali_data_start = .;
+        *(.data*)
+        __dali_data_end = .;
+    } > DALI_DATA
+
+    .dali_bss (NOLOAD) : ALIGN(4)
+    {
+        __dali_bss_start = .;
+        *(.bss*)
+        *(COMMON)
+        __dali_bss_end = .;
+    } > DALI_DATA
+
+    /DISCARD/ :
+    {
+        *(.ARM.exidx*)
+        *(.ARM.extab*)
+        *(.eh_frame*)
+    }
+}

@@ -86,7 +86,27 @@ Interrupt ownership: kernel-controlled
 
 The ABI version must change when entry semantics, calling convention, memory ownership, interrupt ownership, lifecycle behavior, service-table layout, or shared data structures change.
 
+The planned MPU and unprivileged execution boundary changes entry semantics,
+service dispatch, memory ownership, and fault handling. It therefore requires
+a new ABI version and an AMRN compatibility decision; it must not be shipped
+as an ABI v2-compatible implementation.
+
 The package format carries the ABI version at header offset `0x18`.
+
+The planned ABI v3 uses an SVC service gateway, unprivileged Thread mode, a
+PSP-backed application stack, and separate application code/data regions. It
+is not compatible with ABI v2's direct service-table function pointer or its
+single-region linker contract. ABI v3 packages must therefore be rejected by
+ABI v2 kernels, and the AMRN package builder must not emit v3 metadata until
+the v3 implementation is available.
+
+The ABI v3 package contract uses AMRN format version `2`. Format version `2`
+has a fixed 64-byte header, separate code and initialized-data file segments,
+explicit zero-data and PSP stack reservations, target-defined code/data
+origins, and a CRC32 over both file segments. The current F405 linker contract
+uses 32 KiB code and 32 KiB data regions. This contract is documented in
+`docs/AMRN_FORMAT.md`; it does not authorize the current v1 parser or builder
+to accept or emit ABI v3 packages.
 
 ## 5. Compatibility rules
 

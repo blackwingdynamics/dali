@@ -83,6 +83,7 @@ exist.
 - [Device attach](commands/device-attach.md) — debug-probe attachment.
 - [Device console](commands/device-console.md) — runtime CDC console launcher.
 - [Device flash](commands/device-flash.md) — manifest-driven DFU firmware flashing.
+- [ABI v3 fault tests](ISOLATION_FAULT_TEST.md) — non-production F405 kernel-memory read and write fault injection.
 
 Command-specific documentation lives in [commands/](commands/):
 

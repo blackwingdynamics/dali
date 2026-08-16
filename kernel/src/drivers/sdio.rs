@@ -12,6 +12,15 @@ use stm32f4xx_hal::{
     sdio::{ClockFreq, SdCard, Sdio},
 };
 
+#[repr(C, align(4))]
+struct AlignedDmaBlock(Block);
+
+// The section name is part of the F405 linker memory contract: it remains in
+// DMA-visible SRAM when ordinary kernel data and stack move to CCM.
+#[used]
+#[unsafe(link_section = ".dma_buffer")]
+static mut DMA_BLOCK: AlignedDmaBlock = AlignedDmaBlock([0; crate::storage::BLOCK_SIZE]);
+
 /// A block reader backed by the STM32 SDIO peripheral.
 pub struct SdioBlockReader {
     device: RefCell<Sdio<SdCard>>,
@@ -47,7 +56,14 @@ impl BlockReader for SdioBlockReader {
         address: BlockAddress,
         buffer: &mut Block,
     ) -> Result<(), StorageError> {
-        self.raw.borrow_mut().read_block(address, buffer)
+        cortex_m::interrupt::free(|_| unsafe {
+            // SAFETY: SDIO is single-owner during bootstrap and the critical
+            // section excludes the USB interrupt from this shared DMA buffer.
+            let dma_buffer = &mut *core::ptr::addr_of_mut!(DMA_BLOCK.0);
+            self.raw.borrow_mut().read_block(address, dma_buffer)?;
+            buffer.copy_from_slice(&*core::ptr::addr_of!(DMA_BLOCK.0));
+            Ok(())
+        })
     }
 }
 
@@ -66,7 +82,16 @@ impl BlockDevice for SdioBlockReader {
                 .0
                 .checked_add(offset)
                 .ok_or(StorageError::InvalidBlockAddress)?;
-            device.read_block(BlockAddress::new(address), &mut block.contents)?;
+            cortex_m::interrupt::free(|_| unsafe {
+                // SAFETY: the bounded DMA scratch buffer is exclusively used
+                // for this one SDIO transfer at a time.
+                let dma_buffer = &mut *core::ptr::addr_of_mut!(DMA_BLOCK.0);
+                device.read_block(BlockAddress::new(address), dma_buffer)?;
+                block
+                    .contents
+                    .copy_from_slice(&*core::ptr::addr_of!(DMA_BLOCK.0));
+                Ok::<(), StorageError>(())
+            })?;
         }
         Ok(())
     }

@@ -17,6 +17,10 @@ pub fn run() -> ! {
     let device = pac::Peripherals::take().unwrap();
     let core = cortex_m::Peripherals::take().unwrap();
     let mut board = board::initialize(device, core);
+    #[cfg(feature = "abi-v3-mpu")]
+    if let Some(layout) = board::ISOLATION_LAYOUT {
+        board::mpu::configure_hardware(layout);
+    }
 
     initialize_logging();
     #[cfg(feature = "usb-cdc")]
@@ -110,6 +114,9 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
+            #[cfg(feature = "abi-v3")]
+            let package = crate::loader::load_abi_v3(reader);
+            #[cfg(not(feature = "abi-v3"))]
             let package = if board::APPLICATION_EXECUTION_SUPPORTED {
                 crate::loader::load_amrn_file(reader)
             } else {
@@ -121,9 +128,30 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                         logging::BOOT_SUBSYSTEM,
                         format_args!("[LOADER] AMRN header and payload validated"),
                     );
+                    #[cfg(not(feature = "abi-v3"))]
                     if board::APPLICATION_EXECUTION_SUPPORTED {
                         crate::loader::start_application(package);
                     }
+                    #[cfg(feature = "abi-v3")]
+                    {
+                        #[cfg(feature = "abi-v3-mpu")]
+                        {
+                            if board::activate_application_regions() {
+                                crate::security::launch::enter(package.launch_frame);
+                            }
+                            logging::error(
+                                logging::SECURITY_SUBSYSTEM,
+                                format_args!("[SECURITY] Application MPU layout unavailable"),
+                            );
+                            status::StorageStatus::Failure
+                        }
+                        #[cfg(not(feature = "abi-v3-mpu"))]
+                        {
+                            let _ = package;
+                            status::StorageStatus::Ready
+                        }
+                    }
+                    #[cfg(not(feature = "abi-v3"))]
                     status::StorageStatus::Ready
                 }
                 Err(error) => {

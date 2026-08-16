@@ -62,14 +62,23 @@ impl PayloadValidator {
     }
 }
 
-struct Crc32(u32);
+/// Incremental CRC32 calculator shared by bounded package readers.
+pub struct Crc32(u32);
+
+impl Default for Crc32 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Crc32 {
-    const fn new() -> Self {
+    /// Creates a calculator with the AMRN initial state.
+    pub const fn new() -> Self {
         Self(CRC32_INITIAL)
     }
 
-    fn update(&mut self, bytes: &[u8]) {
+    /// Adds the next contiguous byte range.
+    pub fn update(&mut self, bytes: &[u8]) {
         for byte in bytes {
             self.0 ^= u32::from(*byte);
             for _ in 0..u8::BITS {
@@ -82,7 +91,8 @@ impl Crc32 {
         }
     }
 
-    fn finish(self) -> u32 {
+    /// Returns the finalized checksum.
+    pub fn finish(self) -> u32 {
         !self.0
     }
 }
@@ -90,5 +100,12 @@ impl Crc32 {
 pub(crate) fn checksum(bytes: &[u8]) -> u32 {
     let mut checksum = Crc32::new();
     checksum.update(bytes);
+    checksum.finish()
+}
+
+pub(crate) fn checksum_parts(first: &[u8], second: &[u8]) -> u32 {
+    let mut checksum = Crc32::new();
+    checksum.update(first);
+    checksum.update(second);
     checksum.finish()
 }

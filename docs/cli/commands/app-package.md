@@ -15,8 +15,8 @@ project, use the generic `dali package` command instead.
 dali app package
 ```
 
-The command reads `dali.toml`, derives the target/profile payload path, reads
-`build.entry_offset`, and writes the package beside the payload:
+The command reads `dali.toml`, derives the target/profile artifact paths, reads
+`build.entry_offset`, and writes the package beside the artifacts:
 
 ```text
 target/<target-profile>/debug/<application-name>.amrn
@@ -24,7 +24,15 @@ target/<target-profile>/debug/<application-name>.amrn
 
 The `release` profile uses the `release` directory instead of `debug`.
 
+ABI v2 reads `<application-name>.bin`. ABI v3 reads the generated
+`<application-name>.code.bin` and `<application-name>.data.bin` sections and
+recomputes the zero-initialized data size from the linked symbols.
+
 ## Workflow
+
+ABI v3 defaults to AMRN format version 2. Setting build.format_version to 3
+reads retained ARM relocation records from the linked ELF and emits AMRN
+format version 3. The kernel loader does not accept that format yet.
 
 ```text
 dali app build

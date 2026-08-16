@@ -94,6 +94,12 @@ const RELEASE_PROFILE: &str = "release";
 const AMRN_EXTENSION: &str = "amrn";
 
 fn inspect_bytes(package: &[u8]) -> Result<String, String> {
+    if package.get(4) == Some(&dali_amrn::v3::FORMAT_VERSION) {
+        return inspect_v3_bytes(package);
+    }
+    if package.get(4) == Some(&dali_amrn::v2::FORMAT_VERSION) {
+        return inspect_v2_bytes(package);
+    }
     let header = dali_amrn::parse_header(package)
         .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
     let expected_size = dali_amrn::HEADER_SIZE
@@ -118,6 +124,87 @@ fn inspect_bytes(package: &[u8]) -> Result<String, String> {
         parsed.entry_address,
         header.abi_version,
         header.crc32
+    ))
+}
+
+fn inspect_v3_bytes(package: &[u8]) -> Result<String, String> {
+    let target_id = *package
+        .get(5)
+        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+    let target = dali_targets::find_by_amrn_target_id(target_id)
+        .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
+    let isolation = target
+        .memory
+        .isolation
+        .ok_or_else(|| format!("target {} has no ABI v3 memory contract", target.name))?;
+    let contract = dali_amrn::v3::Contract {
+        target_id,
+        code_load_address: isolation.code_origin,
+        code_capacity: isolation.code_length,
+        data_load_address: isolation.data_origin,
+        data_capacity: isolation.data_length,
+    };
+    let parsed = dali_amrn::v3::parse(package, contract)
+        .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
+    Ok(format!(
+        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\nlinked_code_base: 0x{:08X}\nlinked_data_base: 0x{:08X}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nrelocation_count: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
+        dali_amrn::v3::FORMAT_VERSION,
+        parsed.header.target_id,
+        dali_amrn::v3::HEADER_SIZE,
+        parsed.header.code_size,
+        parsed.header.data_init_size,
+        parsed.header.data_zero_size,
+        parsed.header.stack_size,
+        parsed.header.linked_code_base,
+        parsed.header.linked_data_base,
+        parsed.header.code_load_address,
+        parsed.header.data_load_address,
+        parsed.header.execution_offset,
+        parsed.header.relocation_count,
+        parsed
+            .header
+            .code_load_address
+            .checked_add(parsed.header.execution_offset)
+            .ok_or_else(|| "AMRN v3 entry address overflow".to_owned())?,
+        dali_amrn::v3::ABI_VERSION,
+        parsed.header.crc32,
+    ))
+}
+
+fn inspect_v2_bytes(package: &[u8]) -> Result<String, String> {
+    let target_id = *package
+        .get(5)
+        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+    let target = dali_targets::find_by_amrn_target_id(target_id)
+        .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
+    let isolation = target
+        .memory
+        .isolation
+        .ok_or_else(|| format!("target `{}` has no ABI v3 memory contract", target.name))?;
+    let contract = dali_amrn::v2::Contract {
+        target_id,
+        code_load_address: isolation.code_origin,
+        code_capacity: isolation.code_length,
+        data_load_address: isolation.data_origin,
+        data_capacity: isolation.data_length,
+    };
+    let parsed = dali_amrn::v2::parse(package, contract)
+        .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
+    Ok(format!(
+        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
+        dali_amrn::v2::FORMAT_VERSION,
+        parsed.header.target_id,
+        dali_amrn::v2::HEADER_SIZE,
+        parsed.header.code_size,
+        parsed.header.data_init_size,
+        parsed.header.data_zero_size,
+        parsed.header.stack_size,
+        parsed.header.code_load_address,
+        parsed.header.data_load_address,
+        parsed.header.execution_offset,
+        parsed.entry_address,
+        dali_amrn::v2::ABI_VERSION,
+        parsed.header.crc32,
     ))
 }
 
@@ -162,4 +249,38 @@ mod tests {
         package.truncate(written);
         package
     }
+
+    #[test]
+    fn inspect_reports_v2_contract_fields() {
+        let contract = v2_test_contract();
+        let image = dali_amrn::v2::Image {
+            code: &[0, 191, 0, 191],
+            initialized_data: &[1, 2, 3, 4],
+            data_zero_size: 8,
+            stack_size: 16,
+            execution_offset: 0,
+        };
+        let mut package = vec![0; dali_amrn::v2::HEADER_SIZE + 8];
+        let written = dali_amrn::v2::encode(image, contract, &mut package)
+            .expect("v2 test package should encode");
+        package.truncate(written);
+        let report = inspect_bytes(&package).expect("v2 package should inspect");
+        assert!(report.contains("format_version: 2"));
+        assert!(report.contains("abi_version: 3"));
+        assert!(report.contains("data_zero_size: 8"));
+    }
+
+    fn v2_test_contract() -> dali_amrn::v2::Contract {
+        dali_amrn::v2::Contract {
+            target_id: 2,
+            code_load_address: 0x2000_8000,
+            code_capacity: 32 * 1024,
+            data_load_address: 0x2001_0000,
+            data_capacity: 32 * 1024,
+        }
+    }
 }
+
+#[cfg(test)]
+#[path = "inspect_v3_tests.rs"]
+mod v3_tests;

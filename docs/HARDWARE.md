@@ -24,17 +24,7 @@ generator input and has no kernel backend.
 
 The application load address is fixed at `0x20008000` for the MVP.
 
-## MVP pins
-
-| Function | Pin |
-| --- | --- |
-| Status LED | PC13 |
-| SPI1 SCK | PA5 |
-| SPI1 MISO | PA6 |
-| SPI1 MOSI | PA7 |
-| SD chip select | PA4 |
-
-### Current MVP SDIO board
+## Current MVP SDIO board
 
 - Board: WeAct Studio STM32F405RGT6 Core Board, 64-pin
 - MCU: STM32F405RGT6
@@ -67,16 +57,39 @@ performs compile-time checks against the AMRN load-region and ABI contracts.
 Typed GPIO and peripheral ownership remains explicit in the backend because
 the HAL requires compile-time pin types and singleton peripheral ownership.
 
+The STM32F405 also provides CCM RAM at `0x10000000`. Its suitability for the
+privileged kernel runtime and stack is a future isolation design question;
+peripheral DMA buffers must remain in DMA-accessible SRAM.
+
+## Candidate multi-slot isolation layout
+
+The following layout is the selected design candidate for the next isolation
+contract; it is not active in the current linker or target manifest:
+
+```text
+0x20000000 - 0x20007FFF   Kernel DMA and transport buffers, 32 KiB
+0x20008000 - 0x2000BFFF   Application slot 0 code, 16 KiB
+0x2000C000 - 0x2000FFFF   Application slot 0 data/PSP, 16 KiB
+0x20010000 - 0x20013FFF   Application slot 1 code, 16 KiB
+0x20014000 - 0x20017FFF   Application slot 1 data/PSP, 16 KiB
+0x20018000 - 0x2001FFFF   Expansion or shared-memory reserve, 32 KiB
+0x10000000 - 0x1000FFFF   Kernel runtime, static state, and privileged stack
+```
+
+The kernel runtime migration must prove that every DMA-visible buffer remains
+in the first SRAM region; CCM is not DMA-accessible on this MCU. The final
+shared-memory policy must assign explicit MPU permissions and ownership; the
+reserve is not implicitly shared with unprivileged applications.
+
 ## Electrical requirements
 
 The SD interface must use the board's correct 3.3 V logic levels. The SD module, wiring, power supply, and chip-select pull-up behavior must be verified on the actual hardware before acceptance testing.
 
 ## Clock and logging
 
-The reference kernel targets a 100 MHz system clock and supports both RTT and
-USB CDC logging. The F405 backend targets 168 MHz from its 8 MHz HSE. Both
-backends configure the USB FS 48 MHz clock domain and use PA11/PA12 for USB
-D-/D+.
+The reference kernel targets the F405 168 MHz system clock from its 8 MHz HSE
+and supports both RTT and USB CDC logging. The backend configures the USB FS
+48 MHz clock domain and uses PA11/PA12 for USB D-/D+.
 
 ## Hardware acceptance evidence
 

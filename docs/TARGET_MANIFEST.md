@@ -115,6 +115,41 @@ match the linker script and the AMRN/ABI contracts.
 | `kernel_origin` / `kernel_length` | integer | yes | Kernel-reserved RAM region. |
 | `application_origin` / `application_length` | integer | yes | RAM region available to the native AMRN payload. |
 | `runtime_origin` / `runtime_length` | integer | yes | Kernel runtime and stack region. |
+| `flash.origin` / `flash.length` | integer | yes | Kernel flash image region used by the linker. |
+| `dma.origin` / `dma.length` | integer | yes | SRAM region that remains available to peripheral DMA. |
+| `ccm.origin` / `ccm.length` | integer | no | Optional core-coupled memory for privileged runtime state and stack. |
+
+The planned isolated ABI may add an optional `[memory.isolation]` table:
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `code_origin` / `code_length` | integer | together | Aligned application code and read-only data region. |
+| `data_origin` / `data_length` | integer | together | Aligned writable data and PSP region. |
+| `stack_length` | integer | yes with isolation | PSP stack reservation inside the data region. |
+| `peripheral_origin` / `peripheral_length` | integer | together | Aligned ordinary peripheral register region. |
+| `bus_fault_origin` / `bus_fault_length` | integer | no | Documented reserved F405 code-region range used only by deterministic BusFault test fixtures. |
+
+An isolation manifest may also declare ordered slots with repeated
+`[[memory.isolation.slots]]` tables:
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `name` | string | yes | Stable target-local slot name. |
+| `code_origin` / `code_length` | integer | yes | Aligned executable code region for the slot. |
+| `data_origin` / `data_length` | integer | yes | Aligned writable data and PSP region for the slot. |
+| `stack_length` | integer | yes | PSP reservation inside the slot's data region. |
+
+Slots are ordered by declaration. The first slot must preserve the active
+single-application code/data contract until the loader and MPU switch to slot
+selection. Slot declarations are metadata only until that implementation is
+completed; they do not enable multiple applications or context switching.
+
+When present, the code and data regions must be contiguous, begin at
+`application_origin`, and end at the application boundary. They are metadata
+for the isolated ABI and do not enable MPU protection by themselves. The
+`stack_length` value is copied into ABI v3 packages as the PSP reservation.
+The peripheral region must be power-of-two-sized and aligned; it is used to make
+ordinary peripheral registers inaccessible to unprivileged applications.
 
 Do not change the application region for the current AMRN v1 contract without
 updating `AMRN_FORMAT.md`, `ABI.md`, the linker scripts, tests, and roadmap.
@@ -188,6 +223,16 @@ application_origin = 0x2000_8000
 application_length = 65_536
 runtime_origin = 0x2001_8000
 runtime_length = 32_768
+
+[memory.isolation]
+code_origin = 0x2000_8000
+code_length = 32_768
+data_origin = 0x2001_0000
+data_length = 32_768
+peripheral_origin = 0x4000_0000
+peripheral_length = 536_870_912
+bus_fault_origin = 0x0010_0000
+bus_fault_length = 32
 
 [status_led]
 port = "PB"

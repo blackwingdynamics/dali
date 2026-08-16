@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-15
+## Current Status — 2026-08-16
 
 ### Completed and evidenced
 
@@ -75,12 +75,12 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 ### Current priority
 
-**Current priority — Prepare the F405-based 0.1.0-alpha.1 release boundary.**
+**Current priority — Build the F405 single-application isolation foundation.**
 
-The USB implementation phase and formal F405 MVP acceptance are complete.
-RP2350/Pico kernel support remains deferred until after 0.1.0-alpha.1; the Pico is
-currently used only as an external SWD probe. The next work is release-scope
-cleanup and post-MVP platform capability.
+The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.1
+release boundary are complete. RP2350/Pico kernel support remains deferred;
+the Pico is currently used only as an external SWD probe. The next work is the
+ABI v3 implementation and its host/SWD evidence.
 
 ### USB CDC handoff boundary
 
@@ -247,6 +247,11 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [x] Document the complete `targets/*.toml` manifest contract and generation workflow.
 - [ ] Add typed kernel backends for additional target profiles after the F405 0.1.0 scope is complete.
 - [x] Add `dali target info <target>` for board, MCU, ABI, AMRN, memory, clock, and transport metadata, with a machine-readable probe-chip field.
+- [x] Add target-registry lookup by AMRN identifier and host-side `dali inspect`
+  validation for the documented AMRN v2 package contract.
+- [x] Generate an ABI v3 linker layout from target isolation metadata and
+  produce host-inspectable code/data AMRN v2 packages; kernel execution remains
+  disabled until the launch path is implemented.
 
 #### Device operations
 
@@ -282,5 +287,329 @@ typed failures, host tests, and a documented hardware boundary where relevant.
 - [ ] Add signed package verification.
 - [ ] Add kernel secure boot.
 - [ ] Add version compatibility and anti-rollback.
-- [ ] Add MPU-backed isolation where supported.
 - [ ] Add update and rollback support.
+
+### Phase 6A — F405 application isolation foundation
+
+This phase is intentionally limited to the existing STM32F405 target. It does
+not add another board, relocation, or multitasking until the single-application
+protection boundary is implemented and accepted.
+
+#### Design constraints
+
+- [x] Update `docs/ABI.md`, `docs/ARCHITECTURE.md`, `docs/HARDWARE.md`,
+  `docs/SECURITY.md`, and `docs/VERSIONING.md` before implementation.
+- [x] Define ABI v3 around an SVC-based service gateway; direct calls into
+  privileged kernel functions are not an isolation boundary.
+- [x] Define the privileged kernel Thread-mode bootstrap, unprivileged
+  application Thread mode, MSP ownership, and application PSP ownership.
+- [x] Define the MPU region budget for kernel RAM, runtime stack, application
+  code, application data/stack, peripherals, and future shared memory.
+- [x] Reconcile MPU power-of-two alignment with the current application region;
+  do not assume `0x20008000` can represent one 64 KiB MPU region.
+- [x] Evaluate the STM32F405 CCM RAM (`0x10000000`) for kernel stack/runtime
+  use, while keeping SDIO and USB DMA buffers in DMA-accessible SRAM.
+- [x] Define whether application code may read or execute from kernel Flash;
+  `Read-Only` is not equivalent to confidentiality or complete kernel
+  protection.
+- [x] Define the fault policy for MemManage, BusFault, UsageFault, and
+  exception-return failures without claiming automatic recovery.
+
+#### Implementation and evidence order
+
+- [x] Add a board-owned typed MPU layout descriptor sourced from the F405
+  target manifest; keep hardware activation deferred until the ABI boundary is
+  complete.
+- [x] Add host-testable ABI v3 SVC identifiers and Cortex-M exception-frame
+  types without enabling the new ABI in the kernel.
+- [x] Add manifest-backed aligned application code/data boundaries for the
+  planned ABI v3 memory contract.
+- [x] Add a feature-gated kernel SVC frame validator and bounded log dispatch;
+  keep it disabled in the default ABI v2 MVP.
+- [x] Define a bounded kernel-owned fault record for invalid exception-return
+  rejection without installing handlers or changing ABI v2 behavior.
+- [x] Add feature-gated diagnostic MemManage, BusFault, and UsageFault handlers
+  that report bounded SCB status and halt without changing ABI v2 behavior.
+- [x] Add a feature-gated descriptor-backed MPU register map with privileged
+  default access; keep the unprivileged transition disabled.
+- [x] Define the two-phase MPU map required for privileged ABI v3 loading:
+  application code/data remain kernel-only and non-executable during copying,
+  then receive their unprivileged execution permissions immediately before
+  the PSP transition.
+- [x] Define ABI v3 AMRN compatibility, linker regions, and launch-frame
+  validation before changing application entry or stack semantics. ABI v3
+  packages use AMRN format version 2 with separate code and initialized-data
+  segments, explicit zero-data and PSP stack reservations, and a kernel-built
+  launch frame; the v1 parser and builder remain unchanged.
+- [x] Add a host-side, no-std-compatible AMRN v2 parser and builder with
+  target-contract validation; keep kernel loading on ABI v2 while the CLI can
+  emit host-inspectable ABI v3 packages.
+- [x] Add the feature-gated SDK-side ABI v3 SVC logging call; keep generated
+  ABI v2 applications on the direct service-table path.
+- [x] Add a feature-gated ABI v3 streaming loader with separate CRC validation,
+  code/data copying, and BSS initialization; keep privilege transition deferred.
+- [x] Prepare and materialize a kernel-generated ABI v3 basic exception frame
+  with validated PSP bounds and a kernel-owned exception-return selector; do
+  not enter it yet.
+- [x] Add an explicitly disabled-by-default PendSV transition primitive for
+  the prepared PSP frame; keep fault recovery and acceptance evidence pending.
+- [x] Add a feature-gated kernel-stack fault recovery return that terminates the
+  application without reusing its PSP; keep hardware fault evidence pending.
+- [x] Add a feature-gated no-frame HardFault recovery path for exception-entry
+  failures where an application stack frame is not valid.
+- [x] Implement MPU and privilege transition for one application only; keep
+  hardware fault acceptance pending.
+- [x] Implement the SVC gateway and versioned service dispatch; rejection
+  evidence is recorded below.
+- [x] Implement a privileged fault boundary that records the fault context and
+  terminates the application without corrupting the kernel context; F405
+  evidence is recorded below.
+- [x] Add host tests for ABI encoding, service identifiers, and rejected calls.
+- [x] Add a non-production F405 kernel-memory fault-injection application.
+- [x] Add a non-production F405 kernel-memory write fault-injection application.
+- [x] Add a non-production F405 peripheral-access fault-injection application.
+- [x] Add a non-production F405 peripheral-write fault-injection application.
+- [x] Add a non-production F405 BusFault-address fault-injection application.
+- [x] Add a non-production F405 invalid-execution fault-injection application.
+- [x] Add a non-production F405 invalid-PSP fault-injection application.
+- [x] Add a non-production F405 SVC rejection-matrix application.
+- [x] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
+  execution, PSP bounds, and application service calls.
+- [x] Record first F405 hardware evidence for kernel-RAM read rejection and
+  kernel recovery; broader isolation acceptance remains pending.
+- [x] Record F405 hardware evidence for kernel-RAM write rejection and kernel
+  recovery; broader isolation acceptance remains pending.
+- [x] Record F405 hardware evidence for peripheral-MMIO read rejection and
+  kernel recovery; broader isolation acceptance remains pending.
+- [x] Record F405 hardware evidence for peripheral-MMIO write rejection and
+  kernel recovery; broader isolation acceptance remains pending.
+- [x] Record F405 hardware evidence for precise BusFault decoding at the
+  reserved `0x00100000` code-region boundary, including `CFSR=0x00008200`,
+  `BFAR=0x00100000`, stacked `PC=0x2000807A`, stacked `LR=0x2000803D`, and
+  kernel recovery.
+- [x] Record F405 hardware evidence for execute-never instruction rejection
+  and kernel recovery.
+- [x] Record F405 hardware evidence for invalid-PSP exception-entry rejection
+  and kernel recovery.
+- [x] Record F405 hardware evidence for the ABI v3 SVC rejection matrix.
+
+The first ABI v3 MPU fault-injection run was performed on 2026-08-16 with the
+F405 programmed through a Raspberry Pi Pico 2 CMSIS-DAP probe. The test
+application attempted to read `0x20000000`, the declared kernel-RAM boundary.
+The observed output was:
+
+```text
+[INFO][APP] Fault injection: kernel memory read
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves processor-side rejection of an unprivileged kernel-RAM read and
+return to the kernel recovery path.
+
+A second run used the dedicated kernel-memory write fixture. The observed
+output was:
+
+```text
+[INFO][APP] Fault injection: kernel memory write
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This also proves processor-side rejection of an unprivileged kernel-RAM write
+and return to the kernel recovery path. Fault-frame address and PC decoding,
+and multi-application isolation remain unverified.
+
+A third run used the dedicated peripheral-access fixture. The observed output
+was:
+
+```text
+[INFO][APP] Fault injection: peripheral memory read
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves processor-side rejection of an unprivileged peripheral-MMIO read
+and return to the kernel recovery path. Fault-frame address and PC decoding,
+peripheral writes, invalid execution, PSP bounds, DMA isolation, and
+multi-application isolation remain unverified.
+
+A fourth run used the dedicated peripheral-write fixture. The observed output
+was:
+
+```text
+[INFO][APP] Fault injection: peripheral memory write
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves processor-side rejection of an unprivileged peripheral-MMIO write
+and return to the kernel recovery path. Fault-frame address and PC decoding,
+invalid execution, PSP bounds, DMA isolation, and multi-application isolation
+remain unverified.
+
+A fifth run used the execute-never fixture. The observed output was:
+
+```text
+[INFO][APP] Fault injection: execute-never memory
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000001 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves processor-side rejection of instruction fetch from the
+application-data region and return to the kernel recovery path. Fault-frame
+address and PC decoding, invalid vector handling, PSP bounds, DMA isolation,
+and multi-application isolation remain unverified.
+
+The first PSP-boundary run was initially allowed to reach the fixture loop,
+because unprivileged application code cannot change its own PSP. A controlled
+SWD run then set PSP to `0x20010004` immediately before the SVC instruction.
+The observed output was:
+
+```text
+[INFO][APP] Fault injection: invalid PSP bounds
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000010 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves the selected exception-entry stack-boundary fault reaches the
+kernel recovery path. Fault-frame address and PC decoding, invalid vector
+handling, DMA isolation, and multi-application isolation remain unverified.
+
+The SVC rejection matrix was run on 2026-08-16 on the F405 using the
+`dali-app-svc-rejections` package and the Pico CMSIS-DAP probe. The application
+sent an unknown service ID, kernel and peripheral pointers, an oversized
+message, and invalid UTF-8 through the ABI v3 gateway. The observed output was:
+
+```text
+[INFO][APP] SVC rejected unknown service
+[INFO][APP] SVC rejected kernel pointer
+[INFO][APP] SVC rejected peripheral pointer
+[INFO][APP] SVC rejected oversized message
+[INFO][APP] SVC rejected invalid UTF-8
+[INFO][APP] SVC rejection matrix complete
+```
+
+No security fault or recovery record was emitted, and the application remained
+alive after the matrix. This proves the selected malformed service requests
+were rejected at the kernel gateway; authorization policy, DMA isolation, and
+multi-application isolation remain unverified.
+
+The fault-context decoder was then verified on 2026-08-16 with the F405 kernel
+and the kernel-memory read fixture. The observed record was:
+
+```text
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=Some(536903926) lr=Some(536903865) address=Some(536870912)
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+The decoded values are `pc=0x200080F6`, `lr=0x200080B9`, and
+`address=0x20000000`. This proves that a valid application exception frame and
+the MMFAR-reported violation address are preserved in the bounded fault record
+before kernel recovery.
+
+The dedicated BusFault fixture was then run on the F405 with the MPU disabled
+only by the SWD test harness. The application read the reserved
+`0x00100000` code-region boundary and produced:
+
+```text
+[INFO][APP] Fault injection: BusFault address
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+GDB confirmed `kind=BusFault`, `CFSR=0x00008200`, `BFAR=0x00100000`, stacked
+`PC=0x2000807A`, and stacked `LR=0x2000803D`. This proves precise BusFault
+decoding and kernel recovery on the F405; no-frame fault paths, DMA isolation,
+and multi-application isolation remain unverified.
+
+## Test Matrix
+
+This matrix records the evidence boundary for the current F405 isolation work.
+Compilation and host tests do not replace hardware evidence.
+
+### Passed
+
+- [x] Formatting, host workspace checks, host tests, and strict host Clippy.
+- [x] STM32F405 target check, embedded build, and embedded Clippy.
+- [x] F405 DFU flashing and Pico 2 CMSIS-DAP SWD flashing.
+- [x] F405 clock, LED, SDIO initialization, and block-zero read.
+- [x] FAT32 root scan and `.amrn` package discovery from the SD card.
+- [x] AMRN header, bounds, entry-point, payload, and CRC32 validation.
+- [x] Native application load, entry transfer, three-flash/long-pause LED proof,
+  and ABI v2 application logging.
+- [x] USB CDC boot/application logs after reset and reconnect.
+- [x] ABI v3 application launch with unprivileged Thread mode and PSP.
+- [x] Kernel-RAM read rejection with `MemManage` and kernel recovery.
+- [x] Kernel-RAM write rejection with `MemManage` and kernel recovery.
+- [x] Peripheral-MMIO read rejection with `MemManage` and kernel recovery.
+- [x] Peripheral-MMIO write rejection with `MemManage` and kernel recovery.
+- [x] Execute-never instruction rejection with `MemManage` and recovery.
+- [x] Invalid-PSP exception-entry rejection with recovery.
+- [x] SVC rejection matrix for unknown services, invalid pointers, oversized
+  messages, and invalid UTF-8.
+- [x] Precise F405 BusFault decoding with `CFSR`, `BFAR`, stacked `PC/LR`, and
+  kernel recovery.
+
+### Remaining single-application isolation tests
+
+- [ ] Hardware verification of no-frame HardFault recovery when exception
+  entry cannot produce a valid application frame.
+- [ ] Verify valid SVC calls and service authorization/capability policy.
+- [ ] Verify watchdog behavior after application termination and recovery.
+- [ ] Verify fault-status clearing and repeatability across repeated resets.
+
+### Future multi-application and memory tests
+
+- [x] Define the initial explicit-relocation direction and safety contract in
+  `docs/RELOCATION.md`; keep ABI v2/v3 fixed-address behavior unchanged.
+- [x] Produce relocation-aware fixture artifacts with retained linker records
+  for code and writable data; record the observed ARM kinds in
+  `docs/RELOCATION.md`.
+- [ ] Test relocation metadata or the selected RWPI/PIC implementation.
+- [ ] Implement and test the SRAM slot manager.
+- [ ] Load two applications into independent slots and verify their boundaries.
+- [ ] Implement and test PendSV/SysTick context switching.
+- [ ] Verify MPU region switching during application context switches.
+- [ ] Verify application-to-application memory isolation.
+- [ ] Verify DMA isolation and reject unauthorized DMA configuration.
+- [ ] Test application crash, restart, timeout, and watchdog lifecycle policy.
+
+### Future package and platform security tests
+
+- [ ] Test package installation, selection, replacement, and removal semantics
+  after writable filesystem support exists.
+- [ ] Test signed package verification and rejected signatures.
+- [ ] Test secure boot and kernel image authenticity.
+- [ ] Test version compatibility, anti-rollback, update, and rollback flows.
+- [ ] Add end-to-end CLI device and application lifecycle tests.
+
+#### Deferred until isolation foundation is accepted
+
+- [x] Record why compiler PIC flags alone are insufficient for raw AMRN images
+  with writable data.
+- [x] Choose explicit relocation metadata as the first movable-application
+  direction; specify the new AMRN revision before implementation.
+- [x] Define and test the new AMRN relocation-table header and entry format in
+  `dali-amrn::v3`; loader and CLI support remain deferred.
+- [x] Extract the bounded set of supported ARM relocation records from the
+  retained application ELF in the CLI.
+- [x] Validate extracted relocation records through the AMRN v3 host encoder
+  and emit/inspect the AMRN v3 package behind an explicit manifest format
+  selection.
+- [x] Add relocation patch decoders and host tests for each supported ARM kind.
+- [x] Implement bounded kernel-side relocation application before MPU launch.
+- [x] Execute a format 3 relocation fixture on F405 hardware at the canonical
+  manifest origins.
+- [ ] Execute the same relocation metadata with a non-zero slot delta.
+- [x] Define the candidate F405 multi-slot memory contract: two 16 KiB
+  code/data pairs, 32 KiB DMA-visible SRAM, and CCM kernel runtime storage.
+- [x] Generate the F405 kernel linker memory map from target metadata, placing
+  ordinary runtime/static state in CCM and DMA buffers in SRAM.
+- [ ] Migrate the application linker, loader, and MPU code/data regions to the
+  candidate multi-slot contract.
+- [x] Add and validate the manifest-owned code/data slot table without changing
+  the active single-application loader contract.
+- [ ] Design a slot manager only after the relocation contract and memory map
+  are stable.
+- [ ] Add PSP/PendSV context switching only after one isolated application is
+  stable and its fault boundary is tested.
+- [ ] Add multiple application slots and concurrent application execution.

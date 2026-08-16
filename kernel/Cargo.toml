@@ -14,6 +14,9 @@ sdio = [
 board-stm32f405-sd = ["sdio"]
 log-colors = []
 usb-cdc = ["stm32f4xx-hal/otg-fs", "stm32f4xx-hal/usb_fs", "dep:usb-device", "dep:usbd-serial"]
+abi-v3 = []
+abi-v3-mpu = ["abi-v3"]
+abi-v3-relocation = ["abi-v3-mpu"]
 
 [lints]
 workspace = true
@@ -31,6 +34,9 @@ panic-halt = "1.0"
 rtt-target = "0.6"
 usb-device = { version = "=0.3.2", optional = true }
 usbd-serial = { version = "=0.2.2", optional = true }
+
+[build-dependencies]
+dali-targets = { path = "../crates/dali-targets" }
 
 [[bin]]
 name = "dali-kernel"
