@@ -17,7 +17,7 @@ dali-kernel/
 │   ├── f405.toml                 # Supported STM32F405 target metadata
 │   └── f411.toml                 # Generator-only board metadata
 ├── kernel/
-│   ├── Cargo.toml, build.rs, memory.x
+│   ├── Cargo.toml, build.rs
 │   └── src/
 │       ├── main.rs                # Kernel entry and bootstrap call
 │       ├── board/                 # Board facade, MPU, F405 backend
@@ -117,7 +117,8 @@ Each application fixture has its own `Cargo.toml`, `build.rs`, `src/lib.rs`,
 and `src/main.rs`. The fault and SVC fixtures additionally have a local
 `.cargo/config.toml`, `Cargo.lock`, and `dali.toml`. The relocation fixture has
 its own `Cargo.lock` but uses the root build configuration. `dali-app-hello`
-also tracks `memory.x`; generated linker scripts are not tracked.
+The kernel build script generates its linker `memory.x` from the selected
+target manifest; the generated script is not tracked.
 
 The CLI documentation files currently tracked under `docs/cli/commands/` are:
 

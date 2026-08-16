@@ -208,9 +208,13 @@ impl IsolationLayout {
             Some(region) => region,
             None => return None,
         };
+        let runtime_memory = match memory.ccm {
+            Some(region) => region,
+            None => return None,
+        };
         let runtime = match MpuRegion::new(
-            memory.runtime_origin,
-            memory.runtime_length,
+            runtime_memory.origin,
+            runtime_memory.length,
             MpuAccess::PrivilegedOnly,
             MpuExecution::Never,
         ) {

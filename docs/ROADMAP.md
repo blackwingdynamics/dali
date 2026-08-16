@@ -602,7 +602,9 @@ Compilation and host tests do not replace hardware evidence.
 - [ ] Execute the same relocation metadata with a non-zero slot delta.
 - [x] Define the candidate F405 multi-slot memory contract: two 16 KiB
   code/data pairs, 32 KiB DMA-visible SRAM, and CCM kernel runtime storage.
-- [ ] Migrate the F405 linker, kernel statics, DMA buffers, and MPU map to the
+- [x] Generate the F405 kernel linker memory map from target metadata, placing
+  ordinary runtime/static state in CCM and DMA buffers in SRAM.
+- [ ] Migrate the application linker, loader, and MPU code/data regions to the
   candidate multi-slot contract.
 - [x] Add and validate the manifest-owned code/data slot table without changing
   the active single-application loader contract.
