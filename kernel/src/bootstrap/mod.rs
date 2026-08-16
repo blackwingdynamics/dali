@@ -17,6 +17,10 @@ pub fn run() -> ! {
     let device = pac::Peripherals::take().unwrap();
     let core = cortex_m::Peripherals::take().unwrap();
     let mut board = board::initialize(device, core);
+    #[cfg(feature = "abi-v3-mpu")]
+    if let Some(layout) = board::ISOLATION_LAYOUT {
+        board::mpu::configure_hardware(layout);
+    }
 
     initialize_logging();
     #[cfg(feature = "usb-cdc")]

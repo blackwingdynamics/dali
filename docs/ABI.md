@@ -176,3 +176,9 @@ The feature-gated kernel now defines a bounded `FaultRecord` and diagnostic
 MemManage, BusFault, and UsageFault handlers. These handlers report the SCB
 status and halt the diagnostic path; they do not yet recover an application or
 return to a scheduler. They do not change ABI v2 behavior.
+
+The additional kernel feature `abi-v3-mpu` programs the descriptor-backed MPU
+map during bootstrap for diagnostic bring-up. It keeps privileged default
+memory enabled for kernel operation, and does not perform the unprivileged
+application transition. It must not be treated as application isolation until
+the launch context and F405 fault-injection evidence are complete.

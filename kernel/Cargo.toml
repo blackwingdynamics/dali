@@ -15,6 +15,7 @@ board-stm32f405-sd = ["sdio"]
 log-colors = []
 usb-cdc = ["stm32f4xx-hal/otg-fs", "stm32f4xx-hal/usb_fs", "dep:usb-device", "dep:usbd-serial"]
 abi-v3 = []
+abi-v3-mpu = ["abi-v3"]
 
 [lints]
 workspace = true

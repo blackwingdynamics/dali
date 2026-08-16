@@ -325,6 +325,8 @@ protection boundary is implemented and accepted.
   rejection without installing handlers or changing ABI v2 behavior.
 - [x] Add feature-gated diagnostic MemManage, BusFault, and UsageFault handlers
   that report bounded SCB status and halt without changing ABI v2 behavior.
+- [x] Add a feature-gated descriptor-backed MPU register map with privileged
+  default access; keep the unprivileged transition disabled.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

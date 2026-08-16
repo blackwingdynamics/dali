@@ -15,15 +15,31 @@ const RASR_XN: u32 = 1 << 28;
 const RASR_SHAREABLE: u32 = 1 << 18;
 const RASR_CACHEABLE: u32 = 1 << 17;
 const RASR_BUFFERABLE: u32 = 1 << 16;
-const AP_NO_ACCESS: u32 = 0b000 << RASR_AP_SHIFT;
+const AP_PRIVILEGED_ONLY: u32 = 0b001 << RASR_AP_SHIFT;
 const AP_READ_ONLY: u32 = 0b110 << RASR_AP_SHIFT;
 const AP_READ_WRITE: u32 = 0b011 << RASR_AP_SHIFT;
+#[cfg(feature = "abi-v3-mpu")]
+const REGION_KERNEL: u32 = 0;
+#[cfg(feature = "abi-v3-mpu")]
+const REGION_RUNTIME: u32 = 1;
+#[cfg(feature = "abi-v3-mpu")]
+const REGION_APPLICATION_CODE: u32 = 2;
+#[cfg(feature = "abi-v3-mpu")]
+const REGION_APPLICATION_DATA: u32 = 3;
+#[cfg(feature = "abi-v3-mpu")]
+const REGION_PERIPHERALS: u32 = 4;
+#[cfg(feature = "abi-v3-mpu")]
+const REGION_BASE_MASK: u32 = !0x1F;
+#[cfg(feature = "abi-v3-mpu")]
+const MPU_CONTROL_ENABLE: u32 = 1;
+#[cfg(feature = "abi-v3-mpu")]
+const MPU_CONTROL_PRIVILEGED_DEFAULT: u32 = 1 << 2;
 
 /// Access permitted to an application in an MPU region.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MpuAccess {
-    /// All application accesses are rejected.
-    NoAccess,
+    /// Privileged kernel accesses are allowed; unprivileged accesses are rejected.
+    PrivilegedOnly,
     /// Application reads are allowed, but writes are rejected.
     ReadOnly,
     /// Application reads and writes are allowed.
@@ -113,7 +129,7 @@ impl MpuRegion {
     pub const fn rasr_bits(self) -> u32 {
         let size = self.length.trailing_zeros() - 1;
         let access = match self.access {
-            MpuAccess::NoAccess => AP_NO_ACCESS,
+            MpuAccess::PrivilegedOnly => AP_PRIVILEGED_ONLY,
             MpuAccess::ReadOnly => AP_READ_ONLY,
             MpuAccess::ReadWrite => AP_READ_WRITE,
         };
@@ -155,7 +171,7 @@ impl IsolationLayout {
         let kernel = match MpuRegion::new(
             memory.kernel_origin,
             memory.kernel_length,
-            MpuAccess::NoAccess,
+            MpuAccess::PrivilegedOnly,
             MpuExecution::Never,
         ) {
             Some(region) => region,
@@ -196,7 +212,7 @@ impl IsolationLayout {
         let runtime = match MpuRegion::new(
             memory.runtime_origin,
             memory.runtime_length,
-            MpuAccess::NoAccess,
+            MpuAccess::PrivilegedOnly,
             MpuExecution::Never,
         ) {
             Some(region) => region,
@@ -207,7 +223,7 @@ impl IsolationLayout {
                 match MpuRegion::with_memory_type(
                     origin,
                     length,
-                    MpuAccess::NoAccess,
+                    MpuAccess::PrivilegedOnly,
                     MpuExecution::Never,
                     MpuMemoryType::Device,
                 ) {
@@ -230,6 +246,37 @@ impl IsolationLayout {
     }
 }
 
+/// Programs the planned single-application MPU map.
+#[cfg(feature = "abi-v3-mpu")]
+pub fn configure_hardware(layout: IsolationLayout) {
+    let regions = [
+        (REGION_KERNEL, layout.kernel),
+        (REGION_RUNTIME, layout.runtime),
+        (REGION_APPLICATION_CODE, layout.application_code),
+        (REGION_APPLICATION_DATA, layout.application_data),
+        (REGION_PERIPHERALS, layout.peripherals),
+    ];
+    let mpu = unsafe {
+        // SAFETY: The Cortex-M4 MPU is a unique architectural peripheral and
+        // this function is called by privileged kernel code only.
+        &*cortex_m::peripheral::MPU::PTR
+    };
+    unsafe {
+        // SAFETY: `mpu` points to the unique Cortex-M4 MPU register block and
+        // all writes are performed by privileged kernel code.
+        mpu.ctrl.write(0);
+        for (number, region) in regions {
+            mpu.rnr.write(number);
+            mpu.rbar.write(region.base & REGION_BASE_MASK);
+            mpu.rasr.write(region.rasr_bits());
+        }
+        mpu.ctrl
+            .write(MPU_CONTROL_ENABLE | MPU_CONTROL_PRIVILEGED_DEFAULT);
+    }
+    cortex_m::asm::dsb();
+    cortex_m::asm::isb();
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -247,7 +294,7 @@ mod tests {
             MpuRegion::new(
                 MISALIGNED_BASE,
                 MINIMUM_REGION_BYTES,
-                MpuAccess::NoAccess,
+                MpuAccess::PrivilegedOnly,
                 MpuExecution::Never
             )
             .is_none()
@@ -256,7 +303,7 @@ mod tests {
             MpuRegion::new(
                 MINIMUM_REGION_BYTES,
                 NON_POWER_OF_TWO_BYTES,
-                MpuAccess::NoAccess,
+                MpuAccess::PrivilegedOnly,
                 MpuExecution::Never
             )
             .is_none()
@@ -275,11 +322,11 @@ mod tests {
             layout.application.length,
             TARGET_F405.memory.application_length
         );
-        assert_eq!(layout.kernel.access, MpuAccess::NoAccess);
+        assert_eq!(layout.kernel.access, MpuAccess::PrivilegedOnly);
         assert!(layout.application_single_region.is_none());
         assert_eq!(layout.application_code.access, MpuAccess::ReadOnly);
         assert_eq!(layout.application_data.execution, MpuExecution::Never);
-        assert_eq!(layout.peripherals.access, MpuAccess::NoAccess);
+        assert_eq!(layout.peripherals.access, MpuAccess::PrivilegedOnly);
         assert_eq!(layout.peripherals.memory_type, MpuMemoryType::Device);
     }
 
