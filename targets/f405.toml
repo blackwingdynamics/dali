@@ -40,6 +40,8 @@ code_origin = 0x2000_8000
 code_length = 32_768
 data_origin = 0x2001_0000
 data_length = 32_768
+peripheral_origin = 0x4000_0000
+peripheral_length = 536_870_912
 
 [status_led]
 port = "PB"

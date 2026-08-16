@@ -90,6 +90,8 @@ pub struct IsolationLayout {
     pub application_data: MpuRegion,
     /// Kernel runtime and stack memory, inaccessible to the application.
     pub runtime: MpuRegion,
+    /// Ordinary peripheral registers, inaccessible to the application.
+    pub peripherals: MpuRegion,
 }
 
 impl IsolationLayout {
@@ -145,6 +147,15 @@ impl IsolationLayout {
             Some(region) => region,
             None => return None,
         };
+        let peripherals = match (isolation.peripheral_origin, isolation.peripheral_length) {
+            (Some(origin), Some(length)) => {
+                match MpuRegion::new(origin, length, MpuAccess::NoAccess, MpuExecution::Never) {
+                    Some(region) => region,
+                    None => return None,
+                }
+            }
+            _ => return None,
+        };
 
         Some(Self {
             kernel,
@@ -153,6 +164,7 @@ impl IsolationLayout {
             application_code,
             application_data,
             runtime,
+            peripherals,
         })
     }
 }
@@ -203,5 +215,6 @@ mod tests {
         assert!(layout.application_single_region.is_none());
         assert_eq!(layout.application_code.access, MpuAccess::ReadOnly);
         assert_eq!(layout.application_data.execution, MpuExecution::Never);
+        assert_eq!(layout.peripherals.access, MpuAccess::NoAccess);
     }
 }

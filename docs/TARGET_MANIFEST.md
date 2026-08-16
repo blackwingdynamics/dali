@@ -122,10 +122,13 @@ The planned isolated ABI may add an optional `[memory.isolation]` table:
 | --- | --- | --- | --- |
 | `code_origin` / `code_length` | integer | together | Aligned application code and read-only data region. |
 | `data_origin` / `data_length` | integer | together | Aligned writable data and PSP region. |
+| `peripheral_origin` / `peripheral_length` | integer | together | Aligned ordinary peripheral register region. |
 
-When present, these regions must be contiguous, begin at
+When present, the code and data regions must be contiguous, begin at
 `application_origin`, and end at the application boundary. They are metadata
-for the planned ABI and do not enable MPU protection by themselves.
+for the planned ABI and do not enable MPU protection by themselves. The
+peripheral region must be power-of-two-sized and aligned; it is used to make
+ordinary peripheral registers inaccessible to unprivileged applications.
 
 Do not change the application region for the current AMRN v1 contract without
 updating `AMRN_FORMAT.md`, `ABI.md`, the linker scripts, tests, and roadmap.
@@ -205,6 +208,8 @@ code_origin = 0x2000_8000
 code_length = 32_768
 data_origin = 0x2001_0000
 data_length = 32_768
+peripheral_origin = 0x4000_0000
+peripheral_length = 536_870_912
 
 [status_led]
 port = "PB"
