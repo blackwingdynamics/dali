@@ -42,3 +42,7 @@ dali-targets = { path = "../crates/dali-targets" }
 name = "dali-kernel"
 path = "src/main.rs"
 harness = false
+
+[lib]
+name = "dali_kernel_core"
+path = "src/lib.rs"

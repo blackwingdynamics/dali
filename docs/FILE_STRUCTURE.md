@@ -19,6 +19,7 @@ dali-kernel/
 ├── kernel/
 │   ├── Cargo.toml, build.rs
 │   └── src/
+│       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
 │       ├── abi.rs                 # Central active ABI selector
 │       ├── board/                 # Shared MPU descriptors
@@ -82,6 +83,7 @@ files inside those groups are:
 
 ```text
 kernel/src/
+├── lib.rs
 ├── main.rs
 ├── abi.rs
 ├── board/{mod.rs,mpu.rs}
