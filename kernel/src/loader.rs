@@ -5,9 +5,9 @@ use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, par
 
 use crate::storage::{self, BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
 
-#[cfg(feature = "abi-v3")]
+#[cfg(feature = "abi-current")]
 pub(crate) mod v3;
-#[cfg(feature = "abi-v3-relocation")]
+#[cfg(feature = "abi-relocation")]
 pub(crate) mod v3_relocatable;
 
 /// Errors reported while validating a root AMRN package.
@@ -18,17 +18,17 @@ pub enum LoaderError {
     /// The package header or payload failed AMRN validation.
     Package(ParseError),
     /// The ABI v3 package failed target or segment validation.
-    #[cfg(feature = "abi-v3")]
+    #[cfg(feature = "abi-current")]
     V3Package(dali_amrn::v2::Error),
     /// The selected target does not declare an ABI v3 memory contract.
-    #[cfg(feature = "abi-v3")]
+    #[cfg(feature = "abi-current")]
     UnsupportedV3Target,
     /// The relocatable ABI v3 package failed format validation or patching.
-    #[cfg(feature = "abi-v3-relocation")]
+    #[cfg(feature = "abi-relocation")]
     V3RelocationPackage(dali_amrn::v3::Error),
 }
 
-#[cfg(feature = "abi-v3")]
+#[cfg(feature = "abi-current")]
 pub(crate) fn load_abi_v3<D>(device: D) -> Result<v3::LoadedApplication, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -39,7 +39,7 @@ where
         file.rewind().map_err(LoaderError::Filesystem)?;
         match version[4] {
             dali_amrn::v2::FORMAT_VERSION => v3::load_file(file),
-            #[cfg(feature = "abi-v3-relocation")]
+            #[cfg(feature = "abi-relocation")]
             dali_amrn::v3::FORMAT_VERSION => v3_relocatable::load_file(file),
             _ => Err(LoaderError::V3Package(dali_amrn::v2::Error::InvalidHeader)),
         }

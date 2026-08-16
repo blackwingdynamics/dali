@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+pub(crate) mod abi;
 pub(crate) mod board;
 mod bootstrap;
 pub mod drivers;
@@ -9,7 +10,7 @@ pub mod logging;
 pub(crate) mod platform;
 pub mod storage;
 
-#[cfg(feature = "abi-v3")]
+#[cfg(feature = "abi-current")]
 mod security;
 
 use cortex_m_rt::entry;

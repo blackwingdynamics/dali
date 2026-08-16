@@ -17,7 +17,7 @@ pub fn run() -> ! {
     let device = pac::Peripherals::take().unwrap();
     let core = cortex_m::Peripherals::take().unwrap();
     let mut board = platform::initialize(device, core);
-    #[cfg(feature = "abi-v3-mpu")]
+    #[cfg(feature = "abi-mpu")]
     if let Some(layout) = platform::ISOLATION_LAYOUT {
         platform::mpu::configure_hardware(layout);
     }
@@ -114,9 +114,9 @@ fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
-            #[cfg(feature = "abi-v3")]
+            #[cfg(feature = "abi-current")]
             let package = crate::loader::load_abi_v3(reader);
-            #[cfg(not(feature = "abi-v3"))]
+            #[cfg(not(feature = "abi-current"))]
             let package = if platform::APPLICATION_EXECUTION_SUPPORTED {
                 crate::loader::load_amrn_file(reader)
             } else {
@@ -128,13 +128,13 @@ fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
                         logging::BOOT_SUBSYSTEM,
                         format_args!("[LOADER] AMRN header and payload validated"),
                     );
-                    #[cfg(not(feature = "abi-v3"))]
+                    #[cfg(not(feature = "abi-current"))]
                     if platform::APPLICATION_EXECUTION_SUPPORTED {
                         crate::loader::start_application(package);
                     }
-                    #[cfg(feature = "abi-v3")]
+                    #[cfg(feature = "abi-current")]
                     {
-                        #[cfg(feature = "abi-v3-mpu")]
+                        #[cfg(feature = "abi-mpu")]
                         {
                             if platform::activate_application_regions() {
                                 crate::security::launch::enter(package.launch_frame);
@@ -145,13 +145,13 @@ fn initialize_storage(board: &mut platform::Board) -> status::StorageStatus {
                             );
                             status::StorageStatus::Failure
                         }
-                        #[cfg(not(feature = "abi-v3-mpu"))]
+                        #[cfg(not(feature = "abi-mpu"))]
                         {
                             let _ = package;
                             status::StorageStatus::Ready
                         }
                     }
-                    #[cfg(not(feature = "abi-v3"))]
+                    #[cfg(not(feature = "abi-current"))]
                     status::StorageStatus::Ready
                 }
                 Err(error) => {

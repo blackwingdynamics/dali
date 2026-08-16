@@ -91,6 +91,12 @@ F405 scope; the next work is to finish the platform backend extraction.
   facade without changing its runtime behavior.
 - [x] Add generated backend scaffolding and validation for new target profiles.
 
+### ABI selector foundation
+
+- [x] Centralize the active ABI selector and keep versioned Cargo feature names
+  as compatibility aliases.
+- [ ] Define the ABI v4 contract and implementation before enabling a v4 alias.
+
 ### USB CDC handoff boundary
 
 - Software architecture: implemented and target-checked. USB control/state

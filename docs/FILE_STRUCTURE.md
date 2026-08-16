@@ -20,6 +20,7 @@ dali-kernel/
 │   ├── Cargo.toml, build.rs
 │   └── src/
 │       ├── main.rs                # Kernel entry and bootstrap call
+│       ├── abi.rs                 # Central active ABI selector
 │       ├── board/                 # Shared MPU descriptors
 │       ├── platform.rs            # Platform facade and target entry points
 │       ├── platform/stm32f405.rs  # F405 target profile and IRQ bindings
@@ -80,6 +81,7 @@ files inside those groups are:
 ```text
 kernel/src/
 ├── main.rs
+├── abi.rs
 ├── board/{mod.rs,mpu.rs}
 ├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs}
 ├── bootstrap/{mod.rs,heartbeat.rs,status.rs}

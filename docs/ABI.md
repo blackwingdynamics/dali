@@ -82,6 +82,13 @@ ABI v3 is feature-gated and is not the default kernel execution path. ABI v2
 remains the default until the implementation receives complete F405 hardware
 fault-injection evidence.
 
+The source code uses the central `abi-current` selector and the version-neutral
+`abi-mpu` and `abi-relocation` capabilities. The public `abi-v3`,
+`abi-v3-mpu`, and `abi-v3-relocation` Cargo features remain compatibility
+aliases for existing build commands. A future ABI version changes the selector
+and adds only the implementation-specific contract code; ordinary kernel
+modules do not need a version-name replacement.
+
 The repository contains a feature-gated SDK SVC call, kernel SVC frame
 validator, bounded log dispatcher, MPU map, PSP transition, and kernel-owned
 fault recovery behind the ABI v3 and `abi-v3-mpu` features. These mechanisms

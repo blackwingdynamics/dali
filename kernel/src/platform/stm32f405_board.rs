@@ -2,7 +2,7 @@
 
 use dali_targets::TARGET_F405;
 
-#[cfg(feature = "abi-v3")]
+#[cfg(feature = "abi-current")]
 use dali_targets::MemoryProfile;
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
@@ -12,7 +12,7 @@ pub const ISOLATION_LAYOUT: Option<crate::board::mpu::IsolationLayout> =
 const _: () = assert!(ISOLATION_LAYOUT.is_some());
 
 /// Activates unprivileged application permissions after the loader finishes.
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 pub fn activate_application_regions() -> bool {
     let Some(layout) = ISOLATION_LAYOUT else {
         return false;
@@ -22,12 +22,12 @@ pub fn activate_application_regions() -> bool {
 }
 
 /// The current MVP board supports AMRN native application execution.
-#[cfg(not(feature = "abi-v3"))]
+#[cfg(not(feature = "abi-current"))]
 pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
 
 /// System clock target derived from the declarative F405 target profile.
 pub const SYSTEM_CLOCK_HZ: u32 = TARGET_F405.clock.system_hz;
-#[cfg(feature = "abi-v3")]
+#[cfg(feature = "abi-current")]
 pub const MEMORY_PROFILE: MemoryProfile = TARGET_F405.memory;
 /// Unit conversion used by the boot log's human-readable clock value.
 const HZ_PER_MHZ: u32 = 1_000_000;
@@ -35,7 +35,10 @@ const HZ_PER_MHZ: u32 = 1_000_000;
 pub const SYSTEM_CLOCK_MHZ: u32 = SYSTEM_CLOCK_HZ / HZ_PER_MHZ;
 
 const _: () = assert!(TARGET_F405.amrn_target_id == dali_amrn::TARGET_ID);
-const _: () = assert!(TARGET_F405.abi_version == dali_amrn::ABI_VERSION);
+#[cfg(feature = "abi-current")]
+const _: () = assert!(crate::abi::CURRENT_VERSION == dali_amrn::v2::ABI_VERSION);
+#[cfg(not(feature = "abi-current"))]
+const _: () = assert!(TARGET_F405.abi_version == crate::abi::CURRENT_VERSION);
 const _: () = assert!(
     TARGET_F405.memory.application_origin == dali_amrn::LOAD_ADDRESS
         && TARGET_F405.memory.application_length == dali_amrn::MAX_PAYLOAD_SIZE as u32
