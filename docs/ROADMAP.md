@@ -597,6 +597,9 @@ Compilation and host tests do not replace hardware evidence.
   selection.
 - [x] Add relocation patch decoders and host tests for each supported ARM kind.
 - [x] Implement bounded kernel-side relocation application before MPU launch.
+- [x] Execute a format 3 relocation fixture on F405 hardware at the canonical
+  manifest origins.
+- [ ] Execute the same relocation metadata with a non-zero slot delta.
 - [ ] Design a slot manager only after the relocation contract and memory map
   are stable.
 - [ ] Add PSP/PendSV context switching only after one isolated application is

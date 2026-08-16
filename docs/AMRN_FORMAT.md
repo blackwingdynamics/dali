@@ -198,6 +198,23 @@ must reject unknown kinds, invalid segment/patch bounds, alignment errors,
 overflow, targets outside linked code/data/zero-data/stack reservations, and
 any table that is truncated or not at the canonical payload end.
 
+## Format 3 hardware evidence
+
+On 2026-08-17, an STM32F405RGT6 was flashed through a Pico CMSIS-DAP probe
+with the kernel's explicit `abi-v3-relocation` feature. The SD card contained
+the standalone relocation fixture package. The USB CDC console reported:
+
+```text
+[INFO][LOADER] AMRN header and payload validated
+[INFO][APP] Relocation fixture
+```
+
+This verifies the feature-gated format 3 stream, package validation, and
+application entry path on the reference hardware. The fixture used the
+manifest's current code/data origins, so the relocation delta was zero. A
+non-zero relocation, slot selection, and execution from a second slot remain
+unverified until the slot manager exists.
+
 ## Post-MVP extensions
 
 Future revisions may add manifest data, kernel compatibility, required services, memory declarations, signatures, encryption metadata, and rollback information. These require a new format revision or an explicitly versioned extension area.
