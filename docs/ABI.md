@@ -34,9 +34,9 @@ header, and the kernel must reject packages requiring another ABI version.
 - logging service: bounded UTF-8 message submission through the kernel logger;
 - shared memory: not available until an explicit layout is documented.
 
-The current execution target is the STM32F405RGT6 board. The F411 BlackPill is
-not implied to be compatible with target ID `0x02`; it requires a separate
-versioned target profile before native execution is accepted there.
+The current execution target is the STM32F405RGT6 board. The F411 BlackPill
+manifest is generator-only and is not implied to be compatible with target ID
+`0x02`.
 
 The entry offset must be word-aligned and point inside the payload. The kernel
 sets the Cortex-M Thumb bit before calling the entry point and passes a valid

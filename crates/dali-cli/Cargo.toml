@@ -1,6 +1,6 @@
 [package]
 name = "dali-cli"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2024"
 publish = false
 
@@ -9,6 +9,8 @@ workspace = true
 
 [dependencies]
 dali-amrn = { path = "../dali-amrn" }
+dali-device = { path = "../dali-device" }
+dali-targets = { path = "../dali-targets" }
 
 [[bin]]
 name = "dali"

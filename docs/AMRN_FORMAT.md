@@ -63,8 +63,8 @@ Future revisions may add manifest data, kernel compatibility, required services,
 - The maximum payload size is 64 KiB.
 - The payload contains native `thumbv7em-none-eabihf` code.
 - AMRN v1 execution is defined for the STM32F405RGT6 current MVP target.
-  STM32F411 support remains a separate board profile and is not implied by the
-  F405 target ID.
+  The STM32F411 manifest is generator-only and is not implied by the F405
+  target ID.
 - Relocations and dynamic linking are not supported.
 - The execution entry is `load_address + execution_offset`.
 - The entry address must have the Cortex-M Thumb bit set before the jump.

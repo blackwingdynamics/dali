@@ -45,9 +45,12 @@ The initial application is `apps/dali-app-hello`. It has two purposes:
 - `src/main.rs` is the `no_std` native payload used by the embedded build.
 
 The current payload configures the F405 board's active-high PB2 status LED,
-submits three messages through the ABI v2 kernel logging service, and alternates
-the LED with a bounded busy-loop period. The direct GPIO proof is board-specific
-application code; the logging call crosses the documented service boundary.
+submits three messages through the ABI v2 kernel logging service, and produces
+three short logical flashes followed by a longer pause. The pattern uses named,
+bounded busy-loop constants; the relative phase lengths are the contract, while
+the exact wall-clock duration depends on the selected embedded build and clock.
+The direct GPIO proof is board-specific application code; the logging call
+crosses the documented service boundary.
 
 The embedded payload is enabled explicitly with the `embedded-payload` Cargo
 feature. This prevents the native entry binary from being built as part of
@@ -221,7 +224,7 @@ pass, copies only the validated payload into the reserved SRAM region, and
 transfers control through the validated ABI entry address. It preserves the
 existing bounds checks and keeps the unsafe operations centralized in the
 loader. Physical F405 testing has now shown the LED acceptance behavior once;
-repeatable reset and complete MVP acceptance evidence remain separate gates.
+repeatable reset and complete MVP acceptance evidence remain separate gates
 before the application is considered accepted.
 
 ## Troubleshooting boundaries

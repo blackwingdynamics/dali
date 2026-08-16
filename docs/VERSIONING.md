@@ -35,6 +35,10 @@ Pre-release versions use identifiers such as:
 1.0.0-rc.1
 ```
 
+The first Dali OS MVP release uses the pre-release version
+`0.1.0-alpha.1` because the F405 MVP path is accepted, while production
+hardening and post-MVP platform capabilities are not complete.
+
 ## 3. AMRN format version
 
 The `.amrn` header contains its own `format_version`. The loader must reject a format version it does not understand.
@@ -60,8 +64,8 @@ ABI version: 2
 ```
 
 The current AMRN v1 target profile is STM32F405RGT6 (`0x02`). The STM32F411
-BlackPill requires a separate target profile before its native applications can
-be accepted by the loader.
+BlackPill manifest is generator-only and does not authorize native application
+execution.
 
 Format version `1` must remain readable by every kernel that claims support for it.
 
@@ -116,7 +120,9 @@ cli-v0.1.0
 amrn-format-v1
 ```
 
-The current monorepo release workflow uses tags in the form `vX.Y.Z`. Component-specific tags may be introduced after the repository is split.
+The current monorepo release workflow uses tags in the form `vX.Y.Z` or
+`vX.Y.Z-alpha.N`. Component-specific tags may be introduced after the
+repository is split.
 
 For a monorepo release, the release notes must clearly state which components changed and which contracts remain compatible.
 
@@ -137,11 +143,11 @@ Do not silently change the meaning of an existing AMRN field, ABI rule, memory a
 
 Before publishing a release:
 
-- [ ] The version is consistent in all relevant manifests.
-- [ ] AMRN and ABI versions are recorded where applicable.
-- [ ] Compatibility tests pass.
-- [ ] Documentation reflects the release behavior.
-- [ ] Breaking changes have migration notes.
-- [ ] Release notes identify kernel, SDK, CLI, and format changes.
-- [ ] The release tag follows the documented format.
-- [ ] CI passes on the release commit.
+- [x] The version is consistent in all relevant manifests.
+- [x] AMRN and ABI versions are recorded where applicable.
+- [x] Compatibility tests pass.
+- [x] Documentation reflects the release behavior.
+- [x] Breaking changes have migration notes.
+- [x] Release notes identify kernel, SDK, CLI, and format changes.
+- [x] The release tag follows the documented format.
+- [x] CI passes on the release commit.

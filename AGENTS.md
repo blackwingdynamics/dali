@@ -8,9 +8,9 @@ Dali OS is a `no_std` Rust operating system and embedded runtime for STM32 micro
 
 The first milestone is deliberately narrow:
 
-1. boot a Rust kernel on the STM32F411CEU6 WeAct BlackPill;
-2. initialize the clock, PC13 status LED, and RTT logging;
-3. read a FAT16/FAT32 SD card over SPI1;
+1. boot a Rust kernel on the STM32F405RGT6 WeAct Studio Core Board;
+2. initialize the clock, PB2 status LED, and RTT logging;
+3. read a FAT16/FAT32 SD card over SDIO;
 4. discover an `.amrn` package in the card root;
 5. validate a fixed 32-byte AMRN header and CRC32 payload checksum;
 6. load a native payload into the reserved SRAM region at `0x20008000`;
@@ -45,6 +45,7 @@ crates/dali-sdk/      Application SDK scaffold
 crates/dali-cli/      Package and device CLI scaffold
 crates/dali-usb/      Hardware-neutral bounded USB delivery primitives and host tests
 crates/dali-amrn/     Hardware-neutral AMRN format parser and validation
+crates/dali-device/   Hardware-neutral device discovery records and ordering
 docs/                 Architecture and process documentation
 scripts/              Validation and release automation
 .github/              CI, release workflow, and PR policy
@@ -57,6 +58,7 @@ Module ownership:
 - `kernel/src/logging/` — logging facade and hardware backend boundary;
 - `crates/dali-usb/` — transport-neutral bounded log delivery state and tests;
 - `crates/dali-amrn/` — AMRN header, payload bounds, and CRC32 validation;
+- `crates/dali-device/` — transport-neutral discovery records, states, and ordering;
 - `kernel/src/storage/` — SD and filesystem access;
 - `kernel/src/loader/` — AMRN parsing, CRC32, bounds checks, and execution;
 - `kernel/src/runtime/` — future tasks, scheduling, IPC, services, and watchdogs.
@@ -85,12 +87,12 @@ Any exception must be reviewed, named, documented, and justified by the relevant
 
 ### Target
 
-- MCU: STM32F411CEU6;
-- board: WeAct BlackPill;
+- MCU: STM32F405RGT6;
+- board: WeAct Studio STM32F405RGT6 Core Board;
 - target: `thumbv7em-none-eabihf`;
-- clock target: 100 MHz;
-- status LED: PC13;
-- SD SPI1 pins: SCK PA5, MISO PA6, MOSI PA7, CS PA4.
+- clock target: 168 MHz;
+- status LED: PB2;
+- SD interface: hardware SDIO in 4-bit mode.
 
 ### SRAM
 
@@ -228,7 +230,7 @@ docs(amrn): define the CRC32 field
 
 Keep commits atomic. Do not combine unrelated formatting, dependencies, behavior, or documentation changes.
 
-Changelogs are generated from commit history by `git-cliff`. Do not edit release changelogs manually. Release tags use `vX.Y.Z`; the release workflow creates the archived changelog and GitHub Release.
+Changelogs are generated from commit history by `git-cliff`. Do not edit release changelogs manually. Release tags use `vX.Y.Z` or `vX.Y.Z-alpha.N`; the release workflow creates the archived changelog and GitHub Release.
 
 ## 11. Things an agent must not do
 

@@ -1,12 +1,11 @@
 [package]
 name = "dali-kernel"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2024"
 publish = false
 
 [features]
-default = ["board-blackpill-f411", "usb-cdc"]
-board-blackpill-f411 = ["stm32f4xx-hal/stm32f411"]
+default = ["board-stm32f405-sd", "usb-cdc"]
 sdio = [
     "stm32f4xx-hal/sdio",
     "stm32f4xx-hal/sdio-host",
@@ -23,6 +22,7 @@ workspace = true
 dali-amrn = { path = "../crates/dali-amrn" }
 dali = { path = "../crates/dali-sdk" }
 dali-usb = { path = "../crates/dali-usb" }
+dali-targets = { path = "../crates/dali-targets" }
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
 embedded-sdmmc = { version = "=0.10.0", default-features = false }

@@ -30,6 +30,9 @@ dali-kernel/
 │   ├── README.md                 # Simulator scope and evidence boundary
 │   └── renode/
 │       └── dali_blackpill.resc   # Renode STM32F4 development scenario
+├── targets/
+│   ├── f405.toml                  # Declarative F405 board and target metadata
+│   └── f411.toml                  # Generator-only BlackPill board metadata
 ├── Cargo.toml                 # Virtual workspace metadata
 ├── Cargo.lock                 # Reproducible dependency resolution
 ├── rust-toolchain.toml        # Pinned Rust toolchain and embedded target
@@ -42,8 +45,7 @@ dali-kernel/
 │       ├── main.rs            # Kernel entry point and bootstrap
 │       ├── board/              # Compile-time board selection and backends
 │       │   ├── mod.rs          # Common board facade
-│       │   ├── blackpill_f411.rs # WeAct BlackPill STM32F411 backend
-│       │   └── stm32f405_sd.rs  # WeAct STM32F405 SDIO backend
+│       │   └── stm32f405_sd.rs   # WeAct STM32F405 SDIO backend
 │       ├── drivers/             # Hardware-specific peripheral drivers
 │       │   ├── mod.rs           # Driver module registry
 │       │   └── sdio.rs          # SDIO block driver
@@ -63,21 +65,40 @@ dali-kernel/
 │       ├── Cargo.toml
 │       ├── build.rs           # Application linker search path
 │       ├── memory.x           # Reserved application SRAM layout
-│       └── src/
+│       ├── src/
 │           ├── lib.rs         # SDK-facing application scaffold
 │           └── main.rs        # Native validation payload entry point
 ├── crates/
 │   ├── dali-amrn/             # AMRN format parser and validation
+│   ├── dali-device/           # Hardware-neutral discovery records
+│   ├── dali-targets/          # Build-time generated target registry
 │   ├── dali-sdk/              # Future application SDK
 │   │   ├── Cargo.toml
 │   │   └── src/lib.rs
 │   └── dali-cli/              # Future package and device CLI
 │       ├── Cargo.toml
-│       └── src/main.rs
+│       ├── src/
+│       │   ├── main.rs
+│       │   └── commands/
+│       │       ├── mod.rs
+│       │       ├── app.rs
+│       │       ├── new.rs
+│       │       ├── package.rs
+│       │       └── inspect.rs
+│       └── templates/
+│           └── app/
+│               ├── Cargo.toml.template
+│               ├── dali.toml.template
+│               ├── build.rs.template
+│               ├── memory.x.template
+│               ├── lib.rs.template
+│               └── main.rs.template
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── FILE_STRUCTURE.md
 │   ├── DOCUMENTATION_INDEX.md
+│   ├── TARGET_PROFILES.md
+│   ├── TARGET_MANIFEST.md
 │   ├── ROADMAP.md
 │   ├── CODING_STANDARDS.md
 │   ├── AMRN_FORMAT.md         # Binary package specification
@@ -89,6 +110,27 @@ dali-kernel/
 │   ├── MVP_ACCEPTANCE.md      # Physical MVP acceptance procedure
 │   ├── VERSIONING.md          # Component and compatibility versioning
 │   ├── SECURITY.md            # Security model and future guarantees
+│   ├── cli/                   # Production CLI documentation
+│   │   ├── README.md
+│   │   ├── INSTALLATION.md
+│   │   ├── QUICKSTART.md
+│   │   ├── COMMANDS.md
+│   │   ├── WORKFLOWS.md
+│   │   ├── OUTPUT.md
+│   │   ├── ERRORS.md
+│   │   ├── EXIT_CODES.md
+│   │   ├── COMPATIBILITY.md
+│   │   ├── TROUBLESHOOTING.md
+│   │   ├── TESTING.md
+│   │   ├── CONTRIBUTING.md
+│   │   ├── APPLICATION_PROJECT.md
+│   │   ├── DEVICE_DISCOVERY.md
+│   │   └── commands/
+│   │       ├── package.md
+│   │       ├── inspect.md
+│   │       ├── app-new.md
+│   │       └── target-info.md
+│   ├── boards/                # Generated board review checklists
 │   └── changelog/             # Archived generated release changelogs
 │       └── README.md
 └── README.md                  # Public project introduction
@@ -99,8 +141,7 @@ dali-kernel/
 The following order keeps each new file focused on one verifiable capability:
 
 1. `kernel/src/board/mod.rs` — compile-time board selection facade.
-2. `kernel/src/board/blackpill_f411.rs` — BlackPill constants, pins, clocks, and peripheral ownership.
-3. `kernel/src/board/stm32f405_sd.rs` — STM32F405 clock, LED, and SDIO pin ownership.
+2. `kernel/src/board/stm32f405_sd.rs` — STM32F405 clock, LED, and SDIO pin ownership.
 4. `kernel/src/logging/mod.rs` — the stable kernel logging facade.
 5. `kernel/src/logging/rtt.rs` — the RTT logging backend.
 6. `kernel/src/bootstrap/mod.rs` — boot sequence orchestration.
@@ -108,7 +149,8 @@ The following order keeps each new file focused on one verifiable capability:
 8. `kernel/src/storage/mod.rs` — storage subsystem types and ownership boundary.
 9. `kernel/src/drivers/mod.rs` — hardware driver registry.
 10. `kernel/src/drivers/sdio.rs` — SDIO initialization and block reads.
-11. `kernel/src/drivers/spi_sd.rs` — STM32F411 SPI SD initialization and block reads.
+11. A future board backend may add a board-owned storage driver after its
+    manifest and hardware contract are accepted.
 12. `kernel/src/storage/filesystem.rs` — read-only FAT16/FAT32 access.
 13. `kernel/src/loader/mod.rs` — package loader boundary and loader errors.
 14. `kernel/src/loader/header.rs` — fixed `.amrn` header parser.
@@ -118,7 +160,21 @@ The following order keeps each new file focused on one verifiable capability:
 18. `apps/dali-app-hello/memory.x` — application linker memory layout.
 19. `apps/dali-app-hello/build.rs` — application package preparation, if required.
 20. `crates/dali-sdk/src/lib.rs` — SDK public API after the MVP ABI is stable.
-21. `crates/dali-cli/src/main.rs` — CLI entry point after package rules are stable.
+21. `crates/dali-cli/src/main.rs` — CLI process entry point.
+22. `crates/dali-cli/src/commands/mod.rs` — command dispatch and shared flag parsing.
+23. `crates/dali-cli/src/commands/package.rs` — AMRN package construction command.
+24. `crates/dali-cli/src/commands/inspect.rs` — AMRN package inspection command.
+25. `crates/dali-cli/src/commands/app.rs` — application command group dispatch.
+26. `crates/dali-cli/src/commands/new.rs` — application scaffold creation.
+27. `crates/dali-cli/src/commands/init.rs` — existing directory initialization.
+28. `crates/dali-cli/src/commands/build.rs` — native application payload build.
+29. `crates/dali-cli/templates/app/config.toml.template` — standalone Cargo linker configuration.
+30. `crates/dali-cli/src/commands/app_package.rs` — application payload packaging.
+31. `crates/dali-cli/src/commands/doctor.rs` — host and toolchain diagnostics.
+32. `crates/dali-cli/src/commands/target.rs` — supported application target profiles.
+33. `targets/*.toml` — declarative manufacturer and compatibility metadata.
+34. `crates/dali-targets/` — validated generated target registry shared by host tooling.
+27. `crates/dali-cli/templates/app/` — versioned application scaffold assets.
 
 Post-MVP runtime files should be added only after the loader acceptance test passes:
 

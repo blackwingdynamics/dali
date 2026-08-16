@@ -30,6 +30,14 @@ pub fn run() -> ! {
     }
 
     emit_boot_banner();
+    logging::info(
+        logging::BOOT_SUBSYSTEM,
+        format_args!("[BOOT] System clock: {} MHz", board::SYSTEM_CLOCK_MHZ),
+    );
+    logging::info(
+        logging::BOOT_SUBSYSTEM,
+        format_args!("Hardware bootstrap complete"),
+    );
 
     // Keep a visible indication active while storage initialization is in progress.
     board::set_status_led(&mut board, true);
@@ -39,14 +47,6 @@ pub fn run() -> ! {
     );
     let storage_status = initialize_storage(&mut board);
 
-    logging::info(
-        logging::BOOT_SUBSYSTEM,
-        format_args!("[BOOT] System clock: {} MHz", board::SYSTEM_CLOCK_MHZ),
-    );
-    logging::info(
-        logging::BOOT_SUBSYSTEM,
-        format_args!("Hardware bootstrap complete"),
-    );
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("Entering kernel heartbeat"),

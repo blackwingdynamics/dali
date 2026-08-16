@@ -1,0 +1,3 @@
+#![no_std]
+
+//! Dali application library boundary.

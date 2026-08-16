@@ -4,8 +4,10 @@ members = [
     "apps/dali-app-hello",
     "crates/dali-usb",
     "crates/dali-amrn",
+    "crates/dali-device",
     "crates/dali-sdk",
     "crates/dali-cli",
+    "crates/dali-targets",
 ]
 resolver = "2"
 

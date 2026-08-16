@@ -8,7 +8,7 @@
 - `just` for the repository task runner;
 - an SWD programmer/debug probe;
 - a WeAct Studio STM32F405RGT6 Core Board with its on-board SDIO socket;
-- optionally, a WeAct BlackPill STM32F411 board for the separate backend;
+- optionally, a WeAct BlackPill board for target-profile scaffold generation;
 - a correctly wired 3.3 V SD-card interface;
 - a supported RTT viewer.
 
@@ -245,11 +245,10 @@ just attach
 ### Board selection
 
 Hardware recipes accept one optional positional board argument. The default is
-`f411`.
+`f405`.
 
 | Argument | Board | On-board LED | SD interface |
 | --- | --- | --- | --- |
-| `f411` | WeAct BlackPill STM32F411CEU6 | PC13 | External SPI1 module |
 | `f405` | WeAct Studio STM32F405RGT6 Core Board | PB2 | On-board SDIO 4-bit socket |
 
 Use the same recipe names for either board:
@@ -275,12 +274,12 @@ on both supported boards:
 | Not detected | Slow blink, 1 second per transition | No card was detected or storage is not configured for the selected board. |
 | Failure | Fast blink, 100 milliseconds per transition | The card or storage transport reported an operational failure. |
 
-On the STM32F405 board, `PB2` is active-high. On the STM32F411 BlackPill,
-`PC13` is active-low. Applications must not depend on either physical polarity.
+On the STM32F405 board, `PB2` is active-high. Applications must not depend on
+the physical polarity; the board backend owns that mapping.
 
 Do not pass Cargo feature names to these recipes. The recipe converts the board
 argument into the correct compile-time backend automatically. `just ci` checks
-the default F411 backend; use `just kernel-check f405` and
+the default F405 backend; use `just kernel-check f405` and
 `just kernel-clippy f405` for the F405 target checks.
 
 Verify the tools before using hardware commands:
@@ -305,10 +304,10 @@ GitHub Actions runs the same validation layers on pushes and pull requests:
 
 - Rust formatting;
 - host workspace checks, tests, and Clippy;
-- STM32F411 target checks, Clippy, and kernel build;
+- STM32F405 target checks, Clippy, and kernel build;
 - repository whitespace validation.
 
-The `Formatting`, `Host workspace checks`, `STM32F411 embedded checks`, and `Repository hygiene` jobs must be configured as required status checks in GitHub branch protection before merging is technically blocked.
+The `Formatting`, `Host workspace checks`, `STM32F405 embedded checks`, and `Repository hygiene` jobs must be configured as required status checks in GitHub branch protection before merging is technically blocked.
 
 ## Kernel build sequence
 
@@ -356,11 +355,8 @@ Connect the SWD probe, power the board safely, and run:
 just flash-probe
 ```
 
-This builds the ELF and runs it through `probe-rs` using the configured STM32F411 chip identifier. Use `DALI_CHIP` to override the identifier when the probe reports a different compatible name:
-
-```text
-DALI_CHIP=STM32F411CEUx just flash-probe
-```
+This builds the ELF and runs it through `probe-rs` using the chip identifier
+resolved from the selected target manifest.
 
 ### 5. Flash through STM32 DFU mode
 
@@ -380,8 +376,8 @@ The command does not invoke `sudo`. Configure the host's USB permissions separat
 
 ### 5a. Select a board backend
 
-The default board is the F411 BlackPill. Select another board as a recipe
-argument without writing Cargo features or environment variables:
+The default board is the F405 reference board. Select it explicitly as a
+recipe argument without writing Cargo features or environment variables:
 
 ```text
 just build

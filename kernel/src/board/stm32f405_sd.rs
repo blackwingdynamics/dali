@@ -1,12 +1,24 @@
 //! WeAct Studio STM32F405RGT6 Core Board support.
 
-use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, timer::SysDelay};
+use dali_targets::TARGET_F405;
+use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
 /// The current MVP board supports AMRN native application execution.
 pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
 
-/// System clock target for the 8 MHz HSE board.
-pub const SYSTEM_CLOCK_MHZ: u32 = 168;
+/// System clock target derived from the declarative F405 target profile.
+pub const SYSTEM_CLOCK_HZ: u32 = TARGET_F405.clock.system_hz;
+/// Unit conversion used by the boot log's human-readable clock value.
+const HZ_PER_MHZ: u32 = 1_000_000;
+/// System clock in megahertz for the common board facade.
+pub const SYSTEM_CLOCK_MHZ: u32 = SYSTEM_CLOCK_HZ / HZ_PER_MHZ;
+
+const _: () = assert!(TARGET_F405.amrn_target_id == dali_amrn::TARGET_ID);
+const _: () = assert!(TARGET_F405.abi_version == dali_amrn::ABI_VERSION);
+const _: () = assert!(
+    TARGET_F405.memory.application_origin == dali_amrn::LOAD_ADDRESS
+        && TARGET_F405.memory.application_length == dali_amrn::MAX_PAYLOAD_SIZE as u32
+);
 
 /// Status LED output pin on the active-high PB2 LED.
 pub type StatusLed = gpio::gpiob::PB2<gpio::Output<gpio::PushPull>>;
@@ -92,11 +104,11 @@ pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Boar
     let rcc = device.RCC.constrain();
     let clocks = rcc
         .cfgr
-        .use_hse(8.MHz())
-        .sysclk(SYSTEM_CLOCK_MHZ.MHz())
-        .hclk(SYSTEM_CLOCK_MHZ.MHz())
-        .pclk1(42.MHz())
-        .pclk2(84.MHz());
+        .use_hse(Hertz::from_raw(TARGET_F405.clock.input_hz))
+        .sysclk(Hertz::from_raw(TARGET_F405.clock.system_hz))
+        .hclk(Hertz::from_raw(TARGET_F405.clock.system_hz))
+        .pclk1(Hertz::from_raw(TARGET_F405.clock.pclk1_hz))
+        .pclk2(Hertz::from_raw(TARGET_F405.clock.pclk2_hz));
     #[cfg(feature = "usb-cdc")]
     let clocks = clocks.require_pll48clk();
     let clocks = clocks.freeze();

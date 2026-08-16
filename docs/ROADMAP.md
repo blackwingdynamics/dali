@@ -7,7 +7,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 ### Completed and evidenced
 
 - The repository is a Rust workspace with kernel, SDK, CLI, and demo-application boundaries.
-- The STM32F411 BlackPill backend exists for the original MVP target.
+- The STM32F411 BlackPill backend has been removed; its board facts now live in
+  a generator-only `targets/f411.toml` profile.
 - The WeAct STM32F405RGT6 Core Board backend exists with its 8 MHz HSE, 168 MHz system clock, PB2 LED, and SDIO pin mapping.
 - The F405 kernel builds, checks, and passes strict target Clippy.
 - DFU flashing of the F405 firmware completes successfully.
@@ -16,7 +17,8 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - Cross-platform setup scripts, Just recipes, the USB console helper, and development documentation exist.
 - A fixed-capacity USB log queue exists in kernel RAM and records overflow instead of silently hiding it.
 - The hardware-neutral `dali-usb` crate provides bounded delivery, link state, partial-write handling, and host tests without owning USB hardware.
-- The production USB backend services the `usb-device` state machine from the F405/F411 `OTG_FS` interrupt while main-context logging only appends to the bounded queue.
+- The production USB backend services the `usb-device` state machine from the
+  F405 `OTG_FS` interrupt while main-context logging only appends to the bounded queue.
 - Renode simulation explicitly disables USB CDC because its STM32F4 reference model does not implement the OTG_FS global registers used by the production backend.
 - Pico 2 SWD evidence shows the F405 firmware reaches blocking SDIO block-read code while the OTG_FS interrupt services USB polling; RTT boot logs are visible through the probe.
 - The host successfully enumerated the runtime CDC device as `1209:da11` and created `/dev/ttyACM1` during SWD debugging.
@@ -40,41 +42,47 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The `dali-amrn` crate encodes contract-valid packages, and the `dali package` command wraps a raw payload with the documented header and CRC.
 - The `dali-app-hello` validation payload now has a dedicated 64 KiB SRAM linker layout and repeatable build/package recipes.
 - The validation payload is intentionally limited to package construction and loader validation plus the documented native execution proof.
-- The AMRN v1 execution target is STM32F405 (`0x02`); F411 remains a separate board profile until its target ID is specified.
+- The AMRN v1 execution target is STM32F405 (`0x02`); F411 is a generator-only
+  board profile without an AMRN target ID.
 - The loader performs a second bounded read pass to copy a validated payload into the reserved SRAM region and provides the validated ABI entry transfer; F405 hardware execution has been observed.
-- The validation payload drives the F405 active-high PB2 LED with a deterministic native pattern; the pattern has been observed during F405 hardware testing.
+- The validation payload defines the documented three-flash/long-pause F405 active-high PB2 LED pattern with host coverage and physical observation.
+- Board metadata is generated from typed registry data: F405 is application-supported, while the F411 manifest is a generator-only board profile without storage or AMRN compatibility claims.
+- The target manifest schema is documented with field rules and a complete F405 example.
+- The F411 kernel backend and its build/flash routes were removed; F405 is now the only kernel backend and hardware recipe.
 - ABI v2 now passes a bounded kernel service table to applications and exposes the first logging service; host evidence is passing.
-- On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package, logged successful AMRN validation, and showed the native PB2 LED pattern after the kernel log stopped.
+- On 2026-08-15, the F405 board accepted the rebuilt `hello.amrn` package and logged successful AMRN validation; the earlier observed LED behavior was continuous slow blinking and did not satisfy the documented three-flash/long-pause pattern.
 - On 2026-08-15, the F405 board delivered three `[INFO][APP] Hello World from AMRN` records through USB CDC after AMRN validation. This is hardware evidence for the application logging service.
+- F405 hardware testing confirmed that boot logs and all three application records reappear after a board reset with the console already open, and after closing and reopening the USB CDC connection.
+- On 2026-08-15, after reseating the SD card following an SDIO timeout, the F405 board completed the full SDIO, AMRN, application logging, and corrected three-flash/long-pause LED path. The recovery indicates sensitivity in the physical SD-card connection or power path; the responsible component is not isolated.
+- On 2026-08-16, a Raspberry Pi Pico 2 running CMSIS-DAP successfully programmed
+  the F405 through SWD. The firmware started immediately after probe flashing
+  and the application logs were delivered through USB CDC.
+- On 2026-08-16, the F405 storage-status and application LED distinction was
+  physically verified: no SD card produced the slow storage-status blink, while
+  the inserted card produced three short application flashes followed by a
+  long pause. The STM32 CDC console also repeated the boot and application
+  logs after reset and reconnect.
+- On 2026-08-16, the complete F405 MVP acceptance record was closed as PASS.
+  The exact `hello.amrn` package used by the SD-card run was inspected from
+  the FAT32 card: 3999 bytes total, 3967-byte payload, CRC32
+  `0xBFDB25F5`, format version 1, target ID `0x02`, and ABI version 2.
 
-### Incomplete or not yet accepted
+### Historical evidence and remaining limitations
 
-- USB CDC boot logs are now observable through the terminal after reset through the SDIO initialization milestone. Full boot-log and reconnect acceptance remains incomplete.
-- The interrupt-driven USB servicing strategy has target-build evidence but has not completed physical enumeration, reconnect, and boot-log acceptance.
-- On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. This evidence is pre-CDC and does not establish a queue or terminal fault.
-- The F405 SDIO path has not completed the documented hardware acceptance evidence.
-- SDK application APIs remain incomplete; the F405 loader and native LED execution path now have first physical evidence.
-- Full MVP acceptance remains incomplete; application logging ABI v2 and the three-message hardware output are now evidenced, while the complete reset-to-application procedure and reconnect behavior still require acceptance evidence.
-- A separate AMRN target profile for STM32F411 remains unspecified and is not part of the current execution work.
+- On 2026-08-13, an F405 DFU write completed, but the flashed runtime image did not answer the host's USB descriptor requests: Linux reported repeated `device descriptor read/64, error -110`, followed by `device not accepting address, error -71`. Later firmware and hardware testing resolved the documented MVP path; this remains historical evidence, not an open acceptance failure.
+- SDK application APIs remain intentionally limited; the F405 loader and native LED execution path are the accepted MVP boundary.
+- The F411 profile is intentionally not part of current kernel execution work.
 
 ### Current priority
 
-**P0 — Make USB CDC boot logging deterministic under blocking storage bring-up.**
+**Current priority — Prepare the F405-based 0.1.0-alpha.1 release boundary.**
 
-The implementation phase resumed after Pico 2 SWD access became available.
-The first targeted fix addresses the CDC TX delivery boundary: the backend
-must flush the `usbd-serial` software buffer and preserve pending transport
-progress across USB service events. Queue insertion also software-pends the
-OTG_FS interrupt so configured hosts are serviced without arbitrary delays or
-terminal-specific workarounds.
+The USB implementation phase and formal F405 MVP acceptance are complete.
+RP2350/Pico kernel support remains deferred until after 0.1.0-alpha.1; the Pico is
+currently used only as an external SWD probe. The next work is release-scope
+cleanup and post-MVP platform capability.
 
-The next implementation must establish a tested USB lifecycle contract that can
-service enumeration, CDC control requests, and log delivery while storage is
-initializing. It must not rely on arbitrary sleeps, terminal-specific behavior,
-or unverified interrupt code. Initial F405 CDC delivery is now hardware-
-observed; reconnect and the remaining boot sequence are still pending.
-
-### P0 handoff boundary
+### USB CDC handoff boundary
 
 - Software architecture: implemented and target-checked. USB control/state
   servicing is owned by the `OTG_FS` interrupt, while main-context logging only
@@ -86,14 +94,13 @@ observed; reconnect and the remaining boot sequence are still pending.
   service budgets.
 - Simulation evidence: limited. Renode cannot exercise the production USB
   backend because its STM32F4 model lacks the required OTG_FS global registers.
-- F405 hardware evidence: Pico 2 SWD reaches the firmware, RTT shows boot logs
-  through SDIO initialization, and the host creates `/dev/ttyACM1` for the
-  runtime CDC device; `picocom` reports `Terminal ready` and receives the boot
-  logs through `[STORAGE] SDIO card initialized`.
-- Current fault boundary: initial CDC delivery is working. Full boot completion
-  and reconnect behavior remain unverified.
-- Required next input: one targeted reconnect test and evidence for the
-  remaining boot sequence.
+- F405 hardware evidence: direct USB DFU flashing produced a runtime CDC
+  device; `picocom` reported `Terminal ready` and received the complete boot,
+  AMRN validation, and three application records. A reset with the console
+  open repeated the sequence, and a USB disconnect/reconnect repeated it again.
+- Current fault boundary: the targeted CDC reset/reconnect behavior and formal
+  F405 MVP acceptance are complete.
+- Required next input: release validation and post-MVP platform work.
 
 ### Next atomic tasks
 
@@ -104,60 +111,60 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Verify the strategy with F405 target checks and strict Clippy.
 - [x] Record the first failed F405 enumeration evidence and keep it separate from CDC queue conclusions.
 - [x] Verify USB enumeration and `Terminal ready` on F405 hardware.
-- [ ] Verify that all boot logs appear after a reset with the terminal already connected.
-- [ ] Record the hardware evidence before marking USB boot logging complete.
+- [x] Verify that all boot logs appear after a reset with the terminal already connected.
+- [x] Record the hardware evidence before marking USB boot logging complete.
 - [x] Use Pico 2 SWD to identify that USB polling runs while storage is blocked and separate enumeration from CDC TX delivery.
 - [x] Preserve CDC TX data across software-buffer flush backpressure.
 - [x] Trigger USB service after queue insertion when the host is already configured.
 - [x] Retain boot logs until the CDC host-open signal is asserted.
 - [x] Verify initial CDC TX delivery after the targeted flush and host-open fixes.
-- [ ] Verify CDC TX reconnect behavior and the remaining boot sequence.
+- [x] Verify CDC TX reconnect behavior and the remaining boot sequence.
 
 ## Phase 0 — Documentation baseline
 
 - [x] Confirm the reference board is WeAct Studio STM32F405RGT6 Core Board.
-- [ ] Confirm `.amrn` as the single MVP package extension.
-- [ ] Record the target triple as `thumbv7em-none-eabihf`.
-- [ ] Define the MVP application entry ABI.
-- [ ] Reserve kernel RAM from `0x20000000` to `0x20007FFF`.
-- [ ] Reserve application RAM from `0x20008000` to `0x20017FFF`.
-- [ ] Reserve kernel runtime RAM from `0x20018000` to `0x2001FFFF`.
-- [ ] Define the exact 32-byte `.amrn` header byte layout.
-- [ ] Define the fixed application load address as `0x20008000`.
-- [ ] Define CRC32 as the MVP integrity algorithm.
-- [ ] Define the maximum application payload as 64 KiB.
-- [ ] Define that MVP applications do not own interrupts.
-- [ ] Define the LED pattern used as the application execution proof.
-- [ ] Adopt `CODING_STANDARDS.md` as mandatory for all implementation work.
-- [ ] Require an immediate `SAFETY` comment for every unsafe block.
-- [ ] Require English comments, logs, and error messages.
-- [ ] Require tests or hardware evidence for every implementation module.
-- [ ] Document the SPI1 pin mapping.
+- [x] Confirm `.amrn` as the single MVP package extension.
+- [x] Record the target triple as `thumbv7em-none-eabihf`.
+- [x] Define the MVP application entry ABI.
+- [x] Reserve kernel RAM from `0x20000000` to `0x20007FFF`.
+- [x] Reserve application RAM from `0x20008000` to `0x20017FFF`.
+- [x] Reserve kernel runtime RAM from `0x20018000` to `0x2001FFFF`.
+- [x] Define the exact 32-byte `.amrn` header byte layout.
+- [x] Define the fixed application load address as `0x20008000`.
+- [x] Define CRC32 as the MVP integrity algorithm.
+- [x] Define the maximum application payload as 64 KiB.
+- [x] Define that MVP applications do not own interrupts.
+- [x] Define the LED pattern used as the application execution proof.
+- [x] Adopt `CODING_STANDARDS.md` as mandatory for all implementation work.
+- [x] Require an immediate `SAFETY` comment for every unsafe block.
+- [x] Require English comments, logs, and error messages.
+- [x] Require tests or hardware evidence for every implementation module.
+- [x] Document the STM32F405 SDIO pin mapping.
 - [x] Document the RTT and USB CDC logging channels used for acceptance testing.
-- [ ] Review all MVP claims for unsupported security language.
+- [x] Review all MVP claims for unsupported security language.
 - [x] Add the compile-time STM32F405 SDIO board backend.
-- [ ] Record STM32F405 SDIO wiring and hardware acceptance evidence.
+- [x] Complete the formal STM32F405 wiring and MVP acceptance evidence record.
 
 ## Phase 1 — Kernel bootstrap
 
-- [ ] Confirm the project builds for the embedded target.
-- [ ] Confirm the linker script matches STM32F411 memory.
-- [ ] Initialize core and device peripherals.
-- [ ] Configure the 100 MHz system clock.
-- [ ] Configure the PC13 status LED.
-- [ ] Configure the 1 ms SysTick source.
-- [ ] Initialize RTT logging.
-- [ ] Emit a deterministic boot banner.
-- [ ] Blink the status LED at a fixed interval.
-- [ ] Record a hardware boot acceptance result.
+- [x] Confirm the project builds for the embedded target.
+- [x] Confirm the linker script matches the F405 reference memory.
+- [x] Initialize core and device peripherals.
+- [x] Configure the 168 MHz F405 system clock from the 8 MHz HSE.
+- [x] Configure the active-high PB2 status LED.
+- [x] Configure the SysTick-backed blocking delay source.
+- [x] Initialize RTT and USB CDC logging boundaries.
+- [x] Emit a deterministic boot banner.
+- [x] Blink the storage-status LED at documented intervals.
+- [x] Implement and observe the F405 boot path; formal acceptance recording is tracked in Phase 0.
 
 ## Phase 2 — SD and filesystem read path
 
-- [ ] Add board-specific SD transport configuration for SPI1 or SDIO.
-- [ ] Configure the SD chip-select pin.
-- [ ] Implement SD card low-speed initialization.
-- [ ] Implement one raw block read.
-- [ ] Verify a known SD block read on hardware.
+- [x] Add the F405 board-specific SDIO transport configuration.
+- [x] Configure the F405 SDIO command, clock, and four data pins.
+- [x] Implement SD card initialization through the board SDIO backend.
+- [x] Implement one raw block read with the bounded DMA receive path.
+- [x] Verify a known block-zero read on F405 hardware.
 - [x] Integrate a read-only FAT16/FAT32 filesystem layer.
 - [x] Mount the filesystem read-only.
 - [x] Enumerate the root directory.
@@ -193,7 +200,7 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Keep application-owned interrupts disabled for the MVP.
 - [x] Define the application reset and return behavior.
 - [x] Provide the application entry-point transfer.
-- [x] Produce the deterministic LED pattern from the demo application.
+- [x] Produce and physically verify the documented three-flash/long-pause LED pattern from the demo application.
 - [x] Record the first end-to-end F405 loader and native LED execution result.
 
 ## Phase 5 — Developer workflow
@@ -204,8 +211,64 @@ observed; reconnect and the remaining boot sequence are still pending.
 - [x] Add a repeatable package assembly step for a raw payload.
 - [x] Add a package inspection command with contract and exact-length validation.
 - [x] Add package CRC32 generation through the package command.
-- [ ] Document the SD-card installation procedure.
-- [ ] Document the complete MVP demo procedure.
+- [x] Document the SD-card installation procedure.
+- [x] Document the complete MVP demo procedure and link the CLI workflow.
+
+### CLI platform expansion
+
+The `dali` executable is the product-facing application and device CLI. The
+`just` recipes remain the repository's developer task runner for builds, tests,
+formatting, CI, simulation, and local hardware workflows. New CLI commands
+must have an explicit contract, command-specific documentation, stable output,
+typed failures, host tests, and a documented hardware boundary where relevant.
+
+#### Application creation and packaging
+
+- [x] Define the application project manifest and scaffold contract.
+- [x] Add `dali app new <name>` to create a new application scaffold.
+- [x] Add `dali app init` to initialize an existing directory as a Dali application.
+- [x] Add reproducible application template assets without embedding board-specific values in command logic.
+- [x] Add host tests for application-name validation, template rendering, and scaffold file creation.
+- [x] Document the `dali app new` command and generated project contract.
+- [x] Support standalone scaffolding outside a Dali workspace through an explicit SDK path.
+- [x] Add `dali app build` for the documented native target and profile selection.
+- [x] Add `dali app package` as the application-oriented wrapper around AMRN package creation.
+- [x] Decide and document compatibility between the existing top-level `dali package`/`dali inspect` commands and the application command group.
+
+#### Target and host diagnostics
+
+- [x] Add `dali doctor` for toolchain, target, host-permission, and required-tool diagnostics.
+- [x] Add `dali target list` for supported target profiles.
+- [x] Define declarative target manifests for manufacturer and compatibility metadata.
+- [x] Generate and validate a typed target registry from `targets/*.toml`.
+- [x] Centralize target profile metadata outside individual CLI commands.
+- [x] Connect the F405 backend clock and AMRN compatibility checks to its generated target profile.
+- [x] Add target scaffold generation for reviewable board backend templates.
+- [x] Document the complete `targets/*.toml` manifest contract and generation workflow.
+- [ ] Add typed kernel backends for additional target profiles after the F405 0.1.0 scope is complete.
+- [x] Add `dali target info <target>` for board, MCU, ABI, AMRN, memory, clock, and transport metadata, with a machine-readable probe-chip field.
+
+#### Device operations
+
+- [x] Define a transport-neutral device discovery contract.
+- [x] Add the hardware-neutral normalized device record model and ordering tests.
+- [x] Add `dali device list` for probe, DFU, and Linux CDC discovery; CDC records without serials remain explicitly unidentified.
+- [x] Add `dali device info` for selected device and target metadata.
+- [x] Add manifest-driven DFU flashing with explicit flags and the short `dali device flash <target>` artifact form.
+- [x] Add manifest-driven probe flashing with the short `dali device flash <target> --transport probe` form.
+- [x] Add `dali device console [--port <path>]` for the runtime CDC console.
+- [x] Add `dali device attach --target <target>` for debug attachment.
+- [x] Record F405 hardware evidence for device discovery, USB CDC console,
+  DFU flashing, and Pico CMSIS-DAP probe flashing.
+
+#### Application lifecycle
+
+- [ ] Define package installation, selection, and removal semantics for the read-only MVP filesystem boundary.
+- [ ] Add `dali app install` only after writable package-management semantics are specified.
+- [ ] Add `dali app list` only after multi-package selection policy is specified.
+- [ ] Add `dali app remove` only after safe write and recovery semantics are specified.
+- [ ] Add `dali app run` only after application lifecycle and reset semantics are specified.
+- [ ] Add end-to-end device tests for application lifecycle commands.
 
 ## Phase 6 — Post-MVP platform work
 

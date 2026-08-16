@@ -1,0 +1,33 @@
+#![no_std]
+#![no_main]
+
+use core::panic::PanicInfo;
+use dali::ServiceTable;
+
+const APPLICATION_MESSAGE: &str = "Hello from Dali application";
+
+/// Native Dali application entry point.
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.amiran_entry")]
+pub unsafe extern "C" fn amiran_entry(services: *const ServiceTable) -> ! {
+    let Some(services) = (unsafe {
+        // SAFETY: The kernel passes a valid service table for the lifetime of
+        // the non-returning application entry point.
+        services.as_ref()
+    }) else {
+        run_forever();
+    };
+    let _message_accepted = dali::log(services, APPLICATION_MESSAGE);
+    run_forever();
+}
+
+fn run_forever() -> ! {
+    loop {
+        core::hint::spin_loop();
+    }
+}
+
+#[panic_handler]
+fn panic(_info: &PanicInfo<'_>) -> ! {
+    run_forever();
+}

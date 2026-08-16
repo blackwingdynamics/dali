@@ -134,13 +134,13 @@ Loader changes must include boundary tests for malformed headers, truncation, in
 
 ## GitHub CI and branch protection
 
-GitHub Actions runs on pushes to the integration branches and on pull requests. The workflow checks formatting, host workspace code, host tests, host Clippy, the STM32F411 kernel target, embedded Clippy, the kernel build, and repository whitespace.
+GitHub Actions runs on pushes to the integration branches and on pull requests. The workflow checks formatting, host workspace code, host tests, host Clippy, the STM32F405 kernel target, embedded Clippy, the kernel build, and repository whitespace.
 
 Maintainers must configure branch protection so these checks are required before merging:
 
 - `Formatting`;
 - `Host workspace checks`;
-- `STM32F411 embedded checks`;
+- `STM32F405 embedded checks`;
 - `Repository hygiene`.
 
 The workflow reports failures, but GitHub branch protection is what prevents a failed pull request from being merged. Contributors must not bypass a failed required check without a documented maintainer decision.

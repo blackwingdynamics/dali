@@ -1,0 +1,172 @@
+#![no_std]
+
+//! Typed target metadata generated from repository board manifests.
+
+/// Metadata required to build and validate an application for a Dali target.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TargetProfile {
+    /// Stable profile name used by Dali commands.
+    pub name: &'static str,
+    /// Generated Rust registry constant used by board scaffolds.
+    pub registry_constant: &'static str,
+    /// Human-readable board name.
+    pub board: &'static str,
+    /// MCU identifier supplied by the board manufacturer.
+    pub mcu: &'static str,
+    /// Rust compilation target triple.
+    pub rust_target: &'static str,
+    /// Conventional kernel firmware artifact name, when declared.
+    pub kernel_binary: Option<&'static str>,
+    /// Conventional kernel ELF artifact name, when declared.
+    pub kernel_elf: Option<&'static str>,
+    /// Probe chip identifier used by the debug transport, when declared.
+    pub probe_chip: Option<&'static str>,
+    /// USB DFU identity used by the firmware download transport, when declared.
+    pub dfu: Option<DfuProfile>,
+    /// Whether the profile is currently valid for AMRN application execution.
+    pub application_supported: bool,
+    /// AMRN target identifier assigned by the package contract.
+    pub amrn_target_id: u8,
+    /// Application ABI version.
+    pub abi_version: u8,
+    /// Board clock metadata.
+    pub clock: ClockProfile,
+    /// Board memory regions used by the kernel and applications.
+    pub memory: MemoryProfile,
+    /// Logical status LED metadata.
+    pub status_led: PinProfile,
+    /// USB FS data-pin metadata.
+    pub usb: UsbProfile,
+    /// Storage bus metadata.
+    pub storage: Option<StorageProfile>,
+}
+
+/// USB DFU identity declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DfuProfile {
+    /// USB vendor identifier.
+    pub vendor_id: u16,
+    /// USB product identifier.
+    pub product_id: u16,
+    /// Flash download address accepted by the DFU target.
+    pub address: u32,
+    /// DFU alternate interface used for the firmware image.
+    pub alternate: u8,
+    /// Whether the DFU tool should request runtime transition after download.
+    pub leave: bool,
+}
+
+/// Clock values declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ClockProfile {
+    /// Clock source declared by the board manifest.
+    pub source: &'static str,
+    /// Input clock frequency in hertz.
+    pub input_hz: u32,
+    /// Target system clock frequency in hertz.
+    pub system_hz: u32,
+    /// APB1 peripheral clock frequency in hertz.
+    pub pclk1_hz: u32,
+    /// APB2 peripheral clock frequency in hertz.
+    pub pclk2_hz: u32,
+    /// USB clock domain frequency in hertz.
+    pub usb_hz: u32,
+}
+
+/// SRAM regions declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct MemoryProfile {
+    /// Start of the kernel-reserved region.
+    pub kernel_origin: u32,
+    /// Size of the kernel-reserved region in bytes.
+    pub kernel_length: u32,
+    /// Start of the application region.
+    pub application_origin: u32,
+    /// Size of the application region in bytes.
+    pub application_length: u32,
+    /// Start of the runtime and stack region.
+    pub runtime_origin: u32,
+    /// Size of the runtime and stack region in bytes.
+    pub runtime_length: u32,
+}
+
+/// A named GPIO pin declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PinProfile {
+    /// GPIO port name, for example `PB`.
+    pub port: &'static str,
+    /// GPIO pin number.
+    pub number: u8,
+    /// Alternate-function number, or zero for a GPIO mode.
+    pub alternate_function: u8,
+    /// Whether a high output means logically active.
+    pub active_high: bool,
+}
+
+/// USB data-pin metadata declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UsbProfile {
+    /// USB controller name.
+    pub controller: &'static str,
+    /// USB D- pin.
+    pub dm: PinProfile,
+    /// USB D+ pin.
+    pub dp: PinProfile,
+}
+
+/// Storage bus metadata declared by a board manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StorageProfile {
+    /// Storage controller name.
+    pub controller: &'static str,
+    /// Number of data lines used by the storage bus.
+    pub bus_width: u8,
+    /// Clock pin.
+    pub clock: PinProfile,
+    /// Command pin.
+    pub command: PinProfile,
+    /// Data pins in bus order.
+    pub data: [PinProfile; 4],
+}
+
+include!(concat!(env!("OUT_DIR"), "/target_profiles.rs"));
+
+/// Finds a target profile by its stable manifest name.
+pub fn find_target(name: &str) -> Option<&'static TargetProfile> {
+    SUPPORTED_TARGETS.iter().find(|target| target.name == name)
+}
+
+/// Finds any declared board profile, including profiles pending application support.
+pub fn find_board(name: &str) -> Option<&'static TargetProfile> {
+    ALL_TARGETS.iter().find(|target| target.name == name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DfuProfile, SUPPORTED_TARGETS, find_board};
+
+    #[test]
+    fn exposes_manifest_metadata() {
+        assert_eq!(SUPPORTED_TARGETS.len(), 1);
+        assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
+        assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
+        assert_eq!(
+            SUPPORTED_TARGETS[0].dfu,
+            Some(DfuProfile {
+                vendor_id: 0x0483,
+                product_id: 0xDF11,
+                address: 0x0800_0000,
+                alternate: 0,
+                leave: true,
+            })
+        );
+        assert_eq!(
+            SUPPORTED_TARGETS[0]
+                .storage
+                .as_ref()
+                .map(|storage| storage.bus_width),
+            Some(4)
+        );
+        assert!(find_board("f411").is_some());
+    }
+}
