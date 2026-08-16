@@ -115,7 +115,7 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
             #[cfg(feature = "abi-v3")]
-            let package = crate::loader::v3::load(reader);
+            let package = crate::loader::load_abi_v3(reader);
             #[cfg(not(feature = "abi-v3"))]
             let package = if board::APPLICATION_EXECUTION_SUPPORTED {
                 crate::loader::load_amrn_file(reader)

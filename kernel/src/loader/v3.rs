@@ -3,7 +3,7 @@
 use dali_amrn::{Crc32, v2};
 
 use crate::security::launch::{self, LaunchFrame};
-use crate::storage::{self, BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
+use crate::storage::{BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
 
 /// Values retained after an ABI v3 package has been copied into SRAM.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -17,15 +17,7 @@ pub struct LoadedApplication {
 }
 
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
-pub fn load<D>(device: D) -> Result<LoadedApplication, super::LoaderError>
-where
-    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
-{
-    storage::filesystem::with_amrn_file(device, load_file)
-        .map_err(super::LoaderError::Filesystem)?
-}
-
-fn load_file<D>(file: AmrnFile<'_, D>) -> Result<LoadedApplication, super::LoaderError>
+pub(crate) fn load_file<D>(file: AmrnFile<'_, D>) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
