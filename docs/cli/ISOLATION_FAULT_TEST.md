@@ -1,14 +1,15 @@
 # ABI v3 kernel-memory fault test
 
-`apps/dali-app-fault-kernel` is a non-production F405 test fixture. It first
-uses the ABI v3 logging service, then performs one volatile read at the
-kernel-reserved address declared by the generated F405 target metadata.
+`apps/dali-app-fault-kernel` and `apps/dali-app-fault-kernel-write` are
+non-production F405 test fixtures. They first use the ABI v3 logging service,
+then perform one volatile read or write at the kernel-reserved address
+declared by the generated F405 target metadata.
 
 The expected result is a security fault record followed by the kernel-owned
 recovery record. The test must not be used as an application template and is
 not part of the default workspace build.
 
-## Build
+## Read test
 
 From the fixture directory:
 
@@ -48,3 +49,26 @@ This proves only processor-side rejection of an unprivileged read into the
 declared kernel region and return to the kernel recovery path. It does not
 prove peripheral rejection, write rejection, DMA isolation, or complete
 application isolation.
+
+## Write test
+
+Build and package the write fixture instead:
+
+```text
+cd apps/dali-app-fault-kernel-write
+dali app build
+```
+
+Copy `target/thumbv7em-none-eabihf/debug/dali-app-fault-kernel-write.amrn` to
+the SD-card root, then repeat the same kernel build and flash procedure above.
+Expected application output is:
+
+```text
+[INFO][APP] Fault injection: kernel memory write
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves only processor-side rejection of an unprivileged write into the
+declared kernel region. It does not prove peripheral rejection, invalid
+execution, PSP bounds, DMA isolation, or complete application isolation.

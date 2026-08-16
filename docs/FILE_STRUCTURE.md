@@ -62,7 +62,8 @@ dali-kernel/
 │       └── runtime/            # Post-MVP task and service runtime
 ├── apps/
 │   ├── dali-app-hello/        # First independently built demo app
-│   └── dali-app-fault-kernel/ # Standalone F405 isolation fault fixture
+│   ├── dali-app-fault-kernel/ # Standalone F405 kernel-read fault fixture
+│   └── dali-app-fault-kernel-write/ # Standalone F405 kernel-write fault fixture
 │       ├── Cargo.toml
 │       ├── build.rs           # Application linker search path
 │       ├── memory.x           # Reserved application SRAM layout
