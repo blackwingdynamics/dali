@@ -2,6 +2,8 @@
 
 //! Dali OS application SDK and kernel-service ABI.
 
+pub mod svc;
+
 /// Maximum UTF-8 message length accepted by the initial application logger.
 pub const MAX_LOG_MESSAGE_BYTES: usize = 96;
 /// Return code for a service call that was accepted by the kernel.

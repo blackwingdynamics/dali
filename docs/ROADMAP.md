@@ -315,6 +315,8 @@ protection boundary is implemented and accepted.
 - [x] Add a board-owned typed MPU layout descriptor sourced from the F405
   target manifest; keep hardware activation deferred until the ABI boundary is
   complete.
+- [x] Add host-testable ABI v3 SVC identifiers and Cortex-M exception-frame
+  types without enabling the new ABI in the kernel.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and
