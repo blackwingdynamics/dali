@@ -365,6 +365,7 @@ protection boundary is implemented and accepted.
 - [ ] Add host tests for ABI encoding, service identifiers, and rejected calls.
 - [x] Add a non-production F405 kernel-memory fault-injection application.
 - [x] Add a non-production F405 kernel-memory write fault-injection application.
+- [x] Add a non-production F405 peripheral-access fault-injection application.
 - [ ] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
   execution, PSP bounds, and application service calls.
 - [x] Record first F405 hardware evidence for kernel-RAM read rejection and
@@ -395,7 +396,20 @@ output was:
 
 This also proves processor-side rejection of an unprivileged kernel-RAM write
 and return to the kernel recovery path. Fault-frame address and PC decoding,
-peripheral rejection, invalid execution, PSP bounds, DMA isolation, and
+and multi-application isolation remain unverified.
+
+A third run used the dedicated peripheral-access fixture. The observed output
+was:
+
+```text
+[INFO][APP] Fault injection: peripheral memory read
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=None lr=None address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves processor-side rejection of an unprivileged peripheral-MMIO read
+and return to the kernel recovery path. Fault-frame address and PC decoding,
+peripheral writes, invalid execution, PSP bounds, DMA isolation, and
 multi-application isolation remain unverified.
 
 #### Deferred until isolation foundation is accepted
