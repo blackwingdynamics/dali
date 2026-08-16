@@ -43,6 +43,10 @@ data_length = 32_768
 stack_length = 4_096
 peripheral_origin = 0x4000_0000
 peripheral_length = 536_870_912
+# RM0090 Table 3: 1 MiB flash ends at 0x000F_FFFF; the next code-region
+# address is reserved and is used only by the BusFault decoder fixture.
+bus_fault_origin = 0x0010_0000
+bus_fault_length = 32
 
 [status_led]
 port = "PB"

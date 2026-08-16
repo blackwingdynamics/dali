@@ -75,6 +75,8 @@ struct IsolationMemory {
     stack_length: u32,
     peripheral_origin: Option<u32>,
     peripheral_length: Option<u32>,
+    bus_fault_origin: Option<u32>,
+    bus_fault_length: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -258,6 +260,17 @@ fn validate_isolation_memory(
             .into());
         }
     }
+    match (isolation.bus_fault_origin, isolation.bus_fault_length) {
+        (Some(origin), Some(length)) if valid_mpu_region(origin, length) => {}
+        (None, None) => {}
+        _ => {
+            return Err(format!(
+                "target {} BusFault fixture range must be declared as an aligned pair",
+                manifest.profile.name
+            )
+            .into());
+        }
+    }
     if isolation.code_length == 0
         || isolation.data_length == 0
         || isolation.stack_length == 0
@@ -388,7 +401,7 @@ fn generate_memory(memory: &Memory) -> String {
 
 fn generate_isolation_memory(memory: &IsolationMemory) -> String {
     format!(
-        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {}, peripheral_origin: {}, peripheral_length: {} }}",
+        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {}, peripheral_origin: {}, peripheral_length: {}, bus_fault_origin: {}, bus_fault_length: {} }}",
         memory.code_origin,
         memory.code_length,
         memory.data_origin,
@@ -399,6 +412,12 @@ fn generate_isolation_memory(memory: &IsolationMemory) -> String {
             .map_or_else(|| "None".to_owned(), |value| format!("Some(0x{value:08X})")),
         memory
             .peripheral_length
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
+        memory
+            .bus_fault_origin
+            .map_or_else(|| "None".to_owned(), |value| format!("Some(0x{value:08X})")),
+        memory
+            .bus_fault_length
             .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
     )
 }

@@ -109,6 +109,10 @@ pub struct IsolationMemoryProfile {
     pub peripheral_origin: Option<u32>,
     /// Size of the ordinary peripheral register region, when declared.
     pub peripheral_length: Option<u32>,
+    /// Address reserved by the target for a deterministic BusFault fixture.
+    pub bus_fault_origin: Option<u32>,
+    /// Minimum aligned range declared for the BusFault fixture.
+    pub bus_fault_length: Option<u32>,
 }
 
 /// A named GPIO pin declared by a board manifest.
