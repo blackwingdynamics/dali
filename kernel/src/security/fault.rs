@@ -13,6 +13,7 @@ const EXC_RETURN_PSP: u32 = 1 << 2;
 const EXC_RETURN_BASIC_FRAME: u32 = 1 << 4;
 const MEMMANAGE_ADDRESS_VALID: u32 = 1 << 7;
 const BUSFAULT_ADDRESS_VALID: u32 = 1 << 15;
+const BUSFAULT_STATUS_MASK: u32 = 0x0000_FF00;
 
 /// Fault sources that must terminate an isolated application.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -117,6 +118,22 @@ unsafe extern "C" fn usage_fault_handler() {
     );
 }
 
+#[unsafe(export_name = "HardFault")]
+#[unsafe(naked)]
+unsafe extern "C" fn hard_fault_handler() {
+    // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
+    // exception return value before transferring control to the kernel.
+    core::arch::naked_asm!(
+        "tst lr, #4",
+        "ite eq",
+        "mrseq r0, msp",
+        "mrsne r0, psp",
+        "mov r1, lr",
+        "b {handler}",
+        handler = sym handle_hard_fault,
+    );
+}
+
 extern "C" fn handle_memory_management(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::MemManage, frame_address, exception_return)
 }
@@ -127,6 +144,20 @@ extern "C" fn handle_bus_fault(frame_address: u32, exception_return: u32) -> ! {
 
 extern "C" fn handle_usage_fault(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::UsageFault, frame_address, exception_return)
+}
+
+extern "C" fn handle_hard_fault(frame_address: u32, exception_return: u32) -> ! {
+    let status = unsafe {
+        // SAFETY: Cortex-M4 exposes SCB at this architectural address and the
+        // privileged fault handler owns this diagnostic read.
+        (&*cortex_m::peripheral::SCB::PTR).cfsr.read()
+    };
+    let kind = if status & BUSFAULT_STATUS_MASK != 0 {
+        FaultKind::BusFault
+    } else {
+        FaultKind::HardFault
+    };
+    handle_with_frame(kind, frame_address, exception_return)
 }
 
 fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32) -> ! {
@@ -195,15 +226,4 @@ fn valid_application_exception_return(value: u32) -> bool {
         && value & EXC_RETURN_THREAD_MODE != 0
         && value & EXC_RETURN_PSP != 0
         && value & EXC_RETURN_BASIC_FRAME != 0
-}
-
-/// Captures a fault status and halts the feature-gated diagnostic path.
-pub(crate) fn handle(kind: FaultKind) -> ! {
-    let status = unsafe {
-        // SAFETY: Cortex-M4 exposes SCB at this architectural address and the
-        // exception handler owns the read-only diagnostic access.
-        (&*cortex_m::peripheral::SCB::PTR).cfsr.read()
-    };
-    report(FaultRecord::without_frame(kind, status));
-    super::launch::recover()
 }

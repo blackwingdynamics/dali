@@ -4,7 +4,6 @@
 //! only with `abi-v3` while the privilege transition and MPU activation remain
 //! separate implementation steps.
 
-use cortex_m_rt::exception;
 use dali::svc::{ExceptionFrame, ServiceId, ServiceStatus};
 use dali_targets::IsolationMemoryProfile;
 
@@ -68,13 +67,6 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
         &mut *(frame_address as *mut ExceptionFrame)
     };
     dispatch(frame, memory);
-}
-
-#[exception(trampoline = false)]
-unsafe fn HardFault() -> ! {
-    // SAFETY: The handler does not inspect the potentially invalid stacked
-    // application frame; recovery builds a fresh frame on the kernel MSP.
-    fault::handle(FaultKind::HardFault)
 }
 
 fn valid_exception_return(value: u32) -> bool {
