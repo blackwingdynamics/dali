@@ -5,6 +5,9 @@ use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, par
 
 use crate::storage::{self, BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
 
+#[cfg(feature = "abi-v3")]
+pub(crate) mod v3;
+
 /// Errors reported while validating a root AMRN package.
 #[derive(Debug)]
 pub enum LoaderError {
@@ -12,6 +15,12 @@ pub enum LoaderError {
     Filesystem(embedded_sdmmc::Error<StorageError>),
     /// The package header or payload failed AMRN validation.
     Package(ParseError),
+    /// The ABI v3 package failed target or segment validation.
+    #[cfg(feature = "abi-v3")]
+    V3Package(dali_amrn::v2::Error),
+    /// The selected target does not declare an ABI v3 memory contract.
+    #[cfg(feature = "abi-v3")]
+    UnsupportedV3Target,
 }
 
 /// Reads and validates the single root AMRN package without copying it.

@@ -56,10 +56,10 @@ All arithmetic must be checked before the SD data is copied to SRAM.
 ## ABI v3 package contract (format version 2)
 
 ABI v3 packages use AMRN format version `2`. This is a contract definition;
-the kernel loader and CLI still use format version `1`. The `dali-amrn` crate
-contains an explicit host-side v2 parser and builder, but format version `2`
-must remain unavailable to kernel execution until the v3 loader is
-implemented.
+the default kernel loader still uses format version `1`, while the CLI emits
+and inspects format version `2` packages. The feature-gated kernel path now
+validates and copies format version `2` segments, but must not enter them until
+the v3 privilege transition is implemented.
 
 The v2 header is a fixed 64-byte header followed by two file segments in a
 single payload:

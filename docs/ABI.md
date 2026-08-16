@@ -166,8 +166,9 @@ ABI v3 packages use AMRN format version `2`; the format revision is required
 because the v1 fixed header cannot represent separate code/data segments and
 runtime stack reservations. The v2 package contract is defined in
 `docs/AMRN_FORMAT.md`. The `dali-amrn` crate provides host-side parsing and
-construction. The CLI can build and inspect ABI v3 packages, while the kernel
-loader remains ABI v2-only.
+construction. The CLI can build and inspect ABI v3 packages, and the kernel has
+a feature-gated streaming validator/copy path. The default kernel remains
+ABI v2-only until the unprivileged launch path is complete.
 
 For the current F405 target, the linker must emit:
 
@@ -217,8 +218,8 @@ memory enabled for kernel operation, and does not perform the unprivileged
 application transition. It must not be treated as application isolation until
 the launch context and F405 fault-injection evidence are complete.
 
-The current loader and SDK default to ABI v2 packages with the direct
-`ServiceTable` entry contract. ABI v3 host packages cannot be entered through
-a PSP-backed unprivileged launch path. ABI v3 launch metadata, linker regions,
-launch frame, and compatibility rejection must be implemented before that
-transition.
+The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
+entry contract. The feature-gated ABI v3 loader validates and copies the
+separate segments but does not enter them. ABI v3 host packages cannot be
+entered through a PSP-backed unprivileged launch path. The launch frame and
+privilege transition must be implemented before that transition.

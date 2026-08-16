@@ -342,6 +342,8 @@ protection boundary is implemented and accepted.
   emit host-inspectable ABI v3 packages.
 - [x] Add the feature-gated SDK-side ABI v3 SVC logging call; keep generated
   ABI v2 applications on the direct service-table path.
+- [x] Add a feature-gated ABI v3 streaming loader with separate CRC validation,
+  code/data copying, and BSS initialization; keep privilege transition deferred.
 - [ ] Implement MPU and privilege transition for one application only.
 - [ ] Implement the SVC gateway and versioned service dispatch.
 - [ ] Implement a privileged fault boundary that records the fault context and

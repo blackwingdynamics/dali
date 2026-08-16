@@ -9,7 +9,7 @@ pub mod v2;
 pub use builder::{BuildError, encode_package};
 #[cfg(test)]
 use stream::checksum as crc32;
-pub use stream::{PayloadValidator, ValidatedPayload};
+pub use stream::{Crc32, PayloadValidator, ValidatedPayload};
 
 /// The fixed AMRN v1 header length in bytes.
 pub const HEADER_SIZE: usize = 32;

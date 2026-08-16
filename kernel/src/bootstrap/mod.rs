@@ -114,6 +114,9 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Read block 0 successfully"),
             );
+            #[cfg(feature = "abi-v3")]
+            let package = crate::loader::v3::load(reader);
+            #[cfg(not(feature = "abi-v3"))]
             let package = if board::APPLICATION_EXECUTION_SUPPORTED {
                 crate::loader::load_amrn_file(reader)
             } else {
@@ -125,9 +128,12 @@ fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
                         logging::BOOT_SUBSYSTEM,
                         format_args!("[LOADER] AMRN header and payload validated"),
                     );
+                    #[cfg(not(feature = "abi-v3"))]
                     if board::APPLICATION_EXECUTION_SUPPORTED {
                         crate::loader::start_application(package);
                     }
+                    #[cfg(feature = "abi-v3")]
+                    let _ = package;
                     status::StorageStatus::Ready
                 }
                 Err(error) => {
