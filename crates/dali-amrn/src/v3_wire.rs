@@ -26,7 +26,7 @@ pub(super) fn write_header(output: &mut [u8], header: Header) {
     output[RESERVED_BYTES_OFFSET..HEADER_SIZE].fill(0);
 }
 
-pub(super) fn parse_header(bytes: &[u8], contract: Contract) -> Result<Header, Error> {
+pub fn parse_header(bytes: &[u8], contract: Contract) -> Result<Header, Error> {
     if bytes.len() < HEADER_SIZE {
         return Err(Error::TruncatedHeader);
     }

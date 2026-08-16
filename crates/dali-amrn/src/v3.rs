@@ -9,7 +9,8 @@ mod codec;
 #[path = "v3_wire.rs"]
 mod wire;
 pub use apply::apply;
-pub use codec::{encode, parse};
+pub use codec::{decode_relocation, encode, parse, validate_relocation};
+pub use wire::parse_header;
 
 /// The fixed AMRN v3 header length in bytes.
 pub const HEADER_SIZE: usize = 80;

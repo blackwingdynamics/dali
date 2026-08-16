@@ -92,7 +92,7 @@ fn header_from_image(image: Image<'_>, contract: Contract) -> Result<Header, Err
     Ok(header)
 }
 
-pub(super) fn validate_header(header: Header, contract: Contract) -> Result<(), Error> {
+pub fn validate_header(header: Header, contract: Contract) -> Result<(), Error> {
     if header.code_size == 0
         || header.stack_size == 0
         || header.code_load_address != contract.code_load_address
@@ -150,7 +150,7 @@ fn validate_relocations(header: Header, contract: Contract, bytes: &[u8]) -> Res
     Ok(())
 }
 
-fn validate_relocation(
+pub fn validate_relocation(
     header: Header,
     contract: Contract,
     relocation: Relocation,
@@ -218,7 +218,7 @@ fn encode_relocations(relocations: &[Relocation], output: &mut [u8]) -> Result<(
     Ok(())
 }
 
-pub(super) fn decode_relocation(bytes: &[u8]) -> Result<Relocation, Error> {
+pub fn decode_relocation(bytes: &[u8]) -> Result<Relocation, Error> {
     if bytes.len() != RELOCATION_ENTRY_SIZE || bytes[2] != 0 || bytes[3] != 0 {
         return Err(Error::InvalidRelocation);
     }
