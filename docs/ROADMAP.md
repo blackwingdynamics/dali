@@ -363,20 +363,20 @@ protection boundary is implemented and accepted.
 #### Implementation and evidence order
 
 - [x] Add a board-owned typed MPU layout descriptor sourced from the F405
-  target manifest; keep hardware activation deferred until the ABI boundary is
-  complete.
+  target manifest and activate it only through the feature-gated ABI v3 path.
 - [x] Add host-testable ABI v3 SVC identifiers and Cortex-M exception-frame
-  types without enabling the new ABI in the kernel.
+  types while keeping ABI v2 as the default kernel configuration.
 - [x] Add manifest-backed aligned application code/data boundaries for the
-  planned ABI v3 memory contract.
+  ABI v3 memory contract.
 - [x] Add a feature-gated kernel SVC frame validator and bounded log dispatch;
   keep it disabled in the default ABI v2 MVP.
 - [x] Define a bounded kernel-owned fault record for invalid exception-return
-  rejection without installing handlers or changing ABI v2 behavior.
+  rejection without changing ABI v2 behavior.
 - [x] Add feature-gated diagnostic MemManage, BusFault, and UsageFault handlers
-  that report bounded SCB status and halt without changing ABI v2 behavior.
+  that report bounded SCB status and return to kernel recovery without changing
+  ABI v2 behavior.
 - [x] Add a feature-gated descriptor-backed MPU register map with privileged
-  default access; keep the unprivileged transition disabled.
+  default access; keep the unprivileged transition disabled in ABI v2.
 - [x] Define the two-phase MPU map required for privileged ABI v3 loading:
   application code/data remain kernel-only and non-executable during copying,
   then receive their unprivileged execution permissions immediately before
@@ -392,10 +392,10 @@ protection boundary is implemented and accepted.
 - [x] Add the feature-gated SDK-side ABI v3 SVC logging call; keep generated
   ABI v2 applications on the direct service-table path.
 - [x] Add a feature-gated ABI v3 streaming loader with separate CRC validation,
-  code/data copying, and BSS initialization; keep privilege transition deferred.
+  code/data copying, and BSS initialization before the privilege transition.
 - [x] Prepare and materialize a kernel-generated ABI v3 basic exception frame
   with validated PSP bounds and a kernel-owned exception-return selector; do
-  not enter it yet.
+  not enable it in the default ABI v2 path.
 - [x] Add an explicitly disabled-by-default PendSV transition primitive for
   the prepared PSP frame; keep fault recovery and acceptance evidence pending.
 - [x] Add a feature-gated kernel-stack fault recovery return that terminates the
@@ -403,7 +403,8 @@ protection boundary is implemented and accepted.
 - [x] Add a feature-gated no-frame HardFault recovery path for exception-entry
   failures where an application stack frame is not valid.
 - [x] Implement MPU and privilege transition for one application only; keep
-  hardware fault acceptance pending.
+  no-frame, watchdog, repeatability, DMA, and multi-application evidence
+  pending.
 - [x] Implement the SVC gateway and versioned service dispatch; rejection
   evidence is recorded below.
 - [x] Implement a privileged fault boundary that records the fault context and

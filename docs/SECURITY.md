@@ -43,7 +43,7 @@ Security claims must be added only after the corresponding mechanism and test ev
 The first isolation milestone is limited to one F405 application. It uses
 the Cortex-M4 privilege model and MPU to prevent unprivileged application code
 from accessing kernel RAM, kernel runtime stack, or ordinary peripheral
-registers. Application services will use an SVC gateway rather than direct
+registers. Application services use an SVC gateway rather than direct
 privileged function calls.
 
 The feature-gated ABI v3 path now implements the single-application MPU map,
