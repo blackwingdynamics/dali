@@ -109,6 +109,28 @@ work is contract hardening, security evidence, and post-MVP lifecycle design.
 - [x] Add host tests for the generic driver contracts and target checks for the
   F405 adapter before marking the driver boundary complete.
 
+#### Future family-level backend scaling
+
+- [ ] Keep the kernel dependent only on a stable, hardware-neutral platform
+  facade and typed backend contracts.
+- [ ] When a second board from the STM32F4 family is added, extract the shared
+  implementation into a reusable `dali-backend-stm32f4` family crate; board
+  manifests must remain declarative and provide board-specific facts only.
+- [ ] When a new MCU family is added, introduce a dedicated family backend
+  crate such as `dali-backend-rp2040` or `dali-backend-nrf52` instead of adding
+  family conditionals to kernel policy modules.
+- [ ] Keep board selection, capabilities, memory layout, and peripheral
+  metadata in generated target profiles rather than hardcoding them in kernel
+  or CLI implementation code.
+- [ ] Add a backend contract test suite that every family backend must satisfy,
+  including clock, storage, console, reset, and memory-protection capabilities.
+- [ ] Add one CI matrix entry per supported backend family and one target-level
+  validation job per application-supported board profile.
+
+This work starts only when a second board in an existing family or a first
+board in a new family is introduced. Until then, the current F405 backend
+facade is the intended minimum boundary and no empty family crate is needed.
+
 ### ABI selector foundation
 
 - [x] Centralize the active ABI selector and keep versioned Cargo feature names
