@@ -2,7 +2,7 @@
 
 use core::ops::ControlFlow;
 
-use crate::storage::StorageError;
+use crate::drivers::StorageError;
 use embedded_sdmmc::{
     DirEntry, Error, LfnBuffer, Mode, RawFile, ShortFileName, TimeSource, Timestamp, VolumeIdx,
     VolumeManager,

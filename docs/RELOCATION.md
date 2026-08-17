@@ -153,7 +153,7 @@ and rejection test before it can be emitted to or applied from an AMRN package.
 Build and inspect the fixture from its directory:
 
 ```text
-cargo build --offline --features embedded-payload,abi-v3 \
+cargo build --offline --features embedded-payload,abi-current \
   --target thumbv7em-none-eabihf
 readelf -rW target/thumbv7em-none-eabihf/debug/dali-app-relocation-fixture
 ```

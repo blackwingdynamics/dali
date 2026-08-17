@@ -2,24 +2,16 @@
 
 mod heartbeat;
 mod status;
+mod storage;
 
-use crate::{board, logging};
-#[cfg(feature = "sdio")]
-use crate::{
-    drivers::sdio::SdioBlockReader,
-    storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader},
-};
-use stm32f4xx_hal::pac;
+use crate::{logging, platform};
 
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
 pub fn run() -> ! {
-    // The reset entry point runs once, so both peripheral singleton tokens are available.
-    let device = pac::Peripherals::take().unwrap();
-    let core = cortex_m::Peripherals::take().unwrap();
-    let mut board = board::initialize(device, core);
-    #[cfg(feature = "abi-v3-mpu")]
-    if let Some(layout) = board::ISOLATION_LAYOUT {
-        board::mpu::configure_hardware(layout);
+    let mut board = platform::initialize();
+    #[cfg(feature = "abi-mpu")]
+    if let Some(layout) = platform::ISOLATION_LAYOUT {
+        platform::mpu::configure_hardware(layout);
     }
 
     initialize_logging();
@@ -36,7 +28,7 @@ pub fn run() -> ! {
     emit_boot_banner();
     logging::info(
         logging::BOOT_SUBSYSTEM,
-        format_args!("[BOOT] System clock: {} MHz", board::SYSTEM_CLOCK_MHZ),
+        format_args!("[BOOT] System clock: {} MHz", platform::SYSTEM_CLOCK_MHZ),
     );
     logging::info(
         logging::BOOT_SUBSYSTEM,
@@ -44,12 +36,12 @@ pub fn run() -> ! {
     );
 
     // Keep a visible indication active while storage initialization is in progress.
-    board::set_status_led(&mut board, true);
+    board.set_status_led(true);
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Starting storage initialization"),
     );
-    let storage_status = initialize_storage(&mut board);
+    let storage_status = storage::initialize(&mut board);
 
     logging::info(
         logging::BOOT_SUBSYSTEM,
@@ -76,104 +68,4 @@ fn emit_boot_banner() {
         logging::BOOT_SUBSYSTEM,
         format_args!("===================================="),
     );
-}
-
-#[cfg(feature = "sdio")]
-fn initialize_storage(board: &mut board::Board) -> status::StorageStatus {
-    let Some((peripheral, pins, clocks)) = board.take_sdio_resources() else {
-        logging::error(
-            logging::BOOT_SUBSYSTEM,
-            format_args!("[STORAGE] SDIO resources unavailable"),
-        );
-        return status::StorageStatus::Failure;
-    };
-
-    let mut reader = SdioBlockReader::new(peripheral, pins, clocks);
-    if let Err(error) = reader.initialize() {
-        logging::error(
-            logging::BOOT_SUBSYSTEM,
-            format_args!("[STORAGE] SDIO initialization failed: {:?}", error),
-        );
-        return match error {
-            crate::storage::StorageError::NotReady | crate::storage::StorageError::Timeout => {
-                status::StorageStatus::NotDetected
-            }
-            _ => status::StorageStatus::Failure,
-        };
-    }
-
-    logging::info(
-        logging::BOOT_SUBSYSTEM,
-        format_args!("[STORAGE] SDIO card initialized"),
-    );
-
-    let mut block: Block = [0; BLOCK_SIZE];
-    match reader.read_block(BlockAddress::new(0), &mut block) {
-        Ok(()) => {
-            logging::info(
-                logging::BOOT_SUBSYSTEM,
-                format_args!("[STORAGE] Read block 0 successfully"),
-            );
-            #[cfg(feature = "abi-v3")]
-            let package = crate::loader::load_abi_v3(reader);
-            #[cfg(not(feature = "abi-v3"))]
-            let package = if board::APPLICATION_EXECUTION_SUPPORTED {
-                crate::loader::load_amrn_file(reader)
-            } else {
-                crate::loader::validate_amrn_file(reader)
-            };
-            match package {
-                Ok(package) => {
-                    logging::info(
-                        logging::BOOT_SUBSYSTEM,
-                        format_args!("[LOADER] AMRN header and payload validated"),
-                    );
-                    #[cfg(not(feature = "abi-v3"))]
-                    if board::APPLICATION_EXECUTION_SUPPORTED {
-                        crate::loader::start_application(package);
-                    }
-                    #[cfg(feature = "abi-v3")]
-                    {
-                        #[cfg(feature = "abi-v3-mpu")]
-                        {
-                            if board::activate_application_regions() {
-                                crate::security::launch::enter(package.launch_frame);
-                            }
-                            logging::error(
-                                logging::SECURITY_SUBSYSTEM,
-                                format_args!("[SECURITY] Application MPU layout unavailable"),
-                            );
-                            status::StorageStatus::Failure
-                        }
-                        #[cfg(not(feature = "abi-v3-mpu"))]
-                        {
-                            let _ = package;
-                            status::StorageStatus::Ready
-                        }
-                    }
-                    #[cfg(not(feature = "abi-v3"))]
-                    status::StorageStatus::Ready
-                }
-                Err(error) => {
-                    logging::error(
-                        logging::BOOT_SUBSYSTEM,
-                        format_args!("[LOADER] AMRN validation failed: {:?}", error),
-                    );
-                    status::StorageStatus::Failure
-                }
-            }
-        }
-        Err(error) => {
-            logging::error(
-                logging::BOOT_SUBSYSTEM,
-                format_args!("[STORAGE] Block 0 read failed: {:?}", error),
-            );
-            status::StorageStatus::Failure
-        }
-    }
-}
-
-#[cfg(not(feature = "sdio"))]
-fn initialize_storage(_board: &mut board::Board) -> status::StorageStatus {
-    status::StorageStatus::NotDetected
 }

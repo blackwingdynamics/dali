@@ -67,7 +67,7 @@ pub fn initialize() {
 
 /// Initializes the optional USB CDC logging backend.
 #[cfg(feature = "usb-cdc")]
-pub fn initialize_usb(resources: crate::board::UsbResources) {
+pub(crate) fn initialize_usb(resources: crate::platform::UsbResources) {
     usb_cdc::initialize(resources);
 }
 
@@ -92,7 +92,7 @@ pub fn log(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
                 // SAFETY: Main-context logging masks OTG_FS while updating the
                 // queue, so the handler cannot observe a partial record.
                 unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).push(line) };
-                cortex_m::peripheral::NVIC::pend(stm32f4xx_hal::pac::Interrupt::OTG_FS);
+                crate::platform::pend_usb_irq();
             });
         }
     }

@@ -3,7 +3,10 @@
 use dali_amrn::{Crc32, v3};
 
 use crate::security::launch::{self, LaunchFrame};
-use crate::storage::{BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
+use crate::{
+    drivers::{BLOCK_SIZE, Block, StorageError},
+    storage::filesystem::AmrnFile,
+};
 
 use super::v3::LoadedApplication;
 
@@ -64,9 +67,10 @@ where
 }
 
 fn target_contract() -> Option<v3::Contract> {
-    let isolation = dali_targets::TARGET_F405.memory.isolation?;
+    let target = crate::platform::TARGET_PROFILE;
+    let isolation = target.memory.isolation?;
     Some(v3::Contract {
-        target_id: dali_targets::TARGET_F405.amrn_target_id,
+        target_id: target.amrn_target_id,
         code_load_address: isolation.code_origin,
         code_capacity: isolation.code_length,
         data_load_address: isolation.data_origin,

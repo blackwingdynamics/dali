@@ -1,7 +1,7 @@
 //! Feature-gated SVC gateway and exception-frame validation.
 //!
 //! The gateway is not part of the default MVP execution path. It is compiled
-//! only with `abi-v3` while the privilege transition and MPU activation remain
+//! only with `abi-current` while the privilege transition and MPU activation remain
 //! separate implementation steps.
 
 use dali::svc::{ExceptionFrame, ServiceId, ServiceStatus};
@@ -41,7 +41,7 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
     }
     let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
-    let memory = match crate::board::MEMORY_PROFILE.isolation {
+    let memory = match crate::platform::MEMORY_PROFILE.isolation {
         Some(memory) => memory,
         None => return,
     };

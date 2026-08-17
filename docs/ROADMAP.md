@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-16
+## Current Status — 2026-08-17
 
 ### Completed and evidenced
 
@@ -75,12 +75,79 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 ### Current priority
 
-**Current priority — Build the F405 single-application isolation foundation.**
+**Current priority — Harden the post-MVP platform and security contracts.**
 
 The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.1
 release boundary are complete. RP2350/Pico kernel support remains deferred;
-the Pico is currently used only as an external SWD probe. The next work is the
-ABI v3 implementation and its host/SWD evidence.
+the Pico is currently used only as an external SWD probe. ABI v3, relocation,
+and the single-application isolation evidence are complete for the current
+F405 scope. The scalable platform/backend extraction is complete; remaining
+work is contract hardening, security evidence, and post-MVP lifecycle design.
+
+### Platform scalability foundation
+
+- [x] Define the platform/backend ownership boundary and contributor workflow
+  before adding additional hardware targets.
+- [x] Move the F405 board implementation fully behind the platform backend
+  facade without changing its runtime behavior.
+- [x] Add generated backend scaffolding and validation for new target profiles.
+- [x] Expose stable platform operations without leaking board resource types to
+  bootstrap or heartbeat policy.
+- [x] Formalize the selected backend through a crate-private `Backend` contract
+  and keep F405 resource ownership behind the platform facade.
+
+#### Recorded architecture debt
+
+- [x] Restore `kernel/src/drivers/` as the hardware-neutral driver layer after
+  the platform refactor is complete.
+- [x] Define the generic block-storage contract in `kernel/src/drivers/` and
+  make the F405 SDIO adapter implement it without exposing PAC or HAL types to
+  kernel policy.
+- [x] Define a hardware-neutral SDIO transport contract in
+  `kernel/src/drivers/sdio.rs`; keep the STM32F405 PAC/HAL implementation as a
+  platform backend rather than coupling generic drivers to one board.
+- [x] Add host tests for the generic driver contracts and target checks for the
+  F405 adapter before marking the driver boundary complete.
+
+#### Future family-level backend scaling
+
+- [ ] Keep the kernel dependent only on a stable, hardware-neutral platform
+  facade and typed backend contracts.
+- [ ] When a second board from the STM32F4 family is added, extract the shared
+  implementation into a reusable `dali-backend-stm32f4` family crate; board
+  manifests must remain declarative and provide board-specific facts only.
+- [ ] When a new MCU family is added, introduce a dedicated family backend
+  crate such as `dali-backend-rp2040` or `dali-backend-nrf52` instead of adding
+  family conditionals to kernel policy modules.
+- [ ] Keep board selection, capabilities, memory layout, and peripheral
+  metadata in generated target profiles rather than hardcoding them in kernel
+  or CLI implementation code.
+- [ ] Add a backend contract test suite that every family backend must satisfy,
+  including clock, storage, console, reset, and memory-protection capabilities.
+- [ ] Add one CI matrix entry per supported backend family and one target-level
+  validation job per application-supported board profile.
+
+This work starts only when a second board in an existing family or a first
+board in a new family is introduced. Until then, the current F405 backend
+facade is the intended minimum boundary and no empty family crate is needed.
+
+### ABI selector foundation
+
+- [x] Centralize the active ABI selector and keep versioned Cargo feature names
+  version-neutral across implementation modules.
+- [x] Centralize ABI-family and AMRN-format compatibility validation for the
+  kernel-facing build contract and CLI package commands.
+- [ ] Define the ABI v4 contract and implementation before enabling a v4 alias.
+
+### Enterprise architecture hardening
+
+- [x] Separate direct PAC/HAL adapters from kernel policy modules.
+- [x] Split bootstrap orchestration from storage initialization and package
+  loading policy.
+- [x] Declare target capabilities in TOML and validate them during builds.
+- [x] Add build-time target/ABI/format consistency gates.
+- [x] Run legacy and isolation embedded checks through a CI matrix.
+- [x] Add hardware-independent kernel core contract tests.
 
 ### USB CDC handoff boundary
 
@@ -318,20 +385,20 @@ protection boundary is implemented and accepted.
 #### Implementation and evidence order
 
 - [x] Add a board-owned typed MPU layout descriptor sourced from the F405
-  target manifest; keep hardware activation deferred until the ABI boundary is
-  complete.
+  target manifest and activate it only through the feature-gated ABI v3 path.
 - [x] Add host-testable ABI v3 SVC identifiers and Cortex-M exception-frame
-  types without enabling the new ABI in the kernel.
+  types while keeping ABI v2 as the default kernel configuration.
 - [x] Add manifest-backed aligned application code/data boundaries for the
-  planned ABI v3 memory contract.
+  ABI v3 memory contract.
 - [x] Add a feature-gated kernel SVC frame validator and bounded log dispatch;
   keep it disabled in the default ABI v2 MVP.
 - [x] Define a bounded kernel-owned fault record for invalid exception-return
-  rejection without installing handlers or changing ABI v2 behavior.
+  rejection without changing ABI v2 behavior.
 - [x] Add feature-gated diagnostic MemManage, BusFault, and UsageFault handlers
-  that report bounded SCB status and halt without changing ABI v2 behavior.
+  that report bounded SCB status and return to kernel recovery without changing
+  ABI v2 behavior.
 - [x] Add a feature-gated descriptor-backed MPU register map with privileged
-  default access; keep the unprivileged transition disabled.
+  default access; keep the unprivileged transition disabled in ABI v2.
 - [x] Define the two-phase MPU map required for privileged ABI v3 loading:
   application code/data remain kernel-only and non-executable during copying,
   then receive their unprivileged execution permissions immediately before
@@ -347,10 +414,10 @@ protection boundary is implemented and accepted.
 - [x] Add the feature-gated SDK-side ABI v3 SVC logging call; keep generated
   ABI v2 applications on the direct service-table path.
 - [x] Add a feature-gated ABI v3 streaming loader with separate CRC validation,
-  code/data copying, and BSS initialization; keep privilege transition deferred.
+  code/data copying, and BSS initialization before the privilege transition.
 - [x] Prepare and materialize a kernel-generated ABI v3 basic exception frame
   with validated PSP bounds and a kernel-owned exception-return selector; do
-  not enter it yet.
+  not enable it in the default ABI v2 path.
 - [x] Add an explicitly disabled-by-default PendSV transition primitive for
   the prepared PSP frame; keep fault recovery and acceptance evidence pending.
 - [x] Add a feature-gated kernel-stack fault recovery return that terminates the
@@ -358,7 +425,8 @@ protection boundary is implemented and accepted.
 - [x] Add a feature-gated no-frame HardFault recovery path for exception-entry
   failures where an application stack frame is not valid.
 - [x] Implement MPU and privilege transition for one application only; keep
-  hardware fault acceptance pending.
+  no-frame, watchdog, repeatability, DMA, and multi-application evidence
+  pending.
 - [x] Implement the SVC gateway and versioned service dispatch; rejection
   evidence is recorded below.
 - [x] Implement a privileged fault boundary that records the fault context and
@@ -417,8 +485,8 @@ output was:
 ```
 
 This also proves processor-side rejection of an unprivileged kernel-RAM write
-and return to the kernel recovery path. Fault-frame address and PC decoding,
-and multi-application isolation remain unverified.
+and return to the kernel recovery path. Multi-application isolation remains
+unverified.
 
 A third run used the dedicated peripheral-access fixture. The observed output
 was:
@@ -430,9 +498,8 @@ was:
 ```
 
 This proves processor-side rejection of an unprivileged peripheral-MMIO read
-and return to the kernel recovery path. Fault-frame address and PC decoding,
-peripheral writes, invalid execution, PSP bounds, DMA isolation, and
-multi-application isolation remain unverified.
+and return to the kernel recovery path. DMA isolation and multi-application
+isolation remain unverified.
 
 A fourth run used the dedicated peripheral-write fixture. The observed output
 was:
@@ -443,9 +510,8 @@ was:
 ```
 
 This proves processor-side rejection of an unprivileged peripheral-MMIO write
-and return to the kernel recovery path. Fault-frame address and PC decoding,
-invalid execution, PSP bounds, DMA isolation, and multi-application isolation
-remain unverified.
+and return to the kernel recovery path. DMA isolation and multi-application
+isolation remain unverified.
 
 A fifth run used the execute-never fixture. The observed output was:
 
@@ -456,9 +522,8 @@ A fifth run used the execute-never fixture. The observed output was:
 ```
 
 This proves processor-side rejection of instruction fetch from the
-application-data region and return to the kernel recovery path. Fault-frame
-address and PC decoding, invalid vector handling, PSP bounds, DMA isolation,
-and multi-application isolation remain unverified.
+application-data region and return to the kernel recovery path. Invalid vector
+handling, DMA isolation, and multi-application isolation remain unverified.
 
 The first PSP-boundary run was initially allowed to reach the fixture loop,
 because unprivileged application code cannot change its own PSP. A controlled
@@ -472,8 +537,8 @@ The observed output was:
 ```
 
 This proves the selected exception-entry stack-boundary fault reaches the
-kernel recovery path. Fault-frame address and PC decoding, invalid vector
-handling, DMA isolation, and multi-application isolation remain unverified.
+kernel recovery path. Invalid vector handling, DMA isolation, and
+multi-application isolation remain unverified.
 
 The SVC rejection matrix was run on 2026-08-16 on the F405 using the
 `dali-app-svc-rejections` package and the Pico CMSIS-DAP probe. The application

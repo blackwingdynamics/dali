@@ -1,41 +1,44 @@
-//! WeAct Studio STM32F405RGT6 Core Board support.
+//! WeAct Studio STM32F405RGT6 Core Board hardware backend.
 
 use dali_targets::TARGET_F405;
 
-#[cfg(feature = "abi-v3")]
+#[cfg(feature = "abi-current")]
 use dali_targets::MemoryProfile;
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
 /// First planned single-application F405 isolation layout.
-pub const ISOLATION_LAYOUT: Option<super::mpu::IsolationLayout> =
-    super::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
+pub const ISOLATION_LAYOUT: Option<crate::board::mpu::IsolationLayout> =
+    crate::board::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
 const _: () = assert!(ISOLATION_LAYOUT.is_some());
 
 /// Activates unprivileged application permissions after the loader finishes.
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 pub fn activate_application_regions() -> bool {
     let Some(layout) = ISOLATION_LAYOUT else {
         return false;
     };
-    super::mpu::activate_application_regions(layout);
+    crate::board::mpu::activate_application_regions(layout);
     true
 }
 
 /// The current MVP board supports AMRN native application execution.
-#[cfg(not(feature = "abi-v3"))]
+#[cfg(not(feature = "abi-current"))]
 pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
 
 /// System clock target derived from the declarative F405 target profile.
 pub const SYSTEM_CLOCK_HZ: u32 = TARGET_F405.clock.system_hz;
-#[cfg(feature = "abi-v3")]
+#[cfg(feature = "abi-current")]
 pub const MEMORY_PROFILE: MemoryProfile = TARGET_F405.memory;
 /// Unit conversion used by the boot log's human-readable clock value.
 const HZ_PER_MHZ: u32 = 1_000_000;
-/// System clock in megahertz for the common board facade.
+/// System clock in megahertz for the common platform facade.
 pub const SYSTEM_CLOCK_MHZ: u32 = SYSTEM_CLOCK_HZ / HZ_PER_MHZ;
 
 const _: () = assert!(TARGET_F405.amrn_target_id == dali_amrn::TARGET_ID);
-const _: () = assert!(TARGET_F405.abi_version == dali_amrn::ABI_VERSION);
+#[cfg(feature = "abi-current")]
+const _: () = assert!(crate::abi::CURRENT_VERSION == dali_amrn::v2::ABI_VERSION);
+#[cfg(not(feature = "abi-current"))]
+const _: () = assert!(TARGET_F405.abi_version == crate::abi::CURRENT_VERSION);
 const _: () = assert!(
     TARGET_F405.memory.application_origin == dali_amrn::LOAD_ADDRESS
         && TARGET_F405.memory.application_length == dali_amrn::MAX_PAYLOAD_SIZE as u32
@@ -121,7 +124,11 @@ impl Board {
 }
 
 /// Takes singleton peripherals and initializes the STM32F405 board hardware.
-pub fn initialize(device: pac::Peripherals, core: cortex_m::Peripherals) -> Board {
+pub fn initialize() -> Board {
+    // The platform backend owns singleton acquisition so the kernel core does
+    // not depend on the STM32 PAC or the reset-time peripheral topology.
+    let device = pac::Peripherals::take().unwrap();
+    let core = cortex_m::Peripherals::take().unwrap();
     let rcc = device.RCC.constrain();
     let clocks = rcc
         .cfgr
@@ -180,4 +187,18 @@ pub fn set_status_led(board: &mut Board, on: bool) {
     } else {
         board.status_led.set_low();
     }
+}
+
+/// Enables the board's USB interrupt after the CDC backend is initialized.
+#[cfg(feature = "usb-cdc")]
+pub fn unmask_usb_irq() {
+    // SAFETY: The backend initializes USB state before unmasking its sole IRQ.
+    unsafe { cortex_m::peripheral::NVIC::unmask(pac::Interrupt::OTG_FS) };
+}
+
+/// Wakes the board's USB backend after a main-context log enqueue.
+#[cfg(feature = "usb-cdc")]
+pub fn pend_usb_irq() {
+    // SAFETY: PENDING is a software wake-up for the initialized USB owner.
+    cortex_m::peripheral::NVIC::pend(pac::Interrupt::OTG_FS);
 }

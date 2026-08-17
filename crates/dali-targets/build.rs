@@ -15,6 +15,7 @@ struct Manifest {
     status_led: Pin,
     usb: Usb,
     storage: Option<Storage>,
+    capabilities: Capabilities,
 }
 
 #[derive(Debug, Deserialize)]
@@ -26,6 +27,7 @@ struct Artifacts {
 #[derive(Debug, Deserialize)]
 struct Profile {
     name: String,
+    backend: String,
     board: String,
     mcu: String,
     rust_target: String,
@@ -124,6 +126,14 @@ struct Storage {
     data: [Pin; 4],
 }
 
+#[derive(Debug, Deserialize)]
+struct Capabilities {
+    storage: bool,
+    usb_console: bool,
+    mpu: bool,
+    relocation: bool,
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_directory = PathBuf::from(env::var("CARGO_MANIFEST_DIR")?);
     let manifest_directory = crate_directory.join("../..").join(MANIFEST_DIRECTORY);
@@ -179,6 +189,7 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
     for (index, manifest) in manifests.iter().enumerate() {
         validate_memory_regions(manifest)?;
         if manifest.profile.name.is_empty()
+            || manifest.profile.backend.is_empty()
             || manifest.profile.board.is_empty()
             || manifest.profile.mcu.is_empty()
             || manifest.profile.rust_target.is_empty()
@@ -217,6 +228,27 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         {
             return Err(format!(
                 "target manifest {} has an invalid storage width",
+                manifest.profile.name
+            )
+            .into());
+        }
+        if manifest.capabilities.storage != manifest.storage.is_some() {
+            return Err(format!(
+                "target manifest {} must align storage capability with the storage section",
+                manifest.profile.name
+            )
+            .into());
+        }
+        if manifest.capabilities.mpu && manifest.memory.isolation.is_none() {
+            return Err(format!(
+                "target manifest {} declares MPU without isolation memory",
+                manifest.profile.name
+            )
+            .into());
+        }
+        if manifest.capabilities.relocation && manifest.memory.isolation.is_none() {
+            return Err(format!(
+                "target manifest {} declares relocation without isolation memory",
                 manifest.profile.name
             )
             .into());
@@ -441,10 +473,11 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
+        backend = string_literal(&profile.backend),
         board = string_literal(&profile.board),
         mcu = string_literal(&profile.mcu),
         target = string_literal(&profile.rust_target),
@@ -471,6 +504,7 @@ fn generate_profile(manifest: &Manifest) -> String {
         application_supported = profile.application_supported,
         id = profile.amrn_target_id,
         abi = profile.abi_version,
+        capabilities = generate_capabilities(&manifest.capabilities),
         clock = generate_clock(&manifest.clock),
         memory = generate_memory(&manifest.memory),
         led = generate_pin(&manifest.status_led),
@@ -480,6 +514,13 @@ fn generate_profile(manifest: &Manifest) -> String {
             .as_ref()
             .map(generate_storage)
             .map_or_else(|| "None".to_owned(), |storage| format!("Some({storage})")),
+    )
+}
+
+fn generate_capabilities(capabilities: &Capabilities) -> String {
+    format!(
+        "CapabilitiesProfile {{ storage: {}, usb_console: {}, mpu: {}, relocation: {} }}",
+        capabilities.storage, capabilities.usb_console, capabilities.mpu, capabilities.relocation
     )
 }
 

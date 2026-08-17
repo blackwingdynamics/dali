@@ -45,7 +45,7 @@ The `.bin` file is the intermediate native payload. The `.amrn` file is the
 deployable package. `dali app package` remains available when repackaging an
 existing payload without rebuilding it.
 
-For ABI v3, the command enables the `abi-v3` feature, selects `memory.v3.x`,
+For ABI v3, the command enables the `abi-current` feature, selects `memory.v3.x`,
 and extracts the linker-defined code and initialized-data sections. It writes:
 
 ```text

@@ -45,14 +45,24 @@ jobs:
         run: cargo check --workspace --exclude dali-kernel
 
       - name: Run host tests
-        run: cargo test -p dali -p dali-app-hello -p dali-cli
+        run: cargo test -p dali -p dali-amrn -p dali-app-hello -p dali-cli -p dali-targets
 
       - name: Run host Clippy
         run: cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
 
   embedded:
-    name: STM32F411 embedded checks
+    name: ${{ matrix.profile }} embedded checks (${{ matrix.contract }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: f405
+            contract: legacy
+            features: board-stm32f405-sd,usb-cdc
+          - profile: f405
+            contract: isolation
+            features: board-stm32f405-sd,usb-cdc,abi-current,abi-mpu,abi-relocation
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -63,13 +73,13 @@ jobs:
           targets: thumbv7em-none-eabihf
 
       - name: Check kernel
-        run: cargo check-kernel
+        run: cargo check -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
 
       - name: Run kernel Clippy
-        run: cargo clippy -p dali-kernel --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
+        run: cargo clippy -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
 
       - name: Build kernel
-        run: cargo build-kernel
+        run: cargo build -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
 
   repository:
     name: Repository hygiene

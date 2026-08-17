@@ -14,7 +14,7 @@ pub(crate) trait UsbResources {
     fn into_bus(self, endpoint_memory: &'static mut [u32]) -> UsbBusAllocator<Self::Bus>;
 }
 
-type ActiveBus = <crate::board::UsbResources as UsbResources>::Bus;
+type ActiveBus = <crate::platform::UsbResources as UsbResources>::Bus;
 
 const USB_VENDOR_ID: u16 = 0x1209;
 const USB_PRODUCT_ID: u16 = 0xDA11;
@@ -31,7 +31,7 @@ static USB_DEVICE: Mutex<RefCell<Option<UsbDevice<'static, ActiveBus>>>> =
     Mutex::new(RefCell::new(None));
 
 /// Initializes the USB CDC-ACM console.
-pub(super) fn initialize(resources: crate::board::UsbResources) {
+pub(super) fn initialize(resources: crate::platform::UsbResources) {
     // SAFETY: USB endpoint memory is initialized once during reset bootstrap and
     // remains exclusively owned by the single kernel execution context.
     let bus = unsafe {
@@ -60,8 +60,8 @@ pub(super) fn initialize(resources: crate::board::UsbResources) {
         });
 
         // SAFETY: USB resources and shared state are initialized before the
-        // OTG_FS handler is unmasked; the handler is the sole USB owner.
-        cortex_m::peripheral::NVIC::unmask(stm32f4xx_hal::pac::Interrupt::OTG_FS);
+        // platform backend unmasks the sole USB owner.
+        crate::platform::unmask_usb_irq();
     }
 }
 

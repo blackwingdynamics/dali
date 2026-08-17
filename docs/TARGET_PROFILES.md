@@ -9,7 +9,8 @@ board metadata and the Dali compatibility identifiers consumed by host tools.
 The boundary is intentionally split:
 
 - `targets/*.toml` declares board facts: MCU, clocks, memory regions, pins,
-  alternate functions, USB, optional storage, and application compatibility.
+  alternate functions, USB, optional storage, application compatibility, and
+  explicit capabilities.
 - `crates/dali-targets/build.rs` parses and validates every manifest at build
   time, then generates a typed `no_std` registry for host consumers.
 - `crates/dali-cli` consumes the generated registry for target selection and
@@ -33,6 +34,7 @@ Each supported target manifest contains these sections:
 | Section | Purpose |
 | --- | --- |
 | `profile` | Stable profile name, board name, MCU, Rust target, probe identifier, application support, AMRN target ID, and ABI version |
+| `capabilities` | Explicit storage, USB console, MPU, and relocation support declarations |
 | `clock` | Clock source, input, system, APB1, APB2, and USB frequencies in hertz |
 | `memory` | Kernel, application, runtime, and optional isolated code/data SRAM regions |
 | `status_led` | Logical status LED port, pin, alternate function, and polarity |

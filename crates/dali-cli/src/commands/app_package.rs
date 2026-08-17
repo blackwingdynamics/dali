@@ -15,16 +15,21 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let target_profile = build::target_profile(&manifest.target_profile)?;
     let target = target_profile.rust_target;
     let abi_version = manifest.abi_version.unwrap_or(target_profile.abi_version);
+    let abi_contract = dali_amrn::compatibility::for_abi(abi_version)
+        .ok_or_else(|| format!("unsupported application ABI version {abi_version}"))?;
     let release = build::cargo_profile_is_release(&manifest.profile)?;
     let output = build::payload_path(&project_directory, target, release, &manifest.name)
         .with_extension(AMRN_EXTENSION);
-    let default_format_version = if abi_version == dali_amrn::v2::ABI_VERSION {
-        dali_amrn::v2::FORMAT_VERSION
-    } else {
-        dali_amrn::FORMAT_VERSION
-    };
-    let format_version = manifest.format_version.unwrap_or(default_format_version);
-    let package = if abi_version == dali_amrn::ABI_VERSION {
+    let format_version = manifest
+        .format_version
+        .unwrap_or(abi_contract.default_format_version);
+    build::validate_target_capabilities(target_profile, abi_version, Some(format_version))?;
+    if !abi_contract.supports_format(format_version) {
+        return Err(format!(
+            "AMRN format version {format_version} is incompatible with ABI version {abi_version}"
+        ));
+    }
+    let package = if abi_contract.family == dali_amrn::compatibility::AbiFamily::Legacy {
         if format_version != dali_amrn::FORMAT_VERSION {
             return Err(format!(
                 "AMRN format version {format_version} is incompatible with ABI version {abi_version}"
@@ -35,7 +40,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             format!("cannot read native payload {}: {error}", payload.display())
         })?;
         package_command::build_package(&payload_bytes, manifest.entry_offset)?
-    } else if abi_version == dali_amrn::v2::ABI_VERSION {
+    } else {
         match format_version {
             dali_amrn::v2::FORMAT_VERSION => build_v3_package(
                 &project_directory,
@@ -53,8 +58,6 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             )?,
             _ => return Err(format!("unsupported AMRN format version {format_version}")),
         }
-    } else {
-        return Err(format!("unsupported application ABI version {abi_version}"));
     };
     fs::write(&output, package)
         .map_err(|error| format!("cannot write AMRN package {}: {error}", output.display()))?;

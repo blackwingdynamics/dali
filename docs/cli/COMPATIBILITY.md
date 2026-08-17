@@ -26,6 +26,11 @@ dali-amrn contract and must not be independently redefined by the CLI.
 for a target that declares isolation memory metadata. This is inspection-only:
 the CLI does not build v3 packages, and the kernel does not execute them yet.
 
+Build and package commands enforce the target manifest capabilities before
+constructing an application package. Isolation ABI builds require declared MPU
+support, while AMRN relocation format builds require declared relocation
+support.
+
 ## Breaking changes
 
 Changes to package bytes, validation rules, output semantics, or exit codes

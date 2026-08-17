@@ -30,6 +30,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let target_profile = target_profile(&manifest.target_profile)?;
     let target = target_profile.rust_target;
     let abi_version = manifest.abi_version.unwrap_or(target_profile.abi_version);
+    validate_target_capabilities(target_profile, abi_version, manifest.format_version)?;
     let release = cargo_profile_is_release(&manifest.profile)?;
     let cargo_manifest = project_directory.join(CARGO_MANIFEST_FILE);
     run_cargo_build(
@@ -167,11 +168,45 @@ fn run_cargo_build(
 }
 
 pub(super) fn features_for_abi(abi_version: u8) -> Result<String, String> {
-    match abi_version {
-        dali_amrn::ABI_VERSION => Ok(EMBEDDED_PAYLOAD_FEATURE.to_owned()),
-        dali_amrn::v2::ABI_VERSION => Ok(format!("{EMBEDDED_PAYLOAD_FEATURE},abi-v3")),
-        _ => Err(format!("unsupported application ABI version {abi_version}")),
+    let contract = dali_amrn::compatibility::for_abi(abi_version)
+        .ok_or_else(|| format!("unsupported application ABI version {abi_version}"))?;
+    match contract.family {
+        dali_amrn::compatibility::AbiFamily::Legacy => Ok(EMBEDDED_PAYLOAD_FEATURE.to_owned()),
+        dali_amrn::compatibility::AbiFamily::Isolation => {
+            Ok(format!("{EMBEDDED_PAYLOAD_FEATURE},abi-current"))
+        }
     }
+}
+
+/// Verifies that a target manifest can provide the requested application contract.
+pub(super) fn validate_target_capabilities(
+    target: &dali_targets::TargetProfile,
+    abi_version: u8,
+    format_version: Option<u8>,
+) -> Result<(), String> {
+    let contract = dali_amrn::compatibility::for_abi(abi_version)
+        .ok_or_else(|| format!("unsupported application ABI version {abi_version}"))?;
+    let format_version = format_version.unwrap_or(contract.default_format_version);
+    if !contract.supports_format(format_version) {
+        return Err(format!(
+            "AMRN format version {format_version} is incompatible with ABI version {abi_version}"
+        ));
+    }
+    if contract.family == dali_amrn::compatibility::AbiFamily::Isolation && !target.capabilities.mpu
+    {
+        return Err(format!(
+            "target `{}` does not declare MPU support for ABI version {abi_version}",
+            target.name
+        ));
+    }
+    if format_version == dali_amrn::v3::FORMAT_VERSION && !target.capabilities.relocation {
+        return Err(format!(
+            "target `{}` does not declare relocation support for AMRN format version {}",
+            target.name,
+            dali_amrn::v3::FORMAT_VERSION
+        ));
+    }
+    Ok(())
 }
 
 pub(super) fn run_cargo_objcopy(
@@ -241,7 +276,10 @@ fn usage() -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{DEVELOPMENT_PROFILE, RELEASE_PROFILE, cargo_profile_is_release, parse_manifest};
+    use super::{
+        DEVELOPMENT_PROFILE, RELEASE_PROFILE, cargo_profile_is_release, parse_manifest,
+        validate_target_capabilities,
+    };
 
     #[test]
     fn parses_documented_manifest_values() {
@@ -275,5 +313,12 @@ mod tests {
         )
         .expect("manifest should parse");
         assert_eq!(manifest.format_version, Some(3));
+    }
+
+    #[test]
+    fn accepts_declared_f405_isolation_capabilities() {
+        let target = super::target_profile("f405").expect("F405 target is declared");
+        validate_target_capabilities(target, dali_amrn::v2::ABI_VERSION, Some(3))
+            .expect("F405 declares MPU and relocation support");
     }
 }

@@ -3,24 +3,23 @@
 #[cfg(feature = "sdio")]
 use super::status::FAST_BLINK_PERIOD_MS;
 use super::status::{HEARTBEAT_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus};
-use crate::board;
-use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
+use crate::platform;
 
 /// Displays the storage status through the board's single status LED forever.
-pub fn run(mut board: board::Board, storage_status: StorageStatus) -> ! {
+pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
     let mut led_on = false;
     let mut elapsed_ms = 0;
 
     loop {
         match storage_status {
-            #[cfg(all(feature = "sdio", not(feature = "abi-v3-mpu")))]
+            #[cfg(all(feature = "sdio", not(feature = "abi-mpu")))]
             StorageStatus::Ready => {
-                board::set_status_led(&mut board, true);
+                board.set_status_led(true);
             }
             StorageStatus::NotDetected => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;
-                    board::set_status_led(&mut board, led_on);
+                    board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
             }
@@ -28,12 +27,12 @@ pub fn run(mut board: board::Board, storage_status: StorageStatus) -> ! {
             StorageStatus::Failure => {
                 if elapsed_ms >= FAST_BLINK_PERIOD_MS {
                     led_on = !led_on;
-                    board::set_status_led(&mut board, led_on);
+                    board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
             }
         }
-        board.delay.delay_ms(HEARTBEAT_PERIOD_MS);
+        board.delay_ms(HEARTBEAT_PERIOD_MS);
         elapsed_ms = elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
     }
 }

@@ -17,21 +17,21 @@ const RASR_BUFFERABLE: u32 = 1 << 16;
 const AP_PRIVILEGED_ONLY: u32 = 0b001 << RASR_AP_SHIFT;
 const AP_READ_ONLY: u32 = 0b110 << RASR_AP_SHIFT;
 const AP_READ_WRITE: u32 = 0b011 << RASR_AP_SHIFT;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const REGION_KERNEL: u32 = 0;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const REGION_RUNTIME: u32 = 1;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const REGION_APPLICATION_CODE: u32 = 2;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const REGION_APPLICATION_DATA: u32 = 3;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const REGION_PERIPHERALS: u32 = 4;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const REGION_BASE_MASK: u32 = !0x1F;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const MPU_CONTROL_ENABLE: u32 = 1;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const MPU_CONTROL_PRIVILEGED_DEFAULT: u32 = 1 << 2;
 
 /// Access permitted to an application in an MPU region.
@@ -250,7 +250,7 @@ impl IsolationLayout {
 }
 
 /// Programs the planned single-application MPU map.
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 pub fn configure_hardware(layout: IsolationLayout) {
     enable_fault_handlers();
     let application_code = loader_region(layout.application_code);
@@ -265,7 +265,7 @@ pub fn configure_hardware(layout: IsolationLayout) {
     write_regions(&regions, false);
 }
 
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 fn enable_fault_handlers() {
     let mut scb = unsafe {
         // SAFETY: Bootstrap runs in privileged reset context before the
@@ -278,7 +278,7 @@ fn enable_fault_handlers() {
 }
 
 /// Changes application regions from loader permissions to user permissions.
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 pub fn activate_application_regions(layout: IsolationLayout) {
     let regions = [
         (REGION_APPLICATION_CODE, layout.application_code),
@@ -287,7 +287,7 @@ pub fn activate_application_regions(layout: IsolationLayout) {
     write_regions(&regions, true);
 }
 
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const fn loader_region(region: MpuRegion) -> MpuRegion {
     MpuRegion {
         base: region.base,
@@ -298,7 +298,7 @@ const fn loader_region(region: MpuRegion) -> MpuRegion {
     }
 }
 
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 fn write_regions(regions: &[(u32, MpuRegion)], enable: bool) {
     let mpu = unsafe {
         // SAFETY: The Cortex-M4 MPU is a unique architectural peripheral and

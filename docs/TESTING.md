@@ -21,6 +21,19 @@ USB delivery primitives are tested in the hardware-neutral `dali-usb` crate:
 cargo test -p dali-usb
 ```
 
+The kernel's hardware-independent storage and driver contracts are tested
+without compiling or emulating a board backend:
+
+```text
+cargo test -p dali-kernel --lib
+cargo clippy -p dali-kernel --lib -- -D warnings
+```
+
+These tests use a bounded in-memory block reader to verify the generic
+filesystem adapter's multi-block reads, capacity reporting, and read-only
+write rejection. Embedded target checks remain separate evidence for the F405
+PAC adapter.
+
 These tests cover FIFO ordering, bounded overflow behavior, partial writes,
 disconnect/reconnect retention, link-state transitions, and deterministic
 interleaving of storage progress with USB service events. They do not prove USB

@@ -304,7 +304,7 @@ GitHub Actions runs the same validation layers on pushes and pull requests:
 
 - Rust formatting;
 - host workspace checks, tests, and Clippy;
-- STM32F405 target checks, Clippy, and kernel build;
+- STM32F405 legacy and isolation target checks, Clippy, and kernel builds;
 - repository whitespace validation.
 
 The `Formatting`, `Host workspace checks`, `STM32F405 embedded checks`, and `Repository hygiene` jobs must be configured as required status checks in GitHub branch protection before merging is technically blocked.
@@ -317,7 +317,8 @@ The `Formatting`, `Host workspace checks`, `STM32F405 embedded checks`, and `Rep
 just ci
 ```
 
-This runs formatting, host checks, embedded checks, tests, Clippy, and whitespace validation.
+This runs formatting, host checks, both embedded ABI matrix entries, tests,
+Clippy, and whitespace validation.
 
 ### 2. Build the kernel ELF
 

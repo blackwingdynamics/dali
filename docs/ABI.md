@@ -57,10 +57,10 @@ service discovery, shutdown, health reporting, capability handles, version
 compatibility, and error representation. The v2 logging service is intentionally
 the smallest initial service surface.
 
-## Planned isolation ABI (not implemented)
+## Feature-gated isolation ABI
 
-The F405 isolation milestone will introduce a new ABI version rather than
-silently changing ABI v2. The planned boundary is:
+The F405 isolation milestone introduces a feature-gated ABI v3 rather than
+silently changing ABI v2. The implemented boundary is:
 
 - application code runs in unprivileged Thread mode using a PSP;
 - the kernel retains privileged Handler mode and MSP ownership;
@@ -72,19 +72,34 @@ silently changing ABI v2. The planned boundary is:
 - shared memory and application scheduling remain unsupported until their
   layouts and ownership rules are separately specified.
 
-The exact SVC frame, service identifier encoding, PSP layout, fault recovery
-state, and application memory regions must be specified and tested before an
-ABI version increment or package compatibility change.
+The SVC frame, service identifier encoding, PSP layout, fault recovery state,
+and application memory regions are specified in this document and covered by
+host tests plus the recorded F405 hardware evidence below. No ABI v4 or
+multi-application contract is enabled.
 
 ## Feature-gated ABI v3 boundary
 
 ABI v3 is feature-gated and is not the default kernel execution path. ABI v2
-remains the default until the implementation receives complete F405 hardware
-fault-injection evidence.
+remains the default. ABI v3 requires explicit feature selection and is still
+an experimental single-application isolation path because no-frame fault
+recovery, watchdog behavior, and repeated fault-reset behavior remain open.
+
+The source code uses the central `abi-current` selector and the version-neutral
+`abi-mpu` and `abi-relocation` capabilities. These are the only ABI-related
+Cargo features; version names are not repeated in feature names. A future ABI
+version changes the selector and adds only the implementation-specific contract
+code; ordinary kernel modules do not need a version-name replacement.
+The `dali-amrn::compatibility` module is the shared ABI-family and
+AMRN-format compatibility table used by the kernel-facing build contracts and
+the CLI. It rejects unknown ABI versions and incompatible explicit format
+requests before package construction.
+The selector is enabled by `kernel/Cargo.toml`, while
+`kernel/src/abi.rs` is the single source that maps the selected implementation
+to its numeric package ABI version.
 
 The repository contains a feature-gated SDK SVC call, kernel SVC frame
 validator, bounded log dispatcher, MPU map, PSP transition, and kernel-owned
-fault recovery behind the ABI v3 and `abi-v3-mpu` features. These mechanisms
+fault recovery behind the ABI v3 and `abi-mpu` features. These mechanisms
 are available for controlled F405 testing but are not enabled by default.
 
 ### Execution mode
@@ -156,9 +171,11 @@ bufferable memory and the ordinary peripheral window as shareable device
 memory. These attributes are encoded by the board descriptor; writing the MPU
 registers and selecting the unprivileged context remain separate steps.
 
-This budget is a design target, not an enabled configuration. The privileged
-background map and default-memory attributes must be selected so that an
-unprivileged access cannot bypass the no-access boundaries.
+This map is enabled only by the explicit `abi-mpu` feature and has been
+hardware-tested for the documented single-application fault cases. It is not
+the default kernel configuration, and the privileged background map and
+default-memory attributes must continue to prevent bypass of the no-access
+boundaries.
 
 ### ABI v3 package and linker contract
 
@@ -168,7 +185,8 @@ runtime stack reservations. The v2 package contract is defined in
 `docs/AMRN_FORMAT.md`. The `dali-amrn` crate provides host-side parsing and
 construction. The CLI can build and inspect ABI v3 packages, and the kernel has
 a feature-gated streaming validator/copy path. The default kernel remains
-ABI v2-only until the unprivileged launch path is complete.
+ABI v2-only; the feature-gated path is experimental and its hardware evidence
+is incomplete.
 
 For the current F405 target, the linker must emit:
 
@@ -191,7 +209,7 @@ Format version 3 is the movable ABI v3 contract. Its host-side header,
 relocation-entry validation, CLI extraction, package emission, and inspection
 are defined in docs/AMRN_FORMAT.md and implemented in dali-amrn::v3 and the
 CLI. The kernel accepts and applies it only with the explicit
-`abi-v3-relocation` feature; the default kernel path remains unchanged. The
+`abi-relocation` feature; the default kernel path remains unchanged. The
 current feature-gated loader still uses the target manifest's declared origins
 and does not select multiple application slots. The relocation table is
 intentionally a new format revision rather than an interpretation of v2
@@ -224,7 +242,7 @@ status and return through a kernel-stack recovery frame to a bounded
 kernel-owned recovery loop. They do not return to an application or scheduler,
 and they do not change ABI v2 behavior.
 
-The additional kernel feature `abi-v3-mpu` programs the descriptor-backed MPU
+The additional kernel feature `abi-mpu` programs the descriptor-backed MPU
 map during bootstrap and provides the feature-gated PendSV transition into the
 prepared PSP frame. MPU activation is two-phase: while the privileged loader
 copies the validated code and data segments, both application regions are
@@ -232,15 +250,16 @@ kernel-only and non-executable; after copying and zero-initialization complete,
 the kernel changes the code region to unprivileged read/execute and the data
 region to unprivileged read/write, execute-never, before entering the PSP
 context. This ordering prevents the protection map from blocking a valid
-kernel-owned load. The default kernel does not enable this path. It must not be
-treated as application isolation until fault recovery and F405 fault-injection
-evidence are complete.
+kernel-owned load. The default kernel does not enable this path. It provides
+single-application processor-side isolation evidence, but it must not be
+treated as complete application isolation because no-frame recovery, DMA
+isolation, and multi-application isolation remain open.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
 separate segments, prepares a kernel-owned launch frame, and materializes its
 basic exception frame inside the validated application stack reservation. Only
-the explicitly enabled `abi-v3-mpu` path selects PSP, activates the descriptor
+the explicitly enabled `abi-mpu` path selects PSP, activates the descriptor
 backed MPU map, and enters through PendSV; the default kernel does none of
 these. ABI v3 host packages cannot be treated as isolated until fault recovery
 and F405 fault-injection evidence are complete.

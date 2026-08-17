@@ -39,8 +39,9 @@ pub(super) fn render_profile(profile: &dali_targets::TargetProfile) -> String {
         },
     );
     format!(
-        "profile: {name}\nboard: {board}\nmcu: {mcu}\nrust_target: {rust_target}\nprobe_chip: {probe_chip}\ndfu: {dfu}\napplication_supported: {application_supported}\namrn_target_id: 0x{target_id:02X}\nabi_version: {abi}\nclock: {source}, input {input} Hz, system {system} Hz, APB1 {pclk1} Hz, APB2 {pclk2} Hz, USB {usb} Hz\nmemory: kernel 0x{kernel_origin:08X}+{kernel_length}, application 0x{application_origin:08X}+{application_length}, runtime 0x{runtime_origin:08X}+{runtime_length}\nstatus_led: {status_led}\nusb: {usb_controller}, D- {usb_dm}, D+ {usb_dp}\n{storage}",
+        "profile: {name}\nbackend: {backend}\nboard: {board}\nmcu: {mcu}\nrust_target: {rust_target}\nprobe_chip: {probe_chip}\ndfu: {dfu}\napplication_supported: {application_supported}\namrn_target_id: 0x{target_id:02X}\nabi_version: {abi}\nclock: {source}, input {input} Hz, system {system} Hz, APB1 {pclk1} Hz, APB2 {pclk2} Hz, USB {usb} Hz\nmemory: kernel 0x{kernel_origin:08X}+{kernel_length}, application 0x{application_origin:08X}+{application_length}, runtime 0x{runtime_origin:08X}+{runtime_length}\nstatus_led: {status_led}\nusb: {usb_controller}, D- {usb_dm}, D+ {usb_dp}\n{storage}",
         name = profile.name,
+        backend = profile.backend,
         board = profile.board,
         mcu = profile.mcu,
         rust_target = profile.rust_target,

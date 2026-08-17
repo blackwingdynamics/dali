@@ -201,7 +201,7 @@ any table that is truncated or not at the canonical payload end.
 ## Format 3 hardware evidence
 
 On 2026-08-17, an STM32F405RGT6 was flashed through a Pico CMSIS-DAP probe
-with the kernel's explicit `abi-v3-relocation` feature. The SD card contained
+with the kernel's explicit `abi-relocation` feature. The SD card contained
 the standalone relocation fixture package. The USB CDC console reported:
 
 ```text

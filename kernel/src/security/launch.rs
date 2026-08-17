@@ -6,7 +6,7 @@ const THUMB_STATE_BIT: u32 = 1 << 24;
 const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
 const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
 const NON_RETURNING_LINK: u32 = 0;
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 const CONTROL_UNPRIVILEGED_PSP: u32 = 0b11;
 const CONTROL_PRIVILEGED_MSP: u32 = 0;
 
@@ -68,7 +68,7 @@ pub(crate) fn materialize(frame: LaunchFrame) {
 }
 
 /// Transfers control through PendSV into one prepared unprivileged context.
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 pub(crate) fn enter(frame: LaunchFrame) -> ! {
     materialize(frame);
     unsafe {
@@ -121,7 +121,7 @@ extern "C" fn fault_recovery() -> ! {
 }
 
 /// Returns from the privileged PendSV handler into the prepared PSP frame.
-#[cfg(feature = "abi-v3-mpu")]
+#[cfg(feature = "abi-mpu")]
 #[unsafe(export_name = "PendSV")]
 unsafe extern "C" fn pendsv_handler() -> ! {
     unsafe {

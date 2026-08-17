@@ -19,16 +19,24 @@ dali-kernel/
 ├── kernel/
 │   ├── Cargo.toml, build.rs
 │   └── src/
+│       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
-│       ├── board/                 # Board facade, MPU, F405 backend
-│       ├── bootstrap/             # Startup, storage status, heartbeat
-│       ├── drivers/               # SDIO and raw SDIO access
+│       ├── abi.rs                 # Central active ABI selector
+│       ├── board/                 # Shared MPU descriptors
+│       ├── platform.rs            # Platform facade and target entry points
+│       ├── platform/f405/          # F405-specific platform backend
+│       │   ├── mod.rs              # F405 target profile and IRQ bindings
+│       │   ├── board.rs            # F405 hardware resources and board API
+│       │   ├── sdio.rs             # F405 SDIO transport implementation
+│       │   └── sdio_raw.rs         # F405 SDIO register transport
+│       ├── bootstrap/             # Startup, storage policy, status, heartbeat
+│       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
 │       ├── logging/               # Facade, RTT, USB CDC backend
 │       ├── security/              # MPU, SVC, launch, and fault recovery
-│       └── storage/               # Block types and read-only filesystem
+│       └── storage/               # Read-only filesystem and storage policy
 ├── apps/
 │   ├── dali-app-hello/
 │   ├── dali-app-relocation-fixture/
@@ -76,10 +84,13 @@ files inside those groups are:
 
 ```text
 kernel/src/
+├── lib.rs
 ├── main.rs
-├── board/{mod.rs,mpu.rs,stm32f405_sd.rs}
-├── bootstrap/{mod.rs,heartbeat.rs,status.rs}
-├── drivers/{mod.rs,sdio.rs,sdio_raw.rs}
+├── abi.rs
+├── board/{mod.rs,mpu.rs}
+├── platform.rs, platform/f405/{mod.rs,board.rs,sdio.rs,sdio_raw.rs}
+├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
+├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
@@ -131,9 +142,22 @@ target-scaffold.md
 
 ## Ownership boundaries
 
-- `kernel/src/board/` owns typed board peripherals, pins, clocks, and MPU
-  layout activation.
-- `kernel/src/storage/` owns SD/filesystem access; package parsing remains in
+- `kernel/src/board/` owns processor-neutral MPU descriptors and activation
+  helpers shared by the selected platform backend.
+- `kernel/src/platform.rs` and `kernel/src/platform/` own the platform facade
+  and target-specific entry points; backend ownership and contributor workflow are defined in
+  `docs/PLATFORM_BACKENDS.md`.
+- `kernel/src/platform/f405/sdio*.rs` owns the F405 PAC/HAL SDIO transport;
+  bootstrap consumes it only through the platform facade.
+- `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
+  it must not import a board PAC or HAL.
+- `kernel/src/drivers/sdio.rs` owns the generic SDIO transport contract and
+  block-reader adapter; platform code supplies the concrete transport.
+- `targets/*.toml` owns declarative target facts; hardware implementations must
+  consume those facts through generated target metadata instead of copying
+  board constants into kernel policy.
+- `kernel/src/storage/` owns SD/filesystem policy; generic block contracts live
+  in `kernel/src/drivers/`; package parsing remains in
   `crates/dali-amrn/` and loading policy remains in `kernel/src/loader.rs`.
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, and
   fault recovery.
