@@ -57,10 +57,10 @@ service discovery, shutdown, health reporting, capability handles, version
 compatibility, and error representation. The v2 logging service is intentionally
 the smallest initial service surface.
 
-## Planned isolation ABI (not implemented)
+## Feature-gated isolation ABI
 
-The F405 isolation milestone will introduce a new ABI version rather than
-silently changing ABI v2. The planned boundary is:
+The F405 isolation milestone introduces a feature-gated ABI v3 rather than
+silently changing ABI v2. The implemented boundary is:
 
 - application code runs in unprivileged Thread mode using a PSP;
 - the kernel retains privileged Handler mode and MSP ownership;
@@ -72,15 +72,17 @@ silently changing ABI v2. The planned boundary is:
 - shared memory and application scheduling remain unsupported until their
   layouts and ownership rules are separately specified.
 
-The exact SVC frame, service identifier encoding, PSP layout, fault recovery
-state, and application memory regions must be specified and tested before an
-ABI version increment or package compatibility change.
+The SVC frame, service identifier encoding, PSP layout, fault recovery state,
+and application memory regions are specified in this document and covered by
+host tests plus the recorded F405 hardware evidence below. No ABI v4 or
+multi-application contract is enabled.
 
 ## Feature-gated ABI v3 boundary
 
 ABI v3 is feature-gated and is not the default kernel execution path. ABI v2
-remains the default until the implementation receives complete F405 hardware
-fault-injection evidence.
+remains the default. ABI v3 requires explicit feature selection and is still
+an experimental single-application isolation path because no-frame fault
+recovery, watchdog behavior, and repeated fault-reset behavior remain open.
 
 The source code uses the central `abi-current` selector and the version-neutral
 `abi-mpu` and `abi-relocation` capabilities. These are the only ABI-related
@@ -169,9 +171,11 @@ bufferable memory and the ordinary peripheral window as shareable device
 memory. These attributes are encoded by the board descriptor; writing the MPU
 registers and selecting the unprivileged context remain separate steps.
 
-This budget is a design target, not an enabled configuration. The privileged
-background map and default-memory attributes must be selected so that an
-unprivileged access cannot bypass the no-access boundaries.
+This map is enabled only by the explicit `abi-mpu` feature and has been
+hardware-tested for the documented single-application fault cases. It is not
+the default kernel configuration, and the privileged background map and
+default-memory attributes must continue to prevent bypass of the no-access
+boundaries.
 
 ### ABI v3 package and linker contract
 
@@ -181,7 +185,8 @@ runtime stack reservations. The v2 package contract is defined in
 `docs/AMRN_FORMAT.md`. The `dali-amrn` crate provides host-side parsing and
 construction. The CLI can build and inspect ABI v3 packages, and the kernel has
 a feature-gated streaming validator/copy path. The default kernel remains
-ABI v2-only until the unprivileged launch path is complete.
+ABI v2-only; the feature-gated path is experimental and its hardware evidence
+is incomplete.
 
 For the current F405 target, the linker must emit:
 
@@ -245,9 +250,10 @@ kernel-only and non-executable; after copying and zero-initialization complete,
 the kernel changes the code region to unprivileged read/execute and the data
 region to unprivileged read/write, execute-never, before entering the PSP
 context. This ordering prevents the protection map from blocking a valid
-kernel-owned load. The default kernel does not enable this path. It must not be
-treated as application isolation until fault recovery and F405 fault-injection
-evidence are complete.
+kernel-owned load. The default kernel does not enable this path. It provides
+single-application processor-side isolation evidence, but it must not be
+treated as complete application isolation because no-frame recovery, DMA
+isolation, and multi-application isolation remain open.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the

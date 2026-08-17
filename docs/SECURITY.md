@@ -38,9 +38,9 @@ Native application code runs in the kernel's address space and must therefore be
 
 Security claims must be added only after the corresponding mechanism and test evidence exist.
 
-## F405 isolation foundation (feature-gated, first hardware evidence recorded)
+## F405 isolation foundation (feature-gated, partial hardware evidence recorded)
 
-The first isolation milestone is limited to one F405 application. It will use
+The first isolation milestone is limited to one F405 application. It uses
 the Cortex-M4 privilege model and MPU to prevent unprivileged application code
 from accessing kernel RAM, kernel runtime stack, or ordinary peripheral
 registers. Application services will use an SVC gateway rather than direct
@@ -49,11 +49,16 @@ privileged function calls.
 The feature-gated ABI v3 path now implements the single-application MPU map,
 explicit system-fault exception enablement, unprivileged PSP launch, SVC
 logging gateway, and kernel-owned fault recovery.
-The `apps/dali-app-fault-kernel` fixture provides the first controlled fault
-injection. This milestone still does not claim a secure kernel, complete
-sandbox, complete fault isolation, DMA isolation, confidentiality, or
-authenticity. A first F405 run confirmed rejection of an unprivileged
-kernel-RAM read and return to kernel recovery, but fault-frame decoding, write
-and peripheral rejection, PSP bounds, invalid execution, and multi-application
-isolation remain unverified. MPU protection applies to processor accesses;
-DMA buffer ownership and kernel memory safety require separate controls.
+The fault-injection fixtures cover kernel-RAM reads and writes,
+peripheral-MMIO reads and writes, execute-never instruction fetches, invalid
+PSP exception-entry bounds, malformed SVC requests, and a precise BusFault.
+F405 hardware evidence confirms processor-side rejection and kernel recovery
+for each of those cases, including bounded fault-frame decoding for the
+MemManage and BusFault paths.
+
+This milestone still does not claim a secure kernel, complete sandbox,
+complete fault isolation, DMA isolation, confidentiality, or authenticity.
+No-frame HardFault recovery, valid-service authorization policy, watchdog
+behavior, repeated fault-status clearing, and multi-application isolation
+remain unverified. MPU protection applies to processor accesses; DMA buffer
+ownership and kernel memory safety require separate controls.

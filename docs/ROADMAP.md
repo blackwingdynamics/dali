@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-16
+## Current Status — 2026-08-17
 
 ### Completed and evidenced
 
@@ -462,8 +462,8 @@ output was:
 ```
 
 This also proves processor-side rejection of an unprivileged kernel-RAM write
-and return to the kernel recovery path. Fault-frame address and PC decoding,
-and multi-application isolation remain unverified.
+and return to the kernel recovery path. Multi-application isolation remains
+unverified.
 
 A third run used the dedicated peripheral-access fixture. The observed output
 was:
@@ -475,9 +475,8 @@ was:
 ```
 
 This proves processor-side rejection of an unprivileged peripheral-MMIO read
-and return to the kernel recovery path. Fault-frame address and PC decoding,
-peripheral writes, invalid execution, PSP bounds, DMA isolation, and
-multi-application isolation remain unverified.
+and return to the kernel recovery path. DMA isolation and multi-application
+isolation remain unverified.
 
 A fourth run used the dedicated peripheral-write fixture. The observed output
 was:
@@ -488,9 +487,8 @@ was:
 ```
 
 This proves processor-side rejection of an unprivileged peripheral-MMIO write
-and return to the kernel recovery path. Fault-frame address and PC decoding,
-invalid execution, PSP bounds, DMA isolation, and multi-application isolation
-remain unverified.
+and return to the kernel recovery path. DMA isolation and multi-application
+isolation remain unverified.
 
 A fifth run used the execute-never fixture. The observed output was:
 
@@ -501,9 +499,8 @@ A fifth run used the execute-never fixture. The observed output was:
 ```
 
 This proves processor-side rejection of instruction fetch from the
-application-data region and return to the kernel recovery path. Fault-frame
-address and PC decoding, invalid vector handling, PSP bounds, DMA isolation,
-and multi-application isolation remain unverified.
+application-data region and return to the kernel recovery path. Invalid vector
+handling, DMA isolation, and multi-application isolation remain unverified.
 
 The first PSP-boundary run was initially allowed to reach the fixture loop,
 because unprivileged application code cannot change its own PSP. A controlled
@@ -517,8 +514,8 @@ The observed output was:
 ```
 
 This proves the selected exception-entry stack-boundary fault reaches the
-kernel recovery path. Fault-frame address and PC decoding, invalid vector
-handling, DMA isolation, and multi-application isolation remain unverified.
+kernel recovery path. Invalid vector handling, DMA isolation, and
+multi-application isolation remain unverified.
 
 The SVC rejection matrix was run on 2026-08-16 on the F405 using the
 `dali-app-svc-rejections` package and the Pico CMSIS-DAP probe. The application
