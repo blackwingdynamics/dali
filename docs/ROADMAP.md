@@ -75,13 +75,14 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 ### Current priority
 
-**Current priority — Complete the scalable platform/backend boundary.**
+**Current priority — Harden the post-MVP platform and security contracts.**
 
 The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.1
 release boundary are complete. RP2350/Pico kernel support remains deferred;
 the Pico is currently used only as an external SWD probe. ABI v3, relocation,
 and the single-application isolation evidence are complete for the current
-F405 scope; the next work is to finish the platform backend extraction.
+F405 scope. The scalable platform/backend extraction is complete; remaining
+work is contract hardening, security evidence, and post-MVP lifecycle design.
 
 ### Platform scalability foundation
 
@@ -92,6 +93,8 @@ F405 scope; the next work is to finish the platform backend extraction.
 - [x] Add generated backend scaffolding and validation for new target profiles.
 - [x] Expose stable platform operations without leaking board resource types to
   bootstrap or heartbeat policy.
+- [x] Formalize the selected backend through a crate-private `Backend` contract
+  and keep F405 resource ownership behind the platform facade.
 
 #### Recorded architecture debt
 
