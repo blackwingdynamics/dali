@@ -11,6 +11,8 @@ pub const BASIC_FRAME_WORDS: usize = 8;
 pub const STATUS_OK: u32 = 0;
 /// Status returned when a service request is rejected.
 pub const STATUS_REJECTED: u32 = 1;
+/// Test-only service identifier used to exercise invalid PSP recovery.
+pub const TEST_INVALID_PSP_SERVICE: u32 = 0xFFFF_FF01;
 
 /// Returns whether a non-null range is fully contained in a declared region.
 pub const fn contains_range(

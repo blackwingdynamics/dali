@@ -85,9 +85,26 @@ fn valid_exception_return(value: u32) -> bool {
 fn dispatch(frame: &mut ExceptionFrame, memory: IsolationMemoryProfile) {
     let status = match ServiceId::from_raw(frame.r0) {
         Some(ServiceId::Log) => dispatch_log(frame, memory),
+        #[cfg(feature = "abi-test-fixtures")]
+        None if frame.r0 == dali::svc::TEST_INVALID_PSP_SERVICE => dispatch_invalid_psp(memory),
         None => ServiceStatus::rejected(),
     };
     frame.r0 = status.0;
+}
+
+#[cfg(feature = "abi-test-fixtures")]
+fn dispatch_invalid_psp(memory: IsolationMemoryProfile) -> ServiceStatus {
+    const INVALID_PSP_OFFSET: u32 = 4;
+    let Some(invalid_psp) = memory.data_origin.checked_add(INVALID_PSP_OFFSET) else {
+        return ServiceStatus::rejected();
+    };
+    unsafe {
+        // SAFETY: This path is compiled only for the non-production fixture
+        // kernel. The deliberately invalid value tests exception-entry fault
+        // handling; production builds do not expose this service.
+        cortex_m::register::psp::write(invalid_psp);
+    }
+    ServiceStatus::accepted()
 }
 
 fn dispatch_log(frame: &ExceptionFrame, memory: IsolationMemoryProfile) -> ServiceStatus {
