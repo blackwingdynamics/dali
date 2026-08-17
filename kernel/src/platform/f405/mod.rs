@@ -1,5 +1,7 @@
 //! STM32F405 target selection and interrupt bindings.
 
+use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
+
 #[cfg(feature = "board-stm32f405-sd")]
 mod board;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
@@ -9,18 +11,59 @@ mod sdio_raw;
 
 #[cfg(all(feature = "board-stm32f405-sd", not(feature = "abi-current")))]
 pub(crate) use board::APPLICATION_EXECUTION_SUPPORTED;
+#[cfg(feature = "board-stm32f405-sd")]
+pub(crate) use board::Board;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
 pub(crate) use board::MEMORY_PROFILE;
-#[cfg(all(feature = "board-stm32f405-sd", feature = "usb-cdc"))]
-pub(crate) use board::UsbResources;
-#[cfg(feature = "board-stm32f405-sd")]
-pub(crate) use board::{
-    Board, SYSTEM_CLOCK_MHZ, initialize, pend_usb_irq, set_status_led, unmask_usb_irq,
-};
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-mpu"))]
 pub(crate) use board::{ISOLATION_LAYOUT, activate_application_regions};
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
 pub(crate) use sdio::Stm32f405SdioTransport;
+
+#[cfg(feature = "board-stm32f405-sd")]
+impl crate::platform::Backend for board::Board {
+    const SYSTEM_CLOCK_MHZ: u32 = board::SYSTEM_CLOCK_MHZ;
+
+    #[cfg(feature = "sdio")]
+    type SdioReader = crate::drivers::SdioBlockReader<Stm32f405SdioTransport>;
+
+    #[cfg(feature = "usb-cdc")]
+    type UsbResources = board::UsbResources;
+
+    fn initialize() -> Self {
+        board::initialize()
+    }
+
+    fn set_status_led(&mut self, on: bool) {
+        board::set_status_led(self, on);
+    }
+
+    fn delay_ms(&mut self, milliseconds: u32) {
+        self.delay.delay_ms(milliseconds);
+    }
+
+    #[cfg(feature = "sdio")]
+    fn take_sdio_reader(&mut self) -> Option<Self::SdioReader> {
+        let (peripheral, pins, clocks) = self.take_sdio_resources()?;
+        let transport = Stm32f405SdioTransport::new(peripheral, pins, clocks);
+        Some(crate::drivers::SdioBlockReader::new(transport))
+    }
+
+    #[cfg(feature = "usb-cdc")]
+    fn take_usb_resources(&mut self) -> Option<Self::UsbResources> {
+        self.take_usb_resources()
+    }
+
+    #[cfg(feature = "usb-cdc")]
+    fn unmask_usb_irq() {
+        board::unmask_usb_irq();
+    }
+
+    #[cfg(feature = "usb-cdc")]
+    fn pend_usb_irq() {
+        board::pend_usb_irq();
+    }
+}
 
 #[cfg(feature = "abi-current")]
 use dali_targets::TargetProfile;
