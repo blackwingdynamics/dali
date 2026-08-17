@@ -540,6 +540,19 @@ This proves the selected exception-entry stack-boundary fault reaches the
 kernel recovery path. Invalid vector handling, DMA isolation, and
 multi-application isolation remain unverified.
 
+A follow-up run using the test-only SVC fixture on 2026-08-17 produced:
+
+```text
+[INFO][APP] Fault injection: invalid PSP bounds
+[ERROR][SECURITY] [SECURITY][FAULT] kind=UsageFault status=0x00040000 pc=Some(...) lr=Some(...) address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This confirms the invalid-PSP exception-return rejection and kernel recovery
+on the F405. The `INVPC` diagnostic frame refinement remains pending one
+follow-up hardware retest; no-frame HardFault recovery remains a separate
+open test.
+
 The SVC rejection matrix was run on 2026-08-16 on the F405 using the
 `dali-app-svc-rejections` package and the Pico CMSIS-DAP probe. The application
 sent an unknown service ID, kernel and peripheral pointers, an oversized

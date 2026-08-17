@@ -206,6 +206,15 @@ cd apps/dali-app-fault-psp
 dali app build
 ```
 
+Build the kernel with the explicitly test-only service enabled:
+
+```text
+cargo build -p dali-kernel \
+  --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-current,abi-test-fixtures \
+  --target thumbv7em-none-eabihf
+```
+
 Copy `target/thumbv7em-none-eabihf/debug/dali-app-fault-psp.amrn` to the
 SD-card root, then repeat the same kernel build and flash procedure. Expected
 application output is:
@@ -216,12 +225,30 @@ application output is:
 [ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
 ```
 
-The fixture places PSP four bytes inside the declared data boundary before
-issuing `SVC`, so exception stacking must cross the MPU boundary. Depending on
-the processor's exception-entry path, the fault is reported as `MemManage` or
-as a no-frame `HardFault`; both must reach kernel recovery. This proves only
+The fixture requests a named test-only SVC service. The test-only kernel
+handler then derives a PSP value four bytes inside the manifest-declared data
+boundary and writes it before returning from SVC, so exception return must
+cross the MPU boundary. The application cannot change PSP itself from
+unprivileged Thread mode. Depending on the processor's exception-entry path,
+the fault may be reported as `MemManage`, `UsageFault` with `INVPC`, or a
+no-frame `HardFault`; each must reach kernel recovery. An `INVPC` record must
+not decode the invalid PSP contents as an application frame. This proves only
 the selected PSP-boundary behavior and does not prove context switching, DMA
 isolation, or multi-application isolation.
+
+The F405 hardware run on 2026-08-17 produced:
+
+```text
+[INFO][APP] Fault injection: invalid PSP bounds
+[ERROR][SECURITY] [SECURITY][FAULT] kind=UsageFault status=0x00040000 pc=Some(...) lr=Some(...) address=None
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This is successful hardware evidence for invalid-PSP exception-return
+rejection and kernel recovery. The `0x00040000` status is the Cortex-M4
+`INVPC` UsageFault bit. The diagnostic decoder is being tightened to report no
+application frame for this no-valid-frame condition; that refinement requires
+one follow-up hardware retest.
 
 ## SVC rejection-matrix test
 
