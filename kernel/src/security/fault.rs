@@ -13,6 +13,7 @@ const EXC_RETURN_PSP: u32 = 1 << 2;
 const EXC_RETURN_BASIC_FRAME: u32 = 1 << 4;
 const MEMMANAGE_ADDRESS_VALID: u32 = 1 << 7;
 const BUSFAULT_ADDRESS_VALID: u32 = 1 << 15;
+const USAGEFAULT_INVALID_PC: u32 = 1 << 18;
 const BUSFAULT_STATUS_MASK: u32 = 0x0000_FF00;
 
 /// Fault sources that must terminate an isolated application.
@@ -121,14 +122,10 @@ unsafe extern "C" fn usage_fault_handler() {
 #[unsafe(export_name = "HardFault")]
 #[unsafe(naked)]
 unsafe extern "C" fn hard_fault_handler() {
-    // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
-    // exception return value before transferring control to the kernel.
+    // SAFETY: The wrapper preserves only the architectural exception-return
+    // value. The Rust handler validates it before reading either stack pointer.
     core::arch::naked_asm!(
-        "tst lr, #4",
-        "ite eq",
-        "mrseq r0, msp",
-        "mrsne r0, psp",
-        "mov r1, lr",
+        "mov r0, lr",
         "b {handler}",
         handler = sym handle_hard_fault,
     );
@@ -146,7 +143,7 @@ extern "C" fn handle_usage_fault(frame_address: u32, exception_return: u32) -> !
     handle_with_frame(FaultKind::UsageFault, frame_address, exception_return)
 }
 
-extern "C" fn handle_hard_fault(frame_address: u32, exception_return: u32) -> ! {
+extern "C" fn handle_hard_fault(exception_return: u32) -> ! {
     let status = unsafe {
         // SAFETY: Cortex-M4 exposes SCB at this architectural address and the
         // privileged fault handler owns this diagnostic read.
@@ -157,12 +154,29 @@ extern "C" fn handle_hard_fault(frame_address: u32, exception_return: u32) -> ! 
     } else {
         FaultKind::HardFault
     };
+    let frame_address = application_frame_address(exception_return);
     handle_with_frame(kind, frame_address, exception_return)
+}
+
+fn application_frame_address(exception_return: u32) -> u32 {
+    if !valid_application_exception_return(exception_return) {
+        return 0;
+    }
+    if exception_return & EXC_RETURN_PSP != 0 {
+        cortex_m::register::psp::read()
+    } else {
+        cortex_m::register::msp::read()
+    }
 }
 
 fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32) -> ! {
     let (status, fault_address) = read_status(kind);
-    let record = match read_application_frame(frame_address, exception_return) {
+    let frame = if kind == FaultKind::UsageFault && status & USAGEFAULT_INVALID_PC != 0 {
+        None
+    } else {
+        read_application_frame(frame_address, exception_return)
+    };
+    let record = match frame {
         Some(frame) => FaultRecord {
             kind,
             stacked_pc: Some(frame.pc),
