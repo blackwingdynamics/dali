@@ -1,6 +1,6 @@
 //! Bounded SDIO block reads for the STM32F4 data path.
 
-use crate::storage::{Block, BlockAddress, StorageError};
+use crate::drivers::{Block, BlockAddress, StorageError};
 use stm32f4xx_hal::pac;
 use stm32f4xx_hal::sdio::CardCapacity;
 

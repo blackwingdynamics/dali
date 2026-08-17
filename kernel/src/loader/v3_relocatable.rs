@@ -3,7 +3,10 @@
 use dali_amrn::{Crc32, v3};
 
 use crate::security::launch::{self, LaunchFrame};
-use crate::storage::{BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
+use crate::{
+    drivers::{BLOCK_SIZE, Block, StorageError},
+    storage::filesystem::AmrnFile,
+};
 
 use super::v3::LoadedApplication;
 

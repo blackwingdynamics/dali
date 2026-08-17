@@ -3,9 +3,11 @@
 use core::cell::RefCell;
 
 pub mod block;
+pub mod sdio;
 
 pub use block::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
 use embedded_sdmmc::{Block as FilesystemBlock, BlockCount, BlockDevice, BlockIdx};
+pub use sdio::{SdioBlockReader, SdioTransport};
 
 /// Adapts a bounded mutable block reader to the filesystem block-device API.
 ///

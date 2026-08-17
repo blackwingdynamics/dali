@@ -89,7 +89,7 @@ kernel/src/
 ├── board/{mod.rs,mpu.rs}
 ├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs,stm32f405_sdio.rs,stm32f405_sdio_raw.rs}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
-├── drivers/{mod.rs,block.rs}
+├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
@@ -150,6 +150,8 @@ target-scaffold.md
   bootstrap consumes it only through the platform facade.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
+- `kernel/src/drivers/sdio.rs` owns the generic SDIO transport contract and
+  block-reader adapter; platform code supplies the concrete transport.
 - `targets/*.toml` owns declarative target facts; hardware implementations must
   consume those facts through generated target metadata instead of copying
   board constants into kernel policy.

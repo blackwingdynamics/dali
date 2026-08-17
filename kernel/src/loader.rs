@@ -3,7 +3,10 @@
 use dali::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable};
 use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, parse_header};
 
-use crate::storage::{self, BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
+use crate::{
+    drivers::{BLOCK_SIZE, Block, StorageError},
+    storage::{self, filesystem::AmrnFile},
+};
 
 #[cfg(feature = "abi-current")]
 pub(crate) mod v3;

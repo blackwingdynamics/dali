@@ -37,9 +37,12 @@ impl Platform {
     }
 
     #[cfg(feature = "sdio")]
-    pub(crate) fn take_sdio_reader(&mut self) -> Option<SdioBlockReader> {
+    pub(crate) fn take_sdio_reader(
+        &mut self,
+    ) -> Option<crate::drivers::SdioBlockReader<Stm32f405SdioTransport>> {
         let (peripheral, pins, clocks) = self.0.take_sdio_resources()?;
-        Some(SdioBlockReader::new(peripheral, pins, clocks))
+        let transport = Stm32f405SdioTransport::new(peripheral, pins, clocks);
+        Some(crate::drivers::SdioBlockReader::new(transport))
     }
 
     #[cfg(feature = "usb-cdc")]
@@ -49,7 +52,7 @@ impl Platform {
 }
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
-pub(crate) use stm32f405_sdio::SdioBlockReader;
+use stm32f405_sdio::Stm32f405SdioTransport;
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
 pub(crate) use stm32f405_board::MEMORY_PROFILE;

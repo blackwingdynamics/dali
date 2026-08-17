@@ -3,7 +3,10 @@
 use dali_amrn::{Crc32, v2};
 
 use crate::security::launch::{self, LaunchFrame};
-use crate::storage::{BLOCK_SIZE, Block, StorageError, filesystem::AmrnFile};
+use crate::{
+    drivers::{BLOCK_SIZE, Block, StorageError},
+    storage::filesystem::AmrnFile,
+};
 
 /// Values retained after an ABI v3 package has been copied into SRAM.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

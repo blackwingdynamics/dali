@@ -1,10 +1,10 @@
 //! STM32 hardware SDIO transport for the F405 board backend.
 
 use super::stm32f405_board::SdioPins;
-use core::cell::{Cell, RefCell};
+use core::cell::RefCell;
 
 use super::stm32f405_sdio_raw::RawSdioReader;
-use crate::storage::{Block, BlockAddress, BlockReader, StorageError};
+use crate::drivers::{Block, BlockAddress, SdioTransport, StorageError};
 use stm32f4xx_hal::{
     pac,
     rcc::Clocks,
@@ -18,38 +18,35 @@ struct AlignedDmaBlock(Block);
 // DMA-visible SRAM when ordinary kernel data and stack move to CCM.
 #[used]
 #[unsafe(link_section = ".dma_buffer")]
-static mut DMA_BLOCK: AlignedDmaBlock = AlignedDmaBlock([0; crate::storage::BLOCK_SIZE]);
+static mut DMA_BLOCK: AlignedDmaBlock = AlignedDmaBlock([0; crate::drivers::BLOCK_SIZE]);
 
-/// A block reader backed by the STM32 SDIO peripheral.
-pub struct SdioBlockReader {
+/// F405 SDIO transport implementing the generic driver contract.
+pub struct Stm32f405SdioTransport {
     device: RefCell<Sdio<SdCard>>,
     raw: RefCell<RawSdioReader>,
-    block_count: Cell<Option<u32>>,
 }
 
-impl SdioBlockReader {
-    /// Creates an uninitialized SDIO block reader.
+impl Stm32f405SdioTransport {
+    /// Creates an uninitialized F405 SDIO transport.
     pub fn new(peripheral: pac::SDIO, pins: SdioPins, clocks: &Clocks) -> Self {
         Self {
             device: RefCell::new(Sdio::new(peripheral, pins, clocks)),
             raw: RefCell::new(RawSdioReader::new()),
-            block_count: Cell::new(None),
         }
     }
+}
 
+impl SdioTransport for Stm32f405SdioTransport {
     /// Initializes the card and switches the bus to the normal transfer clock.
-    pub fn initialize(&mut self) -> Result<(), StorageError> {
+    fn initialize(&mut self) -> Result<u32, StorageError> {
         let mut device = self.device.borrow_mut();
         device.init(ClockFreq::F24Mhz).map_err(map_sdio_error)?;
         let block_count = device.card().map_err(map_sdio_error)?.block_count();
         let card = device.card().map_err(map_sdio_error)?;
         self.raw.borrow_mut().configure(card.capacity);
-        self.block_count.set(Some(block_count));
-        Ok(())
+        Ok(block_count)
     }
-}
 
-impl BlockReader for SdioBlockReader {
     fn read_block(
         &mut self,
         address: BlockAddress,
@@ -63,9 +60,6 @@ impl BlockReader for SdioBlockReader {
             buffer.copy_from_slice(&*core::ptr::addr_of!(DMA_BLOCK.0));
             Ok(())
         })
-    }
-    fn block_count(&self) -> Result<u32, StorageError> {
-        self.block_count.get().ok_or(StorageError::NotReady)
     }
 }
 

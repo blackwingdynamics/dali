@@ -100,6 +100,9 @@ F405 scope; the next work is to finish the platform backend extraction.
 - [x] Define the generic block-storage contract in `kernel/src/drivers/` and
   make the F405 SDIO adapter implement it without exposing PAC or HAL types to
   kernel policy.
+- [x] Define a hardware-neutral SDIO transport contract in
+  `kernel/src/drivers/sdio.rs`; keep the STM32F405 PAC/HAL implementation as a
+  platform backend rather than coupling generic drivers to one board.
 - [x] Add host tests for the generic driver contracts and target checks for the
   F405 adapter before marking the driver boundary complete.
 

@@ -2,9 +2,8 @@
 
 use super::status;
 use crate::{
-    drivers::BlockDeviceAdapter,
+    drivers::{BLOCK_SIZE, Block, BlockAddress, BlockDeviceAdapter, BlockReader, StorageError},
     logging, platform,
-    storage::{BLOCK_SIZE, Block, BlockAddress, BlockReader},
 };
 
 #[cfg(feature = "sdio")]
@@ -23,9 +22,7 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
             format_args!("[STORAGE] SDIO initialization failed: {:?}", error),
         );
         return match error {
-            crate::storage::StorageError::NotReady | crate::storage::StorageError::Timeout => {
-                status::StorageStatus::NotDetected
-            }
+            StorageError::NotReady | StorageError::Timeout => status::StorageStatus::NotDetected,
             _ => status::StorageStatus::Failure,
         };
     }
