@@ -1,35 +1,29 @@
 //! Platform selection boundary for hardware-specific kernel entry points.
 
 #[cfg(feature = "board-stm32f405-sd")]
-mod stm32f405;
-#[cfg(feature = "board-stm32f405-sd")]
-mod stm32f405_board;
-#[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
-mod stm32f405_sdio;
-#[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
-mod stm32f405_sdio_raw;
+mod f405;
 
 #[cfg(feature = "board-stm32f405-sd")]
-pub(crate) use stm32f405_board::{pend_usb_irq, unmask_usb_irq};
+pub(crate) use f405::{pend_usb_irq, unmask_usb_irq};
 
 #[cfg(feature = "board-stm32f405-sd")]
 use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
 
 /// Stable kernel-facing operations supplied by the selected platform backend.
-pub(crate) struct Platform(stm32f405_board::Board);
+pub(crate) struct Platform(f405::Board);
 
 #[cfg(feature = "board-stm32f405-sd")]
-pub(crate) const SYSTEM_CLOCK_MHZ: u32 = stm32f405_board::SYSTEM_CLOCK_MHZ;
+pub(crate) const SYSTEM_CLOCK_MHZ: u32 = f405::SYSTEM_CLOCK_MHZ;
 
 #[cfg(feature = "board-stm32f405-sd")]
 pub(crate) fn initialize() -> Platform {
-    Platform(stm32f405_board::initialize())
+    Platform(f405::initialize())
 }
 
 #[cfg(feature = "board-stm32f405-sd")]
 impl Platform {
     pub(crate) fn set_status_led(&mut self, on: bool) {
-        stm32f405_board::set_status_led(&mut self.0, on);
+        f405::set_status_led(&mut self.0, on);
     }
 
     pub(crate) fn delay_ms(&mut self, milliseconds: u32) {
@@ -39,9 +33,9 @@ impl Platform {
     #[cfg(feature = "sdio")]
     pub(crate) fn take_sdio_reader(
         &mut self,
-    ) -> Option<crate::drivers::SdioBlockReader<Stm32f405SdioTransport>> {
+    ) -> Option<crate::drivers::SdioBlockReader<f405::Stm32f405SdioTransport>> {
         let (peripheral, pins, clocks) = self.0.take_sdio_resources()?;
-        let transport = Stm32f405SdioTransport::new(peripheral, pins, clocks);
+        let transport = f405::Stm32f405SdioTransport::new(peripheral, pins, clocks);
         Some(crate::drivers::SdioBlockReader::new(transport))
     }
 
@@ -51,26 +45,23 @@ impl Platform {
     }
 }
 
-#[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
-use stm32f405_sdio::Stm32f405SdioTransport;
-
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
-pub(crate) use stm32f405_board::MEMORY_PROFILE;
+pub(crate) use f405::MEMORY_PROFILE;
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-mpu"))]
-pub(crate) use stm32f405_board::{ISOLATION_LAYOUT, activate_application_regions};
+pub(crate) use f405::{ISOLATION_LAYOUT, activate_application_regions};
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-mpu"))]
 pub(crate) use crate::board::mpu;
 
 #[cfg(all(feature = "board-stm32f405-sd", not(feature = "abi-current")))]
-pub(crate) use stm32f405_board::APPLICATION_EXECUTION_SUPPORTED;
+pub(crate) use f405::APPLICATION_EXECUTION_SUPPORTED;
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "usb-cdc"))]
-pub(crate) use stm32f405_board::UsbResources;
+pub(crate) use f405::UsbResources;
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
-pub(crate) use stm32f405::TARGET_PROFILE;
+pub(crate) use f405::TARGET_PROFILE;
 
 #[cfg(not(feature = "board-stm32f405-sd"))]
 compile_error!("Select a supported Dali OS platform feature");

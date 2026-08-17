@@ -1,9 +1,9 @@
 //! STM32 hardware SDIO transport for the F405 board backend.
 
-use super::stm32f405_board::SdioPins;
+use super::board::SdioPins;
 use core::cell::RefCell;
 
-use super::stm32f405_sdio_raw::RawSdioReader;
+use super::sdio_raw::RawSdioReader;
 use crate::drivers::{Block, BlockAddress, SdioTransport, StorageError};
 use stm32f4xx_hal::{
     pac,

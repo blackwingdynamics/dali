@@ -24,10 +24,11 @@ dali-kernel/
 │       ├── abi.rs                 # Central active ABI selector
 │       ├── board/                 # Shared MPU descriptors
 │       ├── platform.rs            # Platform facade and target entry points
-│       ├── platform/stm32f405.rs  # F405 target profile and IRQ bindings
-│       ├── platform/stm32f405_board.rs # F405 hardware backend
-│       ├── platform/stm32f405_sdio.rs # F405 SDIO block-device adapter
-│       ├── platform/stm32f405_sdio_raw.rs # F405 SDIO register transport
+│       ├── platform/f405/          # F405-specific platform backend
+│       │   ├── mod.rs              # F405 target profile and IRQ bindings
+│       │   ├── board.rs            # F405 hardware resources and board API
+│       │   ├── sdio.rs             # F405 SDIO transport implementation
+│       │   └── sdio_raw.rs         # F405 SDIO register transport
 │       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
@@ -87,7 +88,7 @@ kernel/src/
 ├── main.rs
 ├── abi.rs
 ├── board/{mod.rs,mpu.rs}
-├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs,stm32f405_sdio.rs,stm32f405_sdio_raw.rs}
+├── platform.rs, platform/f405/{mod.rs,board.rs,sdio.rs,sdio_raw.rs}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader.rs
@@ -146,7 +147,7 @@ target-scaffold.md
 - `kernel/src/platform.rs` and `kernel/src/platform/` own the platform facade
   and target-specific entry points; backend ownership and contributor workflow are defined in
   `docs/PLATFORM_BACKENDS.md`.
-- `kernel/src/platform/stm32f405_sdio*.rs` owns the F405 PAC/HAL SDIO transport;
+- `kernel/src/platform/f405/sdio*.rs` owns the F405 PAC/HAL SDIO transport;
   bootstrap consumes it only through the platform facade.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
