@@ -2,7 +2,9 @@
 
 use core::cell::RefCell;
 
-use crate::storage::{Block, BlockAddress, BlockReader, StorageError};
+pub mod block;
+
+pub use block::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
 use embedded_sdmmc::{Block as FilesystemBlock, BlockCount, BlockDevice, BlockIdx};
 
 /// Adapts a bounded mutable block reader to the filesystem block-device API.
@@ -41,7 +43,7 @@ where
                 .0
                 .checked_add(offset)
                 .ok_or(StorageError::InvalidBlockAddress)?;
-            let mut buffer: Block = [0; crate::storage::BLOCK_SIZE];
+            let mut buffer: Block = [0; BLOCK_SIZE];
             reader.read_block(BlockAddress::new(address), &mut buffer)?;
             block.contents.copy_from_slice(&buffer);
         }
@@ -64,7 +66,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::BlockDeviceAdapter;
-    use crate::storage::{Block, BlockAddress, BlockReader, StorageError};
+    use super::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
     use embedded_sdmmc::{Block as FilesystemBlock, BlockDevice, BlockIdx};
 
     struct MockReader {
@@ -93,33 +95,30 @@ mod tests {
     #[test]
     fn adapts_bounded_reads_without_hardware_dependencies() {
         let reader = MockReader {
-            blocks: [
-                [0x11; crate::storage::BLOCK_SIZE],
-                [0x22; crate::storage::BLOCK_SIZE],
-            ],
+            blocks: [[0x11; BLOCK_SIZE], [0x22; BLOCK_SIZE]],
         };
         let device = BlockDeviceAdapter::new(reader);
         let mut blocks: [FilesystemBlock; 2] = core::array::from_fn(|_| FilesystemBlock {
-            contents: [0; crate::storage::BLOCK_SIZE],
+            contents: [0; BLOCK_SIZE],
         });
 
         device
             .read(&mut blocks, BlockIdx(0))
             .expect("mock read succeeds");
 
-        assert_eq!(blocks[0].contents, [0x11; crate::storage::BLOCK_SIZE]);
-        assert_eq!(blocks[1].contents, [0x22; crate::storage::BLOCK_SIZE]);
+        assert_eq!(blocks[0].contents, [0x11; BLOCK_SIZE]);
+        assert_eq!(blocks[1].contents, [0x22; BLOCK_SIZE]);
         assert_eq!(device.num_blocks().expect("count succeeds").0, 2);
     }
 
     #[test]
     fn keeps_the_read_only_contract() {
         let reader = MockReader {
-            blocks: [[0; crate::storage::BLOCK_SIZE]; 2],
+            blocks: [[0; BLOCK_SIZE]; 2],
         };
         let device = BlockDeviceAdapter::new(reader);
         let blocks = [FilesystemBlock {
-            contents: [0; crate::storage::BLOCK_SIZE],
+            contents: [0; BLOCK_SIZE],
         }];
 
         assert_eq!(

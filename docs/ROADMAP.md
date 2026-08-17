@@ -90,22 +90,36 @@ F405 scope; the next work is to finish the platform backend extraction.
 - [x] Move the F405 board implementation fully behind the platform backend
   facade without changing its runtime behavior.
 - [x] Add generated backend scaffolding and validation for new target profiles.
+- [x] Expose stable platform operations without leaking board resource types to
+  bootstrap or heartbeat policy.
 
 #### Recorded architecture debt
 
 - [x] Restore `kernel/src/drivers/` as the hardware-neutral driver layer after
   the platform refactor is complete.
-- [ ] Define generic storage and transport traits in `kernel/src/drivers/` and
-  make the F405 SDIO adapter implement them without exposing PAC or HAL types
-  to kernel policy.
+- [x] Define the generic block-storage contract in `kernel/src/drivers/` and
+  make the F405 SDIO adapter implement it without exposing PAC or HAL types to
+  kernel policy.
 - [x] Add host tests for the generic driver contracts and target checks for the
   F405 adapter before marking the driver boundary complete.
 
 ### ABI selector foundation
 
 - [x] Centralize the active ABI selector and keep versioned Cargo feature names
-  as compatibility aliases.
+  version-neutral across implementation modules.
+- [x] Centralize ABI-family and AMRN-format compatibility validation for the
+  kernel-facing build contract and CLI package commands.
 - [ ] Define the ABI v4 contract and implementation before enabling a v4 alias.
+
+### Enterprise architecture hardening
+
+- [x] Separate direct PAC/HAL adapters from kernel policy modules.
+- [x] Split bootstrap orchestration from storage initialization and package
+  loading policy.
+- [x] Declare target capabilities in TOML and validate them during builds.
+- [x] Add build-time target/ABI/format consistency gates.
+- [x] Run legacy and isolation embedded checks through a CI matrix.
+- [x] Add hardware-independent kernel core contract tests.
 
 ### USB CDC handoff boundary
 
