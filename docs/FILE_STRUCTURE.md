@@ -35,7 +35,7 @@ dali-kernel/
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
 │       ├── logging/               # Facade, RTT, USB CDC backend
 │       ├── security/              # MPU, SVC, launch, and fault recovery
-│       └── storage/               # Block types and read-only filesystem
+│       └── storage/               # Read-only filesystem and storage policy
 ├── apps/
 │   ├── dali-app-hello/
 │   ├── dali-app-relocation-fixture/
@@ -89,7 +89,7 @@ kernel/src/
 ├── board/{mod.rs,mpu.rs}
 ├── platform.rs, platform/{stm32f405.rs,stm32f405_board.rs,stm32f405_sdio.rs,stm32f405_sdio_raw.rs}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
-├── drivers/{mod.rs}
+├── drivers/{mod.rs,block.rs}
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
@@ -153,7 +153,8 @@ target-scaffold.md
 - `targets/*.toml` owns declarative target facts; hardware implementations must
   consume those facts through generated target metadata instead of copying
   board constants into kernel policy.
-- `kernel/src/storage/` owns SD/filesystem access; package parsing remains in
+- `kernel/src/storage/` owns SD/filesystem policy; generic block contracts live
+  in `kernel/src/drivers/`; package parsing remains in
   `crates/dali-amrn/` and loading policy remains in `kernel/src/loader.rs`.
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, and
   fault recovery.
