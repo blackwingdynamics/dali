@@ -227,6 +227,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] Target-profile generation carries the scheduler quantum as declared
   configuration; no timer frequency or quantum literal is embedded in the
   scheduler implementation.
+- [x] Embedded target compilation verifies bootstrap scheduler initialization
+  from target-profile configuration; interrupt vectors and application context
+  insertion remain disabled.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.

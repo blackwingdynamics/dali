@@ -184,6 +184,10 @@ Kernel-owned scheduler storage is initialized once during bootstrap. Mutable
 access requires an explicit interrupt-exclusivity guarantee; uninitialized or
 repeated initialization is rejected before PendSV integration.
 
+With `abi-context-switch`, bootstrap now constructs this storage from the
+selected target profile. The scheduler remains disconnected from the vector
+table and no application context is inserted until PendSV ownership is wired.
+
 `prepare_pendsv` makes that sequence explicit and bounded: without a pending
 request it leaves the active context unchanged; with a request it records the
 outgoing state before selecting the next ready context. Register restoration and

@@ -35,6 +35,14 @@ pub fn run() -> ! {
         format_args!("Hardware bootstrap complete"),
     );
 
+    #[cfg(feature = "abi-context-switch")]
+    if let Err(error) = crate::security::scheduling::initialize() {
+        logging::error(
+            logging::SECURITY_SUBSYSTEM,
+            format_args!("[SECURITY] Scheduler initialization failed: {:?}", error),
+        );
+    }
+
     // Keep a visible indication active while storage initialization is in progress.
     board.set_status_led(true);
     logging::info(

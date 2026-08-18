@@ -13,3 +13,6 @@ pub(crate) mod launch;
 
 #[cfg(feature = "abi-current")]
 pub(crate) mod svc;
+
+#[cfg(feature = "abi-context-switch")]
+pub(crate) mod scheduling;

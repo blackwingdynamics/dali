@@ -616,6 +616,8 @@ Compilation and host tests do not replace hardware evidence.
   interrupt-access requirements; keep the storage disconnected from vectors.
 - [x] Move the scheduler quantum into target-profile configuration so runtime
   code does not hardcode board timing values.
+- [x] Initialize kernel-owned scheduler storage from the selected target
+  profile without enabling PendSV or inserting application contexts.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

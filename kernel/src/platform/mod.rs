@@ -102,5 +102,12 @@ pub(crate) use f405::APPLICATION_EXECUTION_SUPPORTED;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
 pub(crate) use f405::TARGET_PROFILE;
 
+#[cfg(all(
+    feature = "board-stm32f405-sd",
+    feature = "abi-context-switch",
+    feature = "abi-current"
+))]
+pub(crate) use f405::{CONTEXT_CAPACITY, SCHEDULER_PROFILE};
+
 #[cfg(not(feature = "board-stm32f405-sd"))]
 compile_error!("Select a supported Dali OS platform feature");
