@@ -5,6 +5,9 @@ use super::{
     tick::{TickBudget, TickBudgetError},
 };
 
+#[cfg(target_arch = "arm")]
+use super::saved_state::SavedContext;
+
 /// Errors returned by the bounded scheduler facade.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SchedulerError {
@@ -16,6 +19,8 @@ pub enum SchedulerError {
     NoReadyContext,
     /// No context is currently running.
     NoActiveContext,
+    /// The platform could not activate the selected context's protection map.
+    ProtectionUnavailable,
 }
 
 /// The context transition selected after a completed preemption save.
@@ -132,6 +137,31 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
     /// Returns the saved state for a selected context.
     pub fn context(&self, id: ContextId) -> Result<ScheduledContext, SchedulerError> {
         self.contexts.get(id).map_err(SchedulerError::Context)
+    }
+
+    /// Returns the currently active scheduled context.
+    pub fn active_context(&self) -> Result<ScheduledContext, SchedulerError> {
+        let id = self
+            .contexts
+            .active()
+            .ok_or(SchedulerError::NoActiveContext)?;
+        self.context(id)
+    }
+
+    /// Returns a pointer to one selected CPU record for exception restore.
+    #[cfg(target_arch = "arm")]
+    pub fn context_cpu_ptr(&self, id: ContextId) -> Result<*const SavedContext, SchedulerError> {
+        self.contexts.cpu_ptr(id).map_err(SchedulerError::Context)
+    }
+
+    /// Returns a pointer to the active CPU record for a spurious PendSV.
+    #[cfg(target_arch = "arm")]
+    pub fn active_cpu_ptr(&self) -> Result<*const SavedContext, SchedulerError> {
+        let id = self
+            .contexts
+            .active()
+            .ok_or(SchedulerError::NoActiveContext)?;
+        self.context_cpu_ptr(id)
     }
 }
 

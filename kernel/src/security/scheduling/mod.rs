@@ -2,6 +2,7 @@
 
 use crate::runtime::scheduling::{
     record::ScheduledContext,
+    saved_state::{CALLEE_SAVED_REGISTER_COUNT, SavedContext},
     scheduler::{Scheduler, SchedulerError},
     storage::{SchedulerStorage, SchedulerStorageError},
 };
@@ -78,6 +79,67 @@ pub(crate) fn activate_first() -> Result<(), SchedulerAccessError> {
         .map_err(SchedulerAccessError::Storage)?
         .map(|_| ())
         .map_err(SchedulerAccessError::Scheduler)
+}
+
+/// Prepares the incoming CPU record for the privileged PendSV assembly path.
+#[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
+#[unsafe(export_name = "dali_kernel_prepare_pendsv")]
+pub(crate) unsafe extern "C" fn prepare_pendsv(
+    saved_registers: *const u32,
+    psp: u32,
+    control: u32,
+    exception_return: u32,
+) -> *const SavedContext {
+    let saved = unsafe {
+        // SAFETY: The naked PendSV wrapper passes a pointer to its aligned,
+        // complete `r4..r11` scratch area on the kernel MSP.
+        *(saved_registers as *const [u32; CALLEE_SAVED_REGISTER_COUNT])
+    };
+    let result = with_scheduler(|scheduler| {
+        let active = scheduler.active_context()?;
+        let saved_context = ScheduledContext::new(
+            SavedContext {
+                psp,
+                callee_saved: saved,
+                control,
+                exception_return,
+            },
+            active.slot(),
+        );
+        match scheduler.prepare_pendsv(saved_context)? {
+            Some(selection) => {
+                let incoming = scheduler.context(selection.incoming)?;
+                if !crate::platform::activate_application_regions(incoming.slot()) {
+                    return Err(SchedulerError::ProtectionUnavailable);
+                }
+                scheduler.context_cpu_ptr(selection.incoming)
+            }
+            None => scheduler.active_cpu_ptr(),
+        }
+    });
+    match result {
+        Ok(Ok(pointer)) => pointer,
+        Ok(Err(_)) | Err(_) => crate::security::launch::recover(),
+    }
+}
+
+/// Privileged PendSV wrapper for scheduler-owned save/select/restore.
+#[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
+#[unsafe(naked)]
+#[unsafe(export_name = "PendSV")]
+pub(crate) unsafe extern "C" fn pendsv_handler() -> ! {
+    core::arch::naked_asm!(
+        "stmdb sp!, {{r4-r11}}",
+        "mrs r1, psp",
+        "mrs r2, control",
+        "mov r3, lr",
+        "mov r0, sp",
+        "bl {prepare}",
+        "add sp, #32",
+        "b {restore}",
+        prepare = sym prepare_pendsv,
+        restore = sym crate::runtime::scheduling::context_switch::restore_selected,
+    );
 }
 
 /// Accounts for one target-provided SysTick interrupt.

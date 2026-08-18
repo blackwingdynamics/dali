@@ -625,6 +625,9 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Add a feature-gated SysTick exception hook that accounts for target ticks
   and requests PendSV only when a ready context exists; keep timer enablement,
   register transfer, and MPU switching separate.
+- [x] Add a target-compiled privileged PendSV wrapper that captures the outgoing
+  CPU record and routes the selected record to the restore primitive; keep
+  timer enablement and lifecycle ownership separate until hardware evidence.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

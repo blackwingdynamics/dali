@@ -6,7 +6,7 @@ const THUMB_STATE_BIT: u32 = 1 << 24;
 const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
 const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
 const NON_RETURNING_LINK: u32 = 0;
-#[cfg(feature = "abi-mpu")]
+#[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
 const CONTROL_UNPRIVILEGED_PSP: u32 = 0b11;
 const CONTROL_PRIVILEGED_MSP: u32 = 0;
 
@@ -135,7 +135,7 @@ extern "C" fn fault_recovery() -> ! {
 }
 
 /// Returns from the privileged PendSV handler into the prepared PSP frame.
-#[cfg(feature = "abi-mpu")]
+#[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
 #[unsafe(export_name = "PendSV")]
 unsafe extern "C" fn pendsv_handler() -> ! {
     unsafe {

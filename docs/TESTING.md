@@ -236,6 +236,10 @@ distinguished from the kernel's fault and recovery records.
 - [x] Embedded target compilation verifies the feature-gated SysTick exception
   hook and guarded PendSV request path. No timer is enabled and no register
   transfer occurs, so it is not hardware context-switch evidence.
+- [x] Target ELF inspection verifies the feature-gated PendSV wrapper contains
+  the raw `r4..r11` save, PSP/CONTROL/EXC_RETURN capture, scheduler helper call,
+  and restore-primitive branch. This is target/source evidence only; hardware
+  context switching and MPU switching remain unverified.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.

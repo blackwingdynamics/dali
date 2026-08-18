@@ -35,6 +35,12 @@ impl ScheduledContext {
         self.cpu
     }
 
+    /// Returns a stable pointer while the owning scheduler is exclusively held.
+    #[cfg(target_arch = "arm")]
+    pub const fn cpu_ptr(&self) -> *const SavedContext {
+        &self.cpu
+    }
+
     /// Returns the manifest-owned slot bound to this execution context.
     pub const fn slot(self) -> IsolationSlot {
         self.slot

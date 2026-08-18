@@ -140,6 +140,12 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
         Ok(self.slot(id)?.context)
     }
 
+    /// Returns a pointer to the saved CPU state for one valid context.
+    #[cfg(target_arch = "arm")]
+    pub fn cpu_ptr(&self, id: ContextId) -> Result<*const SavedContext, ContextTableError> {
+        Ok(self.slot(id)?.context.cpu_ptr())
+    }
+
     /// Returns the currently running context identifier, if one exists.
     pub const fn active(&self) -> Option<ContextId> {
         self.active
