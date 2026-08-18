@@ -71,6 +71,7 @@ mod tests {
         assert_eq!(isolation.family, AbiFamily::Isolation);
         assert!(isolation.supports_format(crate::v2::FORMAT_VERSION));
         assert!(isolation.supports_format(crate::v3::FORMAT_VERSION));
+        assert!(isolation.supports_format(crate::v4::FORMAT_VERSION));
     }
 
     #[test]

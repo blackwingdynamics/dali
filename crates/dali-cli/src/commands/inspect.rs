@@ -357,6 +357,22 @@ mod tests {
 
     #[test]
     fn inspect_reports_identity_fields() {
+        let package = identity_test_package();
+        let report = inspect_bytes(&package).expect("v4 package should inspect");
+        assert!(report.contains("format_version: 4"));
+        assert!(report.contains("package_version: 1.2.3"));
+        assert!(report.contains("slot_id: 1"));
+    }
+
+    #[test]
+    fn inspect_rejects_a_corrupted_identity_package() {
+        let mut package = identity_test_package();
+        package[dali_amrn::v4::HEADER_SIZE] ^= 1;
+        let error = inspect_bytes(&package).expect_err("corrupted package must be rejected");
+        assert!(error.contains("CrcMismatch"));
+    }
+
+    fn identity_test_package() -> Vec<u8> {
         let contract = dali_amrn::v3::Contract {
             target_id: 2,
             code_load_address: 0x2001_0000,
@@ -395,10 +411,7 @@ mod tests {
         let size =
             dali_amrn::v4::encode(image, contract, &mut package).expect("v4 package should encode");
         package.truncate(size);
-        let report = inspect_bytes(&package).expect("v4 package should inspect");
-        assert!(report.contains("format_version: 4"));
-        assert!(report.contains("package_version: 1.2.3"));
-        assert!(report.contains("slot_id: 1"));
+        package
     }
 }
 
