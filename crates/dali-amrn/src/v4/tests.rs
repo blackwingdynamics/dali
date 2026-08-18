@@ -9,6 +9,7 @@ const CONTRACT: v3::Contract = v3::Contract {
     data_load_address: 0x2001_4000,
     data_capacity: 0x4000,
 };
+const CRC32_FIELD_LENGTH: usize = core::mem::size_of::<u32>();
 
 fn valid_package() -> std::vec::Vec<u8> {
     let code = [0, 0, 0, 0];
@@ -35,8 +36,8 @@ fn valid_package() -> std::vec::Vec<u8> {
     let payload_crc = payload_crc.finish();
     package[56..60].copy_from_slice(&payload_crc.to_le_bytes());
     package[HEADER_SIZE..].copy_from_slice(&code);
-    let package_crc = package_checksum(&package, PACKAGE_CRC32_OFFSET);
-    package[PACKAGE_CRC32_OFFSET..PACKAGE_CRC32_OFFSET + 4]
+    let package_crc = package_checksum(&package);
+    package[PACKAGE_CRC32_OFFSET..PACKAGE_CRC32_OFFSET + CRC32_FIELD_LENGTH]
         .copy_from_slice(&package_crc.to_le_bytes());
     package
 }
@@ -100,4 +101,28 @@ fn rejects_a_package_checksum_mismatch() {
     let mut package = valid_package();
     package[80] = 2;
     assert_eq!(parse(&package, CONTRACT), Err(Error::CrcMismatch));
+}
+
+#[test]
+fn package_checksum_excludes_its_own_field() {
+    let mut package = valid_package();
+    let expected = package_checksum(&package);
+    package[PACKAGE_CRC32_OFFSET..PACKAGE_CRC32_OFFSET + CRC32_FIELD_LENGTH].fill(0xA5);
+    assert_eq!(package_checksum(&package), expected);
+}
+
+#[test]
+fn package_checksum_includes_bytes_before_the_checksum_field() {
+    let mut package = valid_package();
+    let expected = package_checksum(&package);
+    package[PACKAGE_CRC32_OFFSET - 1] ^= 0x01;
+    assert_ne!(package_checksum(&package), expected);
+}
+
+#[test]
+fn package_checksum_includes_bytes_at_the_reserved_boundary() {
+    let mut package = valid_package();
+    let expected = package_checksum(&package);
+    package[RESERVED_BYTES_OFFSET] ^= 0x01;
+    assert_ne!(package_checksum(&package), expected);
 }

@@ -166,7 +166,7 @@ pub fn encode(image: Image<'_>, contract: v3::Contract, output: &mut [u8]) -> Re
     let image_header =
         v3::parse_header(&output[..V3_HEADER_SIZE], contract).map_err(|_| Error::InvalidHeader)?;
     write_header(output, image_header, image.metadata);
-    let package_crc = package_checksum(output, PACKAGE_CRC32_OFFSET);
+    let package_crc = package_checksum(output);
     write_u32(output, PACKAGE_CRC32_OFFSET, package_crc);
     Ok(package_size)
 }
@@ -197,7 +197,7 @@ pub fn parse<'a>(package: &'a [u8], contract: v3::Contract) -> Result<Package<'a
     let initialized_data = &package[code_end..data_end];
     let relocation_bytes = &package[data_end..package_end];
     if payload_checksum(code, initialized_data, relocation_bytes) != header.image.crc32
-        || package_checksum(package, PACKAGE_CRC32_OFFSET) != header.package_crc32
+        || package_checksum(package) != header.package_crc32
     {
         return Err(Error::CrcMismatch);
     }
@@ -283,10 +283,10 @@ fn payload_checksum(code: &[u8], data: &[u8], relocations: &[u8]) -> u32 {
     checksum.finish()
 }
 
-fn package_checksum(package: &[u8], checksum_offset: usize) -> u32 {
+fn package_checksum(package: &[u8]) -> u32 {
     let mut checksum = Crc32::new();
-    checksum.update(&package[0x78..]);
-    checksum.update(&package[..checksum_offset]);
+    checksum.update(&package[RESERVED_BYTES_OFFSET..]);
+    checksum.update(&package[..PACKAGE_CRC32_OFFSET]);
     checksum.finish()
 }
 

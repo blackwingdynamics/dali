@@ -559,6 +559,9 @@ Compilation and host tests do not replace hardware evidence.
 
 - [ ] Test package installation, selection, replacement, and removal semantics
   after writable filesystem support exists.
+- [ ] Define a versioned package-signature extension for Secure Boot and
+  authenticity verification; do not overload the AMRN v4 reserved bytes, which
+  are too small for a digital signature.
 - [ ] Test signed package verification and rejected signatures.
 - [ ] Test secure boot and kernel image authenticity.
 - [ ] Test version compatibility, anti-rollback, update, and rollback flows.
