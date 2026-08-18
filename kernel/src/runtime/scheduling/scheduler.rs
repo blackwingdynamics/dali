@@ -36,6 +36,7 @@ pub struct SwitchSelection {
 pub struct Scheduler<const CAPACITY: usize> {
     contexts: ContextTable<CAPACITY>,
     tick: TickBudget,
+    recovery_target: Option<ContextId>,
 }
 
 impl<const CAPACITY: usize> Scheduler<CAPACITY> {
@@ -48,6 +49,7 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
         Ok(Self {
             contexts: ContextTable::new(),
             tick,
+            recovery_target: None,
         })
     }
 
@@ -156,6 +158,20 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
             .activate(incoming)
             .map_err(SchedulerError::Context)?;
         Ok(Some(SwitchSelection { outgoing, incoming }))
+    }
+
+    /// Arms a selected ready context for restore through the PendSV handler.
+    pub fn arm_recovery_restore(&mut self, id: ContextId) -> Result<(), SchedulerError> {
+        if self.contexts.active() != Some(id) {
+            return Err(SchedulerError::NoActiveContext);
+        }
+        self.recovery_target = Some(id);
+        Ok(())
+    }
+
+    /// Consumes a fault-recovery target before normal preemption handling.
+    pub fn take_recovery_target(&mut self) -> Option<ContextId> {
+        self.recovery_target.take()
     }
 
     /// Returns the saved state for a selected context.
@@ -329,6 +345,9 @@ mod tests {
             }))
         );
         assert_eq!(scheduler.active_context(), Ok(CONTEXT));
+        assert_eq!(scheduler.arm_recovery_restore(second), Ok(()));
+        assert_eq!(scheduler.take_recovery_target(), Some(second));
+        assert_eq!(scheduler.take_recovery_target(), None);
         assert_eq!(scheduler.terminate_active_and_select_next(), Ok(None));
         assert_eq!(
             scheduler.active_context(),

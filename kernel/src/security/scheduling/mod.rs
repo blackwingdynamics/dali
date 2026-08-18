@@ -81,26 +81,24 @@ pub(crate) fn activate_first() -> Result<(), SchedulerAccessError> {
         .map_err(SchedulerAccessError::Scheduler)
 }
 
-/// Retires the faulted context and restores the next protected context.
+/// Retires the faulted context and requests a protected PendSV restore.
 #[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
 pub(crate) fn recover_faulted_context() -> ! {
-    let result = with_scheduler(|scheduler| {
+    let result = with_scheduler(|scheduler| -> Result<Option<()>, SchedulerError> {
         let Some(selection) = scheduler.terminate_active_and_select_next()? else {
             return Ok(None);
         };
-        let incoming = scheduler.context(selection.incoming)?;
-        if !crate::platform::activate_application_regions(incoming.slot()) {
-            return Err(SchedulerError::ProtectionUnavailable);
-        }
-        scheduler.context_cpu_ptr(selection.incoming).map(Some)
+        scheduler.arm_recovery_restore(selection.incoming)?;
+        Ok(Some(()))
     });
 
     match result {
-        Ok(Ok(Some(pointer))) => unsafe {
-            // SAFETY: The scheduler selected a kernel-owned context whose PSP,
-            // CONTROL, and exception return were validated at registration.
-            crate::runtime::scheduling::context_switch::restore_selected(pointer)
-        },
+        Ok(Ok(Some(()))) => {
+            cortex_m::peripheral::SCB::set_pendsv();
+            loop {
+                cortex_m::asm::wfi();
+            }
+        }
         _ => loop {
             cortex_m::asm::wfi();
         },
@@ -122,6 +120,13 @@ pub(crate) unsafe extern "C" fn prepare_pendsv(
         *(saved_registers as *const [u32; CALLEE_SAVED_REGISTER_COUNT])
     };
     let result = with_scheduler(|scheduler| {
+        if let Some(incoming_id) = scheduler.take_recovery_target() {
+            let incoming = scheduler.context(incoming_id)?;
+            if !crate::platform::activate_application_regions(incoming.slot()) {
+                return Err(SchedulerError::ProtectionUnavailable);
+            }
+            return scheduler.context_cpu_ptr(incoming_id);
+        }
         let active = scheduler.active_context()?;
         let saved_context = ScheduledContext::new(
             SavedContext {
