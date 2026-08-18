@@ -43,23 +43,17 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
         Some(memory) => memory,
         None => return,
     };
-    let slot = match memory.active_slot() {
-        Some(slot) => slot,
-        None => return,
-    };
-    let data_start = slot.data_origin as usize;
-    let data_end = match data_start.checked_add(slot.data_length as usize) {
-        Some(end) => end,
-        None => return,
-    };
     let frame_end = match frame_address.checked_add(frame_size) {
         Some(end) => end,
         None => return,
     };
-    if frame_address == 0
-        || !frame_address.is_multiple_of(core::mem::align_of::<ExceptionFrame>())
-        || frame_address < data_start
-        || frame_end > data_end
+    let Some(slot) = memory.slots.iter().copied().find(|slot| {
+        frame_address >= slot.data_origin as usize
+            && frame_end <= slot.data_origin.saturating_add(slot.data_length) as usize
+    }) else {
+        return;
+    };
+    if frame_address == 0 || !frame_address.is_multiple_of(core::mem::align_of::<ExceptionFrame>())
     {
         return;
     }

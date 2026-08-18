@@ -13,8 +13,10 @@ const _: () = assert!(ISOLATION_LAYOUT.is_some());
 
 /// Activates unprivileged application permissions after the loader finishes.
 #[cfg(feature = "abi-mpu")]
-pub fn activate_application_regions() -> bool {
-    let Some(layout) = ISOLATION_LAYOUT else {
+pub fn activate_application_regions(slot: dali_targets::IsolationSlot) -> bool {
+    let Some(layout) =
+        crate::board::mpu::IsolationLayout::from_memory_for_slot(TARGET_F405.memory, slot)
+    else {
         return false;
     };
     crate::board::mpu::activate_application_regions(layout);

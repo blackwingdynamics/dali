@@ -572,8 +572,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Implement bounded kernel-side relocation application before MPU launch.
 - [x] Execute a format 3 relocation fixture on F405 hardware at the canonical
   manifest origins.
-- [ ] Execute the same relocation metadata with a non-zero slot delta on F405
-  hardware.
+- [x] Execute the same relocation metadata with a non-zero slot delta on F405
+  hardware; detailed evidence is in `docs/TESTING.md`.
 - [x] Define the F405 multi-slot memory contract: two 16 KiB
   code/data pairs, 32 KiB DMA-visible SRAM, and CCM kernel runtime storage.
 - [x] Generate the F405 kernel linker memory map from target metadata, placing

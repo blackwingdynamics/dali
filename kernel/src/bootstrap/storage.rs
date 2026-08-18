@@ -85,7 +85,7 @@ where
             {
                 #[cfg(feature = "abi-mpu")]
                 {
-                    if platform::activate_application_regions() {
+                    if platform::activate_application_regions(package.slot) {
                         crate::security::launch::enter(package.launch_frame);
                     }
                     logging::error(

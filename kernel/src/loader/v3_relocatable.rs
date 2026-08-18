@@ -17,7 +17,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract) = parse_target_header(&header)?;
+    let (header, contract, slot) = parse_target_header(&header)?;
     let relocation_offset = u32::try_from(v3::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.code_size))
@@ -61,12 +61,13 @@ where
             super::LoaderError::V3RelocationPackage(v3::Error::AddressOverflow),
         )?,
         launch_frame,
+        slot,
     })
 }
 
 fn parse_target_header(
     bytes: &[u8; v3::HEADER_SIZE],
-) -> Result<(v3::Header, v3::Contract), super::LoaderError> {
+) -> Result<(v3::Header, v3::Contract, dali_targets::IsolationSlot), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
@@ -82,7 +83,7 @@ fn parse_target_header(
             data_capacity: slot.data_length,
         };
         match v3::parse_header(bytes, contract) {
-            Ok(header) => return Ok((header, contract)),
+            Ok(header) => return Ok((header, contract, slot)),
             Err(error) => last_error = error,
         }
     }

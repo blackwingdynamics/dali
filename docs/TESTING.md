@@ -105,8 +105,11 @@ multi-application isolation, or watchdog support.
   code `0x20010000` and data `0x20014000`.
 - [x] Host inspection accepted the slot1 package with 49 retained relocation
   records, 8 bytes of initialized data, and 4 bytes of zero-initialized data.
-- [ ] F405 hardware execution of the same relocated slot1 package remains
-  pending; host packaging and inspection do not prove runtime relocation.
+- [x] F405 hardware executed the same relocated slot1 package after the MPU
+  and SVC slot-selection fix. The console reported AMRN validation followed by
+  `[INFO][APP] Relocation fixture`; the same result was observed after CDC
+  reconnect. The first reset produced a USB transport disconnect when the
+  board cable moved, not a kernel fault.
 
 ### Diagnostic evidence
 

@@ -17,6 +17,8 @@ pub struct LoadedApplication {
     pub psp_top: u32,
     /// Kernel-generated frame for the future unprivileged exception return.
     pub(crate) launch_frame: LaunchFrame,
+    /// Manifest slot selected for the loaded application's code and data.
+    pub(crate) slot: dali_targets::IsolationSlot,
 }
 
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
@@ -25,7 +27,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let contract = target_contract().ok_or(super::LoaderError::UnsupportedV3Target)?;
+    let (contract, slot) = target_contract().ok_or(super::LoaderError::UnsupportedV3Target)?;
     let header = v2::parse_header(&header, contract).map_err(super::LoaderError::V3Package)?;
     let expected_length =
         package_length(header).ok_or(super::LoaderError::V3Package(v2::Error::InvalidPayload))?;
@@ -61,23 +63,27 @@ where
         entry_address,
         psp_top,
         launch_frame,
+        slot,
     })
 }
 
-fn target_contract() -> Option<v2::Contract> {
+fn target_contract() -> Option<(v2::Contract, dali_targets::IsolationSlot)> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target.memory.isolation?;
     let slot = crate::runtime::slots::SlotManager::new(isolation.slots)
         .ok()?
         .allocate()?;
     let slot = slot.slot();
-    Some(v2::Contract {
-        target_id: target.amrn_target_id,
-        code_load_address: slot.code_origin,
-        code_capacity: slot.code_length,
-        data_load_address: slot.data_origin,
-        data_capacity: slot.data_length,
-    })
+    Some((
+        v2::Contract {
+            target_id: target.amrn_target_id,
+            code_load_address: slot.code_origin,
+            code_capacity: slot.code_length,
+            data_load_address: slot.data_origin,
+            data_capacity: slot.data_length,
+        },
+        slot,
+    ))
 }
 
 fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v2::HEADER_SIZE], super::LoaderError>

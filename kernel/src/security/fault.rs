@@ -211,19 +211,17 @@ fn read_application_frame(frame_address: u32, exception_return: u32) -> Option<E
         return None;
     }
     let memory = crate::platform::MEMORY_PROFILE.isolation?;
-    let slot = memory.active_slot()?;
     let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
-    let data_start = slot.data_origin as usize;
-    let data_end = data_start.checked_add(slot.data_length as usize)?;
     let frame_end = frame_address.checked_add(frame_size)?;
-    if frame_address == 0
-        || !frame_address.is_multiple_of(core::mem::align_of::<ExceptionFrame>())
-        || frame_address < data_start
-        || frame_end > data_end
+    if frame_address == 0 || !frame_address.is_multiple_of(core::mem::align_of::<ExceptionFrame>())
     {
         return None;
     }
+    let _slot = memory.slots.iter().copied().find(|slot| {
+        frame_address >= slot.data_origin as usize
+            && frame_end <= slot.data_origin.saturating_add(slot.data_length) as usize
+    })?;
     unsafe {
         // SAFETY: The complete basic frame was validated inside the
         // manifest-declared application data/PSP region above.

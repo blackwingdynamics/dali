@@ -167,6 +167,26 @@ pub struct IsolationLayout {
 impl IsolationLayout {
     /// Builds a layout from the board manifest's declared SRAM regions.
     pub const fn from_memory(memory: MemoryProfile) -> Option<Self> {
+        let isolation = match memory.isolation {
+            Some(isolation) => isolation,
+            None => return None,
+        };
+        let active_slot = match isolation.active_slot() {
+            Some(slot) => slot,
+            None => return None,
+        };
+        Self::from_memory_for_slot(memory, active_slot)
+    }
+
+    /// Builds a layout using one slot from the board manifest's slot table.
+    pub const fn from_memory_for_slot(
+        memory: MemoryProfile,
+        active_slot: dali_targets::IsolationSlot,
+    ) -> Option<Self> {
+        let isolation = match memory.isolation {
+            Some(isolation) => isolation,
+            None => return None,
+        };
         let kernel = match MpuRegion::new(
             memory.kernel_origin,
             memory.kernel_length,
@@ -186,14 +206,6 @@ impl IsolationLayout {
             MpuAccess::ReadWrite,
             MpuExecution::Allowed,
         );
-        let isolation = match memory.isolation {
-            Some(isolation) => isolation,
-            None => return None,
-        };
-        let active_slot = match isolation.active_slot() {
-            Some(slot) => slot,
-            None => return None,
-        };
         let application_code = match MpuRegion::new(
             active_slot.code_origin,
             active_slot.code_length,
@@ -380,6 +392,21 @@ mod tests {
         assert_eq!(layout.application_data.execution, MpuExecution::Never);
         assert_eq!(layout.peripherals.access, MpuAccess::PrivilegedOnly);
         assert_eq!(layout.peripherals.memory_type, MpuMemoryType::Device);
+    }
+
+    #[test]
+    fn builds_application_regions_for_a_declared_nonzero_slot() {
+        let Some(isolation) = TARGET_F405.memory.isolation else {
+            return;
+        };
+        let Some(slot) = isolation.slots.get(1).copied() else {
+            return;
+        };
+        let Some(layout) = IsolationLayout::from_memory_for_slot(TARGET_F405.memory, slot) else {
+            return;
+        };
+        assert_eq!(layout.application_code.base, slot.code_origin);
+        assert_eq!(layout.application_data.base, slot.data_origin);
     }
 
     #[test]
