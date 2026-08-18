@@ -32,7 +32,7 @@ capabilities. The generated target registry exposes typed metadata to host and
 kernel build code.
 
 The backend maps those facts to executable hardware operations. The
-`kernel/src/platform.rs` facade defines the crate-private `Backend` contract
+`kernel/src/platform/mod.rs` facade defines the crate-private `Backend` contract
 and exposes only stable kernel-facing operations;
 backend resource structs, PAC types, pin tuples, and clock objects stay behind
 that facade. It must not
