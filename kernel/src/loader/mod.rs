@@ -38,10 +38,14 @@ pub enum LoaderError {
 }
 
 #[cfg(feature = "abi-current")]
+type LoadedPackages =
+    pipeline::execution::LoadedApplications<{ storage::filesystem::MAX_ROOT_AMRN_FILES }>;
+
+#[cfg(feature = "abi-current")]
 pub(crate) fn load_current_abi<D>(
     device: D,
     slot_manager: &mut crate::runtime::slots::SlotManager,
-) -> Result<pipeline::execution::LoadedApplication, LoaderError>
+) -> Result<LoadedPackages, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
@@ -71,13 +75,16 @@ where
             read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
             file.rewind().map_err(LoaderError::Filesystem)?;
             match version[4] {
-                dali_amrn::v2::FORMAT_VERSION => pipeline::execution::load_file(file, slot_manager),
+                dali_amrn::v2::FORMAT_VERSION => pipeline::execution::load_file(file, slot_manager)
+                    .map(pipeline::execution::LoadedApplications::single),
                 #[cfg(feature = "abi-relocation")]
                 dali_amrn::v3::FORMAT_VERSION => {
                     pipeline::relocation::load_file(file, slot_manager)
+                        .map(pipeline::execution::LoadedApplications::single)
                 }
                 #[cfg(feature = "abi-relocation")]
-                dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager),
+                dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager)
+                    .map(pipeline::execution::LoadedApplications::single),
                 _ => Err(LoaderError::CurrentAbiPackage(
                     dali_amrn::v2::Error::InvalidHeader,
                 )),

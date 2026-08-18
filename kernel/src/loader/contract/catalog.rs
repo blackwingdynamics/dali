@@ -47,6 +47,11 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
         self.length == 0
     }
 
+    /// Returns the number of accepted package candidates.
+    pub const fn len(&self) -> usize {
+        self.length
+    }
+
     /// Registers one already-validated package header.
     pub fn register(
         &mut self,
@@ -76,6 +81,11 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
 
     /// Selects the lowest manifest slot independently of discovery order.
     pub fn select(&self) -> Option<DiscoveredPackage> {
+        self.select_after(None)
+    }
+
+    /// Selects the lowest manifest slot after an optional previously selected slot.
+    pub fn select_after(&self, previous_slot: Option<u8>) -> Option<DiscoveredPackage> {
         if self.is_empty() {
             return None;
         }
@@ -83,6 +93,7 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
             .iter()
             .flatten()
             .copied()
+            .filter(|candidate| previous_slot.is_none_or(|slot_id| candidate.slot.id > slot_id))
             .min_by_key(|candidate| candidate.slot.id)
     }
 
@@ -202,6 +213,28 @@ mod tests {
         let selected = catalog.select().expect("a package is selected");
         assert_eq!(selected.slot.id, SLOT0_ID);
         assert_eq!(selected.header.metadata.package_id, [1; 16]);
+    }
+
+    #[test]
+    fn selects_each_declared_slot_in_manifest_order() {
+        let mut catalog = PackageCatalog::<CATALOG_CAPACITY>::new();
+        catalog
+            .register(header(2, SLOT1_ID), SLOT1, false)
+            .expect("slot 1 registers");
+        catalog
+            .register(header(1, SLOT0_ID), SLOT0, false)
+            .expect("slot 0 registers");
+
+        let first = catalog
+            .select_after(None)
+            .expect("first package is selected");
+        let second = catalog
+            .select_after(Some(first.slot.id))
+            .expect("second package is selected");
+
+        assert_eq!(first.slot.id, SLOT0_ID);
+        assert_eq!(second.slot.id, SLOT1_ID);
+        assert!(catalog.select_after(Some(second.slot.id)).is_none());
     }
 
     #[test]

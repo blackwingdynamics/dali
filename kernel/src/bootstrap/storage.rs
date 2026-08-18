@@ -109,6 +109,13 @@ where
             {
                 #[cfg(feature = "abi-mpu")]
                 {
+                    let Some(package) = package.first() else {
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!("[SECURITY] No loaded application context"),
+                        );
+                        return status::StorageStatus::Failure;
+                    };
                     if platform::activate_application_regions(package.slot) {
                         crate::security::launch::enter(package.launch_frame);
                     }
@@ -120,7 +127,7 @@ where
                 }
                 #[cfg(not(feature = "abi-mpu"))]
                 {
-                    let _ = package;
+                    let _ = package.first();
                     status::StorageStatus::Ready
                 }
             }

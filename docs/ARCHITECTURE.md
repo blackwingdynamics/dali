@@ -136,9 +136,11 @@ reopens only the deterministic selection for the full load pass.
 The post-v4 multi-application phase adds a bounded, hardware-neutral package
 catalog at the loader boundary. It accepts only headers already validated
 against a target manifest, rejects duplicate identities and occupied slots,
-and selects by manifest slot rather than directory order or filename. This
-catalog does not enable concurrent application execution; legacy ABI paths keep
-the single-package policy.
+and selects by manifest slot rather than directory order or filename. The
+loader can now copy each accepted identity package into its own declared slot
+and retain bounded loaded-context metadata, but the runtime still enters only
+the first context. This does not enable concurrent application execution or
+context switching; legacy ABI paths keep the single-package policy.
 
 The hardware-independent `dali-amrn` crate exposes header decoding and payload
 validation separately as well as a contiguous-package convenience API. The

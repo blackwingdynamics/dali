@@ -42,10 +42,11 @@ this order:
 1. [x] Add the hardware-neutral multi-package identity and slot catalog,
    including deterministic rejection of duplicate identities and occupied
    slots.
-2. [ ] Enumerate real root-directory packages and feed their validated v4
-   metadata into the catalog; verify the path on F405 hardware.
-3. [ ] Integrate the bounded two-slot load path without enabling concurrent
-   execution or context switching.
+2. [x] Enumerate real root-directory packages and feed their validated v4
+   metadata into the catalog; F405 verification remains pending.
+3. [x] Integrate the bounded two-slot load path without enabling concurrent
+   execution or context switching; the runtime still enters only the first
+   loaded context.
 4. [ ] Run host and target validation before scheduling the corresponding F405
    hardware test.
 - A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.

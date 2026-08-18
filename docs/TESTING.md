@@ -161,7 +161,8 @@ distinguished from the kernel's fault and recovery records.
   validation, target slot IDs, and v4 inspection output.
 - [x] Host-level pure catalog tests cover discovery-order-independent selection,
   duplicate identity rejection, slot mismatch, duplicate slot rejection, and
-  externally occupied-slot rejection. These tests are not hardware evidence.
+  externally occupied-slot rejection, including ordered selection across both
+  declared slots. These tests are not hardware evidence.
 - [x] Host-side AMRN v4 codec tests cover package bytes, CRC mismatch, and
   invalid relocation; the loader contract test covers undeclared-slot
   rejection. These tests are not hardware evidence.
@@ -172,8 +173,8 @@ distinguished from the kernel's fault and recovery records.
   successful application path is documented above; target compilation alone
   would not prove this behavior. v4-specific rejection/recovery hardware tests
   remain separate work.
-- [ ] Hardware two-application boundary isolation; only one application is
-  loaded and executed at a time.
+- [ ] Hardware two-application boundary isolation; the bounded loader now
+  loads both packages, but the runtime still enters only one application.
 - [ ] PendSV/SysTick context switching and MPU region switching.
 - [ ] DMA isolation.
 - [ ] Application restart, timeout, and watchdog lifecycle policy.

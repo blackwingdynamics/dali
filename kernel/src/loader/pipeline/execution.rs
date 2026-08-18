@@ -21,6 +21,44 @@ pub struct LoadedApplication {
     pub(crate) slot: dali_targets::IsolationSlot,
 }
 
+/// Fixed-capacity set of packages loaded into manifest-owned slots.
+pub(crate) struct LoadedApplications<const CAPACITY: usize> {
+    entries: [Option<LoadedApplication>; CAPACITY],
+    length: usize,
+}
+
+impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
+    /// Creates an empty bounded application set.
+    pub(crate) const fn new() -> Self {
+        Self {
+            entries: [None; CAPACITY],
+            length: 0,
+        }
+    }
+
+    /// Adds one loaded package without allocating.
+    pub(crate) fn push(&mut self, application: LoadedApplication) -> bool {
+        let Some(entry) = self.entries.get_mut(self.length) else {
+            return false;
+        };
+        *entry = Some(application);
+        self.length += 1;
+        true
+    }
+
+    /// Returns the first package selected for the current single-context runtime.
+    pub(crate) fn first(&self) -> Option<LoadedApplication> {
+        self.entries.first().copied().flatten()
+    }
+
+    /// Wraps one loaded package in a bounded set.
+    pub(crate) fn single(application: LoadedApplication) -> Self {
+        let mut applications = Self::new();
+        let _ = applications.push(application);
+        applications
+    }
+}
+
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
