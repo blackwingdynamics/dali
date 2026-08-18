@@ -37,8 +37,6 @@ pub enum ContextOwnerError {
     Lifecycle(LifecycleError),
     /// No context exists to retire.
     NoActiveContext,
-    /// The lifecycle being retired does not own the active context.
-    IdentityMismatch,
     /// A context can be retired only after terminal recovery.
     NotTerminated,
 }
@@ -46,7 +44,7 @@ pub enum ContextOwnerError {
 /// Kernel-owned holder for at most one active application context.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct ActiveContextOwner {
-    active: Option<ActiveContext>,
+    active: Option<ApplicationLifecycle>,
 }
 
 impl ActiveContextOwner {
@@ -56,8 +54,13 @@ impl ActiveContextOwner {
     }
 
     /// Returns the currently active context, if one exists.
-    pub const fn active(&self) -> Option<ActiveContext> {
-        self.active
+    pub fn active(&self) -> Option<ActiveContext> {
+        self.active.and_then(|lifecycle| {
+            lifecycle.allocation().map(|allocation| ActiveContext {
+                identity: lifecycle.identity(),
+                allocation,
+            })
+        })
     }
 
     /// Activates one ready lifecycle and claims its slot for execution.
@@ -81,19 +84,28 @@ impl ActiveContextOwner {
             identity: lifecycle.identity(),
             allocation,
         };
-        self.active = Some(context);
+        self.active = Some(*lifecycle);
         Ok(context)
     }
 
-    /// Retires the active context after the lifecycle reaches `Terminated`.
-    pub fn retire(
+    /// Applies a fault or recovery transition to the owned lifecycle.
+    pub fn transition(
         &mut self,
-        lifecycle: &ApplicationLifecycle,
-    ) -> Result<ActiveContext, ContextOwnerError> {
-        let context = self.active.ok_or(ContextOwnerError::NoActiveContext)?;
-        if context.identity != lifecycle.identity() {
-            return Err(ContextOwnerError::IdentityMismatch);
-        }
+        event: super::lifecycle::LifecycleEvent,
+    ) -> Result<ApplicationState, ContextOwnerError> {
+        let lifecycle = self
+            .active
+            .as_mut()
+            .ok_or(ContextOwnerError::NoActiveContext)?;
+        lifecycle
+            .transition(event)
+            .map_err(ContextOwnerError::Lifecycle)
+    }
+
+    /// Retires the active context after the lifecycle reaches `Terminated`.
+    pub fn retire(&mut self) -> Result<ActiveContext, ContextOwnerError> {
+        let lifecycle = self.active.ok_or(ContextOwnerError::NoActiveContext)?;
+        let context = self.active().ok_or(ContextOwnerError::MissingAllocation)?;
         if lifecycle.state() != ApplicationState::Terminated {
             return Err(ContextOwnerError::NotTerminated);
         }
@@ -163,18 +175,15 @@ mod tests {
         let mut owner = ActiveContextOwner::new();
         let mut lifecycle = ready_lifecycle();
         let _ = owner.activate(&mut lifecycle);
-        assert_eq!(
-            owner.retire(&lifecycle),
-            Err(ContextOwnerError::NotTerminated)
-        );
+        assert_eq!(owner.retire(), Err(ContextOwnerError::NotTerminated));
         for event in [
             LifecycleEvent::Faulted,
             LifecycleEvent::RecoveryStarted,
             LifecycleEvent::Terminated,
         ] {
-            let _ = lifecycle.transition(event);
+            let _ = owner.transition(event);
         }
-        assert!(owner.retire(&lifecycle).is_ok());
+        assert!(owner.retire().is_ok());
         assert_eq!(owner.active(), None);
     }
 }

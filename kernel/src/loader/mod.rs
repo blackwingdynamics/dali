@@ -26,6 +26,9 @@ pub enum LoaderError {
     /// The kernel could not reserve the package's manifest-declared slot.
     #[cfg(feature = "abi-current")]
     SlotManager(crate::runtime::slots::SlotManagerError),
+    /// The application lifecycle could not record the loaded slot ownership.
+    #[cfg(feature = "abi-current")]
+    Lifecycle(crate::runtime::lifecycle::LifecycleError),
     /// The package failed the identity and slot catalog contract.
     #[cfg(feature = "abi-relocation")]
     PackageCatalog(crate::loader_contract::CatalogError),

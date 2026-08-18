@@ -135,6 +135,10 @@ lifecycle must be explicitly activated before it can enter `Running`, and a
 second activation is rejected. The active context retains the package identity
 and manifest-owned slot allocation. Retirement is accepted only after the
 lifecycle reaches `Terminated`; no implicit restart or context switch exists.
+The v4 loader creates the lifecycle after validated copy and relocation, then
+the launch path performs the `Loaded -> Ready -> Running` transition before
+MPU activation. Legacy v2/v3 package paths retain their existing launch
+behavior until they receive an identity-aware lifecycle contract.
 
 ### SVC gateway
 

@@ -5,6 +5,7 @@ use dali_amrn::{Crc32, v3};
 use crate::security::launch::{self, LaunchFrame};
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
+    runtime::slots::SlotAllocation,
     storage::filesystem::AmrnFile,
 };
 
@@ -20,7 +21,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract, slot) = parse_target_header(&header, slot_manager)?;
+    let (header, contract, allocation) = parse_target_header(&header, slot_manager)?;
     let relocation_offset = u32::try_from(v3::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.code_size))
@@ -64,14 +65,16 @@ where
             super::LoaderError::V3RelocationPackage(v3::Error::AddressOverflow),
         )?,
         launch_frame,
-        slot,
+        slot: allocation.slot(),
+        allocation,
+        lifecycle: None,
     })
 }
 
 fn parse_target_header(
     bytes: &[u8; v3::HEADER_SIZE],
     slot_manager: &mut crate::runtime::slots::SlotManager,
-) -> Result<(v3::Header, v3::Contract, dali_targets::IsolationSlot), super::LoaderError> {
+) -> Result<(v3::Header, v3::Contract, SlotAllocation), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
@@ -91,7 +94,7 @@ fn parse_target_header(
                 let allocation = slot_manager
                     .reserve(slot)
                     .map_err(super::LoaderError::SlotManager)?;
-                return Ok((header, contract, allocation.slot()));
+                return Ok((header, contract, allocation));
             }
             Err(error) => last_error = error,
         }

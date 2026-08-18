@@ -5,6 +5,7 @@ use dali_amrn::{Crc32, v2};
 use crate::security::launch::{self, LaunchFrame};
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
+    runtime::{lifecycle::ApplicationLifecycle, slots::SlotAllocation},
     storage::filesystem::AmrnFile,
 };
 
@@ -19,6 +20,10 @@ pub struct LoadedApplication {
     pub(crate) launch_frame: LaunchFrame,
     /// Manifest slot selected for the loaded application's code and data.
     pub(crate) slot: dali_targets::IsolationSlot,
+    /// Reserved allocation retained for runtime ownership.
+    pub(crate) allocation: SlotAllocation,
+    /// Identity lifecycle for v4 packages; legacy packages remain untracked.
+    pub(crate) lifecycle: Option<ApplicationLifecycle>,
 }
 
 /// Fixed-capacity set of packages loaded into manifest-owned slots.
@@ -80,7 +85,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (contract, slot) = target_contract(&header, slot_manager)?;
+    let (contract, allocation) = target_contract(&header, slot_manager)?;
     let header =
         v2::parse_header(&header, contract).map_err(super::LoaderError::CurrentAbiPackage)?;
     let expected_length = package_length(header).ok_or(super::LoaderError::CurrentAbiPackage(
@@ -124,14 +129,16 @@ where
         entry_address,
         psp_top,
         launch_frame,
-        slot,
+        slot: allocation.slot(),
+        allocation,
+        lifecycle: None,
     })
 }
 
 fn target_contract(
     bytes: &[u8; v2::HEADER_SIZE],
     slot_manager: &mut crate::runtime::slots::SlotManager,
-) -> Result<(v2::Contract, dali_targets::IsolationSlot), super::LoaderError> {
+) -> Result<(v2::Contract, SlotAllocation), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
@@ -151,7 +158,7 @@ fn target_contract(
                 let allocation = slot_manager
                     .reserve(slot)
                     .map_err(super::LoaderError::SlotManager)?;
-                return Ok((contract, allocation.slot()));
+                return Ok((contract, allocation));
             }
             Err(error) => last_error = error,
         }

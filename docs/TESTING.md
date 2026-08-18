@@ -188,6 +188,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-level active-context ownership tests reject activation before
   readiness, reject a second active context, and allow retirement only after
   terminal recovery. These tests do not prove runtime scheduling or isolation.
+- [ ] Hardware verification of v4 lifecycle activation through `Loaded`,
+  `Ready`, and `Running`; target compilation confirms the integration, but the
+  launch-state transition still needs an F405 run.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.

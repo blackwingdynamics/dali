@@ -56,6 +56,8 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
             return status::StorageStatus::Failure;
         }
     };
+    #[cfg(feature = "abi-mpu")]
+    let mut context_owner = crate::runtime::context::ActiveContextOwner::new();
 
     let mut block: Block = [0; BLOCK_SIZE];
     match reader.read_block(BlockAddress::new(0), &mut block) {
@@ -63,6 +65,8 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
             reader,
             #[cfg(feature = "abi-current")]
             &mut slot_manager,
+            #[cfg(feature = "abi-mpu")]
+            &mut context_owner,
         ),
         Err(error) => {
             logging::error(
@@ -78,6 +82,7 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
 fn load_package<R>(
     reader: R,
     #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::slots::SlotManager,
+    #[cfg(feature = "abi-mpu")] context_owner: &mut crate::runtime::context::ActiveContextOwner,
 ) -> status::StorageStatus
 where
     R: BlockReader,
@@ -139,7 +144,44 @@ where
                         );
                         return status::StorageStatus::Failure;
                     };
-                    if platform::activate_application_regions(package.slot) {
+                    let Some(mut lifecycle) = package.lifecycle else {
+                        if platform::activate_application_regions(package.slot) {
+                            crate::security::launch::enter(package.launch_frame);
+                        }
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!("[SECURITY] Application lifecycle unavailable"),
+                        );
+                        return status::StorageStatus::Failure;
+                    };
+                    if lifecycle
+                        .transition(crate::runtime::lifecycle::LifecycleEvent::Ready)
+                        .is_err()
+                    {
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!("[SECURITY] Application lifecycle not load-ready"),
+                        );
+                        return status::StorageStatus::Failure;
+                    }
+                    if let Err(error) = context_owner.activate(&mut lifecycle) {
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[SECURITY] Application context activation failed: {:?}",
+                                error
+                            ),
+                        );
+                        return status::StorageStatus::Failure;
+                    }
+                    let Some(active) = context_owner.active() else {
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!("[SECURITY] Active application context unavailable"),
+                        );
+                        return status::StorageStatus::Failure;
+                    };
+                    if platform::activate_application_regions(active.allocation().slot()) {
                         crate::security::launch::enter(package.launch_frame);
                     }
                     logging::error(
