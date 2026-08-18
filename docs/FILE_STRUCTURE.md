@@ -35,7 +35,7 @@ dali-kernel/
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
 │       ├── logging/               # Facade, RTT, USB CDC backend
-│       ├── security/              # MPU, SVC, launch, and fault recovery
+│       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
 │       └── storage/               # Read-only filesystem and storage policy
 ├── apps/
 │   ├── dali-app-hello/
@@ -47,6 +47,7 @@ dali-kernel/
 │   ├── dali-app-fault-kernel-write/
 │   ├── dali-app-fault-peripheral/
 │   ├── dali-app-fault-peripheral-write/
+│   ├── dali-app-fault-no-frame/
 │   └── dali-app-fault-psp/
 ├── crates/
 │   ├── dali-amrn/                 # AMRN v1, v2, and v3 contracts
@@ -94,7 +95,7 @@ kernel/src/
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
-├── security/{mod.rs,fault.rs,launch.rs,svc.rs}
+├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
 └── storage/{mod.rs,filesystem.rs}
 
 crates/dali-amrn/src/
