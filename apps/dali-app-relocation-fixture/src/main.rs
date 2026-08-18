@@ -4,6 +4,7 @@
 use core::panic::PanicInfo;
 
 const TEST_MESSAGE: &str = "Relocation fixture";
+const PROGRESS_STEP: u32 = 1;
 
 #[used]
 #[unsafe(link_section = ".data.relocation_fixture")]
@@ -15,11 +16,25 @@ static mut ZERO_STATE: u32 = 0;
 
 #[used]
 #[unsafe(link_section = ".data.relocation_fixture")]
+static mut PROGRESS_STATE: u32 = 0;
+
+#[used]
+#[unsafe(link_section = ".data.relocation_fixture")]
 static FUNCTION_REFERENCE: unsafe extern "C" fn() -> ! = relocation_target;
 
 unsafe extern "C" fn relocation_target() -> ! {
     loop {
-        core::hint::spin_loop();
+        let progress = unsafe {
+            // SAFETY: The fixture accesses only its own declared data region.
+            core::ptr::read_volatile(core::ptr::addr_of!(PROGRESS_STATE))
+        };
+        unsafe {
+            // SAFETY: The fixture writes only its own declared data region.
+            core::ptr::write_volatile(
+                core::ptr::addr_of_mut!(PROGRESS_STATE),
+                progress.wrapping_add(PROGRESS_STEP),
+            );
+        }
     }
 }
 

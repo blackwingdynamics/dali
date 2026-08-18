@@ -632,6 +632,8 @@ Compilation and host tests do not replace hardware evidence.
   first loaded context is active.
 - [x] Obtain first F405 hardware evidence for a slot0-to-slot1 scheduler
   handoff using the two manifest-backed v4 fixtures.
+- [x] Add per-slot progress markers to the real hardware fixtures for
+  repeatable context-switch observation without changing production code.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

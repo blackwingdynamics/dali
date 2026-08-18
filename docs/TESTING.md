@@ -257,6 +257,10 @@ distinguished from the kernel's fault and recovery records.
   both declared slots. This proves initial slot0 execution and one slot0 to
   slot1 application handoff; it does not prove return switching, repeated
   preemption, register preservation, or memory-isolation behavior.
+- [x] The two hardware fixtures expose independent volatile progress markers
+  at the start of their declared data images. Target symbol inspection places
+  them at the expected linked data offset; this prepares repeatable GDB
+  observation but is not hardware context-switch evidence by itself.
 - [x] Hardware execution of the v4 streaming loader, selection, relocation, and
   successful application path is documented above; target compilation alone
   would not prove this behavior. v4-specific rejection/recovery hardware tests
