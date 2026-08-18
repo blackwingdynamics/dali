@@ -279,8 +279,9 @@ distinguished from the kernel's fault and recovery records.
   `restore_selected`: slot0 used code/data bases
   `0x20008000`/`0x2000C000`, and slot1 used `0x20010000`/`0x20014000`.
   Code RASR was `0x0603001B` and data RASR was `0x1303001B` for both slots.
-- [ ] Runtime two-application memory isolation beyond the tested
-  slot1-to-slot0 rejection.
+- [x] F405 hardware verified bidirectional CPU-side application-memory
+  isolation. The slot1-to-slot0 read was rejected at `0x20008000`, and the
+  reverse slot0-to-slot1 fixture was rejected while slot1 resumed.
 - [x] F405 hardware ran the manifest-derived slot1 cross-slot fixture. The
   application read slot0 code origin `0x20008000` and the kernel reported
   `MemManage status=0x00000082 address=Some(536903680)`, followed by
@@ -293,6 +294,11 @@ distinguished from the kernel's fault and recovery records.
   without another slot1 entry. This proves faulted-context exclusion and
   continued slot0 execution after recovery; complete application isolation
   and DMA isolation remain separate claims.
+- [x] F405 hardware ran the reverse slot0-to-slot1 fixture with the relocation
+  fixture in slot1. GDB observed slot0 entry once, then slot1 execution at
+  `0x200100A0`; the slot1 progress marker increased from `0x00000000` to
+  `0x0048D887` without a second slot0 entry. This proves the reverse CPU-side
+  rejection and recovery direction, not DMA isolation.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
   contract; hardware watchdog implementation remains separate and pending.

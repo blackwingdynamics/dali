@@ -647,9 +647,10 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Verify on F405 hardware that a faulted context is excluded and a ready
   application resumes; GDB observed one slot1 entry and continued slot0
   progress after recovery.
-- [ ] Verify application-to-application memory isolation.
-- [ ] Add and run the reverse slot0-to-slot1 CPU isolation fixture so both
-  directions are hardware-tested before claiming bidirectional isolation.
+- [x] Verify bidirectional CPU-side application-memory isolation; both
+  slot1-to-slot0 and slot0-to-slot1 reads were rejected on F405 hardware.
+- [x] Add and run the reverse slot0-to-slot1 CPU isolation fixture so both
+  directions are hardware-tested. DMA isolation remains separate.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.
 - [x] Define application crash, restart, and rollback lifecycle policy;
   hardware watchdog implementation remains deferred until heartbeat ownership.

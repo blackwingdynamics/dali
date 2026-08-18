@@ -178,8 +178,9 @@ MPU reprogramming still require target evidence. F405 hardware has verified
 repeated CPU context switching with independent slot progress markers, but
 has now also verified faulted-context exclusion and continued slot0 execution
 after slot1 recovery; F405 GDB evidence also verified the slot-specific MPU
-code/data bases at `restore_selected`. Full application-to-application
-isolation remains a separate claim.
+code/data bases at `restore_selected`. Bidirectional CPU-side application
+memory rejection is hardware-verified; DMA isolation and authenticity remain
+separate security claims.
 
 The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is

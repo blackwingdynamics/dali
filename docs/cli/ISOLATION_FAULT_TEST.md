@@ -156,9 +156,16 @@ output is:
 [ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
 ```
 
-This proves the reverse processor-side rejection direction. Both directions
-must be accepted on hardware before claiming bidirectional application-memory
-isolation; DMA isolation and complete multi-application security remain open.
+This proves the reverse processor-side rejection direction. Together with the
+slot1-to-slot0 result, it supports a bidirectional CPU-side application-memory
+isolation claim; DMA isolation and complete multi-application security remain
+open.
+
+The F405 acceptance run paired this package with the relocation fixture in
+slot1. GDB observed slot0 entry once, then slot1 execution at `0x200100A0`,
+while the slot1 progress marker increased from `0x00000000` to `0x0048D887`
+without a second slot0 entry. Together with the slot1-to-slot0 result above,
+this is bidirectional CPU-side isolation evidence; it is not DMA isolation.
 
 ## Peripheral-write test
 
