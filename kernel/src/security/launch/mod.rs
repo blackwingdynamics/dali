@@ -127,6 +127,9 @@ extern "C" fn fault_recovery() -> ! {
             format_args!("[SECURITY][FAULT] Active context state: Terminated"),
         );
     }
+    #[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
+    crate::security::scheduling::recover_faulted_context();
+    #[cfg(not(all(feature = "abi-context-switch", target_arch = "arm")))]
     match crate::runtime::application::policy::CURRENT.fault_recovery() {
         crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
             cortex_m::asm::wfi();

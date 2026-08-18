@@ -134,6 +134,30 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
         Ok(SwitchSelection { outgoing, incoming })
     }
 
+    /// Terminates the active context and selects the next ready context.
+    ///
+    /// The terminated context is never made ready again. This transition is
+    /// used by fault recovery, where there is no valid application register
+    /// frame to save before selecting the next context.
+    pub fn terminate_active_and_select_next(
+        &mut self,
+    ) -> Result<Option<SwitchSelection>, SchedulerError> {
+        let outgoing = self
+            .contexts
+            .active()
+            .ok_or(SchedulerError::NoActiveContext)?;
+        self.contexts
+            .terminate(outgoing)
+            .map_err(SchedulerError::Context)?;
+        let Some(incoming) = self.contexts.next_ready(Some(outgoing)) else {
+            return Ok(None);
+        };
+        self.contexts
+            .activate(incoming)
+            .map_err(SchedulerError::Context)?;
+        Ok(Some(SwitchSelection { outgoing, incoming }))
+    }
+
     /// Returns the saved state for a selected context.
     pub fn context(&self, id: ContextId) -> Result<ScheduledContext, SchedulerError> {
         self.contexts.get(id).map_err(SchedulerError::Context)
@@ -288,5 +312,27 @@ mod tests {
             }))
         );
         assert_eq!(scheduler.context(first), Ok(saved));
+    }
+
+    #[test]
+    fn permanently_excludes_faulted_context_before_selecting_next() {
+        let mut scheduler = Scheduler::<2>::new(1).unwrap();
+        let first = scheduler.insert(CONTEXT).unwrap();
+        let second = scheduler.insert(CONTEXT).unwrap();
+        assert_eq!(scheduler.activate_first(), Ok(first));
+
+        assert_eq!(
+            scheduler.terminate_active_and_select_next(),
+            Ok(Some(SwitchSelection {
+                outgoing: first,
+                incoming: second,
+            }))
+        );
+        assert_eq!(scheduler.active_context(), Ok(CONTEXT));
+        assert_eq!(scheduler.terminate_active_and_select_next(), Ok(None));
+        assert_eq!(
+            scheduler.active_context(),
+            Err(SchedulerError::NoActiveContext)
+        );
     }
 }

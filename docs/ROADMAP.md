@@ -638,7 +638,11 @@ Compilation and host tests do not replace hardware evidence.
   independent progress markers on F405; MPU region switching remains separate.
 - [x] Add and run a manifest-derived slot1-to-slot0 MPU fault fixture; F405
   hardware recorded a precise MemManage with the slot0 code origin.
+- [x] Retire a faulted scheduler context before selecting the next ready
+  context; host tests verify that terminated contexts cannot be selected again.
 - [ ] Verify MPU region switching during application context switches.
+- [ ] Verify on F405 hardware that a faulted context is excluded and a ready
+  application resumes with its own MPU map.
 - [ ] Verify application-to-application memory isolation.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.
 - [x] Define application crash, restart, and rollback lifecycle policy;

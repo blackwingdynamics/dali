@@ -81,6 +81,32 @@ pub(crate) fn activate_first() -> Result<(), SchedulerAccessError> {
         .map_err(SchedulerAccessError::Scheduler)
 }
 
+/// Retires the faulted context and restores the next protected context.
+#[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
+pub(crate) fn recover_faulted_context() -> ! {
+    let result = with_scheduler(|scheduler| {
+        let Some(selection) = scheduler.terminate_active_and_select_next()? else {
+            return Ok(None);
+        };
+        let incoming = scheduler.context(selection.incoming)?;
+        if !crate::platform::activate_application_regions(incoming.slot()) {
+            return Err(SchedulerError::ProtectionUnavailable);
+        }
+        scheduler.context_cpu_ptr(selection.incoming).map(Some)
+    });
+
+    match result {
+        Ok(Ok(Some(pointer))) => unsafe {
+            // SAFETY: The scheduler selected a kernel-owned context whose PSP,
+            // CONTROL, and exception return were validated at registration.
+            crate::runtime::scheduling::context_switch::restore_selected(pointer)
+        },
+        _ => loop {
+            cortex_m::asm::wfi();
+        },
+    }
+}
+
 /// Prepares the incoming CPU record for the privileged PendSV assembly path.
 #[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
 #[unsafe(export_name = "dali_kernel_prepare_pendsv")]

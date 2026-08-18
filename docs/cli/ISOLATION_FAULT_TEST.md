@@ -125,7 +125,8 @@ Expected output is:
 
 This proves that the active slot1 application cannot read the manifest-owned
 slot0 code region through the processor MPU. It does not prove DMA isolation,
-context-switch MPU reprogramming, or complete multi-application isolation.
+context-switch MPU reprogramming, faulted-context exclusion, or complete
+multi-application isolation.
 
 ## Peripheral-write test
 

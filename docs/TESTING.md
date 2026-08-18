@@ -215,6 +215,10 @@ distinguished from the kernel's fault and recovery records.
   preemption consumption, outgoing-state capture, and next-ready selection.
   These tests do not prove interrupt ownership, register transfer, or MPU
   switching.
+- [x] Host-level scheduler tests verify that fault recovery retires the active
+  context before selecting the next ready context and never resumes a
+  terminated context. This does not prove the ARM exception return or MPU
+  reprogramming.
 - [x] Host-level PendSV preparation tests verify no-op behavior without a
   request and save-before-selection ordering. These tests do not prove the
   processor exception path.
@@ -277,6 +281,9 @@ distinguished from the kernel's fault and recovery records.
   `MemManage status=0x00000082 address=Some(536903680)`, followed by
   `Faulted`, `Recovering`, and `Terminated`. This proves CPU MPU rejection of
   a slot1-to-slot0 read, but not DMA isolation or faulted-context scheduling.
+- [ ] F405 hardware must run a two-package fault-recovery fixture with
+  `abi-context-switch,abi-relocation` and verify that the faulted slot is not
+  selected again while the remaining ready slot resumes under its own MPU map.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
   contract; hardware watchdog implementation remains separate and pending.

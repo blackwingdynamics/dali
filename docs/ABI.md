@@ -172,10 +172,11 @@ SysTick records a preemption request, PendSV saves the active record, and the
 facade selects the next ready context. A feature-gated target SysTick hook now
 feeds the scheduler and only pends PendSV when both active and ready contexts
 exist. The selected platform enables SysTick only after the first application
-context is active; the hook itself does not perform the register transfer or
-switch MPU regions. F405 hardware has now verified repeated CPU context
-switching with independent slot progress markers; MPU switching remains
-integration work.
+context is active. Fault recovery permanently retires the active scheduler
+context and can select the next ready record; the ARM recovery transfer and
+MPU reprogramming still require target evidence. F405 hardware has verified
+repeated CPU context switching with independent slot progress markers, but
+not yet faulted-context exclusion or MPU switching.
 
 The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is
@@ -192,7 +193,8 @@ repeated initialization is rejected before PendSV integration.
 With `abi-context-switch`, bootstrap constructs this storage from the selected
 target profile. The loader registers validated application launch records,
 activates the first scheduler context, and then enables the target SysTick.
-Register-transfer ownership and hardware context-switch evidence remain open.
+The scheduler contract includes permanent retirement of a faulted context;
+target evidence for recovery transfer and MPU switching remains open.
 
 `prepare_pendsv` makes that sequence explicit and bounded: without a pending
 request it leaves the active context unchanged; with a request it records the
