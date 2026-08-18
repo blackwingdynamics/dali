@@ -22,34 +22,43 @@ dali-kernel/
 │       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
 │       ├── abi.rs                 # Central active ABI selector
-│       ├── board/                 # Shared MPU descriptors
-│       ├── platform.rs            # Platform facade and target entry points
+│       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
+│       │   └── mpu/               # MPU contract, layout, and privileged programming
+│       ├── platform/mod.rs        # Platform facade and target entry points
 │       ├── platform/f405/          # F405-specific platform backend
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
 │       │   ├── board.rs            # F405 hardware resources and board API
 │       │   ├── sdio.rs             # F405 SDIO transport implementation
-│       │   └── sdio_raw.rs         # F405 SDIO register transport
+│       │   └── sdio_raw/           # F405 SDIO register transport
+│       │       ├── mod.rs          # DMA-backed raw block reader
+│       │       └── status.rs       # SDIO status and interrupt helpers
 │       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
-│       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
+│       ├── loader/mod.rs          # AMRN dispatch and ABI services
+│       ├── loader/contract/       # Hardware-neutral streaming loader contract
+│       │   ├── mod.rs              # Streaming validation API
+│       │   └── tests.rs            # Host fake-reader fixtures
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
-│       ├── logging/               # Facade, RTT, USB CDC backend
-│       ├── runtime/               # Hardware-neutral application lifecycle state
-│       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
-│       └── storage/               # Read-only filesystem and storage policy
+│       ├── loader/v4.rs           # Identity-aware streaming loader
+│       ├── logging/              # Facade, RTT, USB CDC backend
+│       ├── runtime/              # Hardware-neutral application lifecycle state
+│       └── storage/              # Read-only filesystem and storage policy
+│           └── filesystem/       # Root package discovery and file streaming
 ├── apps/
 │   ├── dali-app-hello/
 │   ├── dali-app-relocation-fixture/
 │   ├── dali-app-svc-rejections/
 │   ├── dali-app-fault-bus/
 │   ├── dali-app-fault-execution/
+│   ├── dali-app-fault-hard/
 │   ├── dali-app-fault-kernel/
 │   ├── dali-app-fault-kernel-write/
 │   ├── dali-app-fault-peripheral/
 │   ├── dali-app-fault-peripheral-write/
 │   ├── dali-app-fault-no-frame/
-│   └── dali-app-fault-psp/
+│   ├── dali-app-fault-psp/
+│   └── dali-app-fault-usage/
 ├── crates/
 │   ├── dali-amrn/                 # AMRN format contracts and validation
 │   ├── dali-cli/                  # Installed `dali` CLI
@@ -89,16 +98,15 @@ kernel/src/
 ├── lib.rs
 ├── main.rs
 ├── abi.rs
-├── board/{mod.rs,mpu.rs}
-├── platform.rs, platform/f405/{mod.rs,board.rs,sdio.rs,sdio_raw.rs}
+├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
+├── security/mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs}
+├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,status.rs}}}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader.rs
-├── loader/{v3.rs,v3_relocatable.rs}
+├── loader/{mod.rs,contract/{mod.rs,tests.rs},v3.rs,v3_relocatable.rs,v4.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,slots.rs}
-├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
-└── storage/{mod.rs,filesystem.rs}
+└── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports
@@ -152,12 +160,13 @@ target-scaffold.md
 
 ## Ownership boundaries
 
-- `kernel/src/board/` owns processor-neutral MPU descriptors and activation
-  helpers shared by the selected platform backend.
-- `kernel/src/platform.rs` and `kernel/src/platform/` own the platform facade
+- `kernel/src/security/mpu/` owns MPU descriptors, memory-layout validation,
+  and privileged activation of application regions.
+- `kernel/src/platform/mod.rs` and `kernel/src/platform/` own the platform facade
   and target-specific entry points; backend ownership and contributor workflow are defined in
   `docs/PLATFORM_BACKENDS.md`.
-- `kernel/src/platform/f405/sdio*.rs` owns the F405 PAC/HAL SDIO transport;
+- `kernel/src/platform/f405/sdio.rs` and `kernel/src/platform/f405/sdio_raw/`
+  own the F405 PAC/HAL SDIO transport;
   bootstrap consumes it only through the platform facade.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
@@ -168,9 +177,10 @@ target-scaffold.md
   board constants into kernel policy.
 - `kernel/src/storage/` owns SD/filesystem policy; generic block contracts live
   in `kernel/src/drivers/`; package parsing remains in
-  `crates/dali-amrn/` and loading policy remains in `kernel/src/loader.rs`.
-- `kernel/src/security/` owns privileged SVC dispatch, launch frames, and
-  fault recovery.
+  `crates/dali-amrn/` and loading policy remains in `kernel/src/loader/`.
+- `kernel/src/security/` owns privileged SVC dispatch, launch frames, fault
+  recovery, and MPU protection. The hardware-neutral MPU descriptors and
+  layout builder are separated from privileged register programming.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
 - `crates/dali-cli/src/commands/` contains command-specific implementation;

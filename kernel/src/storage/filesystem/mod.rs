@@ -8,6 +8,9 @@ use embedded_sdmmc::{
     VolumeManager,
 };
 
+#[cfg(test)]
+mod tests;
+
 /// The package extension recognized by the MVP root-directory scan.
 pub const AMRN_EXTENSION: &[u8] = b"AMRN";
 // These bounds are defined by the FAT long-file-name representation and the
@@ -253,38 +256,4 @@ fn is_amrn_entry(entry: &DirEntry, long_name: Option<&str>) -> bool {
         return false;
     };
     extension.as_bytes().eq_ignore_ascii_case(AMRN_EXTENSION)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn classifies_empty_root_as_no_package() {
-        assert_eq!(
-            super::RootDirectoryReport { amrn_file_count: 0 }.package_selection(),
-            super::RootPackageSelection::None
-        );
-    }
-
-    #[test]
-    fn classifies_one_root_package_as_single() {
-        assert_eq!(
-            super::RootDirectoryReport { amrn_file_count: 1 }.package_selection(),
-            super::RootPackageSelection::Single
-        );
-    }
-
-    #[test]
-    fn classifies_multiple_root_packages_as_ambiguous() {
-        assert_eq!(
-            super::RootDirectoryReport { amrn_file_count: 2 }.package_selection(),
-            super::RootPackageSelection::Ambiguous
-        );
-        assert_eq!(
-            super::RootDirectoryReport {
-                amrn_file_count: u32::MAX
-            }
-            .package_selection(),
-            super::RootPackageSelection::Ambiguous
-        );
-    }
 }

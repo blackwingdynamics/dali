@@ -3,5 +3,9 @@
 //! Hardware-independent kernel contracts exposed for host-side testing.
 
 pub mod drivers;
+#[path = "loader/contract/mod.rs"]
+pub mod loader_contract;
+#[path = "security/mpu/mod.rs"]
+pub mod mpu;
 pub mod runtime;
 pub mod storage;

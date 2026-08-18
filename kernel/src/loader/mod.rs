@@ -12,6 +12,8 @@ use crate::{
 pub(crate) mod v3;
 #[cfg(feature = "abi-relocation")]
 pub(crate) mod v3_relocatable;
+#[cfg(feature = "abi-relocation")]
+pub(crate) mod v4;
 
 /// Errors reported while validating a root AMRN package.
 #[derive(Debug)]
@@ -26,15 +28,15 @@ pub enum LoaderError {
     /// The selected target does not declare an ABI v3 memory contract.
     #[cfg(feature = "abi-current")]
     UnsupportedCurrentAbiTarget,
-    /// The package format is known but not enabled by the kernel loader.
-    #[cfg(feature = "abi-current")]
-    UnsupportedFormatVersion(u8),
     /// The kernel could not reserve the package's manifest-declared slot.
     #[cfg(feature = "abi-current")]
     SlotManager(crate::runtime::slots::SlotManagerError),
     /// The relocatable ABI v3 package failed format validation or patching.
     #[cfg(feature = "abi-relocation")]
     V3RelocationPackage(dali_amrn::v3::Error),
+    /// The identity-aware ABI v3 package failed format validation or patching.
+    #[cfg(feature = "abi-relocation")]
+    V4IdentityPackage(dali_amrn::v4::Error),
 }
 
 #[cfg(feature = "abi-current")]
@@ -53,7 +55,8 @@ where
             dali_amrn::v2::FORMAT_VERSION => v3::load_file(file, slot_manager),
             #[cfg(feature = "abi-relocation")]
             dali_amrn::v3::FORMAT_VERSION => v3_relocatable::load_file(file, slot_manager),
-            dali_amrn::v4::FORMAT_VERSION => Err(LoaderError::UnsupportedFormatVersion(version[4])),
+            #[cfg(feature = "abi-relocation")]
+            dali_amrn::v4::FORMAT_VERSION => v4::load_file(file, slot_manager),
             _ => Err(LoaderError::CurrentAbiPackage(
                 dali_amrn::v2::Error::InvalidHeader,
             )),

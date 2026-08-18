@@ -6,7 +6,7 @@ use std::{
 const LIST_COMMAND: &str = "list";
 const SCAFFOLD_COMMAND: &str = "scaffold";
 const OUTPUT_FLAG: &str = "--output";
-const BOARD_DIRECTORY: &str = "kernel/src/board";
+const PLATFORM_DIRECTORY: &str = "kernel/src/platform";
 const DOCUMENTATION_DIRECTORY: &str = "docs/boards";
 const BACKEND_SUFFIX: &str = ".rs.template";
 const DOCUMENTATION_SUFFIX: &str = ".md";
@@ -32,8 +32,9 @@ fn scaffold(arguments: &[String]) -> Result<(), String> {
     let profile = dali_targets::find_board(profile_name)
         .ok_or_else(|| format!("unknown board profile '{profile_name}'"))?;
     let backend = output_root
-        .join(BOARD_DIRECTORY)
-        .join(format!("{profile_name}{BACKEND_SUFFIX}"));
+        .join(PLATFORM_DIRECTORY)
+        .join(profile_name)
+        .join(format!("mod{BACKEND_SUFFIX}"));
     let documentation = output_root
         .join(DOCUMENTATION_DIRECTORY)
         .join(format!("{profile_name}{DOCUMENTATION_SUFFIX}"));

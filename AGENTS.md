@@ -54,7 +54,7 @@ scripts/              Validation and release automation
 Module ownership:
 
 - `kernel/src/main.rs` — bootstrap orchestration only;
-- `kernel/src/board.rs` — board-specific pins, clocks, and peripheral ownership;
+- `kernel/src/platform/f405/board.rs` — board-specific pins, clocks, and peripheral ownership;
 - `kernel/src/logging/` — logging facade and hardware backend boundary;
 - `crates/dali-usb/` — transport-neutral bounded log delivery state and tests;
 - `crates/dali-amrn/` — AMRN header, payload bounds, and CRC32 validation;

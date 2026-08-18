@@ -18,7 +18,7 @@ for the Dali workspace root. With --output, the directory must already exist.
 
 The command creates:
 
-- kernel/src/board/<profile>.rs.template;
+- kernel/src/platform/<profile>/mod.rs.template;
 - docs/boards/<profile>.md.
 
 Existing files are never overwritten.

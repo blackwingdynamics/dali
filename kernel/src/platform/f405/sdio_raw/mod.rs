@@ -4,6 +4,9 @@ use crate::drivers::{Block, BlockAddress, StorageError};
 use stm32f4xx_hal::pac;
 use stm32f4xx_hal::sdio::CardCapacity;
 
+mod status;
+use status::{clear_interrupts, status_error};
+
 const BLOCK_BYTES: usize = 512;
 const BLOCK_SIZE_EXPONENT: u8 = 9;
 const DATA_TIMEOUT_CYCLES: u32 = u32::MAX;
@@ -270,45 +273,4 @@ impl RawSdioReader {
         // SAFETY: DMA2 stream 3 is exclusively owned by the SDIO block reader.
         unsafe { &*pac::DMA2::ptr() }
     }
-}
-fn status_error(status: &pac::sdio::sta::R) -> Result<(), StorageError> {
-    if status.ctimeout().bit_is_set() || status.dtimeout().bit_is_set() {
-        Err(StorageError::Timeout)
-    } else if status.ccrcfail().bit_is_set() || status.dcrcfail().bit_is_set() {
-        Err(StorageError::DataCorruption)
-    } else if status.rxoverr().bit_is_set() || status.txunderr().bit_is_set() {
-        Err(StorageError::Transport)
-    } else {
-        Ok(())
-    }
-}
-
-fn clear_interrupts(register: &pac::sdio::ICR) {
-    register.write(|writer| {
-        writer
-            .ccrcfailc()
-            .set_bit()
-            .ctimeoutc()
-            .set_bit()
-            .ceataendc()
-            .set_bit()
-            .cmdrendc()
-            .set_bit()
-            .cmdsentc()
-            .set_bit()
-            .dataendc()
-            .set_bit()
-            .dbckendc()
-            .set_bit()
-            .dcrcfailc()
-            .set_bit()
-            .rxoverrc()
-            .set_bit()
-            .stbiterrc()
-            .set_bit()
-            .txunderrc()
-            .set_bit()
-            .dtimeoutc()
-            .set_bit()
-    });
 }

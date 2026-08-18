@@ -7,19 +7,19 @@ use dali_targets::MemoryProfile;
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
 /// First planned single-application F405 isolation layout.
-pub const ISOLATION_LAYOUT: Option<crate::board::mpu::IsolationLayout> =
-    crate::board::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
+pub const ISOLATION_LAYOUT: Option<crate::security::mpu::IsolationLayout> =
+    crate::security::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
 const _: () = assert!(ISOLATION_LAYOUT.is_some());
 
 /// Activates unprivileged application permissions after the loader finishes.
 #[cfg(feature = "abi-mpu")]
 pub fn activate_application_regions(slot: dali_targets::IsolationSlot) -> bool {
     let Some(layout) =
-        crate::board::mpu::IsolationLayout::from_memory_for_slot(TARGET_F405.memory, slot)
+        crate::security::mpu::IsolationLayout::from_memory_for_slot(TARGET_F405.memory, slot)
     else {
         return false;
     };
-    crate::board::mpu::activate_application_regions(layout);
+    crate::security::mpu::activate_application_regions(layout);
     true
 }
 
