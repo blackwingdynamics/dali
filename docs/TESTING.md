@@ -140,6 +140,10 @@ multi-application isolation, or watchdog support.
   `0x2000D00C`; slot1 code `0x20010000+16384`, data `0x20014000+16384`, PSP
   top `0x2001500C`. This verifies loader placement and reservations, not
   runtime memory isolation or concurrent execution.
+- [x] F405 hardware verified the v4 invalid-PSP lifecycle fault path. The
+  console reported `Ready`, `Running`, `UsageFault 0x00040000`, then
+  `Faulted`, `Recovering`, and `Terminated`; recovery entered the kernel
+  recovery loop without restarting the application.
 
 ### Diagnostic evidence
 
@@ -191,9 +195,8 @@ distinguished from the kernel's fault and recovery records.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.
-- [ ] Hardware verification of the lifecycle fault path through `Faulted`,
-  `Recovering`, and `Terminated`; host state-channel tests pass, but the
-  transition still needs an application fault run on F405.
+- [x] F405 hardware verified the lifecycle fault path through `Faulted`,
+  `Recovering`, and `Terminated` using the v4 invalid-PSP application fixture.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.

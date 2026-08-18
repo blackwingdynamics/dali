@@ -145,8 +145,9 @@ loading, manifest slot boundaries, and slot0 execution.
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This
 state channel records ownership without exposing a mutable application pointer
-to exception handlers; hardware confirmation of these state updates remains a
-separate fault-recovery test.
+to exception handlers. F405 hardware has confirmed the complete transition
+with the v4 invalid-PSP application fixture; this proves lifecycle accounting
+and recovery entry, not restart, scheduling, or complete application isolation.
 
 ### SVC gateway
 

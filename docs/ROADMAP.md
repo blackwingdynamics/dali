@@ -593,8 +593,8 @@ Compilation and host tests do not replace hardware evidence.
   context owner; F405 hardware confirmed `Loaded -> Ready -> Running` during
   two-package boot and slot0 execution.
 - [x] Connect the kernel fault boundary and recovery entry to the atomic active
-  context state channel; hardware verification of `Faulted -> Recovering ->
-  Terminated` remains pending.
+  context state channel; F405 hardware verified `Faulted -> Recovering ->
+  Terminated` with the v4 invalid-PSP application fixture.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
