@@ -53,15 +53,60 @@ and retain records until the latter is true.
 Hardware tests should cover:
 
 - boot banner;
-- 100 MHz clock initialization;
+- 168 MHz clock initialization;
 - board-specific storage status LED behavior;
-- SPI1 SD initialization;
+- hardware SDIO initialization;
 - one known block read;
 - FAT16/FAT32 root-directory enumeration;
 - `.AMRN` extension filtering and arbitrary package-name discovery;
 - payload copy to the reserved SRAM address `0x20008000`;
 - demo application entry;
 - deterministic application LED pattern.
+
+## Recorded F405 hardware evidence
+
+The following tests have been executed on the STM32F405RGT6 board with a
+Raspberry Pi Pico 2 CMSIS-DAP probe and USB CDC console. These records are
+evidence of the listed behavior only; they do not claim DMA isolation,
+multi-application isolation, or watchdog support.
+
+### Boot, storage, and application path
+
+- [x] F405 boot, 168 MHz clock, PB2 LED, SDIO initialization, and block-zero
+  read.
+- [x] FAT32 root scan and `.amrn` package discovery.
+- [x] AMRN validation, bounded application load, entry transfer, and the
+  three-flash/long-pause application LED pattern.
+- [x] ABI v2 application logging through USB CDC.
+- [x] Empty SD/package states remain informational and enter the heartbeat.
+
+### ABI v3 isolation and fault recovery
+
+- [x] Kernel-RAM read and write rejection with `MemManage` recovery.
+- [x] Peripheral-MMIO read and write rejection with `MemManage` recovery.
+- [x] Execute-never instruction rejection with `MemManage` recovery.
+- [x] Invalid-PSP exception-entry rejection with recovery.
+- [x] Precise BusFault decoding with `CFSR`, `BFAR`, and stacked `PC/LR`.
+- [x] No-frame HardFault recovery verified through SWD/GDB boundary tracing.
+- [x] SVC rejection matrix for unknown services, invalid pointers, oversized
+  messages, and invalid UTF-8.
+- [x] Accepted `Log` SVC and initial service authorization policy.
+- [x] Three repeated invalid-PSP reset cycles, each producing fresh
+  `UsageFault 0x00040000` status and kernel recovery.
+
+The USB console may report `read zero bytes from port` while the target resets
+or the CDC device re-enumerates. That is a transport-session event and must be
+distinguished from the kernel's fault and recovery records.
+
+## Not yet evidenced
+
+- [ ] Watchdog behavior after application termination; watchdog support is not
+  implemented yet.
+- [ ] Executed relocation metadata or RWPI/PIC behavior.
+- [ ] SRAM slot manager and two-application boundary isolation.
+- [ ] PendSV/SysTick context switching and MPU region switching.
+- [ ] DMA isolation.
+- [ ] Application restart, timeout, and watchdog lifecycle policy.
 
 ## MVP acceptance test
 
