@@ -15,6 +15,7 @@ pub const LOG_OK: u32 = 0;
 pub const LOG_REJECTED: u32 = 1;
 
 /// Kernel services passed to an AMRN application at its entry point.
+#[cfg(not(feature = "abi-current"))]
 #[repr(C)]
 pub struct ServiceTable {
     /// Submit one bounded UTF-8 message to the kernel logging facade.
@@ -22,6 +23,7 @@ pub struct ServiceTable {
 }
 
 /// Submits a message through the kernel-owned application logging service.
+#[cfg(not(feature = "abi-current"))]
 pub fn log(services: &ServiceTable, message: &str) -> bool {
     if message.len() > MAX_LOG_MESSAGE_BYTES {
         return false;
@@ -41,6 +43,7 @@ pub fn log(message: &str) -> bool {
 }
 
 #[cfg(test)]
+#[cfg(not(feature = "abi-current"))]
 mod tests {
     use super::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable, log};
 

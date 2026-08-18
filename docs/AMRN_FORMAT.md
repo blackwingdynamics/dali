@@ -266,11 +266,11 @@ Selection rules are bounded and explicit:
   slot is a rejection, never an implicit filename- or directory-order choice;
 - format v3 packages remain valid under their existing single-package rules.
 
-The v4 codec, CLI builder/inspection, and feature-gated kernel selection/
-streaming loader are implemented without changing the ABI v2/v3 package paths.
-Host validation exists for the codec and CLI; kernel streaming-loader fixtures
-and hardware acceptance remain outstanding. Format v4 must not be advertised
-as multi-application support yet.
+The v4 codec, CLI builder/inspection, feature-gated kernel selection/streaming
+loader, and host streaming-loader fixtures are implemented without changing the
+ABI v2/v3 package paths. A manifest-backed v4 relocation fixture is available
+for hardware testing; hardware acceptance remains outstanding. Format v4 must
+not be advertised as multi-application support yet.
 
 Future revisions may add manifest data, kernel compatibility, required services, memory declarations, signatures, encryption metadata, and rollback information. These require a new format revision or an explicitly versioned extension area.
 

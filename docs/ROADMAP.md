@@ -546,6 +546,8 @@ Compilation and host tests do not replace hardware evidence.
   enabling v4 packages in the kernel.
 - [x] Add manifest-driven v4 package generation and inspection without
   changing the existing ABI v2/v3 package paths.
+- [x] Prepare a manifest-backed v4 relocation fixture for the hardware
+  selection, relocation, and recovery run.
 - [x] Add a kernel-side v4 selection and bounded streaming loader path without
   changing the ABI v2/v3 loaders.
 - [x] Add host-testable streaming-loader fixtures for v4 selection, bounded

@@ -150,6 +150,9 @@ distinguished from the kernel's fault and recovery records.
   validation, target slot IDs, and v4 inspection output.
 - [x] Host-side fake-reader fixtures cover v4 bounded read order, CRC mismatch,
   invalid relocation, and undeclared-slot rejection.
+- [x] The relocation fixture manifest produces an AMRN format 4 package with a
+  non-zero identity, compatibility metadata, required service bitset, and the
+  manifest-selected slot1; this artifact is ready for the hardware run.
 - [ ] Hardware execution of the v4 streaming loader; target compilation alone
   does not prove v4 loading, relocation, or recovery.
 - [ ] Hardware two-application boundary isolation; only one application is
