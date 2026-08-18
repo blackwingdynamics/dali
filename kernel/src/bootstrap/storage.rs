@@ -164,6 +164,10 @@ where
                         );
                         return status::StorageStatus::Failure;
                     }
+                    logging::info(
+                        logging::SECURITY_SUBSYSTEM,
+                        format_args!("[SECURITY] Application lifecycle: Ready"),
+                    );
                     if let Err(error) = context_owner.activate(&mut lifecycle) {
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
@@ -174,6 +178,10 @@ where
                         );
                         return status::StorageStatus::Failure;
                     }
+                    logging::info(
+                        logging::SECURITY_SUBSYSTEM,
+                        format_args!("[SECURITY] Active application context: Running"),
+                    );
                     let Some(active) = context_owner.active() else {
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
