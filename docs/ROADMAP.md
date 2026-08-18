@@ -535,7 +535,9 @@ Compilation and host tests do not replace hardware evidence.
   for code and writable data; record the observed ARM kinds in
   `docs/RELOCATION.md`.
 - [ ] Test relocation metadata or the selected RWPI/PIC implementation.
-- [ ] Implement and test the SRAM slot manager.
+- [x] Implement and test the fixed-capacity SRAM slot manager on the host.
+- [x] Integrate manifest-slot reservation into kernel-owned application loading
+  before adding concurrent execution.
 - [ ] Load two applications into independent slots and verify their boundaries.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.

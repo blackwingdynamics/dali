@@ -12,12 +12,15 @@ use super::v3::LoadedApplication;
 
 const RELOCATION_BYTES: usize = v3::RELOCATION_ENTRY_SIZE;
 
-pub(crate) fn load_file<D>(file: AmrnFile<'_, D>) -> Result<LoadedApplication, super::LoaderError>
+pub(crate) fn load_file<D>(
+    file: AmrnFile<'_, D>,
+    slot_manager: &mut crate::runtime::slots::SlotManager,
+) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract, slot) = parse_target_header(&header)?;
+    let (header, contract, slot) = parse_target_header(&header, slot_manager)?;
     let relocation_offset = u32::try_from(v3::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.code_size))
@@ -67,12 +70,13 @@ where
 
 fn parse_target_header(
     bytes: &[u8; v3::HEADER_SIZE],
+    slot_manager: &mut crate::runtime::slots::SlotManager,
 ) -> Result<(v3::Header, v3::Contract, dali_targets::IsolationSlot), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
         .isolation
-        .ok_or(super::LoaderError::UnsupportedV3Target)?;
+        .ok_or(super::LoaderError::UnsupportedCurrentAbiTarget)?;
     let mut last_error = v3::Error::InvalidHeader;
     for slot in isolation.slots.iter().copied() {
         let contract = v3::Contract {
@@ -83,7 +87,12 @@ fn parse_target_header(
             data_capacity: slot.data_length,
         };
         match v3::parse_header(bytes, contract) {
-            Ok(header) => return Ok((header, contract, slot)),
+            Ok(header) => {
+                let allocation = slot_manager
+                    .reserve(slot)
+                    .map_err(super::LoaderError::SlotManager)?;
+                return Ok((header, contract, allocation.slot()));
+            }
             Err(error) => last_error = error,
         }
     }

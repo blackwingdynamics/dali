@@ -22,17 +22,23 @@ pub enum LoaderError {
     Package(ParseError),
     /// The ABI v3 package failed target or segment validation.
     #[cfg(feature = "abi-current")]
-    V3Package(dali_amrn::v2::Error),
+    CurrentAbiPackage(dali_amrn::v2::Error),
     /// The selected target does not declare an ABI v3 memory contract.
     #[cfg(feature = "abi-current")]
-    UnsupportedV3Target,
+    UnsupportedCurrentAbiTarget,
+    /// The kernel could not reserve the package's manifest-declared slot.
+    #[cfg(feature = "abi-current")]
+    SlotManager(crate::runtime::slots::SlotManagerError),
     /// The relocatable ABI v3 package failed format validation or patching.
     #[cfg(feature = "abi-relocation")]
     V3RelocationPackage(dali_amrn::v3::Error),
 }
 
 #[cfg(feature = "abi-current")]
-pub(crate) fn load_abi_v3<D>(device: D) -> Result<v3::LoadedApplication, LoaderError>
+pub(crate) fn load_current_abi<D>(
+    device: D,
+    slot_manager: &mut crate::runtime::slots::SlotManager,
+) -> Result<v3::LoadedApplication, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
@@ -41,10 +47,12 @@ where
         read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
         file.rewind().map_err(LoaderError::Filesystem)?;
         match version[4] {
-            dali_amrn::v2::FORMAT_VERSION => v3::load_file(file),
+            dali_amrn::v2::FORMAT_VERSION => v3::load_file(file, slot_manager),
             #[cfg(feature = "abi-relocation")]
-            dali_amrn::v3::FORMAT_VERSION => v3_relocatable::load_file(file),
-            _ => Err(LoaderError::V3Package(dali_amrn::v2::Error::InvalidHeader)),
+            dali_amrn::v3::FORMAT_VERSION => v3_relocatable::load_file(file, slot_manager),
+            _ => Err(LoaderError::CurrentAbiPackage(
+                dali_amrn::v2::Error::InvalidHeader,
+            )),
         }
     })
     .map_err(LoaderError::Filesystem)?

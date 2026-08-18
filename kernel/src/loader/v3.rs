@@ -22,39 +22,50 @@ pub struct LoadedApplication {
 }
 
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
-pub(crate) fn load_file<D>(file: AmrnFile<'_, D>) -> Result<LoadedApplication, super::LoaderError>
+pub(crate) fn load_file<D>(
+    file: AmrnFile<'_, D>,
+    slot_manager: &mut crate::runtime::slots::SlotManager,
+) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (contract, slot) = target_contract().ok_or(super::LoaderError::UnsupportedV3Target)?;
-    let header = v2::parse_header(&header, contract).map_err(super::LoaderError::V3Package)?;
-    let expected_length =
-        package_length(header).ok_or(super::LoaderError::V3Package(v2::Error::InvalidPayload))?;
+    let (contract, slot) = target_contract(&header, slot_manager)?;
+    let header =
+        v2::parse_header(&header, contract).map_err(super::LoaderError::CurrentAbiPackage)?;
+    let expected_length = package_length(header).ok_or(super::LoaderError::CurrentAbiPackage(
+        v2::Error::InvalidPayload,
+    ))?;
     if u64::from(file.length()) != u64::from(expected_length) {
-        return Err(super::LoaderError::V3Package(v2::Error::InvalidPayload));
+        return Err(super::LoaderError::CurrentAbiPackage(
+            v2::Error::InvalidPayload,
+        ));
     }
     validate_payload(&file, header)?;
     copy_segments(&file, header)?;
     let entry_address = header
         .code_load_address
         .checked_add(header.execution_offset)
-        .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
+        .ok_or(super::LoaderError::CurrentAbiPackage(
+            v2::Error::AddressOverflow,
+        ))?;
     let stack_origin = header
         .data_load_address
         .checked_add(header.data_init_size)
         .and_then(|address| address.checked_add(header.data_zero_size))
-        .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
-    let psp_top = stack_origin
-        .checked_add(header.stack_size)
-        .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
+        .ok_or(super::LoaderError::CurrentAbiPackage(
+            v2::Error::AddressOverflow,
+        ))?;
+    let psp_top = stack_origin.checked_add(header.stack_size).ok_or(
+        super::LoaderError::CurrentAbiPackage(v2::Error::AddressOverflow),
+    )?;
     let launch_frame = launch::prepare(entry_address, stack_origin, header.stack_size).map_err(
         |error| match error {
             launch::LaunchError::InvalidEntry => {
-                super::LoaderError::V3Package(v2::Error::InvalidExecutionOffset)
+                super::LoaderError::CurrentAbiPackage(v2::Error::InvalidExecutionOffset)
             }
             launch::LaunchError::InvalidStack => {
-                super::LoaderError::V3Package(v2::Error::RegionOverflow)
+                super::LoaderError::CurrentAbiPackage(v2::Error::RegionOverflow)
             }
         },
     )?;
@@ -67,23 +78,35 @@ where
     })
 }
 
-fn target_contract() -> Option<(v2::Contract, dali_targets::IsolationSlot)> {
+fn target_contract(
+    bytes: &[u8; v2::HEADER_SIZE],
+    slot_manager: &mut crate::runtime::slots::SlotManager,
+) -> Result<(v2::Contract, dali_targets::IsolationSlot), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
-    let isolation = target.memory.isolation?;
-    let slot = crate::runtime::slots::SlotManager::new(isolation.slots)
-        .ok()?
-        .allocate()?;
-    let slot = slot.slot();
-    Some((
-        v2::Contract {
+    let isolation = target
+        .memory
+        .isolation
+        .ok_or(super::LoaderError::UnsupportedCurrentAbiTarget)?;
+    let mut last_error = v2::Error::InvalidHeader;
+    for slot in isolation.slots.iter().copied() {
+        let contract = v2::Contract {
             target_id: target.amrn_target_id,
             code_load_address: slot.code_origin,
             code_capacity: slot.code_length,
             data_load_address: slot.data_origin,
             data_capacity: slot.data_length,
-        },
-        slot,
-    ))
+        };
+        match v2::parse_header(bytes, contract) {
+            Ok(_) => {
+                let allocation = slot_manager
+                    .reserve(slot)
+                    .map_err(super::LoaderError::SlotManager)?;
+                return Ok((contract, allocation.slot()));
+            }
+            Err(error) => last_error = error,
+        }
+    }
+    Err(super::LoaderError::CurrentAbiPackage(last_error))
 }
 
 fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v2::HEADER_SIZE], super::LoaderError>
@@ -108,13 +131,12 @@ where
 {
     file.rewind().map_err(super::LoaderError::Filesystem)?;
     let _header = read_header(file)?;
-    let payload_size = header
-        .code_size
-        .checked_add(header.data_init_size)
-        .ok_or(super::LoaderError::V3Package(v2::Error::InvalidPayload))?;
+    let payload_size = header.code_size.checked_add(header.data_init_size).ok_or(
+        super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload),
+    )?;
     let mut checksum = Crc32::new();
     let mut remaining = usize::try_from(payload_size)
-        .map_err(|_| super::LoaderError::V3Package(v2::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
     let mut chunk: Block = [0; BLOCK_SIZE];
     while remaining > 0 {
         let chunk_size = remaining.min(chunk.len());
@@ -123,7 +145,9 @@ where
         remaining -= chunk_size;
     }
     if checksum.finish() != header.crc32 {
-        return Err(super::LoaderError::V3Package(v2::Error::CrcMismatch));
+        return Err(super::LoaderError::CurrentAbiPackage(
+            v2::Error::CrcMismatch,
+        ));
     }
     Ok(())
 }
@@ -139,7 +163,9 @@ where
     let zero_start = header
         .data_load_address
         .checked_add(header.data_init_size)
-        .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
+        .ok_or(super::LoaderError::CurrentAbiPackage(
+            v2::Error::AddressOverflow,
+        ))?;
     zero_segment(zero_start, header.data_zero_size)?;
     Ok(())
 }
@@ -153,7 +179,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let mut remaining = usize::try_from(size)
-        .map_err(|_| super::LoaderError::V3Package(v2::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
     let mut offset = 0usize;
     let mut chunk: Block = [0; BLOCK_SIZE];
     while remaining > 0 {
@@ -162,7 +188,9 @@ where
         let address = usize::try_from(destination)
             .ok()
             .and_then(|value| value.checked_add(offset))
-            .ok_or(super::LoaderError::V3Package(v2::Error::AddressOverflow))?;
+            .ok_or(super::LoaderError::CurrentAbiPackage(
+                v2::Error::AddressOverflow,
+            ))?;
         let target = unsafe {
             // SAFETY: v2 header validation proved the complete segment fits its
             // target SRAM region before this second, copy-only pass begins.
@@ -177,7 +205,7 @@ where
 
 fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let length = usize::try_from(size)
-        .map_err(|_| super::LoaderError::V3Package(v2::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
     if length == 0 {
         return Ok(());
     }

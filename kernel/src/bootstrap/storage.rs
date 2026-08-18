@@ -40,9 +40,30 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
         format_args!("[STORAGE] SDIO card initialized"),
     );
 
+    #[cfg(feature = "abi-current")]
+    let mut slot_manager = match crate::runtime::slots::SlotManager::new(
+        platform::MEMORY_PROFILE
+            .isolation
+            .map(|isolation| isolation.slots)
+            .unwrap_or(&[]),
+    ) {
+        Ok(manager) => manager,
+        Err(error) => {
+            logging::error(
+                logging::SECURITY_SUBSYSTEM,
+                format_args!("[SECURITY] Slot manager unavailable: {:?}", error),
+            );
+            return status::StorageStatus::Failure;
+        }
+    };
+
     let mut block: Block = [0; BLOCK_SIZE];
     match reader.read_block(BlockAddress::new(0), &mut block) {
-        Ok(()) => load_package(reader),
+        Ok(()) => load_package(
+            reader,
+            #[cfg(feature = "abi-current")]
+            &mut slot_manager,
+        ),
         Err(error) => {
             logging::error(
                 logging::BOOT_SUBSYSTEM,
@@ -54,7 +75,10 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
 }
 
 #[cfg(feature = "sdio")]
-fn load_package<R>(reader: R) -> status::StorageStatus
+fn load_package<R>(
+    reader: R,
+    #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::slots::SlotManager,
+) -> status::StorageStatus
 where
     R: BlockReader,
 {
@@ -63,7 +87,7 @@ where
         format_args!("[STORAGE] Read block 0 successfully"),
     );
     #[cfg(feature = "abi-current")]
-    let package = crate::loader::load_abi_v3(BlockDeviceAdapter::new(reader));
+    let package = crate::loader::load_current_abi(BlockDeviceAdapter::new(reader), slot_manager);
     #[cfg(not(feature = "abi-current"))]
     let package = if platform::APPLICATION_EXECUTION_SUPPORTED {
         crate::loader::load_amrn_file(BlockDeviceAdapter::new(reader))

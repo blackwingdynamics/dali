@@ -210,10 +210,11 @@ the standalone relocation fixture package. The USB CDC console reported:
 ```
 
 This verifies the feature-gated format 3 stream, package validation, and
-application entry path on the reference hardware. The fixture used the
-manifest's current code/data origins, so the relocation delta was zero. A
-non-zero relocation, slot selection, and execution from a second slot remain
-unverified until the slot manager exists.
+application entry path on the reference hardware. The fixture later executed
+with a non-zero relocation delta in the manifest-declared second slot. Runtime
+slot reservation exists for the single loaded application; concurrent
+allocation, release after termination, and context switching remain future
+work.
 
 ## Post-MVP extensions
 

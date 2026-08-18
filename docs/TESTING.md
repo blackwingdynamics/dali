@@ -132,8 +132,12 @@ distinguished from the kernel's fault and recovery records.
 
 - [ ] Watchdog behavior after application termination; watchdog support is not
   implemented yet.
-- [ ] Executed relocation metadata or RWPI/PIC behavior.
-- [ ] SRAM slot manager and two-application boundary isolation.
+- [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
+  hardware-verified.
+- [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
+  rejection, undeclared-slot rejection, and release/reuse behavior.
+- [ ] Hardware two-application boundary isolation; only one application is
+  loaded and executed at a time.
 - [ ] PendSV/SysTick context switching and MPU region switching.
 - [ ] DMA isolation.
 - [ ] Application restart, timeout, and watchdog lifecycle policy.

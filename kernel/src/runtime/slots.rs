@@ -28,6 +28,10 @@ impl SlotAllocation {
 pub enum SlotManagerError {
     /// The caller-provided fixed capacity cannot hold the manifest slots.
     CapacityExceeded,
+    /// The target does not declare the requested slot.
+    UndeclaredSlot,
+    /// The requested slot is already reserved by another application.
+    SlotOccupied,
     /// The allocation was not active or did not match the manifest entry.
     InvalidAllocation,
 }
@@ -71,6 +75,36 @@ impl SlotManager {
             }
         }
         None
+    }
+
+    /// Reserves the exact manifest slot selected by a validated package.
+    pub fn reserve(&mut self, slot: IsolationSlot) -> Result<SlotAllocation, SlotManagerError> {
+        let Some((index, _)) = self
+            .slots
+            .iter()
+            .copied()
+            .enumerate()
+            .find(|(_, declared)| *declared == slot)
+        else {
+            return Err(SlotManagerError::UndeclaredSlot);
+        };
+        let mask = 1_u32 << index;
+        if self.occupied & mask != 0 {
+            return Err(SlotManagerError::SlotOccupied);
+        }
+        self.occupied |= mask;
+        Ok(SlotAllocation { index, slot })
+    }
+
+    /// Returns whether a manifest slot is currently reserved.
+    pub fn is_reserved(&self, slot: IsolationSlot) -> bool {
+        self.slots
+            .iter()
+            .copied()
+            .enumerate()
+            .find(|(_, declared)| *declared == slot)
+            .map(|(index, _)| self.occupied & (1_u32 << index) != 0)
+            .unwrap_or(false)
     }
 
     /// Releases an allocation after its application has stopped.
@@ -145,6 +179,34 @@ mod tests {
             .release(allocation)
             .expect("active allocation releases");
         assert_eq!(manager.allocate().expect("slot 0 reuses").index(), 0);
+    }
+
+    #[test]
+    fn reserves_only_the_declared_free_slot() {
+        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let slot = SLOTS[1];
+
+        let allocation = manager.reserve(slot).expect("slot 1 is declared");
+        assert_eq!(allocation.index(), 1);
+        assert!(manager.is_reserved(slot));
+        assert!(matches!(
+            manager.reserve(slot),
+            Err(SlotManagerError::SlotOccupied)
+        ));
+    }
+
+    #[test]
+    fn rejects_an_undeclared_slot() {
+        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let undeclared = IsolationSlot {
+            name: "other",
+            ..SLOTS[0]
+        };
+
+        assert!(matches!(
+            manager.reserve(undeclared),
+            Err(SlotManagerError::UndeclaredSlot)
+        ));
     }
 
     #[test]
