@@ -110,6 +110,10 @@ multi-application isolation, or watchdog support.
   `[INFO][APP] Relocation fixture`; the same result was observed after CDC
   reconnect. The first reset produced a USB transport disconnect when the
   board cable moved, not a kernel fault.
+- [x] F405 hardware regression after kernel-owned slot reservation was
+  integrated: the slot1 package again passed AMRN validation and emitted
+  `[INFO][APP] Relocation fixture`. This verifies that reservation state does
+  not change the established single-application relocation path.
 
 ### Diagnostic evidence
 
