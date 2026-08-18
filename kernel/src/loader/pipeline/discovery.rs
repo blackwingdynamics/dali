@@ -12,7 +12,7 @@ use super::execution::LoadedApplications;
 
 pub(crate) fn load_files<D>(
     device: &D,
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<LoadedApplications<{ filesystem::MAX_ROOT_AMRN_FILES }>, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -55,7 +55,7 @@ where
 fn load_selected_file<D>(
     device: D,
     selected_identity: [u8; 16],
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     loaded: &mut LoadedApplications<{ filesystem::MAX_ROOT_AMRN_FILES }>,
 ) -> Result<(), super::LoaderError>
 where

@@ -25,10 +25,10 @@ pub enum LoaderError {
     UnsupportedCurrentAbiTarget,
     /// The kernel could not reserve the package's manifest-declared slot.
     #[cfg(feature = "abi-current")]
-    SlotManager(crate::runtime::slots::SlotManagerError),
+    SlotManager(crate::runtime::memory::slots::SlotManagerError),
     /// The application lifecycle could not record the loaded slot ownership.
     #[cfg(feature = "abi-current")]
-    Lifecycle(crate::runtime::lifecycle::LifecycleError),
+    Lifecycle(crate::runtime::application::lifecycle::LifecycleError),
     /// The package failed the identity and slot catalog contract.
     #[cfg(feature = "abi-relocation")]
     PackageCatalog(crate::loader_contract::CatalogError),
@@ -47,7 +47,7 @@ type LoadedPackages =
 #[cfg(feature = "abi-current")]
 pub(crate) fn load_current_abi<D>(
     device: D,
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<LoadedPackages, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,

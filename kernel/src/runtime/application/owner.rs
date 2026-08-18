@@ -2,10 +2,10 @@
 
 use core::sync::atomic::{AtomicU8, Ordering};
 
-use super::{
-    lifecycle::{ApplicationIdentity, ApplicationLifecycle, ApplicationState, LifecycleError},
-    slots::SlotAllocation,
+use super::lifecycle::{
+    ApplicationIdentity, ApplicationLifecycle, ApplicationState, LifecycleError,
 };
+use crate::runtime::memory::slots::SlotAllocation;
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -229,7 +229,7 @@ impl<'state> ActiveContextOwner<'state> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::{lifecycle::LifecycleEvent, slots::SlotManager};
+    use crate::runtime::{application::lifecycle::LifecycleEvent, memory::slots::SlotManager};
     use dali_targets::IsolationSlot;
 
     const SLOT: IsolationSlot = IsolationSlot {

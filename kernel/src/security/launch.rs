@@ -111,7 +111,7 @@ pub(crate) fn recover() -> ! {
 }
 
 extern "C" fn fault_recovery() -> ! {
-    if crate::runtime::context::begin_active_recovery() {
+    if crate::runtime::application::owner::begin_active_recovery() {
         crate::logging::info(
             crate::logging::SECURITY_SUBSYSTEM,
             format_args!("[SECURITY][FAULT] Active context state: Recovering"),
@@ -121,14 +121,14 @@ extern "C" fn fault_recovery() -> ! {
         crate::logging::SECURITY_SUBSYSTEM,
         format_args!("[SECURITY][FAULT] Application terminated; kernel recovery active"),
     );
-    if crate::runtime::context::terminate_active_context() {
+    if crate::runtime::application::owner::terminate_active_context() {
         crate::logging::info(
             crate::logging::SECURITY_SUBSYSTEM,
             format_args!("[SECURITY][FAULT] Active context state: Terminated"),
         );
     }
-    match crate::runtime::policy::CURRENT.fault_recovery() {
-        crate::runtime::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
+    match crate::runtime::application::policy::CURRENT.fault_recovery() {
+        crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
             cortex_m::asm::wfi();
         },
     }

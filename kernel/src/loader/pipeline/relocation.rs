@@ -5,7 +5,7 @@ use dali_amrn::{Crc32, v3};
 use crate::security::launch::{self, LaunchFrame};
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
-    runtime::slots::SlotAllocation,
+    runtime::memory::slots::SlotAllocation,
     storage::filesystem::AmrnFile,
 };
 
@@ -15,7 +15,7 @@ const RELOCATION_BYTES: usize = v3::RELOCATION_ENTRY_SIZE;
 
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -73,7 +73,7 @@ where
 
 fn parse_target_header(
     bytes: &[u8; v3::HEADER_SIZE],
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<(v3::Header, v3::Contract, SlotAllocation), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target

@@ -41,7 +41,7 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
     );
 
     #[cfg(feature = "abi-current")]
-    let mut slot_manager = match crate::runtime::slots::SlotManager::new(
+    let mut slot_manager = match crate::runtime::memory::slots::SlotManager::new(
         platform::MEMORY_PROFILE
             .isolation
             .map(|isolation| isolation.slots)
@@ -57,8 +57,8 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
         }
     };
     #[cfg(feature = "abi-mpu")]
-    let mut context_owner = crate::runtime::context::ActiveContextOwner::new(
-        &crate::runtime::context::ACTIVE_RUNTIME_STATE,
+    let mut context_owner = crate::runtime::application::owner::ActiveContextOwner::new(
+        &crate::runtime::application::owner::ACTIVE_RUNTIME_STATE,
     );
 
     let mut block: Block = [0; BLOCK_SIZE];
@@ -83,8 +83,9 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
 #[cfg(feature = "sdio")]
 fn load_package<R>(
     reader: R,
-    #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::slots::SlotManager,
-    #[cfg(feature = "abi-mpu")] context_owner: &mut crate::runtime::context::ActiveContextOwner,
+    #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    #[cfg(feature = "abi-mpu")]
+    context_owner: &mut crate::runtime::application::owner::ActiveContextOwner,
 ) -> status::StorageStatus
 where
     R: BlockReader,
@@ -157,7 +158,7 @@ where
                         return status::StorageStatus::Failure;
                     };
                     if lifecycle
-                        .transition(crate::runtime::lifecycle::LifecycleEvent::Ready)
+                        .transition(crate::runtime::application::lifecycle::LifecycleEvent::Ready)
                         .is_err()
                     {
                         logging::error(

@@ -5,7 +5,7 @@ use dali_amrn::{Crc32, v2};
 use crate::security::launch::{self, LaunchFrame};
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
-    runtime::{lifecycle::ApplicationLifecycle, slots::SlotAllocation},
+    runtime::{application::lifecycle::ApplicationLifecycle, memory::slots::SlotAllocation},
     storage::filesystem::AmrnFile,
 };
 
@@ -79,7 +79,7 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -137,7 +137,7 @@ where
 
 fn target_contract(
     bytes: &[u8; v2::HEADER_SIZE],
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<(v2::Contract, SlotAllocation), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target

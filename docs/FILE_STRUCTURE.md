@@ -45,7 +45,10 @@ dali-kernel/
 │       │   ├── identity.rs        # Identity-aware package loading
 │       │   └── discovery.rs       # Real root-package catalog and selection
 │       ├── logging/              # Facade, RTT, USB CDC backend
-│       ├── runtime/              # Hardware-neutral application lifecycle state
+│       ├── runtime/              # Hardware-neutral runtime contracts
+│       │   ├── application/     # Lifecycle, active ownership, recovery policy
+│       │   ├── memory/          # Manifest-owned slot allocation
+│       │   └── scheduling/      # Saved CPU state and bounded context table
 │       └── storage/              # Read-only filesystem and storage policy
 │           └── filesystem/       # Root package discovery and file streaming
 │               └── multi.rs      # Bounded multi-package enumeration
@@ -110,7 +113,7 @@ kernel/src/
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,contract/{mod.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
-├── runtime/{mod.rs,slots.rs}
+├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,context_table.rs}}
 └── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
@@ -186,6 +189,13 @@ target-scaffold.md
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, fault
   recovery, and MPU protection. The hardware-neutral MPU descriptors and
   layout builder are separated from privileged register programming.
+- `kernel/src/runtime/application/` owns application lifecycle state, active
+  context ownership, and restart/rollback/watchdog policy decisions.
+- `kernel/src/runtime/memory/` owns manifest-declared slot allocation and range
+  containment.
+- `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state and
+  bounded context selection; PendSV/SysTick handlers and MPU switching remain
+  separate hardware work.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
 - `crates/dali-cli/src/commands/` contains command-specific implementation;

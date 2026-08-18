@@ -2,7 +2,7 @@
 
 use dali_amrn::v4::PACKAGE_ID_LENGTH;
 
-use super::slots::{SlotAllocation, SlotManagerError};
+use crate::runtime::memory::slots::{SlotAllocation, SlotManagerError};
 
 /// Opaque identity assigned to one installed application package.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -163,7 +163,7 @@ impl ApplicationLifecycle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::slots::SlotManager;
+    use crate::runtime::memory::slots::SlotManager;
     use dali_targets::IsolationSlot;
 
     const IDENTITY: ApplicationIdentity = ApplicationIdentity::new([1; PACKAGE_ID_LENGTH]);
