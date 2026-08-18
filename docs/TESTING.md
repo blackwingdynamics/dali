@@ -115,6 +115,16 @@ multi-application isolation, or watchdog support.
   `[INFO][APP] Relocation fixture`. This verifies that reservation state does
   not change the established single-application relocation path.
 
+### AMRN v4 hardware evidence
+
+- [x] F405 hardware accepted the manifest-backed AMRN format 4 relocation
+  package: the console reported AMRN validation followed by
+  `[INFO][APP] Relocation fixture`.
+- [x] The observed package contained identity metadata, `slot_id = 1`, and 49
+  relocation records; the application executed from the selected non-zero slot.
+- [x] The probe shutdown warning after flashing was classified as a transport
+  teardown event after the target continued running, not as a loader failure.
+
 ### Diagnostic evidence
 
 - Precise kernel-RAM read decoding preserved `CFSR=0x00000082`,
@@ -153,8 +163,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.
-- [ ] Hardware execution of the v4 streaming loader; target compilation alone
-  does not prove v4 loading, relocation, or recovery.
+- [x] Hardware execution of the v4 streaming loader, selection, relocation, and
+  recovery path is documented above; target compilation alone would not prove
+  this behavior.
 - [ ] Hardware two-application boundary isolation; only one application is
   loaded and executed at a time.
 - [ ] PendSV/SysTick context switching and MPU region switching.

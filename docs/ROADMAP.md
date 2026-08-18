@@ -552,7 +552,9 @@ Compilation and host tests do not replace hardware evidence.
   changing the ABI v2/v3 loaders.
 - [x] Add host-testable streaming-loader fixtures for v4 selection, bounded
   reads, CRC, and relocation validation.
-- [ ] Validate v4 selection, relocation, and recovery on hardware.
+- [x] Validate v4 selection, relocation, and recovery on F405 hardware; the
+  format 4 slot1 fixture passed AMRN validation and executed the relocation
+  proof application. Detailed evidence is in `docs/TESTING.md`.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.
