@@ -7,7 +7,7 @@ pub(super) fn default_target() -> Result<&'static dali_targets::TargetProfile, S
         .ok_or_else(|| "no application-supported target profile is declared".to_owned())
 }
 
-pub(super) fn render_v2_memory_script(template: &str) -> Result<String, String> {
+pub(super) fn render_legacy_memory_script(template: &str) -> Result<String, String> {
     let target = default_target()?;
     Ok(template
         .replace(
@@ -20,7 +20,7 @@ pub(super) fn render_v2_memory_script(template: &str) -> Result<String, String> 
         ))
 }
 
-pub(super) fn render_v3_memory_script(template: &str) -> Result<String, String> {
+pub(super) fn render_isolation_memory_script(template: &str) -> Result<String, String> {
     let target = default_target()?;
     let isolation = target
         .memory

@@ -94,11 +94,14 @@ const RELEASE_PROFILE: &str = "release";
 const AMRN_EXTENSION: &str = "amrn";
 
 fn inspect_bytes(package: &[u8]) -> Result<String, String> {
+    if package.get(4) == Some(&dali_amrn::v4::FORMAT_VERSION) {
+        return inspect_identity_package(package);
+    }
     if package.get(4) == Some(&dali_amrn::v3::FORMAT_VERSION) {
-        return inspect_v3_bytes(package);
+        return inspect_relocatable_package(package);
     }
     if package.get(4) == Some(&dali_amrn::v2::FORMAT_VERSION) {
-        return inspect_v2_bytes(package);
+        return inspect_isolation_package(package);
     }
     let header = dali_amrn::parse_header(package)
         .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
@@ -127,7 +130,59 @@ fn inspect_bytes(package: &[u8]) -> Result<String, String> {
     ))
 }
 
-fn inspect_v3_bytes(package: &[u8]) -> Result<String, String> {
+fn inspect_identity_package(package: &[u8]) -> Result<String, String> {
+    let target_id = *package
+        .get(5)
+        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+    let target = dali_targets::find_by_amrn_target_id(target_id)
+        .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
+    let isolation = target
+        .memory
+        .isolation
+        .ok_or_else(|| format!("target {} has no ABI v3 memory contract", target.name))?;
+    let mut parsed = None;
+    let mut last_error = dali_amrn::v4::Error::InvalidHeader;
+    for slot in isolation.slots.iter().copied() {
+        let contract = dali_amrn::v3::Contract {
+            target_id,
+            code_load_address: slot.code_origin,
+            code_capacity: slot.code_length,
+            data_load_address: slot.data_origin,
+            data_capacity: slot.data_length,
+        };
+        match dali_amrn::v4::parse(package, contract) {
+            Ok(value) => {
+                parsed = Some(value);
+                break;
+            }
+            Err(error) => last_error = error,
+        }
+    }
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
+    let metadata = parsed.header.metadata;
+    Ok(format!(
+        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\npackage_id: {:02X?}\npackage_version: {}.{}.{}\nminimum_kernel_version: {}.{}.{}\nrequired_services: 0x{:08X}\nslot_id: {}\ncode_size: {}\ndata_init_size: {}\nrelocation_count: {}\nabi_version: {}\npackage_crc32: 0x{:08X}",
+        dali_amrn::v4::FORMAT_VERSION,
+        parsed.header.image.target_id,
+        dali_amrn::v4::HEADER_SIZE,
+        metadata.package_id,
+        metadata.package_version.major,
+        metadata.package_version.minor,
+        metadata.package_version.patch,
+        metadata.minimum_kernel_version.major,
+        metadata.minimum_kernel_version.minor,
+        metadata.minimum_kernel_version.patch,
+        metadata.required_services,
+        metadata.slot_id,
+        parsed.header.image.code_size,
+        parsed.header.image.data_init_size,
+        parsed.header.image.relocation_count,
+        dali_amrn::v4::ABI_VERSION,
+        parsed.header.package_crc32,
+    ))
+}
+
+fn inspect_relocatable_package(package: &[u8]) -> Result<String, String> {
     let target_id = *package
         .get(5)
         .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
@@ -181,7 +236,7 @@ fn inspect_v3_bytes(package: &[u8]) -> Result<String, String> {
     ))
 }
 
-fn inspect_v2_bytes(package: &[u8]) -> Result<String, String> {
+fn inspect_isolation_package(package: &[u8]) -> Result<String, String> {
     let target_id = *package
         .get(5)
         .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
@@ -271,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn inspect_reports_v2_contract_fields() {
+    fn inspect_reports_isolation_contract_fields() {
         let contract = v2_test_contract();
         let image = dali_amrn::v2::Image {
             code: &[0, 191, 0, 191],
@@ -298,6 +353,52 @@ mod tests {
             data_load_address: 0x2000_C000,
             data_capacity: 16 * 1024,
         }
+    }
+
+    #[test]
+    fn inspect_reports_identity_fields() {
+        let contract = dali_amrn::v3::Contract {
+            target_id: 2,
+            code_load_address: 0x2001_0000,
+            code_capacity: 16 * 1024,
+            data_load_address: 0x2001_4000,
+            data_capacity: 16 * 1024,
+        };
+        let image = dali_amrn::v4::Image {
+            image: dali_amrn::v3::Image {
+                code: &[0, 0, 0, 0],
+                initialized_data: &[],
+                data_zero_size: 0,
+                stack_size: 4096,
+                linked_code_base: 0x2000_8000,
+                linked_data_base: 0x2000_C000,
+                execution_offset: 0,
+                relocations: &[],
+            },
+            metadata: dali_amrn::v4::Metadata {
+                package_id: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                package_version: dali_amrn::v4::Version {
+                    major: 1,
+                    minor: 2,
+                    patch: 3,
+                },
+                minimum_kernel_version: dali_amrn::v4::Version {
+                    major: 0,
+                    minor: 1,
+                    patch: 0,
+                },
+                required_services: 1,
+                slot_id: 1,
+            },
+        };
+        let mut package = vec![0; dali_amrn::v4::HEADER_SIZE + 4];
+        let size =
+            dali_amrn::v4::encode(image, contract, &mut package).expect("v4 package should encode");
+        package.truncate(size);
+        let report = inspect_bytes(&package).expect("v4 package should inspect");
+        assert!(report.contains("format_version: 4"));
+        assert!(report.contains("package_version: 1.2.3"));
+        assert!(report.contains("slot_id: 1"));
     }
 }
 

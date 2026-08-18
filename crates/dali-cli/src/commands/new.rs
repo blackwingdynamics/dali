@@ -230,10 +230,10 @@ pub(super) fn initialize_project(
 
 fn render_template(template: &Template, name: &str, sdk_path: &str) -> Result<String, String> {
     if template.relative_path == app_linker::V3_MEMORY_FILE {
-        return app_linker::render_v3_memory_script(template.contents);
+        return app_linker::render_isolation_memory_script(template.contents);
     }
     if template.relative_path == app_linker::V2_MEMORY_FILE {
-        return app_linker::render_v2_memory_script(template.contents);
+        return app_linker::render_legacy_memory_script(template.contents);
     }
     let target = app_linker::default_target()?;
     Ok(render(

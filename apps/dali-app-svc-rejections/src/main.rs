@@ -59,7 +59,7 @@ pub unsafe extern "C" fn amiran_entry() -> ! {
         "SVC rejected invalid UTF-8",
         unsafe { raw_svc(LOG_SERVICE, INVALID_UTF8.as_ptr(), INVALID_UTF8.len()) },
     );
-    let _ = dali::log_v3("SVC rejection matrix complete");
+    let _ = dali::log("SVC rejection matrix complete");
     loop {
         core::hint::spin_loop();
     }
@@ -67,7 +67,7 @@ pub unsafe extern "C" fn amiran_entry() -> ! {
 
 fn report_rejection(message: &str, status: u32) {
     if status == STATUS_REJECTED {
-        let _ = dali::log_v3(message);
+        let _ = dali::log(message);
     }
 }
 

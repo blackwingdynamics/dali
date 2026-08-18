@@ -48,7 +48,7 @@ pub(super) fn elf_path(
     artifact_path(project_directory, target, release, name, "")
 }
 
-pub(super) fn extract_v3_sections(
+pub(super) fn extract_isolation_sections(
     project_directory: &Path,
     manifest_path: &Path,
     target: &str,

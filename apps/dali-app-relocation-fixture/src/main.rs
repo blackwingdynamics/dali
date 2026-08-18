@@ -33,7 +33,7 @@ unsafe extern "C" fn relocation_target() -> ! {
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log_v3(TEST_MESSAGE);
+    let _ = dali::log(TEST_MESSAGE);
 
     let initialized = unsafe {
         // SAFETY: The fixture deliberately accesses its own declared data.

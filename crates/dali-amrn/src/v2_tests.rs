@@ -28,7 +28,7 @@ fn image() -> Image<'static> {
 }
 
 #[test]
-fn encodes_and_parses_v2_package() {
+fn encodes_and_parses_legacy_isolation_package() {
     let mut output = [0; HEADER_SIZE + CODE.len() + DATA.len()];
     let size = encode(image(), contract(), &mut output).unwrap();
     let package = parse(&output[..size], contract()).unwrap();

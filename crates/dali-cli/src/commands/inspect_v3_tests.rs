@@ -1,7 +1,7 @@
 use super::inspect_bytes;
 
 #[test]
-fn inspect_reports_v3_relocation_fields() {
+fn inspect_reports_relocation_fields() {
     let contract = dali_amrn::v3::Contract {
         target_id: 2,
         code_load_address: 0x2000_8000,

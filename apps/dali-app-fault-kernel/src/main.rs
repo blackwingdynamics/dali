@@ -16,7 +16,7 @@ const KERNEL_PROBE_ADDRESS: usize = TARGET_MEMORY.kernel_origin as usize;
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log_v3(TEST_MESSAGE);
+    let _ = dali::log(TEST_MESSAGE);
     let _value = unsafe {
         // SAFETY: This read intentionally targets the manifest-declared kernel
         // region to prove that the unprivileged MPU boundary rejects it.

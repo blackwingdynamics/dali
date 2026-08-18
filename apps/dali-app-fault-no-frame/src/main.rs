@@ -15,7 +15,7 @@ const TEST_SERVICE: u32 = dali::svc::TEST_NO_FRAME_HARDFAULT_SERVICE;
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log_v3(TEST_MESSAGE);
+    let _ = dali::log(TEST_MESSAGE);
     let mut status = TEST_SERVICE;
     unsafe {
         // SAFETY: This non-production fixture requests the kernel-owned

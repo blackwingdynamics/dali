@@ -36,7 +36,7 @@ pub fn log(services: &ServiceTable, message: &str) -> bool {
 
 /// Submits one bounded message through the ABI v3 SVC gateway.
 #[cfg(feature = "abi-current")]
-pub fn log_v3(message: &str) -> bool {
+pub fn log(message: &str) -> bool {
     svc_log::log(message)
 }
 

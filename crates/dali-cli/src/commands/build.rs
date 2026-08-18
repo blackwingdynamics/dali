@@ -13,6 +13,10 @@ pub(super) const RELEASE_PROFILE: &str = "release";
 
 pub(super) struct ApplicationManifest {
     pub(super) name: String,
+    pub(super) package_version: Option<String>,
+    pub(super) package_id: Option<String>,
+    pub(super) minimum_kernel_version: Option<String>,
+    pub(super) required_services: Option<u32>,
     pub(super) target_profile: String,
     pub(super) profile: String,
     pub(super) entry_offset: u32,
@@ -56,7 +60,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     } else if abi_version == dali_amrn::v2::ABI_VERSION {
         let code = super::artifacts::code_path(&project_directory, target, release, &manifest.name);
         let data = super::artifacts::data_path(&project_directory, target, release, &manifest.name);
-        let bss_size = super::artifacts::extract_v3_sections(
+        let bss_size = super::artifacts::extract_isolation_sections(
             &project_directory,
             &cargo_manifest,
             target,
@@ -90,6 +94,12 @@ pub(super) fn read_manifest(project_directory: &Path) -> Result<ApplicationManif
 
 fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
     let name = required_value(contents, "name")?;
+    let package_version = optional_value(contents, "version");
+    let package_id = optional_value(contents, "package_id");
+    let minimum_kernel_version = optional_value(contents, "minimum_kernel_version");
+    let required_services = optional_value(contents, "required_services")
+        .map(|value| parse_u32(&value, "required_services"))
+        .transpose()?;
     let target_profile = required_value(contents, "target_profile")?;
     let profile =
         optional_value(contents, "profile").unwrap_or_else(|| DEVELOPMENT_PROFILE.to_owned());
@@ -116,6 +126,10 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
     let slot_name = optional_value(contents, "slot");
     Ok(ApplicationManifest {
         name,
+        package_version,
+        package_id,
+        minimum_kernel_version,
+        required_services,
         target_profile,
         profile,
         entry_offset,
@@ -123,6 +137,51 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
         format_version,
         slot_name,
     })
+}
+
+pub(super) fn parse_package_id(value: &str) -> Result<[u8; 16], String> {
+    let value = value.strip_prefix("0x").unwrap_or(value);
+    if value.len() != 32 {
+        return Err("dali.toml `package_id` must contain exactly 32 hexadecimal digits".to_owned());
+    }
+    let mut result = [0; 16];
+    for (index, byte) in result.iter_mut().enumerate() {
+        let start = index * 2;
+        *byte = u8::from_str_radix(&value[start..start + 2], 16)
+            .map_err(|_| "dali.toml contains an invalid `package_id`".to_owned())?;
+    }
+    if result.iter().all(|byte| *byte == 0) {
+        return Err("dali.toml `package_id` must not be all zero".to_owned());
+    }
+    Ok(result)
+}
+
+pub(super) fn parse_version(value: &str, field: &str) -> Result<dali_amrn::v4::Version, String> {
+    let mut components = value.split('.');
+    let version = [components.next(), components.next(), components.next()];
+    if components.next().is_some() || version.iter().any(Option::is_none) {
+        return Err(format!("dali.toml `{field}` must use major.minor.patch"));
+    }
+    Ok(dali_amrn::v4::Version {
+        major: version[0]
+            .and_then(|value| value.parse().ok())
+            .ok_or_else(|| format!("dali.toml contains an invalid `{field}`"))?,
+        minor: version[1]
+            .and_then(|value| value.parse().ok())
+            .ok_or_else(|| format!("dali.toml contains an invalid `{field}`"))?,
+        patch: version[2]
+            .and_then(|value| value.parse().ok())
+            .ok_or_else(|| format!("dali.toml contains an invalid `{field}`"))?,
+    })
+}
+
+fn parse_u32(value: &str, field: &str) -> Result<u32, String> {
+    let (radix, digits) = match value.strip_prefix("0x") {
+        Some(value) => (16, value),
+        None => (10, value),
+    };
+    u32::from_str_radix(digits, radix)
+        .map_err(|_| format!("dali.toml contains an invalid `{field}`"))
 }
 
 pub(super) fn application_slot(
@@ -223,7 +282,10 @@ pub(super) fn validate_target_capabilities(
             target.name
         ));
     }
-    if format_version == dali_amrn::v3::FORMAT_VERSION && !target.capabilities.relocation {
+    if (format_version == dali_amrn::v3::FORMAT_VERSION
+        || format_version == dali_amrn::v4::FORMAT_VERSION)
+        && !target.capabilities.relocation
+    {
         return Err(format!(
             "target `{}` does not declare relocation support for AMRN format version {}",
             target.name,
@@ -347,6 +409,45 @@ mod tests {
         )
         .expect("manifest should parse");
         assert_eq!(manifest.slot_name.as_deref(), Some("slot1"));
+    }
+
+    #[test]
+    fn parses_identity_metadata() {
+        let manifest = parse_manifest(
+            "name = \"telemetry\"\nversion = \"1.2.3\"\ntarget_profile = \"f405\"\nentry_offset = 0\nformat_version = 4\npackage_id = \"00112233445566778899AABBCCDDEEFF\"\nminimum_kernel_version = \"0.1.0\"\nrequired_services = \"0x1\"\nslot = \"slot1\"",
+        )
+        .expect("v4 metadata should parse");
+        assert_eq!(manifest.package_version.as_deref(), Some("1.2.3"));
+        assert_eq!(
+            manifest.package_id.as_deref(),
+            Some("00112233445566778899AABBCCDDEEFF")
+        );
+        assert_eq!(manifest.minimum_kernel_version.as_deref(), Some("0.1.0"));
+        assert_eq!(manifest.required_services, Some(1));
+    }
+
+    #[test]
+    fn accepts_identity_format_for_targets_with_relocation_support() {
+        let target = super::target_profile("f405").expect("F405 target is declared");
+        validate_target_capabilities(target, dali_amrn::v2::ABI_VERSION, Some(4))
+            .expect("F405 declares relocation support for v4");
+    }
+
+    #[test]
+    fn validates_package_id_and_version_values() {
+        assert_eq!(
+            super::parse_package_id("00112233445566778899AABBCCDDEEFF")
+                .expect("package id should parse")[0],
+            0
+        );
+        assert!(super::parse_package_id("00").is_err());
+        assert_eq!(
+            super::parse_version("1.2.3", "version")
+                .expect("version should parse")
+                .minor,
+            2
+        );
+        assert!(super::parse_version("1.2", "version").is_err());
     }
 
     #[test]

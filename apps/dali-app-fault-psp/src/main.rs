@@ -15,7 +15,7 @@ const TEST_INVALID_PSP_SERVICE: u32 = dali::svc::TEST_INVALID_PSP_SERVICE;
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log_v3(TEST_MESSAGE);
+    let _ = dali::log(TEST_MESSAGE);
     let _ = unsafe { trigger_invalid_psp() };
     loop {
         core::hint::spin_loop();
