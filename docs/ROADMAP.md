@@ -131,6 +131,25 @@ This work starts only when a second board in an existing family or a first
 board in a new family is introduced. Until then, the current F405 backend
 facade is the intended minimum boundary and no empty family crate is needed.
 
+### Post-MVP device lifecycle
+
+These tasks are intentionally deferred until the current security hardware
+tests and single-application isolation foundation are accepted. They improve
+operator experience and runtime resilience without changing the boot-only
+storage contract during the current MVP work.
+
+- [ ] Add console-session auto-reconnect after target reset and USB CDC
+  re-enumeration; preserve the existing bounded log delivery contract and
+  report reconnect state explicitly.
+- [ ] Define a hardware-neutral storage lifecycle contract with explicit
+  `Unavailable`, `Present`, `Ready`, `Removed`, and `Fault` states.
+- [ ] Add bounded storage health checks and safe SDIO reinitialization for
+  card insertion/removal while the kernel is in an idle or recovery loop.
+- [ ] Add hardware evidence for card removal, reinsertion, repeated reset, and
+  recovery without treating a transient physical disconnect as a kernel panic.
+- [ ] Extend the lifecycle contract to future storage backends such as eMMC,
+  NVMe, or SSD without adding backend-specific conditions to kernel policy.
+
 ### ABI selector foundation
 
 - [x] Centralize the active ABI selector and keep versioned Cargo feature names
