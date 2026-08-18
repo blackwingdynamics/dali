@@ -309,6 +309,17 @@ features enable capabilities and select pins/clocks separately.
 
 The MVP does not need package installation, deletion, hot swap, or write support. SD-card replacement requires a reboot. The first acceptance application proves execution through a deterministic LED pattern and bounded application logging.
 
+### Future multi-application package selection
+
+The current read-only filesystem contract intentionally accepts exactly one
+root `.amrn` package and rejects ambiguous selection. Before multiple
+applications can be loaded into independent slots, Dali must define package
+identity and selection independently from filenames, an explicit mapping from
+the selected package to a manifest-owned slot, and bounded behavior for
+missing, duplicate, incompatible, or already-reserved packages. The slot
+manager must consume that validated selection; it must not infer ownership from
+directory order or package names.
+
 ## 11. Future kernel architecture
 
 After the MVP, the platform can grow toward:
