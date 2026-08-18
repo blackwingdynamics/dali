@@ -103,7 +103,7 @@ kernel/src/
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,slots.rs}
 ├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
-└── storage/{mod.rs,filesystem.rs}
+└── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports
