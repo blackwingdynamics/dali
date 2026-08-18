@@ -144,11 +144,7 @@ extern "C" fn handle_usage_fault(frame_address: u32, exception_return: u32) -> !
 }
 
 extern "C" fn handle_hard_fault(exception_return: u32) -> ! {
-    let status = unsafe {
-        // SAFETY: Cortex-M4 exposes SCB at this architectural address and the
-        // privileged fault handler owns this diagnostic read.
-        (&*cortex_m::peripheral::SCB::PTR).cfsr.read()
-    };
+    let status = super::scb::read_cfsr();
     let kind = if status & BUSFAULT_STATUS_MASK != 0 {
         FaultKind::BusFault
     } else {
@@ -171,7 +167,7 @@ fn application_frame_address(exception_return: u32) -> u32 {
 
 fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32) -> ! {
     let (status, fault_address) = read_status(kind);
-    let frame = if kind == FaultKind::UsageFault && status & USAGEFAULT_INVALID_PC != 0 {
+    let frame = if status & USAGEFAULT_INVALID_PC != 0 {
         None
     } else {
         read_application_frame(frame_address, exception_return)
@@ -197,18 +193,17 @@ fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32)
 }
 
 fn read_status(kind: FaultKind) -> (u32, Option<u32>) {
-    unsafe {
-        // SAFETY: The SCB register block is an architectural MMIO region, and
-        // these reads occur in privileged fault-handler context.
-        let scb = &*cortex_m::peripheral::SCB::PTR;
-        let status = scb.cfsr.read();
-        let fault_address = match kind {
-            FaultKind::MemManage if status & MEMMANAGE_ADDRESS_VALID != 0 => Some(scb.mmfar.read()),
-            FaultKind::BusFault if status & BUSFAULT_ADDRESS_VALID != 0 => Some(scb.bfar.read()),
-            _ => None,
-        };
-        (status, fault_address)
-    }
+    let status = super::scb::read_cfsr();
+    let fault_address = match kind {
+        FaultKind::MemManage if status & MEMMANAGE_ADDRESS_VALID != 0 => {
+            Some(super::scb::read_mmfar())
+        }
+        FaultKind::BusFault if status & BUSFAULT_ADDRESS_VALID != 0 => {
+            Some(super::scb::read_bfar())
+        }
+        _ => None,
+    };
+    (status, fault_address)
 }
 
 fn read_application_frame(frame_address: u32, exception_return: u32) -> Option<ExceptionFrame> {

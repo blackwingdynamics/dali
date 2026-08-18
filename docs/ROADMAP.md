@@ -425,8 +425,7 @@ protection boundary is implemented and accepted.
 - [x] Add a feature-gated no-frame HardFault recovery path for exception-entry
   failures where an application stack frame is not valid.
 - [x] Implement MPU and privilege transition for one application only; keep
-  no-frame, watchdog, repeatability, DMA, and multi-application evidence
-  pending.
+  watchdog, repeatability, DMA, and multi-application evidence pending.
 - [x] Implement the SVC gateway and versioned service dispatch; rejection
   evidence is recorded below.
 - [x] Implement a privileged fault boundary that records the fault context and
@@ -440,6 +439,7 @@ protection boundary is implemented and accepted.
 - [x] Add a non-production F405 BusFault-address fault-injection application.
 - [x] Add a non-production F405 invalid-execution fault-injection application.
 - [x] Add a non-production F405 invalid-PSP fault-injection application.
+- [x] Add a non-production F405 no-frame HardFault fault-injection application.
 - [x] Add a non-production F405 SVC rejection-matrix application.
 - [x] Add F405 SWD fault-injection tests for kernel RAM, peripherals, invalid
   execution, PSP bounds, and application service calls.
@@ -549,9 +549,23 @@ A follow-up run using the test-only SVC fixture on 2026-08-17 produced:
 ```
 
 This confirms the invalid-PSP exception-return rejection and kernel recovery
-on the F405. The `INVPC` diagnostic frame refinement remains pending one
-follow-up hardware retest; no-frame HardFault recovery remains a separate
-open test.
+on the F405. The `INVPC` diagnostic frame is intentionally omitted when the
+status indicates an invalid exception return.
+
+The no-frame HardFault fixture was verified on the F405 through the Pico
+CMSIS-DAP probe. GDB stopped at each kernel boundary in order:
+
+```text
+HardFault
+handle_hard_fault
+handle_with_frame(kind=HardFault, frame_address=0x20010004, exception_return=0xFFFFFFFD)
+recover
+```
+
+The SCB reported `CFSR=0x00040000` (`INVPC`) while UsageFault was disabled,
+and the recovery function entered its kernel-owned `WFI` loop. This proves
+no-frame HardFault recovery through SWD/GDB; the debugger's post-fault unwind
+message is not used as acceptance evidence.
 
 The SVC rejection matrix was run on 2026-08-16 on the F405 using the
 `dali-app-svc-rejections` package and the Pico CMSIS-DAP probe. The application
@@ -626,11 +640,10 @@ Compilation and host tests do not replace hardware evidence.
   messages, and invalid UTF-8.
 - [x] Precise F405 BusFault decoding with `CFSR`, `BFAR`, stacked `PC/LR`, and
   kernel recovery.
+- [x] No-frame HardFault recovery verified through SWD/GDB boundary tracing.
 
 ### Remaining single-application isolation tests
 
-- [ ] Hardware verification of no-frame HardFault recovery when exception
-  entry cannot produce a valid application frame.
 - [ ] Verify valid SVC calls and service authorization/capability policy.
 - [ ] Verify watchdog behavior after application termination and recovery.
 - [ ] Verify fault-status clearing and repeatability across repeated resets.

@@ -13,6 +13,8 @@ pub const STATUS_OK: u32 = 0;
 pub const STATUS_REJECTED: u32 = 1;
 /// Test-only service identifier used to exercise invalid PSP recovery.
 pub const TEST_INVALID_PSP_SERVICE: u32 = 0xFFFF_FF01;
+/// Test-only service identifier used to exercise no-frame HardFault recovery.
+pub const TEST_NO_FRAME_HARDFAULT_SERVICE: u32 = 0xFFFF_FF02;
 
 /// Returns whether a non-null range is fully contained in a declared region.
 pub const fn contains_range(

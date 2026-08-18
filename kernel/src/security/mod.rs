@@ -4,6 +4,9 @@
 mod fault;
 
 #[cfg(feature = "abi-current")]
+mod scb;
+
+#[cfg(feature = "abi-current")]
 pub(crate) mod launch;
 
 #[cfg(feature = "abi-current")]

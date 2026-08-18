@@ -87,6 +87,10 @@ fn dispatch(frame: &mut ExceptionFrame, memory: IsolationMemoryProfile) {
         Some(ServiceId::Log) => dispatch_log(frame, memory),
         #[cfg(feature = "abi-test-fixtures")]
         None if frame.r0 == dali::svc::TEST_INVALID_PSP_SERVICE => dispatch_invalid_psp(memory),
+        #[cfg(feature = "abi-test-fixtures")]
+        None if frame.r0 == dali::svc::TEST_NO_FRAME_HARDFAULT_SERVICE => {
+            dispatch_no_frame_hardfault(memory)
+        }
         None => ServiceStatus::rejected(),
     };
     frame.r0 = status.0;
@@ -105,6 +109,17 @@ fn dispatch_invalid_psp(memory: IsolationMemoryProfile) -> ServiceStatus {
         cortex_m::register::psp::write(invalid_psp);
     }
     ServiceStatus::accepted()
+}
+
+#[cfg(feature = "abi-test-fixtures")]
+fn dispatch_no_frame_hardfault(memory: IsolationMemoryProfile) -> ServiceStatus {
+    const USAGEFAULT_ENABLE_BIT: u32 = 1 << 18;
+    // This path is compiled only for the non-production fixture kernel.
+    // Disabling UsageFault forces the deliberate INVPC condition to escalate
+    // through the HardFault entry under test.
+    let shcsr = super::scb::read_shcsr();
+    super::scb::write_shcsr(shcsr & !USAGEFAULT_ENABLE_BIT);
+    dispatch_invalid_psp(memory)
 }
 
 fn dispatch_log(frame: &ExceptionFrame, memory: IsolationMemoryProfile) -> ServiceStatus {

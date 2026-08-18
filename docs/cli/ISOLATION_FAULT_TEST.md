@@ -246,9 +246,32 @@ The F405 hardware run on 2026-08-17 produced:
 
 This is successful hardware evidence for invalid-PSP exception-return
 rejection and kernel recovery. The `0x00040000` status is the Cortex-M4
-`INVPC` UsageFault bit. The diagnostic decoder is being tightened to report no
-application frame for this no-valid-frame condition; that refinement requires
-one follow-up hardware retest.
+`INVPC` UsageFault bit. The diagnostic decoder reports no application frame for
+this no-valid-frame condition.
+
+## No-frame HardFault test
+
+Build and package the no-frame fixture:
+
+```text
+cd apps/dali-app-fault-no-frame
+dali app build
+```
+
+Copy `target/thumbv7em-none-eabihf/debug/dali-app-fault-no-frame.amrn` to the
+SD-card root and build the test kernel with the same `abi-test-fixtures`
+features shown above. The fixture emits:
+
+```text
+[INFO][APP] Fault injection: no-frame HardFault
+```
+
+The F405 test was verified through the Pico CMSIS-DAP probe and GDB. The
+execution reached `HardFault`, `handle_hard_fault`,
+`handle_with_frame(kind=HardFault)`, and `recover` in order. The SCB reported
+`CFSR=0x00040000` (`INVPC`) with UsageFault disabled, and recovery entered the
+kernel-owned `WFI` loop. This is SWD/GDB evidence for no-frame recovery; the
+debugger's post-fault unwind output is not itself a pass criterion.
 
 ## SVC rejection-matrix test
 
