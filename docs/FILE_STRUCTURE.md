@@ -29,7 +29,9 @@ dali-kernel/
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
 │       │   ├── board.rs            # F405 hardware resources and board API
 │       │   ├── sdio.rs             # F405 SDIO transport implementation
-│       │   └── sdio_raw.rs         # F405 SDIO register transport
+│       │   └── sdio_raw/           # F405 SDIO register transport
+│       │       ├── mod.rs          # DMA-backed raw block reader
+│       │       └── status.rs       # SDIO status and interrupt helpers
 │       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader/mod.rs           # AMRN dispatch and ABI services
@@ -92,7 +94,7 @@ kernel/src/
 ├── main.rs
 ├── abi.rs
 ├── security/{mod.rs,mpu/{mod.rs},fault.rs,launch.rs,scb.rs,svc.rs}
-├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw.rs}}
+├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,status.rs}}}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,contract.rs,v3.rs,v3_relocatable.rs,v4.rs}
