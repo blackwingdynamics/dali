@@ -23,6 +23,9 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let format_version = manifest
         .format_version
         .unwrap_or(abi_contract.default_format_version);
+    if manifest.slot_name.is_some() && format_version != dali_amrn::v3::FORMAT_VERSION {
+        return Err("manifest slot selection requires AMRN format version 3".to_owned());
+    }
     build::validate_target_capabilities(target_profile, abi_version, Some(format_version))?;
     if !abi_contract.supports_format(format_version) {
         return Err(format!(
@@ -72,13 +75,7 @@ fn build_relocatable_v3_package(
     target: &str,
     release: bool,
 ) -> Result<Vec<u8>, String> {
-    let isolation = target_profile
-        .memory
-        .isolation
-        .ok_or_else(|| "target does not declare ABI v3 isolation memory".to_owned())?;
-    let slot = isolation
-        .active_slot()
-        .ok_or_else(|| "target does not declare an application slot".to_owned())?;
+    let slot = build::application_slot(target_profile, manifest.slot_name.as_deref())?;
     let code = artifacts::code_path(project_directory, target, release, &manifest.name);
     let data = artifacts::data_path(project_directory, target, release, &manifest.name);
     let elf = artifacts::elf_path(project_directory, target, release, &manifest.name);
@@ -137,13 +134,7 @@ fn build_v3_package(
     target: &str,
     release: bool,
 ) -> Result<Vec<u8>, String> {
-    let isolation = target_profile
-        .memory
-        .isolation
-        .ok_or_else(|| "target does not declare ABI v3 isolation memory".to_owned())?;
-    let slot = isolation
-        .active_slot()
-        .ok_or_else(|| "target does not declare an application slot".to_owned())?;
+    let slot = build::application_slot(target_profile, None)?;
     let code = artifacts::code_path(project_directory, target, release, &manifest.name);
     let data = artifacts::data_path(project_directory, target, release, &manifest.name);
     let code_bytes = fs::read(&code)

@@ -9,3 +9,4 @@ abi_version = {{ abi_version }}
 profile = "dev"
 entry_symbol = "amiran_entry"
 entry_offset = 0
+# Optional manifest-owned slot name; format version 3 supports non-zero slots.

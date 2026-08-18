@@ -97,6 +97,17 @@ multi-application isolation, or watchdog support.
   16 KiB code/data slots: AMRN loaded with code `0x20008000` and data
   `0x2000C000`, invalid-PSP recovery remained `UsageFault 0x00040000`.
 
+### Host relocation and non-zero slot evidence
+
+- [x] The relocation fixture was packaged with AMRN format 3 using the
+  manifest-owned `slot = "slot1"` selection. Its linked bases remained code
+  `0x20008000` and data `0x2000C000`, while the package load addresses were
+  code `0x20010000` and data `0x20014000`.
+- [x] Host inspection accepted the slot1 package with 49 retained relocation
+  records, 8 bytes of initialized data, and 4 bytes of zero-initialized data.
+- [ ] F405 hardware execution of the same relocated slot1 package remains
+  pending; host packaging and inspection do not prove runtime relocation.
+
 ### Diagnostic evidence
 
 - Precise kernel-RAM read decoding preserved `CFSR=0x00000082`,

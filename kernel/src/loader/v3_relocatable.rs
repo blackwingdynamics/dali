@@ -16,10 +16,8 @@ pub(crate) fn load_file<D>(file: AmrnFile<'_, D>) -> Result<LoadedApplication, s
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    let contract = target_contract().ok_or(super::LoaderError::UnsupportedV3Target)?;
     let header = read_header(&file)?;
-    let header =
-        v3::parse_header(&header, contract).map_err(super::LoaderError::V3RelocationPackage)?;
+    let (header, contract) = parse_target_header(&header)?;
     let relocation_offset = u32::try_from(v3::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.code_size))
@@ -66,20 +64,29 @@ where
     })
 }
 
-fn target_contract() -> Option<v3::Contract> {
+fn parse_target_header(
+    bytes: &[u8; v3::HEADER_SIZE],
+) -> Result<(v3::Header, v3::Contract), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
-    let isolation = target.memory.isolation?;
-    let slot = crate::runtime::slots::SlotManager::new(isolation.slots)
-        .ok()?
-        .allocate()?;
-    let slot = slot.slot();
-    Some(v3::Contract {
-        target_id: target.amrn_target_id,
-        code_load_address: slot.code_origin,
-        code_capacity: slot.code_length,
-        data_load_address: slot.data_origin,
-        data_capacity: slot.data_length,
-    })
+    let isolation = target
+        .memory
+        .isolation
+        .ok_or(super::LoaderError::UnsupportedV3Target)?;
+    let mut last_error = v3::Error::InvalidHeader;
+    for slot in isolation.slots.iter().copied() {
+        let contract = v3::Contract {
+            target_id: target.amrn_target_id,
+            code_load_address: slot.code_origin,
+            code_capacity: slot.code_length,
+            data_load_address: slot.data_origin,
+            data_capacity: slot.data_length,
+        };
+        match v3::parse_header(bytes, contract) {
+            Ok(header) => return Ok((header, contract)),
+            Err(error) => last_error = error,
+        }
+    }
+    Err(super::LoaderError::V3RelocationPackage(last_error))
 }
 
 fn prepare_launch(

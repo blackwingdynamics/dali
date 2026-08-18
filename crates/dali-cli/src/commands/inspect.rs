@@ -137,18 +137,25 @@ fn inspect_v3_bytes(package: &[u8]) -> Result<String, String> {
         .memory
         .isolation
         .ok_or_else(|| format!("target {} has no ABI v3 memory contract", target.name))?;
-    let slot = isolation
-        .active_slot()
-        .ok_or_else(|| format!("target {} has no application slot", target.name))?;
-    let contract = dali_amrn::v3::Contract {
-        target_id,
-        code_load_address: slot.code_origin,
-        code_capacity: slot.code_length,
-        data_load_address: slot.data_origin,
-        data_capacity: slot.data_length,
-    };
-    let parsed = dali_amrn::v3::parse(package, contract)
-        .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
+    let mut parsed = None;
+    let mut last_error = dali_amrn::v3::Error::InvalidHeader;
+    for slot in isolation.slots.iter().copied() {
+        let contract = dali_amrn::v3::Contract {
+            target_id,
+            code_load_address: slot.code_origin,
+            code_capacity: slot.code_length,
+            data_load_address: slot.data_origin,
+            data_capacity: slot.data_length,
+        };
+        match dali_amrn::v3::parse(package, contract) {
+            Ok(value) => {
+                parsed = Some(value);
+                break;
+            }
+            Err(error) => last_error = error,
+        }
+    }
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
     Ok(format!(
         "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\nlinked_code_base: 0x{:08X}\nlinked_data_base: 0x{:08X}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nrelocation_count: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
         dali_amrn::v3::FORMAT_VERSION,
@@ -184,18 +191,25 @@ fn inspect_v2_bytes(package: &[u8]) -> Result<String, String> {
         .memory
         .isolation
         .ok_or_else(|| format!("target `{}` has no ABI v3 memory contract", target.name))?;
-    let slot = isolation
-        .active_slot()
-        .ok_or_else(|| format!("target `{}` has no application slot", target.name))?;
-    let contract = dali_amrn::v2::Contract {
-        target_id,
-        code_load_address: slot.code_origin,
-        code_capacity: slot.code_length,
-        data_load_address: slot.data_origin,
-        data_capacity: slot.data_length,
-    };
-    let parsed = dali_amrn::v2::parse(package, contract)
-        .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
+    let mut parsed = None;
+    let mut last_error = dali_amrn::v2::Error::InvalidHeader;
+    for slot in isolation.slots.iter().copied() {
+        let contract = dali_amrn::v2::Contract {
+            target_id,
+            code_load_address: slot.code_origin,
+            code_capacity: slot.code_length,
+            data_load_address: slot.data_origin,
+            data_capacity: slot.data_length,
+        };
+        match dali_amrn::v2::parse(package, contract) {
+            Ok(value) => {
+                parsed = Some(value);
+                break;
+            }
+            Err(error) => last_error = error,
+        }
+    }
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
     Ok(format!(
         "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
         dali_amrn::v2::FORMAT_VERSION,

@@ -6,11 +6,10 @@ default production boot mode.
 
 ## Current state
 
-The current ABI v3 contract is fixed-address: code is linked for the target
-manifest's code origin and data is linked for its data origin. The loader copies
-those segments to the declared addresses and rejects packages whose addresses
-do not match the target contract. Existing packages remain valid under this
-contract.
+AMRN format 2 remains fixed-address: code is linked for the target manifest's
+active slot and data is linked for its data origin. Format 3 adds explicit
+relocation metadata and a manifest-owned destination slot. Both formats remain
+feature-gated in the kernel, and existing format 2 packages remain valid.
 
 Compiler options such as `-C relocation-model=pic` or `-C relocation-model=rwpi`
 are not, by themselves, a Dali relocation contract. A final linked ELF may
@@ -33,10 +32,10 @@ ARM RWPI register convention in every application and SDK library. PIC/RWPI
 may be evaluated later as an alternative ABI, but it is not part of this
 contract.
 
-## Package contract for a future format revision
+## Format 3 package contract
 
-The current AMRN v1 and v2 formats remain unchanged. A future format revision
-will add a relocation-table descriptor containing:
+The current AMRN v1 and v2 formats remain unchanged. Format 3 adds a
+relocation-table descriptor containing:
 
 - relocation table offset and byte length;
 - relocation entry size and table version;
@@ -67,10 +66,11 @@ explicitly defines a kernel service or shared-memory relocation. A relocation
 must never manufacture a pointer to kernel RAM, peripheral space, an interrupt
 vector, or an arbitrary external address.
 
-The loader will calculate each final address from the selected slot metadata;
-it will not infer a slot from a package filename or use a fixed application
-address as a fallback. The selected code and data regions must satisfy the
-target manifest's alignment, capacity, MPU, and non-overlap constraints.
+The loader calculates each final address from the manifest slot whose declared
+code and data load addresses match the package header. It does not infer a
+slot from a package filename or use a fixed application address as a fallback.
+The selected code and data regions must satisfy the target manifest's
+alignment, capacity, MPU, and non-overlap constraints.
 
 ## Build and load pipeline
 
@@ -83,7 +83,7 @@ target manifest's alignment, capacity, MPU, and non-overlap constraints.
    revision.
 4. Host validation checks every relocation's bounds, kind, alignment, range,
    and resulting address before the package is copied to storage.
-5. The kernel validates the package, selects a free slot, applies relocations
+5. The kernel validates the package, selects the manifest-declared slot, applies relocations
    within the validated application regions, clears zero data, configures MPU
    regions, and enters the relocated entry point.
 6. The kernel rejects the package without copying or jumping if any relocation
@@ -100,8 +100,9 @@ The AMRN crate also contains a host-side patcher for the supported relocation
 operations. It applies code/data deltas to ABS32, Thumb call, Thumb MOVW, and
 Thumb MOVT patches with instruction-shape, range, alignment, and bounds checks.
 The feature-gated kernel loader validates and applies the same operations from
-a bounded SD stream before preparing the MPU launch frame. It currently uses
-the target manifest's declared origins and does not select multiple slots.
+a bounded SD stream before preparing the MPU launch frame. It selects a
+manifest-declared slot by the package's validated load addresses, but does not
+allocate slots for concurrent applications.
 
 ## Slot-manager prerequisite
 
@@ -112,9 +113,9 @@ buffers, and moves kernel runtime/static state/stack to the 64 KiB CCM region.
 The final 32 KiB remains the target's runtime/shared-memory reserve.
 
 The manifest-owned slot table now drives the application linker, package
-contract, loader, and MPU active-slot boundaries. The slot manager must never
-infer slots from arithmetic on addresses; slot 1 activation and concurrent
-execution remain future work.
+contract, loader, and MPU slot boundaries. The slot manager must never infer
+slots from arithmetic on addresses. Concurrent allocation, restart, and
+context switching remain future work.
 
 ## Required evidence before implementation
 
@@ -131,6 +132,12 @@ The fixture must be built at two distinct linked bases, and host tests must
 show that applying the same relocation metadata produces equivalent runtime
 addresses at two valid slots. Hardware execution is required after the host
 contract tests pass.
+
+The relocation fixture currently links against slot 0, declares `slot =
+"slot1"` in its application manifest, and produces a format 3 package whose
+code/data load addresses target slot 1. The CLI can build and inspect this
+package on the host. Slot 1 execution on the F405 remains a separate hardware
+acceptance step.
 
 ## Initial linker evidence
 

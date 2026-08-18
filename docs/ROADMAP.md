@@ -565,11 +565,15 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Validate extracted relocation records through the AMRN v3 host encoder
   and emit/inspect the AMRN v3 package behind an explicit manifest format
   selection.
+- [x] Add manifest-owned relocation slot selection and build/inspect the
+  relocation fixture for non-zero slot 1 on the host; detailed output is in
+  `docs/TESTING.md`.
 - [x] Add relocation patch decoders and host tests for each supported ARM kind.
 - [x] Implement bounded kernel-side relocation application before MPU launch.
 - [x] Execute a format 3 relocation fixture on F405 hardware at the canonical
   manifest origins.
-- [ ] Execute the same relocation metadata with a non-zero slot delta.
+- [ ] Execute the same relocation metadata with a non-zero slot delta on F405
+  hardware.
 - [x] Define the F405 multi-slot memory contract: two 16 KiB
   code/data pairs, 32 KiB DMA-visible SRAM, and CCM kernel runtime storage.
 - [x] Generate the F405 kernel linker memory map from target metadata, placing

@@ -18,6 +18,7 @@ pub(super) struct ApplicationManifest {
     pub(super) entry_offset: u32,
     pub(super) abi_version: Option<u8>,
     pub(super) format_version: Option<u8>,
+    pub(super) slot_name: Option<String>,
 }
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
@@ -112,6 +113,7 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
                 .map_err(|_| "dali.toml contains an invalid format_version".to_owned())
         })
         .transpose()?;
+    let slot_name = optional_value(contents, "slot");
     Ok(ApplicationManifest {
         name,
         target_profile,
@@ -119,7 +121,29 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
         entry_offset,
         abi_version,
         format_version,
+        slot_name,
     })
+}
+
+pub(super) fn application_slot(
+    target: &dali_targets::TargetProfile,
+    slot_name: Option<&str>,
+) -> Result<dali_targets::IsolationSlot, String> {
+    let isolation = target
+        .memory
+        .isolation
+        .ok_or_else(|| "target does not declare isolation memory".to_owned())?;
+    match slot_name {
+        Some(name) => isolation
+            .slots
+            .iter()
+            .copied()
+            .find(|slot| slot.name == name)
+            .ok_or_else(|| format!("target does not declare application slot `{name}`")),
+        None => isolation
+            .active_slot()
+            .ok_or_else(|| "target does not declare an application slot".to_owned()),
+    }
 }
 
 pub(super) fn target_profile(name: &str) -> Result<&'static dali_targets::TargetProfile, String> {
@@ -291,6 +315,7 @@ mod tests {
         assert_eq!(manifest.profile, RELEASE_PROFILE);
         assert_eq!(manifest.entry_offset, 0);
         assert_eq!(manifest.format_version, None);
+        assert_eq!(manifest.slot_name, None);
     }
 
     #[test]
@@ -313,6 +338,15 @@ mod tests {
         )
         .expect("manifest should parse");
         assert_eq!(manifest.format_version, Some(3));
+    }
+
+    #[test]
+    fn parses_manifest_owned_slot_selection() {
+        let manifest = parse_manifest(
+            "name = \"telemetry\"\ntarget_profile = \"f405\"\nentry_offset = 0\nformat_version = 3\nslot = \"slot1\"",
+        )
+        .expect("manifest should parse");
+        assert_eq!(manifest.slot_name.as_deref(), Some("slot1"));
     }
 
     #[test]
