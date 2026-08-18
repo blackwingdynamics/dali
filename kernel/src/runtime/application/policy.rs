@@ -74,30 +74,31 @@ pub const CURRENT: LifecyclePolicy = LifecyclePolicy::current();
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn keeps_faulted_application_in_kernel_recovery() {
         assert_eq!(
-            CURRENT.fault_recovery(),
-            FaultRecoveryAction::EnterKernelHeartbeat
+            super::CURRENT.fault_recovery(),
+            super::FaultRecoveryAction::EnterKernelHeartbeat
         );
-        assert_eq!(CURRENT.restart(), RestartPolicy::ManualResetOnly);
+        assert_eq!(
+            super::CURRENT.restart(),
+            super::RestartPolicy::ManualResetOnly
+        );
     }
 
     #[test]
     fn rejects_rollback_without_writable_package_storage() {
         assert_eq!(
-            CURRENT.rollback(),
-            RollbackPolicy::UnavailableOnReadOnlyStorage
+            super::CURRENT.rollback(),
+            super::RollbackPolicy::UnavailableOnReadOnlyStorage
         );
     }
 
     #[test]
     fn does_not_arm_a_watchdog_without_a_feed_owner() {
         assert_eq!(
-            CURRENT.watchdog(),
-            WatchdogPolicy::DisabledUntilHeartbeatContract
+            super::CURRENT.watchdog(),
+            super::WatchdogPolicy::DisabledUntilHeartbeatContract
         );
     }
 }
