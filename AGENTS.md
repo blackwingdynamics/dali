@@ -14,10 +14,16 @@ The first milestone is deliberately narrow:
 4. discover an `.amrn` package in the card root;
 5. validate a fixed 32-byte AMRN header and CRC32 payload checksum;
 6. load a native payload into the reserved SRAM region at `0x20008000`;
-7. transfer control to `unsafe extern "C" fn() -> !`;
+7. transfer control to `unsafe extern "C" fn(*const ServiceTable) -> !`;
 8. verify execution through a deterministic application LED pattern.
 
-The MVP application is trusted native code. It is not sandboxed, isolated, signed, encrypted, dynamically linked, or interrupt-owning.
+The MVP application is trusted native code. It is not sandboxed, isolated,
+signed, encrypted, dynamically linked, or interrupt-owning. The repository also
+contains feature-gated ABI v3 single-application processor-side isolation and
+AMRN v3/v4 loader paths; these are not the default MVP configuration and must
+not be described as complete sandboxing, secure boot, DMA isolation, or
+multi-application isolation. See `docs/SECURITY.md`, `docs/ABI.md`, and
+`docs/TESTING.md` for the current evidence boundary.
 
 ## 2. Source of truth
 
@@ -120,7 +126,7 @@ The loader must reject invalid magic, version, target, sizes, offsets, addresses
 ### ABI
 
 ```rust
-unsafe extern "C" fn() -> !
+unsafe extern "C" fn(*const ServiceTable) -> !
 ```
 
 MVP applications do not own interrupts, do not use a scheduler, do not access kernel-private symbols, and do not depend on shared RTT logging.
@@ -149,6 +155,22 @@ While editing:
 - use English for all code, comments, logs, errors, and documentation;
 - update documentation when behavior or a contract changes;
 - add tests or record hardware evidence for the affected behavior.
+
+### No fake hardware or substitute fixtures
+
+- Do not create fake hardware, fake devices, fake storage, fake readers, or
+  simulated runtime behavior as a substitute for the real implementation or
+  hardware acceptance.
+- A test application is allowed only when it is a real compiled package that
+  exercises the documented contract on the target; it must not stand in for a
+  missing kernel or device implementation.
+- Host tests are allowed only for genuinely hardware-neutral codecs,
+  validators, and pure contracts using caller-owned byte slices or explicit
+  test values. They must never be described as hardware evidence.
+- Storage, loader, slot-allocation, fault, and lifecycle behavior that depends
+  on device state must be verified through the real implementation and the
+  required target hardware; if hardware is unavailable, record the limitation
+  instead of inventing a substitute.
 
 After editing:
 
@@ -236,7 +258,7 @@ Changelogs are generated from commit history by `git-cliff`. Do not edit release
 
 - Do not expand the MVP without a roadmap and contract update.
 - Do not claim sandboxing, secure boot, authenticity, memory isolation, or fault isolation before implementation and evidence exist.
-- Do not add dynamic linking, relocation, application-owned interrupts, or SDK APIs prematurely.
+- Do not add dynamic linking, new relocation contracts, application-owned interrupts, or SDK APIs prematurely.
 - Do not overwrite user changes or use destructive Git commands.
 - Do not commit `target/`, binaries, secrets, credentials, or local IDE files.
 - Do not make external messages, releases, or repository settings changes unless explicitly requested.

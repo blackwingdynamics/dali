@@ -1,4 +1,8 @@
-# Dali OS
+<p align="center">
+  <img src="docs/assets/dali-logo.svg" alt="Dali OS logo" width="220">
+</p>
+
+<!-- # Dali OS -->
 
 Dali OS is a Rust-based embedded operating system for STM32 microcontrollers and future autonomous or industrial devices.
 
@@ -6,9 +10,12 @@ The project is named after Dali, the Georgian goddess of the hunt. Its applicati
 
 ## Status
 
-Dali OS is in the early MVP stage.
+Dali OS `0.1.0-alpha.1` is the first accepted F405 MVP release. The project
+also contains a feature-gated ABI v3 single-application isolation path and an
+AMRN v4 identity/relocation loader; these remain post-MVP platform features.
 
-The first milestone targets an STM32F411CEU6 WeAct BlackPill and proves that the kernel can:
+The accepted baseline targets the WeAct Studio STM32F405RGT6 Core Board and
+proves that the kernel can:
 
 - boot as a `no_std` Rust binary;
 - read an `.amrn` package from a FAT16/FAT32 SD card;
@@ -16,7 +23,10 @@ The first milestone targets an STM32F411CEU6 WeAct BlackPill and proves that the
 - load its native ARM payload into reserved SRAM;
 - transfer control to the documented application entry point.
 
-The MVP application is trusted native code. Sandboxing, memory isolation, signed packages, and application fault isolation are not implemented yet.
+The baseline ABI v2 application is trusted native code. The feature-gated ABI
+v3 path provides tested processor-side isolation for one application, but Dali
+OS does not yet claim complete sandboxing, DMA isolation, signed packages,
+secure boot, or multi-application isolation.
 
 ## Architecture
 
@@ -30,13 +40,15 @@ Dali OS loader
 Dali OS kernel
           |
           v
-STM32F411 hardware
+STM32F405 hardware
 ```
 
-The MVP uses a fixed application load address of `0x20008000`, a 32-byte package header, CRC32 integrity validation, and the following entry ABI:
+The baseline ABI v2 uses a fixed application load address of `0x20008000`, a
+32-byte package header, CRC32 integrity validation, and the following entry
+ABI:
 
 ```rust
-unsafe extern "C" fn() -> !
+unsafe extern "C" fn(*const ServiceTable) -> !
 ```
 
 ## Workspace
@@ -51,17 +63,16 @@ docs/                 Architecture and development documentation
 
 ## Reference hardware
 
-- MCU: STM32F411CEU6
-- Board: WeAct BlackPill
+- MCU: STM32F405RGT6
+- Board: WeAct Studio STM32F405RGT6 Core Board
 - Target: `thumbv7em-none-eabihf`
-- Clock target: 100 MHz
-- Status LED: PC13
-- SD interface: SPI1
+- Clock target: 168 MHz
+- Status LED: PB2
+- SD interface: hardware SDIO, 4-bit mode
 
-The repository also includes a compile-time backend for the WeAct Studio
-STM32F405RGT6 Core Board. Its on-board microSD socket uses the STM32 hardware
-SDIO peripheral in 4-bit mode. The F411 BlackPill remains the MVP reference
-board; the F405 board is currently intended for storage bring-up.
+The F411 profile is generator-only and is not a current kernel execution
+target. The Pico 2 is used as an external CMSIS-DAP SWD probe, not as a Dali
+kernel target.
 
 ## Development
 

@@ -39,15 +39,18 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 The next implementation session resumes the post-v4 multi-application work in
 this order:
 
-1. Add a hardware-neutral multi-package discovery and identity-selection
-   contract, including deterministic rejection of duplicate identities and
-   occupied slots.
-2. Extend the host fake-reader fixtures to load two independent v4 packages
-   into slot0 and slot1 and verify code/data range containment.
-3. Integrate the bounded two-slot load path without enabling concurrent
-   execution or context switching.
-4. Run host and target validation before scheduling the corresponding F405
-   hardware test.
+1. [x] Add the hardware-neutral multi-package identity and slot catalog,
+   including deterministic rejection of duplicate identities and occupied
+   slots.
+2. [x] Enumerate real root-directory packages and feed their validated v4
+   metadata into the catalog; F405 discovery and catalog rejection are
+   hardware-verified.
+3. [x] Integrate the bounded two-slot load path without enabling concurrent
+   execution or context switching; the runtime still enters only the first
+   loaded context.
+4. [x] Run host and target validation and verify bounded two-package loading
+   on F405 hardware. Full multi-application isolation and context switching
+   remain separate work.
 - A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.
 - FAT long-file-name enumeration now discovers host-created packages with the four-character `.amrn` extension without a package-name assumption.
 - The `dali-amrn` crate decodes the fixed header, validates payload bounds and entry metadata, and verifies CRC32 with 15 host tests.
@@ -453,13 +456,15 @@ protection boundary is implemented and accepted.
   with validated PSP bounds and a kernel-owned exception-return selector; do
   not enable it in the default ABI v2 path.
 - [x] Add an explicitly disabled-by-default PendSV transition primitive for
-  the prepared PSP frame; keep fault recovery and acceptance evidence pending.
+  the prepared PSP frame; full concurrent scheduling remains disabled.
 - [x] Add a feature-gated kernel-stack fault recovery return that terminates the
-  application without reusing its PSP; keep hardware fault evidence pending.
+  application without reusing its PSP; hardware evidence is recorded below.
 - [x] Add a feature-gated no-frame HardFault recovery path for exception-entry
-  failures where an application stack frame is not valid.
+  failures where an application stack frame is not valid; the handler boundary
+  is SWD/GDB-tested, while full restart lifecycle semantics remain open.
 - [x] Implement MPU and privilege transition for one application only; keep
-  watchdog, repeatability, DMA, and multi-application evidence pending.
+  watchdog, DMA, and multi-application behavior pending; repeatability evidence
+  is recorded below.
 - [x] Implement the SVC gateway and versioned service dispatch; rejection
   evidence is recorded below.
 - [x] Implement a privileged fault boundary that records the fault context and
@@ -565,19 +570,41 @@ Compilation and host tests do not replace hardware evidence.
   selection, relocation, and recovery run.
 - [x] Add a kernel-side v4 selection and bounded streaming loader path without
   changing the ABI v2/v3 loaders.
-- [x] Add host-testable streaming-loader fixtures for v4 selection, bounded
-  reads, CRC, and relocation validation.
-- [x] Validate v4 selection, relocation, and recovery on F405 hardware; the
-  format 4 slot1 fixture passed AMRN validation and executed the relocation
-  proof application. Detailed evidence is in `docs/TESTING.md`.
+- [x] Add a bounded v4 identity/slot catalog that rejects duplicate identities,
+  duplicate or externally occupied slots, and discovery-order dependence.
+- [x] Add hardware-neutral AMRN v4 codec tests for selection metadata, CRC, and
+  relocation validation; streaming-loader behavior remains target-tested.
+- [x] Validate v4 selection, relocation, and successful application execution
+  on F405 hardware; the format 4 slot1 fixture passed AMRN validation and
+  executed the relocation proof application. F405 duplicate-identity and
+  occupied-slot rejection are also hardware-verified; broader recovery tests
+  remain open. Detailed evidence is in `docs/TESTING.md`.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
-- [ ] Load two applications into independent slots and verify their boundaries.
+- [x] Load two applications into independent slots and verify loader placement
+  boundaries on F405; runtime memory isolation and concurrent execution remain
+  separate work.
+- [x] Define and host-test the bounded application lifecycle state machine from
+  package discovery through terminal recovery without adding restart or
+  context switching behavior.
+- [x] Define and host-test single active-context ownership, including duplicate
+  activation rejection and terminal-only retirement without a scheduler.
+- [x] Integrate the v4 loader and MPU launch path with the lifecycle and active
+  context owner; F405 hardware confirmed `Loaded -> Ready -> Running` during
+  two-package boot and slot0 execution.
+- [x] Connect the kernel fault boundary and recovery entry to the atomic active
+  context state channel; F405 hardware verified `Faulted -> Recovering ->
+  Terminated` with the v4 invalid-PSP application fixture.
+- [x] Define the current restart and rollback policy: terminated applications
+  require a manual reset and the read-only package boundary has no rollback.
+- [x] Define the watchdog safety gate: do not arm hardware watchdogs until a
+  bounded heartbeat/feed owner contract exists.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.
-- [ ] Test application crash, restart, timeout, and watchdog lifecycle policy.
+- [x] Define application crash, restart, and rollback lifecycle policy;
+  hardware watchdog implementation remains deferred until heartbeat ownership.
 
 ### Future package and platform security tests
 

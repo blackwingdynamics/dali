@@ -87,7 +87,8 @@ multi-application isolation, or watchdog support.
 - [x] Execute-never instruction rejection with `MemManage` recovery.
 - [x] Invalid-PSP exception-entry rejection with recovery.
 - [x] Precise BusFault decoding with `CFSR`, `BFAR`, and stacked `PC/LR`.
-- [x] No-frame HardFault recovery verified through SWD/GDB boundary tracing.
+- [x] No-frame HardFault handler and kernel recovery boundary verified through
+  SWD/GDB tracing; complete application restart lifecycle remains unverified.
 - [x] SVC rejection matrix for unknown services, invalid pointers, oversized
   messages, and invalid UTF-8.
 - [x] Accepted `Log` SVC and initial service authorization policy.
@@ -124,6 +125,25 @@ multi-application isolation, or watchdog support.
   relocation records; the application executed from the selected non-zero slot.
 - [x] The probe shutdown warning after flashing was classified as a transport
   teardown event after the target continued running, not as a loader failure.
+- [x] F405 hardware loaded two distinct AMRN v4 packages in one boot: the
+  loader reported `Loaded 2 application package(s) into declared slots`, and
+  deterministic slot selection entered the slot0 fixture. A later CDC console
+  attach showed no replay because prior records had already drained.
+- [x] F405 hardware rejected two real packages carrying the same identity with
+  `PackageCatalog(DuplicateIdentity)` and entered the kernel heartbeat without
+  executing either application.
+- [x] F405 hardware rejected two real packages with different identities that
+  claimed the same slot with `PackageCatalog(SlotOccupied)` and entered the
+  kernel heartbeat without executing either application.
+- [x] F405 hardware reported both loaded packages in their manifest-owned
+  regions: slot0 code `0x20008000+16384`, data `0x2000C000+16384`, PSP top
+  `0x2000D00C`; slot1 code `0x20010000+16384`, data `0x20014000+16384`, PSP
+  top `0x2001500C`. This verifies loader placement and reservations, not
+  runtime memory isolation or concurrent execution.
+- [x] F405 hardware verified the v4 invalid-PSP lifecycle fault path. The
+  console reported `Ready`, `Running`, `UsageFault 0x00040000`, then
+  `Faulted`, `Recovering`, and `Terminated`; recovery entered the kernel
+  recovery loop without restarting the application.
 
 ### Diagnostic evidence
 
@@ -144,8 +164,12 @@ distinguished from the kernel's fault and recovery records.
 
 ## Not yet evidenced
 
-- [ ] Watchdog behavior after application termination; watchdog support is not
-  implemented yet.
+- [x] Application restart and rollback policy is explicit: termination enters
+  the kernel recovery heartbeat, automatic restart is rejected, and rollback is
+  unavailable while package storage is read-only.
+- [ ] Hardware watchdog arming, feed ownership, timeout, and safe-mode reset;
+  the watchdog remains intentionally disabled until its heartbeat contract is
+  implemented.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
@@ -158,19 +182,45 @@ distinguished from the kernel's fault and recovery records.
   image metadata, explicit slot metadata, and the extended package checksum.
 - [x] Host-level CLI tests cover v4 manifest parsing, package identity/version
   validation, target slot IDs, and v4 inspection output.
-- [x] Host-side fake-reader fixtures cover v4 bounded read order, CRC mismatch,
-  invalid relocation, and undeclared-slot rejection.
+- [x] Host-level pure catalog tests cover discovery-order-independent selection,
+  duplicate identity rejection, slot mismatch, duplicate slot rejection, and
+  externally occupied-slot rejection, including ordered selection across both
+  declared slots. These tests are not hardware evidence.
+- [x] Host-side AMRN v4 codec tests cover package bytes, CRC mismatch, and
+  invalid relocation; the loader contract test covers undeclared-slot
+  rejection. These tests are not hardware evidence.
+- [x] Host-level application lifecycle tests cover ordered discovery, loading,
+  readiness, running, fault, recovery, and terminal states; invalid skips,
+  slot mismatches, and implicit restart are rejected. These tests are
+  hardware-neutral contract evidence, not isolation or scheduler evidence.
+- [x] Host-level active-context ownership tests reject activation before
+  readiness, reject a second active context, and allow retirement only after
+  terminal recovery. These tests do not prove runtime scheduling or isolation.
+- [x] Host-level lifecycle policy tests require manual reset after termination,
+  reject rollback on the read-only package boundary, and keep the watchdog
+  disabled until a bounded heartbeat/feed owner exists.
+- [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
+  and `Running` after loading two packages; the kernel logged both slot
+  boundaries and then executed the slot0 fixture.
+- [x] F405 hardware verified the lifecycle fault path through `Faulted`,
+  `Recovering`, and `Terminated` using the v4 invalid-PSP application fixture.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.
+- [x] The slot0 fixture produces a separate AMRN format 4 package with a
+  distinct identity, manifest-selected slot0, and 49 retained relocation
+  records. Both package artifacts are ready for the two-package hardware run.
 - [x] Hardware execution of the v4 streaming loader, selection, relocation, and
-  recovery path is documented above; target compilation alone would not prove
-  this behavior.
-- [ ] Hardware two-application boundary isolation; only one application is
-  loaded and executed at a time.
+  successful application path is documented above; target compilation alone
+  would not prove this behavior. v4-specific rejection/recovery hardware tests
+  remain separate work.
+- [ ] Runtime two-application memory isolation; loader placement and slot
+  reservations are hardware-evidenced, but the runtime still enters only one
+  application and does not yet switch contexts.
 - [ ] PendSV/SysTick context switching and MPU region switching.
 - [ ] DMA isolation.
-- [ ] Application restart, timeout, and watchdog lifecycle policy.
+- [x] Application restart and rollback policy is covered by the lifecycle policy
+  contract; hardware watchdog implementation remains separate and pending.
 
 ## MVP acceptance test
 

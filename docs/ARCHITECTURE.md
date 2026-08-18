@@ -45,13 +45,21 @@ The first milestone proves one complete path on a single reference board:
 8. jump to its fixed ABI entry point;
 9. observe a deterministic application LED pattern and three application log messages.
 
-The MVP application is a RAM-loaded native module, not a sandboxed process. Kernel and application isolation is a later capability. The first application does not use interrupts or a scheduler; its only kernel service is the bounded logging entry defined by ABI v2.
+The baseline ABI v2 application is a RAM-loaded native module, not a sandboxed
+process. The first application does not use interrupts or a scheduler; its
+only kernel service is the bounded logging entry defined by ABI v2. The
+feature-gated ABI v3 path adds processor-side isolation for one application;
+its remaining limitations are recorded below.
 
-The first post-MVP isolation milestone remains a single-application F405
-execution mode. It will add privileged kernel bootstrap, unprivileged
+The first post-MVP isolation milestone is a feature-gated single-application
+F405 execution mode. It implements privileged kernel bootstrap, unprivileged
 application Thread mode, PSP ownership, MPU regions, SVC-based services, and a
-kernel-owned fault boundary. It must not be described as a microkernel, secure
-boot, or complete sandbox until those mechanisms are implemented and tested.
+kernel-owned fault boundary. These processor-side mechanisms and their listed
+fault-injection cases have F405 evidence, but the result must not be described
+as a microkernel, secure boot, or complete sandbox: DMA ownership and
+multi-application isolation remain open. The current lifecycle policy requires
+manual reset after termination, does not provide rollback on read-only storage,
+and keeps hardware watchdog arming disabled until heartbeat ownership exists.
 
 ## 4. Reference platform
 
@@ -123,7 +131,18 @@ an 8.3 short entry, so short-name-only enumeration would miss packages. The
 filesystem layer exposes a read-only stream for the single package selected by
 the MVP loader policy. Zero matching files is `NotFound`; more than one
 matching regular file is `Unsupported`. The loader never silently chooses
-between multiple application packages.
+between multiple legacy application packages. The feature-gated v4 loader now
+enumerates bounded root packages, validates their identity/slot metadata, and
+reopens only the deterministic selection for the full load pass.
+
+The post-v4 multi-application phase adds a bounded, hardware-neutral package
+catalog at the loader boundary. It accepts only headers already validated
+against a target manifest, rejects duplicate identities and occupied slots,
+and selects by manifest slot rather than directory order or filename. The
+loader can now copy each accepted identity package into its own declared slot
+and retain bounded loaded-context metadata, but the runtime still enters only
+the first context. This does not enable concurrent application execution or
+context switching; legacy ABI paths keep the single-package policy.
 
 The hardware-independent `dali-amrn` crate exposes header decoding and payload
 validation separately as well as a contiguous-package convenience API. The
@@ -209,7 +228,10 @@ An MVP application must:
 - fit within the declared payload and memory limits;
 - report success through a visible, deterministic action.
 
-Native execution in a shared address space is intentionally an MVP limitation. It does not provide sandboxing, privilege separation, or fault isolation.
+Native execution in a shared address space is intentionally a baseline ABI v2
+limitation. ABI v3 provides a separate feature-gated processor-side boundary
+for one application; it does not provide DMA isolation or multi-application
+isolation.
 
 ## 8. `.amrn` package format
 
@@ -329,7 +351,7 @@ After the MVP, the platform can grow toward:
 - service discovery and capability policy;
 - watchdog heartbeats and deadline monitoring;
 - application lifecycle management;
-- MPU-backed memory protection where supported;
+- extension of the current MPU boundary to multiple applications where supported;
 - signed packages and secure boot;
 - A/B updates and rollback;
 - `dali` CLI workflows.
@@ -344,11 +366,12 @@ implementation must represent it with aligned power-of-two regions or change
 the memory contract. Code, writable data, and the application PSP stack may
 require different permissions and execute-never attributes.
 
-The F405 also exposes CCM RAM at `0x10000000`. It may be evaluated for kernel
-runtime and stack storage, but SDIO and USB DMA buffers must remain in
-DMA-accessible SRAM. PIC compiler flags alone do not define a relocatable raw
-AMRN contract; relocation metadata or a separately specified PIC/RWPI ABI is
-required before slot allocation.
+The F405 also exposes CCM RAM at `0x10000000`; the current linker contract
+places ordinary kernel runtime/static state there while SDIO and USB DMA
+buffers remain in DMA-accessible SRAM. PIC compiler flags alone do not define a
+relocatable raw AMRN contract. Explicit relocation metadata now defines the
+implemented movable-package path; an alternative PIC/RWPI ABI remains future
+work.
 
 ## 12. Architectural principles
 

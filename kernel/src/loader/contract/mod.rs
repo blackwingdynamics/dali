@@ -3,8 +3,12 @@
 use dali_amrn::{Crc32, v3, v4};
 use dali_targets::IsolationSlot;
 
+mod catalog;
+
 #[cfg(test)]
 mod tests;
+
+pub use catalog::{CatalogError, DiscoveredPackage, PackageCatalog};
 
 /// A bounded package reader used by the streaming validation core.
 pub trait PackageReader {

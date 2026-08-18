@@ -8,12 +8,7 @@ use crate::{
     storage::{self, filesystem::AmrnFile},
 };
 
-#[cfg(feature = "abi-current")]
-pub(crate) mod v3;
-#[cfg(feature = "abi-relocation")]
-pub(crate) mod v3_relocatable;
-#[cfg(feature = "abi-relocation")]
-pub(crate) mod v4;
+mod pipeline;
 
 /// Errors reported while validating a root AMRN package.
 #[derive(Debug)]
@@ -31,6 +26,12 @@ pub enum LoaderError {
     /// The kernel could not reserve the package's manifest-declared slot.
     #[cfg(feature = "abi-current")]
     SlotManager(crate::runtime::slots::SlotManagerError),
+    /// The application lifecycle could not record the loaded slot ownership.
+    #[cfg(feature = "abi-current")]
+    Lifecycle(crate::runtime::lifecycle::LifecycleError),
+    /// The package failed the identity and slot catalog contract.
+    #[cfg(feature = "abi-relocation")]
+    PackageCatalog(crate::loader_contract::CatalogError),
     /// The relocatable ABI v3 package failed format validation or patching.
     #[cfg(feature = "abi-relocation")]
     V3RelocationPackage(dali_amrn::v3::Error),
@@ -40,29 +41,72 @@ pub enum LoaderError {
 }
 
 #[cfg(feature = "abi-current")]
+type LoadedPackages =
+    pipeline::execution::LoadedApplications<{ storage::filesystem::MAX_ROOT_AMRN_FILES }>;
+
+#[cfg(feature = "abi-current")]
 pub(crate) fn load_current_abi<D>(
     device: D,
     slot_manager: &mut crate::runtime::slots::SlotManager,
-) -> Result<v3::LoadedApplication, LoaderError>
+) -> Result<LoadedPackages, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    storage::filesystem::with_amrn_file(device, |file| {
+    let device = crate::drivers::BlockDeviceRef::new(&device);
+    let mut versions = [0; storage::filesystem::MAX_ROOT_AMRN_FILES];
+    let mut package_count = 0;
+    let result = storage::filesystem::with_amrn_files(device, |file| {
         let mut version = [0; dali_amrn::MAGIC.len() + core::mem::size_of::<u8>()];
         read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
-        file.rewind().map_err(LoaderError::Filesystem)?;
-        match version[4] {
-            dali_amrn::v2::FORMAT_VERSION => v3::load_file(file, slot_manager),
-            #[cfg(feature = "abi-relocation")]
-            dali_amrn::v3::FORMAT_VERSION => v3_relocatable::load_file(file, slot_manager),
-            #[cfg(feature = "abi-relocation")]
-            dali_amrn::v4::FORMAT_VERSION => v4::load_file(file, slot_manager),
-            _ => Err(LoaderError::CurrentAbiPackage(
+        if let Some(version_slot) = versions.get_mut(package_count) {
+            *version_slot = version[4];
+            package_count += 1;
+            Ok(())
+        } else {
+            Err(LoaderError::CurrentAbiPackage(
                 dali_amrn::v2::Error::InvalidHeader,
-            )),
+            ))
         }
     })
-    .map_err(LoaderError::Filesystem)?
+    .map_err(LoaderError::Filesystem)?;
+    result?;
+
+    match package_count {
+        0 => Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)),
+        1 => storage::filesystem::with_amrn_file(device, |file| {
+            let mut version = [0; dali_amrn::MAGIC.len() + core::mem::size_of::<u8>()];
+            read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
+            file.rewind().map_err(LoaderError::Filesystem)?;
+            match version[4] {
+                dali_amrn::v2::FORMAT_VERSION => pipeline::execution::load_file(file, slot_manager)
+                    .map(pipeline::execution::LoadedApplications::single),
+                #[cfg(feature = "abi-relocation")]
+                dali_amrn::v3::FORMAT_VERSION => {
+                    pipeline::relocation::load_file(file, slot_manager)
+                        .map(pipeline::execution::LoadedApplications::single)
+                }
+                #[cfg(feature = "abi-relocation")]
+                dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager)
+                    .map(pipeline::execution::LoadedApplications::single),
+                _ => Err(LoaderError::CurrentAbiPackage(
+                    dali_amrn::v2::Error::InvalidHeader,
+                )),
+            }
+        })
+        .map_err(LoaderError::Filesystem)?,
+        _ => {
+            #[cfg(feature = "abi-relocation")]
+            {
+                if versions[..package_count]
+                    .iter()
+                    .all(|version| *version == dali_amrn::v4::FORMAT_VERSION)
+                {
+                    return pipeline::discovery::load_files(&device, slot_manager);
+                }
+            }
+            Err(LoaderError::Filesystem(embedded_sdmmc::Error::Unsupported))
+        }
+    }
 }
 
 /// Reads and validates the single root AMRN package without copying it.

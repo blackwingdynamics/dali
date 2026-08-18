@@ -1,6 +1,11 @@
 # Dali OS Security Policy
 
-Dali OS is an early-stage embedded platform. Security-sensitive reports are welcome, but the MVP does not yet provide sandboxing, memory isolation, secure boot, package authenticity, encryption, anti-rollback, or application fault isolation.
+Dali OS is an early-stage embedded platform. Security-sensitive reports are
+welcome. The baseline ABI v2 MVP is trusted native execution and does not
+provide sandboxing, memory isolation, secure boot, package authenticity,
+encryption, anti-rollback, or application fault isolation. A feature-gated ABI
+v3 single-application processor-side isolation path exists, but it is not a
+complete sandbox and does not cover DMA or multi-application isolation.
 
 ## Reporting a vulnerability
 

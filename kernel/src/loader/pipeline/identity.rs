@@ -5,12 +5,17 @@ use dali_amrn::{v3, v4};
 use crate::security::launch::{self, LaunchFrame};
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
+    runtime::{
+        lifecycle::{ApplicationIdentity, ApplicationLifecycle},
+        slots::SlotAllocation,
+    },
     storage::filesystem::AmrnFile,
 };
 
-use super::v3::LoadedApplication;
+use super::execution::LoadedApplication;
 
 const RELOCATION_BYTES: usize = v4::RELOCATION_ENTRY_SIZE;
+const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
 
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
@@ -20,7 +25,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract, slot) = parse_target_header(&header, slot_manager)?;
+    let (header, contract, allocation) = parse_target_header(&header, slot_manager)?;
     let relocation_offset = u32::try_from(v4::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.image.code_size))
@@ -49,20 +54,29 @@ where
         .ok_or(v4_error(v4::Error::InvalidPayload))?;
     let launch_frame = prepare_launch(entry_address, stack_origin, header.image.stack_size)?;
     launch::materialize(launch_frame);
+    let mut lifecycle = ApplicationLifecycle::discovered(
+        ApplicationIdentity::new(header.metadata.package_id),
+        allocation.slot().id,
+    );
+    lifecycle
+        .record_allocation(allocation)
+        .map_err(super::LoaderError::Lifecycle)?;
     Ok(LoadedApplication {
         entry_address,
         psp_top: stack_origin
             .checked_add(header.image.stack_size)
             .ok_or(v4_error(v4::Error::InvalidPayload))?,
         launch_frame,
-        slot,
+        slot: allocation.slot(),
+        allocation,
+        lifecycle: Some(lifecycle),
     })
 }
 
-fn parse_target_header(
+pub(super) fn parse_target_header(
     bytes: &[u8; v4::HEADER_SIZE],
     slot_manager: &mut crate::runtime::slots::SlotManager,
-) -> Result<(v4::Header, v3::Contract, dali_targets::IsolationSlot), super::LoaderError> {
+) -> Result<(v4::Header, v3::Contract, SlotAllocation), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
@@ -71,10 +85,18 @@ fn parse_target_header(
     let (header, contract, slot) =
         crate::loader_contract::select_slot(bytes, target.amrn_target_id, isolation.slots)
             .map_err(|_| v4_error(v4::Error::InvalidHeader))?;
+    let mut catalog =
+        crate::loader_contract::PackageCatalog::<SINGLE_PACKAGE_CATALOG_CAPACITY>::new();
+    catalog
+        .register(header, slot, slot_manager.is_reserved(slot))
+        .map_err(super::LoaderError::PackageCatalog)?;
+    let selected: crate::loader_contract::DiscoveredPackage = catalog.select().ok_or(
+        super::LoaderError::PackageCatalog(crate::loader_contract::CatalogError::CapacityExceeded),
+    )?;
     let allocation = slot_manager
-        .reserve(slot)
+        .reserve(selected.slot)
         .map_err(super::LoaderError::SlotManager)?;
-    Ok((header, contract, allocation.slot()))
+    Ok((selected.header, contract, allocation))
 }
 
 fn prepare_launch(
@@ -88,7 +110,9 @@ fn prepare_launch(
     })
 }
 
-fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v4::HEADER_SIZE], super::LoaderError>
+pub(crate) fn read_header<D>(
+    file: &AmrnFile<'_, D>,
+) -> Result<[u8; v4::HEADER_SIZE], super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
@@ -239,7 +263,7 @@ fn map_stream_error(
     }
 }
 
-fn v4_error(error: v4::Error) -> super::LoaderError {
+pub(crate) fn v4_error(error: v4::Error) -> super::LoaderError {
     super::LoaderError::V4IdentityPackage(error)
 }
 

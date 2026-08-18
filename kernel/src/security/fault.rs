@@ -189,6 +189,17 @@ fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32)
         },
     };
     report(record);
+    if !crate::runtime::context::record_active_fault() {
+        logging::error(
+            logging::SECURITY_SUBSYSTEM,
+            format_args!("[SECURITY][FAULT] No active runtime context to terminate"),
+        );
+    } else {
+        logging::info(
+            logging::SECURITY_SUBSYSTEM,
+            format_args!("[SECURITY][FAULT] Active context state: Faulted"),
+        );
+    }
     super::launch::recover()
 }
 

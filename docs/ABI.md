@@ -81,8 +81,9 @@ multi-application contract is enabled.
 
 ABI v3 is feature-gated and is not the default kernel execution path. ABI v2
 remains the default. ABI v3 requires explicit feature selection and is still
-an experimental single-application isolation path because no-frame fault
-recovery, watchdog behavior, and repeated fault-reset behavior remain open.
+an experimental single-application isolation path. The processor-side fault
+cases and repeated invalid-PSP recovery are hardware-tested; watchdog and
+lifecycle policy, DMA isolation, and multi-application isolation remain open.
 
 The source code uses the central `abi-current` selector and the version-neutral
 `abi-mpu` and `abi-relocation` capabilities. These are the only ABI-related
@@ -111,6 +112,45 @@ are available for controlled F405 testing but are not enabled by default.
   writable memory.
 - The application entry point and return behavior must be replaced by an
   explicit v3 launch frame; the v2 entry function is not compatible.
+
+### Application lifecycle foundation
+
+The kernel runtime defines a bounded lifecycle record for one discovered
+package and its manifest-owned slot:
+
+```text
+Discovered -> Loaded -> Ready -> Running -> Faulted -> Recovering -> Terminated
+```
+
+Each transition is explicit and invalid transitions are rejected. A declared
+slot must match the slot allocation recorded at load time. `Terminated` is a
+terminal state: the current runtime does not implicitly restart an application,
+schedule another application, or switch MPU contexts. Those behaviors require
+separate lifecycle, scheduler, and protection contracts.
+
+### Active context ownership foundation
+
+The runtime currently permits at most one active application context. A ready
+lifecycle must be explicitly activated before it can enter `Running`, and a
+second activation is rejected. The active context retains the package identity
+and manifest-owned slot allocation. Retirement is accepted only after the
+lifecycle reaches `Terminated`; no implicit restart or context switch exists.
+The v4 loader creates the lifecycle after validated copy and relocation, then
+the launch path performs the `Loaded -> Ready -> Running` transition before
+MPU activation. Legacy v2/v3 package paths retain their existing launch
+behavior until they receive an identity-aware lifecycle contract.
+F405 hardware has confirmed these transitions together with two-package
+loading, manifest slot boundaries, slot0 execution, and the complete fault
+transition. The current policy requires a manual reset after termination,
+provides no rollback on the read-only package boundary, and does not arm a
+watchdog without a bounded feed owner.
+
+The kernel fault boundary updates the shared runtime state atomically through
+`Faulted -> Recovering -> Terminated` before entering the recovery loop. This
+state channel records ownership without exposing a mutable application pointer
+to exception handlers. F405 hardware has confirmed the complete transition
+with the v4 invalid-PSP application fixture; this proves lifecycle accounting
+and recovery entry, not restart, scheduling, or complete application isolation.
 
 ### SVC gateway
 
@@ -189,7 +229,8 @@ runtime stack reservations. The v2 package contract is defined in
 construction. The CLI can build and inspect ABI v3 packages, and the kernel has
 a feature-gated streaming validator/copy path. The default kernel remains
 ABI v2-only; the feature-gated path is experimental and its hardware evidence
-is incomplete.
+is complete for the documented single-application F405 cases. It does not
+enable concurrent applications or claim the remaining security guarantees.
 
 For a target selected through the manifest, the linker must emit:
 
@@ -205,7 +246,9 @@ The package payload stores code followed by initialized data. Zero data and
 the PSP stack are reservations, not file bytes. The loader must copy the two
 file segments only after validating every region bound, then clear the
 zero-data range and construct the PSP launch frame. This is a fixed-address
-single-application contract; PIC, relocation, and multiple slots remain
+single-application contract. Explicit relocation is defined by AMRN format
+version 3 and hardware-tested separately; compiler PIC or RWPI alone is not
+treated as an AMRN relocation contract. Multiple-package execution remains
 deferred.
 
 Format version 3 is the movable ABI v3 contract. Its host-side header,
@@ -255,8 +298,8 @@ region to unprivileged read/write, execute-never, before entering the PSP
 context. This ordering prevents the protection map from blocking a valid
 kernel-owned load. The default kernel does not enable this path. It provides
 single-application processor-side isolation evidence, but it must not be
-treated as complete application isolation because no-frame recovery, DMA
-isolation, and multi-application isolation remain open.
+treated as complete application isolation because DMA isolation, lifecycle
+policy, and multi-application isolation remain open.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
