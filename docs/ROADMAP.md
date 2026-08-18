@@ -599,6 +599,8 @@ Compilation and host tests do not replace hardware evidence.
   require a manual reset and the read-only package boundary has no rollback.
 - [x] Define the watchdog safety gate: do not arm hardware watchdogs until a
   bounded heartbeat/feed owner contract exists.
+- [x] Define and host-test the bounded saved-context record and context-table
+  selection contract; keep PendSV, SysTick, and MPU switching disabled.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

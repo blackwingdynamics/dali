@@ -199,6 +199,10 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-level lifecycle policy tests require manual reset after termination,
   reject rollback on the read-only package boundary, and keep the watchdog
   disabled until a bounded heartbeat/feed owner exists.
+- [x] Host-level context-switch contract tests preserve the PSP, `r4..r11`,
+  `CONTROL`, and `EXC_RETURN` record, enforce one running context, bound table
+  capacity, exclude terminated contexts, and select ready contexts in order.
+  These tests do not prove PendSV, SysTick, or MPU hardware behavior.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.

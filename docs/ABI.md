@@ -145,6 +145,15 @@ transition. The current policy requires a manual reset after termination,
 provides no rollback on the read-only package boundary, and does not arm a
 watchdog without a bounded feed owner.
 
+### Context-switch foundation
+
+The runtime defines a hardware-neutral saved-context record containing the
+application PSP, `r4..r11`, `CONTROL`, and `EXC_RETURN`. A fixed-capacity context
+table enforces one running owner, bounded insertion, terminal exclusion, and
+round-robin-style selection of ready contexts. This is a scheduler contract
+only: SysTick does not yet request a switch, PendSV does not yet save or restore
+multiple contexts, and MPU regions are not switched between applications.
+
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This
 state channel records ownership without exposing a mutable application pointer
