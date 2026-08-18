@@ -422,6 +422,19 @@ fn generate_registry(manifests: &[Manifest]) -> String {
         .map(generate_profile)
         .collect::<Vec<_>>()
         .join("\n");
+    let capacities = manifests
+        .iter()
+        .map(|manifest| {
+            let constant = constant_name(&manifest.profile.name);
+            let capacity = manifest
+                .memory
+                .isolation
+                .as_ref()
+                .map_or(0, |isolation| isolation.slots.len());
+            format!("pub const {constant}_CONTEXT_CAPACITY: usize = {capacity};")
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
     let names = manifests
         .iter()
         .map(|manifest| constant_name(&manifest.profile.name))
@@ -434,7 +447,7 @@ fn generate_registry(manifests: &[Manifest]) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "{definitions}\n\npub const ALL_TARGETS: &[TargetProfile] = &[{names}];\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{supported}];\n"
+        "{definitions}\n\n{capacities}\n\npub const ALL_TARGETS: &[TargetProfile] = &[{names}];\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{supported}];\n"
     )
 }
 

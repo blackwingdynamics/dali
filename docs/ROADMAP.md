@@ -610,6 +610,8 @@ Compilation and host tests do not replace hardware evidence.
   capture, and next-ready selection without owning an interrupt vector.
 - [x] Define and host-test the bounded PendSV preparation transition, including
   no-op behavior without a request and save-before-selection ordering.
+- [x] Generate scheduler capacity from each target manifest's declared
+  isolation slots before introducing kernel-owned scheduler storage.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

@@ -218,6 +218,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-level PendSV preparation tests verify no-op behavior without a
   request and save-before-selection ordering. These tests do not prove the
   processor exception path.
+- [x] Target-profile generation tests and embedded compilation consume the
+  manifest-derived scheduler capacity; filesystem package limits are not used
+  as scheduler capacity. Runtime interrupt ownership remains unimplemented.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.
