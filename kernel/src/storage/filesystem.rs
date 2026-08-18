@@ -32,6 +32,28 @@ pub struct RootDirectoryReport {
     pub amrn_file_count: u32,
 }
 
+/// Bounded selection result for the current root-package contract.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RootPackageSelection {
+    /// No root AMRN package is available.
+    None,
+    /// Exactly one root AMRN package is eligible for selection.
+    Single,
+    /// More than one root AMRN package requires an identity-aware policy.
+    Ambiguous,
+}
+
+impl RootDirectoryReport {
+    /// Classifies the root directory without inferring identity from filenames.
+    pub const fn package_selection(self) -> RootPackageSelection {
+        match self.amrn_file_count {
+            0 => RootPackageSelection::None,
+            1 => RootPackageSelection::Single,
+            _ => RootPackageSelection::Ambiguous,
+        }
+    }
+}
+
 const MAX_OPEN_DIRECTORIES: usize = 4;
 const MAX_OPEN_FILES: usize = 4;
 const MAX_OPEN_VOLUMES: usize = 1;
@@ -181,10 +203,17 @@ where
         }
         ControlFlow::Continue(())
     })?;
-    match (count, candidate) {
-        (0, _) => Err(Error::NotFound),
-        (1, Some(candidate)) => Ok(candidate),
-        _ => Err(Error::Unsupported),
+    match (
+        RootDirectoryReport {
+            amrn_file_count: u32::from(count),
+        }
+        .package_selection(),
+        candidate,
+    ) {
+        (RootPackageSelection::None, _) => Err(Error::NotFound),
+        (RootPackageSelection::Single, Some(candidate)) => Ok(candidate),
+        (RootPackageSelection::Ambiguous, _) => Err(Error::Unsupported),
+        (RootPackageSelection::Single, None) => Err(Error::NotFound),
     }
 }
 
@@ -224,4 +253,40 @@ fn is_amrn_entry(entry: &DirEntry, long_name: Option<&str>) -> bool {
         return false;
     };
     extension.as_bytes().eq_ignore_ascii_case(AMRN_EXTENSION)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{RootDirectoryReport, RootPackageSelection};
+
+    #[test]
+    fn classifies_empty_root_as_no_package() {
+        assert_eq!(
+            RootDirectoryReport { amrn_file_count: 0 }.package_selection(),
+            RootPackageSelection::None
+        );
+    }
+
+    #[test]
+    fn classifies_one_root_package_as_single() {
+        assert_eq!(
+            RootDirectoryReport { amrn_file_count: 1 }.package_selection(),
+            RootPackageSelection::Single
+        );
+    }
+
+    #[test]
+    fn classifies_multiple_root_packages_as_ambiguous() {
+        assert_eq!(
+            RootDirectoryReport { amrn_file_count: 2 }.package_selection(),
+            RootPackageSelection::Ambiguous
+        );
+        assert_eq!(
+            RootDirectoryReport {
+                amrn_file_count: u32::MAX
+            }
+            .package_selection(),
+            RootPackageSelection::Ambiguous
+        );
+    }
 }

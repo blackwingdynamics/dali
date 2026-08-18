@@ -538,8 +538,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Implement and test the fixed-capacity SRAM slot manager on the host.
 - [x] Integrate manifest-slot reservation into kernel-owned application loading
   before adding concurrent execution.
-- [ ] Define multi-package identity, selection, compatibility, and
-  package-to-slot mapping before adding two-application loading.
+- [x] Define the bounded single-package selection result and reject ambiguous
+  root packages before adding identity-aware multi-application loading.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.
