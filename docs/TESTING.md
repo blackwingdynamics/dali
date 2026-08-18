@@ -281,9 +281,13 @@ distinguished from the kernel's fault and recovery records.
   `MemManage status=0x00000082 address=Some(536903680)`, followed by
   `Faulted`, `Recovering`, and `Terminated`. This proves CPU MPU rejection of
   a slot1-to-slot0 read, but not DMA isolation or faulted-context scheduling.
-- [ ] F405 hardware must run a two-package fault-recovery fixture with
-  `abi-context-switch,abi-relocation` and verify that the faulted slot is not
-  selected again while the remaining ready slot resumes under its own MPU map.
+- [x] F405 hardware ran the two-package fault-recovery fixture with
+  `abi-context-switch,abi-relocation`. GDB observed the slot1 entry breakpoint
+  once, stopped in `recover_faulted_context`, and then observed slot0 progress
+  increase from `0x0000024C` to `0x01289A9C`, `0x017BB673`, and `0x01ADDDF1`
+  without another slot1 entry. This proves faulted-context exclusion and
+  continued slot0 execution after recovery; complete application isolation
+  and DMA isolation remain separate claims.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
   contract; hardware watchdog implementation remains separate and pending.

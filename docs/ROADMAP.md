@@ -641,8 +641,9 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Retire a faulted scheduler context before selecting the next ready
   context; host tests verify that terminated contexts cannot be selected again.
 - [ ] Verify MPU region switching during application context switches.
-- [ ] Verify on F405 hardware that a faulted context is excluded and a ready
-  application resumes with its own MPU map.
+- [x] Verify on F405 hardware that a faulted context is excluded and a ready
+  application resumes; GDB observed one slot1 entry and continued slot0
+  progress after recovery. MPU region switching remains a separate item.
 - [ ] Verify application-to-application memory isolation.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.
 - [x] Define application crash, restart, and rollback lifecycle policy;

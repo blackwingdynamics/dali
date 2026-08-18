@@ -128,6 +128,14 @@ slot0 code region through the processor MPU. It does not prove DMA isolation,
 context-switch MPU reprogramming, faulted-context exclusion, or complete
 multi-application isolation.
 
+With `abi-context-switch` enabled and both slot fixtures present, the F405
+acceptance run additionally verified that recovery retired slot1 and resumed
+slot0. GDB hit the slot1 entry once, stopped in `recover_faulted_context`, and
+the slot0 progress marker increased from `0x0000024C` to `0x01289A9C`,
+`0x017BB673`, and `0x01ADDDF1` without a second slot1 entry. This is hardware
+evidence for faulted-context exclusion and continued execution, not DMA
+isolation or a complete multi-application security guarantee.
+
 ## Peripheral-write test
 
 Build and package the dedicated peripheral-write fixture:

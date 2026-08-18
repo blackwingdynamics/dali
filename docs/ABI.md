@@ -176,7 +176,8 @@ context is active. Fault recovery permanently retires the active scheduler
 context and can select the next ready record; the ARM recovery transfer and
 MPU reprogramming still require target evidence. F405 hardware has verified
 repeated CPU context switching with independent slot progress markers, but
-not yet faulted-context exclusion or MPU switching.
+has now also verified faulted-context exclusion and continued slot0 execution
+after slot1 recovery; MPU region switching remains separately unverified.
 
 The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is
@@ -194,7 +195,9 @@ With `abi-context-switch`, bootstrap constructs this storage from the selected
 target profile. The loader registers validated application launch records,
 activates the first scheduler context, and then enables the target SysTick.
 The scheduler contract includes permanent retirement of a faulted context;
-target evidence for recovery transfer and MPU switching remains open.
+F405 hardware has verified that recovery resumes a ready context without
+re-entering the terminated slot. Independent MPU region-switching evidence
+remains open.
 
 `prepare_pendsv` makes that sequence explicit and bounded: without a pending
 request it leaves the active context unchanged; with a request it records the
