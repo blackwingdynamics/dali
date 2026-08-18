@@ -4,4 +4,5 @@
 pub mod context_switch;
 pub mod context_table;
 pub mod saved_state;
+pub mod scheduler;
 pub mod tick;

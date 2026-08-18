@@ -139,6 +139,21 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
         Ok(self.slot(id)?.context)
     }
 
+    /// Returns the currently running context identifier, if one exists.
+    pub const fn active(&self) -> Option<ContextId> {
+        self.active
+    }
+
+    /// Replaces the saved register state for a valid context.
+    pub fn update(
+        &mut self,
+        id: ContextId,
+        context: SavedContext,
+    ) -> Result<(), ContextTableError> {
+        self.slot_mut(id)?.context = context;
+        Ok(())
+    }
+
     fn slot(&self, id: ContextId) -> Result<&ContextSlot, ContextTableError> {
         self.slots
             .get(id.index())

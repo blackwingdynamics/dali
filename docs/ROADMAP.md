@@ -606,6 +606,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Add target-compiled, feature-gated ARM save/restore primitives for the
   kernel-owned context record; keep scheduler selection, interrupt enablement,
   and MPU switching separate.
+- [x] Add a bounded scheduler facade that sequences tick requests, active-state
+  capture, and next-ready selection without owning an interrupt vector.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

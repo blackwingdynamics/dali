@@ -166,6 +166,12 @@ not select a context, validate a PSP, program the MPU, or enable an interrupt;
 they remain separate from the default one-context launch path until scheduler
 ownership and validation are integrated.
 
+The scheduler facade now owns the bounded sequence around those primitives:
+SysTick records a preemption request, PendSV saves the active record, and the
+facade selects the next ready context. This remains an integration contract;
+the scheduler is not installed as a global interrupt owner and does not yet
+switch MPU regions.
+
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This
 state channel records ownership without exposing a mutable application pointer
