@@ -634,7 +634,8 @@ Compilation and host tests do not replace hardware evidence.
   handoff using the two manifest-backed v4 fixtures.
 - [x] Add per-slot progress markers to the real hardware fixtures for
   repeatable context-switch observation without changing production code.
-- [ ] Implement and test PendSV/SysTick context switching.
+- [x] Implement and test repeated PendSV/SysTick CPU context switching with
+  independent progress markers on F405; MPU region switching remains separate.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.

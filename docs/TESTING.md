@@ -238,8 +238,9 @@ distinguished from the kernel's fault and recovery records.
   is not hardware context-switch evidence.
 - [x] Target ELF inspection verifies the feature-gated PendSV wrapper contains
   the raw `r4..r11` save, PSP/CONTROL/EXC_RETURN capture, scheduler helper call,
-  and restore-primitive branch. This is target/source evidence only; hardware
-  context switching and MPU switching remain unverified.
+  and restore-primitive branch. This is target/source evidence for the wrapper;
+  repeated CPU context switching is separately hardware-verified below, while
+  MPU switching remains unverified.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.
@@ -265,10 +266,12 @@ distinguished from the kernel's fault and recovery records.
   successful application path is documented above; target compilation alone
   would not prove this behavior. v4-specific rejection/recovery hardware tests
   remain separate work.
-- [ ] Runtime two-application memory isolation; loader placement and the first
-  slot handoff are hardware-evidenced, but return switching and isolation are
-  not yet proven.
-- [ ] PendSV/SysTick context switching and MPU region switching.
+- [x] F405 GDB hardware evidence verified repeated PendSV CPU switching: PSP
+  alternated between slot0 (`0x2000CFB8`) and slot1 (`0x20014FB8`) stack
+  ranges, while slot0 progress reached `0x26A` and slot1 progress reached
+  `0x2F4`. This proves repeated CPU context execution, but not MPU region
+  switching or cross-slot memory isolation.
+- [ ] Runtime two-application memory isolation and MPU region switching.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
   contract; hardware watchdog implementation remains separate and pending.

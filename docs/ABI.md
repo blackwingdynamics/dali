@@ -173,7 +173,9 @@ facade selects the next ready context. A feature-gated target SysTick hook now
 feeds the scheduler and only pends PendSV when both active and ready contexts
 exist. The selected platform enables SysTick only after the first application
 context is active; the hook itself does not perform the register transfer or
-switch MPU regions. Those remain integration work.
+switch MPU regions. F405 hardware has now verified repeated CPU context
+switching with independent slot progress markers; MPU switching remains
+integration work.
 
 The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is
