@@ -592,6 +592,9 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Integrate the v4 loader and MPU launch path with the lifecycle and active
   context owner; F405 hardware confirmed `Loaded -> Ready -> Running` during
   two-package boot and slot0 execution.
+- [x] Connect the kernel fault boundary and recovery entry to the atomic active
+  context state channel; hardware verification of `Faulted -> Recovering ->
+  Terminated` remains pending.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

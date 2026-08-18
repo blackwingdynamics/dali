@@ -142,6 +142,12 @@ behavior until they receive an identity-aware lifecycle contract.
 F405 hardware has confirmed these transitions together with two-package
 loading, manifest slot boundaries, and slot0 execution.
 
+The kernel fault boundary updates the shared runtime state atomically through
+`Faulted -> Recovering -> Terminated` before entering the recovery loop. This
+state channel records ownership without exposing a mutable application pointer
+to exception handlers; hardware confirmation of these state updates remains a
+separate fault-recovery test.
+
 ### SVC gateway
 
 All application services use one SVC gateway. The SVC immediate is a named

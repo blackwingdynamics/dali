@@ -57,7 +57,9 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
         }
     };
     #[cfg(feature = "abi-mpu")]
-    let mut context_owner = crate::runtime::context::ActiveContextOwner::new();
+    let mut context_owner = crate::runtime::context::ActiveContextOwner::new(
+        &crate::runtime::context::ACTIVE_RUNTIME_STATE,
+    );
 
     let mut block: Block = [0; BLOCK_SIZE];
     match reader.read_block(BlockAddress::new(0), &mut block) {
