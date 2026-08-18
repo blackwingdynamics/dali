@@ -26,6 +26,9 @@ pub enum LoaderError {
     /// The selected target does not declare an ABI v3 memory contract.
     #[cfg(feature = "abi-current")]
     UnsupportedCurrentAbiTarget,
+    /// The package format is known but not enabled by the kernel loader.
+    #[cfg(feature = "abi-current")]
+    UnsupportedFormatVersion(u8),
     /// The kernel could not reserve the package's manifest-declared slot.
     #[cfg(feature = "abi-current")]
     SlotManager(crate::runtime::slots::SlotManagerError),
@@ -50,6 +53,7 @@ where
             dali_amrn::v2::FORMAT_VERSION => v3::load_file(file, slot_manager),
             #[cfg(feature = "abi-relocation")]
             dali_amrn::v3::FORMAT_VERSION => v3_relocatable::load_file(file, slot_manager),
+            dali_amrn::v4::FORMAT_VERSION => Err(LoaderError::UnsupportedFormatVersion(version[4])),
             _ => Err(LoaderError::CurrentAbiPackage(
                 dali_amrn::v2::Error::InvalidHeader,
             )),
