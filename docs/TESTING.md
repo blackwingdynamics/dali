@@ -159,8 +159,12 @@ distinguished from the kernel's fault and recovery records.
   image metadata, explicit slot metadata, and the extended package checksum.
 - [x] Host-level CLI tests cover v4 manifest parsing, package identity/version
   validation, target slot IDs, and v4 inspection output.
-- [x] Host-side fake-reader fixtures cover v4 bounded read order, CRC mismatch,
-  invalid relocation, and undeclared-slot rejection.
+- [x] Host-level pure catalog tests cover discovery-order-independent selection,
+  duplicate identity rejection, slot mismatch, duplicate slot rejection, and
+  externally occupied-slot rejection. These tests are not hardware evidence.
+- [x] Host-side AMRN v4 codec tests cover package bytes, CRC mismatch, and
+  invalid relocation; the loader contract test covers undeclared-slot
+  rejection. These tests are not hardware evidence.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.

@@ -81,6 +81,15 @@ Do not disable, ignore, or remove tests without an issue or roadmap reference an
 
 Invalid configuration, missing storage, malformed packages, and hardware failures must not trigger silent fallback behavior unless that fallback is explicitly documented and safe.
 
+### Hardware evidence boundary
+
+Do not add fake hardware, fake devices, fake storage, fake readers, or
+simulated runtime behavior as a substitute for the real implementation or
+hardware acceptance. Host tests may cover genuinely hardware-neutral codecs,
+validators, and pure contracts over caller-owned bytes, but those tests are not
+hardware evidence. A test application is valid only when it is a real compiled
+package executed through the documented target contract.
+
 ### Logging and secrets
 
 Never log credentials, keys, private data, sensitive device information, or unnecessary memory dumps.

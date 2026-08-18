@@ -131,6 +131,13 @@ the MVP loader policy. Zero matching files is `NotFound`; more than one
 matching regular file is `Unsupported`. The loader never silently chooses
 between multiple application packages.
 
+The post-v4 multi-application phase adds a bounded, hardware-neutral package
+catalog at the loader boundary. It accepts only headers already validated
+against a target manifest, rejects duplicate identities and occupied slots,
+and selects by manifest slot rather than directory order or filename. This
+catalog does not change the current single-package filesystem policy and does
+not enable concurrent application execution.
+
 The hardware-independent `dali-amrn` crate exposes header decoding and payload
 validation separately as well as a contiguous-package convenience API. The
 split form is the loader boundary for bounded filesystem reads: a loader can

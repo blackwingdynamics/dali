@@ -31,6 +31,9 @@ pub enum LoaderError {
     /// The kernel could not reserve the package's manifest-declared slot.
     #[cfg(feature = "abi-current")]
     SlotManager(crate::runtime::slots::SlotManagerError),
+    /// The package failed the identity and slot catalog contract.
+    #[cfg(feature = "abi-current")]
+    PackageCatalog(crate::loader_contract::CatalogError),
     /// The relocatable ABI v3 package failed format validation or patching.
     #[cfg(feature = "abi-relocation")]
     V3RelocationPackage(dali_amrn::v3::Error),

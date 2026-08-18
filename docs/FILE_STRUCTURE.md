@@ -37,7 +37,7 @@ dali-kernel/
 │       ├── loader/mod.rs          # AMRN dispatch and ABI services
 │       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
-│       │   └── tests.rs            # Host fake-reader fixtures
+│       │   └── tests.rs            # Hardware-neutral contract tests
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
 │       ├── loader/v4.rs           # Identity-aware streaming loader

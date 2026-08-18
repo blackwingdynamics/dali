@@ -156,6 +156,22 @@ While editing:
 - update documentation when behavior or a contract changes;
 - add tests or record hardware evidence for the affected behavior.
 
+### No fake hardware or substitute fixtures
+
+- Do not create fake hardware, fake devices, fake storage, fake readers, or
+  simulated runtime behavior as a substitute for the real implementation or
+  hardware acceptance.
+- A test application is allowed only when it is a real compiled package that
+  exercises the documented contract on the target; it must not stand in for a
+  missing kernel or device implementation.
+- Host tests are allowed only for genuinely hardware-neutral codecs,
+  validators, and pure contracts using caller-owned byte slices or explicit
+  test values. They must never be described as hardware evidence.
+- Storage, loader, slot-allocation, fault, and lifecycle behavior that depends
+  on device state must be verified through the real implementation and the
+  required target hardware; if hardware is unavailable, record the limitation
+  instead of inventing a substitute.
+
 After editing:
 
 1. Run the narrowest relevant tests while iterating.

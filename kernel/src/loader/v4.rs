@@ -11,6 +11,7 @@ use crate::{
 use super::v3::LoadedApplication;
 
 const RELOCATION_BYTES: usize = v4::RELOCATION_ENTRY_SIZE;
+const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
 
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
@@ -71,10 +72,18 @@ fn parse_target_header(
     let (header, contract, slot) =
         crate::loader_contract::select_slot(bytes, target.amrn_target_id, isolation.slots)
             .map_err(|_| v4_error(v4::Error::InvalidHeader))?;
+    let mut catalog =
+        crate::loader_contract::PackageCatalog::<SINGLE_PACKAGE_CATALOG_CAPACITY>::new();
+    catalog
+        .register(header, slot, slot_manager.is_reserved(slot))
+        .map_err(super::LoaderError::PackageCatalog)?;
+    let selected: crate::loader_contract::DiscoveredPackage = catalog.select().ok_or(
+        super::LoaderError::PackageCatalog(crate::loader_contract::CatalogError::CapacityExceeded),
+    )?;
     let allocation = slot_manager
-        .reserve(slot)
+        .reserve(selected.slot)
         .map_err(super::LoaderError::SlotManager)?;
-    Ok((header, contract, allocation.slot()))
+    Ok((selected.header, contract, allocation.slot()))
 }
 
 fn prepare_launch(

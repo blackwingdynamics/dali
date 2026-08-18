@@ -39,14 +39,14 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 The next implementation session resumes the post-v4 multi-application work in
 this order:
 
-1. Add a hardware-neutral multi-package discovery and identity-selection
-   contract, including deterministic rejection of duplicate identities and
-   occupied slots.
-2. Extend the host fake-reader fixtures to load two independent v4 packages
-   into slot0 and slot1 and verify code/data range containment.
-3. Integrate the bounded two-slot load path without enabling concurrent
+1. [x] Add the hardware-neutral multi-package identity and slot catalog,
+   including deterministic rejection of duplicate identities and occupied
+   slots.
+2. [ ] Enumerate real root-directory packages and feed their validated v4
+   metadata into the catalog; verify the path on F405 hardware.
+3. [ ] Integrate the bounded two-slot load path without enabling concurrent
    execution or context switching.
-4. Run host and target validation before scheduling the corresponding F405
+4. [ ] Run host and target validation before scheduling the corresponding F405
    hardware test.
 - A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.
 - FAT long-file-name enumeration now discovers host-created packages with the four-character `.amrn` extension without a package-name assumption.
@@ -567,8 +567,10 @@ Compilation and host tests do not replace hardware evidence.
   selection, relocation, and recovery run.
 - [x] Add a kernel-side v4 selection and bounded streaming loader path without
   changing the ABI v2/v3 loaders.
-- [x] Add host-testable streaming-loader fixtures for v4 selection, bounded
-  reads, CRC, and relocation validation.
+- [x] Add a bounded v4 identity/slot catalog that rejects duplicate identities,
+  duplicate or externally occupied slots, and discovery-order dependence.
+- [x] Add hardware-neutral AMRN v4 codec tests for selection metadata, CRC, and
+  relocation validation; streaming-loader behavior remains target-tested.
 - [x] Validate v4 selection, relocation, and successful application execution
   on F405 hardware; the format 4 slot1 fixture passed AMRN validation and
   executed the relocation proof application. v4-specific rejection/recovery
