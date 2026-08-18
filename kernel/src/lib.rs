@@ -5,5 +5,7 @@
 pub mod drivers;
 #[path = "loader/contract.rs"]
 pub mod loader_contract;
+#[path = "security/mpu/mod.rs"]
+pub mod mpu;
 pub mod runtime;
 pub mod storage;
