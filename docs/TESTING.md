@@ -207,6 +207,10 @@ distinguished from the kernel's fault and recovery records.
   request per elapsed quantum, clear requests after consumption, and restart
   tick accounting at the next quantum. These tests do not prove timer timing
   or interrupt latency.
+- [x] Embedded target compilation verifies the explicitly disabled
+  `abi-context-switch` ARM save/restore primitives and their `SavedContext`
+  layout. This is target/source evidence only; no PendSV interrupt or context
+  switch is enabled by this step.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.

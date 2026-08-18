@@ -603,6 +603,9 @@ Compilation and host tests do not replace hardware evidence.
   selection contract; keep PendSV, SysTick, and MPU switching disabled.
 - [x] Define and host-test the board-independent SysTick quantum and one-shot
   PendSV request contract without selecting a timer frequency in runtime code.
+- [x] Add target-compiled, feature-gated ARM save/restore primitives for the
+  kernel-owned context record; keep scheduler selection, interrupt enablement,
+  and MPU switching separate.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

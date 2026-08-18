@@ -160,6 +160,12 @@ when its quantum expires, and the deferred handler remains responsible for the
 actual register save/restore. No timer frequency or quantum is selected by the
 runtime contract.
 
+The optional `abi-context-switch` feature now provides target-compiled ARM
+save/restore primitives for the kernel-owned context record. The primitives do
+not select a context, validate a PSP, program the MPU, or enable an interrupt;
+they remain separate from the default one-context launch path until scheduler
+ownership and validation are integrated.
+
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This
 state channel records ownership without exposing a mutable application pointer
