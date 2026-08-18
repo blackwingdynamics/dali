@@ -203,6 +203,10 @@ distinguished from the kernel's fault and recovery records.
   `CONTROL`, and `EXC_RETURN` record, enforce one running context, bound table
   capacity, exclude terminated contexts, and select ready contexts in order.
   These tests do not prove PendSV, SysTick, or MPU hardware behavior.
+- [x] Host-level tick-budget tests reject a zero quantum, emit one PendSV
+  request per elapsed quantum, clear requests after consumption, and restart
+  tick accounting at the next quantum. These tests do not prove timer timing
+  or interrupt latency.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.

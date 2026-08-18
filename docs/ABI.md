@@ -154,6 +154,12 @@ round-robin-style selection of ready contexts. This is a scheduler contract
 only: SysTick does not yet request a switch, PendSV does not yet save or restore
 multiple contexts, and MPU regions are not switched between applications.
 
+The scheduling contract also defines a board-independent tick budget. Each
+platform supplies timer interrupts, the budget emits a one-shot PendSV request
+when its quantum expires, and the deferred handler remains responsible for the
+actual register save/restore. No timer frequency or quantum is selected by the
+runtime contract.
+
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This
 state channel records ownership without exposing a mutable application pointer

@@ -601,6 +601,8 @@ Compilation and host tests do not replace hardware evidence.
   bounded heartbeat/feed owner contract exists.
 - [x] Define and host-test the bounded saved-context record and context-table
   selection contract; keep PendSV, SysTick, and MPU switching disabled.
+- [x] Define and host-test the board-independent SysTick quantum and one-shot
+  PendSV request contract without selecting a timer frequency in runtime code.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
