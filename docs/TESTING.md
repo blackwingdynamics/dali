@@ -97,6 +97,19 @@ multi-application isolation, or watchdog support.
   16 KiB code/data slots: AMRN loaded with code `0x20008000` and data
   `0x2000C000`, invalid-PSP recovery remained `UsageFault 0x00040000`.
 
+### Diagnostic evidence
+
+- Precise kernel-RAM read decoding preserved `CFSR=0x00000082`,
+  `MMFAR=0x20000000`, stacked `PC=0x200080F6`, and stacked `LR=0x200080B9`
+  before recovery.
+- The reserved-address BusFault fixture preserved `CFSR=0x00008200`,
+  `BFAR=0x00100000`, stacked `PC=0x2000807A`, and stacked `LR=0x2000803D`.
+- The no-frame HardFault SWD/GDB trace reached `HardFault`,
+  `handle_hard_fault`, `handle_with_frame`, and `recover`; the debugger's
+  post-fault unwind message is not acceptance evidence.
+- The SVC rejection matrix kept the application alive, while the bounded
+  `Log` service accepted the final completion message.
+
 The USB console may report `read zero bytes from port` while the target resets
 or the CDC device re-enumerates. That is a transport-session event and must be
 distinguished from the kernel's fault and recovery records.
