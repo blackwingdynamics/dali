@@ -139,7 +139,8 @@ distinguished from the kernel's fault and recovery records.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
-  rejection, undeclared-slot rejection, and release/reuse behavior.
+  rejection, undeclared-slot rejection, release/reuse behavior, and range
+  containment across independent code/data slots.
 - [ ] Hardware two-application boundary isolation; only one application is
   loaded and executed at a time.
 - [ ] PendSV/SysTick context switching and MPU region switching.

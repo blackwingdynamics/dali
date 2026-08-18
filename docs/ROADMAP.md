@@ -538,6 +538,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Implement and test the fixed-capacity SRAM slot manager on the host.
 - [x] Integrate manifest-slot reservation into kernel-owned application loading
   before adding concurrent execution.
+- [x] Add a host-tested slot ownership/range contract before enabling two
+  application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.

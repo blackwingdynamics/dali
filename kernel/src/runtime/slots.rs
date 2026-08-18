@@ -4,6 +4,15 @@ use dali_targets::IsolationSlot;
 
 const SLOT_MASK_BITS: usize = u32::BITS as usize;
 
+/// Addressable memory segment owned by an application slot.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SlotRegion {
+    /// Executable code and read-only application data.
+    Code,
+    /// Writable initialized, zero-initialized, and PSP data.
+    Data,
+}
+
 /// A selected application slot and its stable manifest index.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SlotAllocation {
@@ -20,6 +29,19 @@ impl SlotAllocation {
     /// Returns the manifest-owned boundaries of the selected slot.
     pub const fn slot(self) -> IsolationSlot {
         self.slot
+    }
+
+    /// Returns whether a complete range belongs to this allocation's segment.
+    pub fn contains(self, region: SlotRegion, start: u32, length: u32) -> bool {
+        let (origin, capacity) = match region {
+            SlotRegion::Code => (self.slot.code_origin, self.slot.code_length),
+            SlotRegion::Data => (self.slot.data_origin, self.slot.data_length),
+        };
+        let end = match start.checked_add(length) {
+            Some(end) => end,
+            None => return false,
+        };
+        start >= origin && end <= origin.saturating_add(capacity)
     }
 }
 
@@ -123,13 +145,13 @@ impl SlotManager {
 
 #[cfg(test)]
 mod tests {
-    use super::{SlotManager, SlotManagerError};
+    use super::{SlotManager, SlotManagerError, SlotRegion};
     use dali_targets::IsolationSlot;
 
     const SLOT0_CODE_ORIGIN: u32 = 0x1000;
-    const SLOT0_DATA_ORIGIN: u32 = 0x2000;
-    const SLOT1_CODE_ORIGIN: u32 = 0x3000;
-    const SLOT1_DATA_ORIGIN: u32 = 0x4000;
+    const SLOT0_DATA_ORIGIN: u32 = 0x5000;
+    const SLOT1_CODE_ORIGIN: u32 = 0x9000;
+    const SLOT1_DATA_ORIGIN: u32 = 0xD000;
     const SLOT_CODE_LENGTH: u32 = 16 * 1024;
     const SLOT_DATA_LENGTH: u32 = 16 * 1024;
     const SLOT_STACK_LENGTH: u32 = 4 * 1024;
@@ -207,6 +229,19 @@ mod tests {
             manager.reserve(undeclared),
             Err(SlotManagerError::UndeclaredSlot)
         ));
+    }
+
+    #[test]
+    fn confines_ranges_to_the_allocated_slot() {
+        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let slot0 = manager.allocate().expect("slot 0");
+        let slot1 = manager.allocate().expect("slot 1");
+
+        assert!(slot0.contains(SlotRegion::Code, SLOT0_CODE_ORIGIN, 4));
+        assert!(slot0.contains(SlotRegion::Data, SLOT0_DATA_ORIGIN, 4));
+        assert!(!slot0.contains(SlotRegion::Code, SLOT1_CODE_ORIGIN, 4));
+        assert!(!slot0.contains(SlotRegion::Data, SLOT1_DATA_ORIGIN, 4));
+        assert!(!slot1.contains(SlotRegion::Code, u32::MAX, 2));
     }
 
     #[test]
