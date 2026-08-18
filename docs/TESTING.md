@@ -251,13 +251,19 @@ distinguished from the kernel's fault and recovery records.
 - [x] The slot0 fixture produces a separate AMRN format 4 package with a
   distinct identity, manifest-selected slot0, and 49 retained relocation
   records. Both package artifacts are ready for the two-package hardware run.
+- [x] F405 hardware accepted the first scheduler handoff with the
+  `abi-context-switch,abi-relocation` kernel and the two v4 fixtures: the
+  boot log entered `Slot 0 fixture` and then `Relocation fixture` after loading
+  both declared slots. This proves initial slot0 execution and one slot0 to
+  slot1 application handoff; it does not prove return switching, repeated
+  preemption, register preservation, or memory-isolation behavior.
 - [x] Hardware execution of the v4 streaming loader, selection, relocation, and
   successful application path is documented above; target compilation alone
   would not prove this behavior. v4-specific rejection/recovery hardware tests
   remain separate work.
-- [ ] Runtime two-application memory isolation; loader placement and slot
-  reservations are hardware-evidenced, but the runtime still enters only one
-  application and does not yet switch contexts.
+- [ ] Runtime two-application memory isolation; loader placement and the first
+  slot handoff are hardware-evidenced, but return switching and isolation are
+  not yet proven.
 - [ ] PendSV/SysTick context switching and MPU region switching.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
