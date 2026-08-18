@@ -93,6 +93,9 @@ multi-application isolation, or watchdog support.
 - [x] Accepted `Log` SVC and initial service authorization policy.
 - [x] Three repeated invalid-PSP reset cycles, each producing fresh
   `UsageFault 0x00040000` status and kernel recovery.
+- [x] Post-migration slot0 smoke test after moving the manifest contract to
+  16 KiB code/data slots: AMRN loaded with code `0x20008000` and data
+  `0x2000C000`, invalid-PSP recovery remained `UsageFault 0x00040000`.
 
 The USB console may report `read zero bytes from port` while the target resets
 or the CDC device re-enumerates. That is a transport-session event and must be

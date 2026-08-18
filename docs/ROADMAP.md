@@ -680,6 +680,9 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Verify fault-status clearing and repeatability across three repeated
   invalid-PSP resets; each run produced a fresh `UsageFault 0x00040000` and
   returned to kernel recovery.
+- [x] Revalidate slot0 application loading and invalid-PSP recovery after the
+  manifest-owned 16 KiB code/data migration; F405 loaded code at `0x20008000`
+  and data at `0x2000C000`.
 
 ### Future multi-application and memory tests
 
