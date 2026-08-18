@@ -153,6 +153,8 @@ impl IsolationMemoryProfile {
 /// A manifest-owned application code/data slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct IsolationSlot {
+    /// Stable target-manifest identifier for package selection.
+    pub id: u8,
     /// Stable slot name used by target-aware tooling.
     pub name: &'static str,
     /// Start of the slot's executable code region.

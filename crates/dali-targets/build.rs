@@ -89,6 +89,7 @@ struct IsolationMemory {
 
 #[derive(Debug, Deserialize)]
 struct IsolationSlot {
+    id: u8,
     name: String,
     code_origin: u32,
     code_length: u32,
@@ -567,7 +568,8 @@ fn generate_isolation_memory(memory: &IsolationMemory) -> String {
 
 fn generate_isolation_slot(slot: &IsolationSlot) -> String {
     format!(
-        "IsolationSlot {{ name: {}, code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {} }}",
+        "IsolationSlot {{ id: {}, name: {}, code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {} }}",
+        slot.id,
         string_literal(&slot.name),
         slot.code_origin,
         slot.code_length,

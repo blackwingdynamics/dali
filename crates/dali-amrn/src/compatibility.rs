@@ -28,6 +28,7 @@ impl AbiContract {
             AbiFamily::Isolation => {
                 format_version == crate::v2::FORMAT_VERSION
                     || format_version == crate::v3::FORMAT_VERSION
+                    || format_version == crate::v4::FORMAT_VERSION
             }
         }
     }

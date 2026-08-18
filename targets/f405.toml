@@ -54,6 +54,7 @@ bus_fault_origin = 0x0010_0000
 bus_fault_length = 32
 
 [[memory.isolation.slots]]
+id = 0
 name = "slot0"
 code_origin = 0x2000_8000
 code_length = 16_384
@@ -62,6 +63,7 @@ data_length = 16_384
 stack_length = 4_096
 
 [[memory.isolation.slots]]
+id = 1
 name = "slot1"
 code_origin = 0x2001_0000
 code_length = 16_384

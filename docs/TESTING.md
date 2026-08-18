@@ -146,6 +146,8 @@ distinguished from the kernel's fault and recovery records.
   identity from filenames.
 - [x] Host-level AMRN v4 parsing validates non-zero package identity, ABI v3
   image metadata, explicit slot metadata, and the extended package checksum.
+- [x] Host-level CLI tests cover v4 manifest parsing, package identity/version
+  validation, target slot IDs, and v4 inspection output.
 - [ ] Hardware two-application boundary isolation; only one application is
   loaded and executed at a time.
 - [ ] PendSV/SysTick context switching and MPU region switching.

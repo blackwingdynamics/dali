@@ -544,6 +544,8 @@ Compilation and host tests do not replace hardware evidence.
   and explicit slot-selection fields without changing ABI v3.
 - [x] Implement and host-test the hardware-neutral AMRN v4 codec before
   enabling v4 packages in the kernel.
+- [x] Add manifest-driven v4 package generation and inspection without
+  changing the existing ABI v2/v3 package paths.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.

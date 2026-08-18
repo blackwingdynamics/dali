@@ -42,7 +42,7 @@ fn valid_package() -> std::vec::Vec<u8> {
 }
 
 #[test]
-fn encodes_and_parses_v4_identity_metadata() {
+fn encodes_and_parses_identity_metadata() {
     let image = Image {
         image: v3::Image {
             code: &[0, 0, 0, 0],
@@ -79,7 +79,7 @@ fn encodes_and_parses_v4_identity_metadata() {
 }
 
 #[test]
-fn parses_v4_identity_and_compatibility_metadata() {
+fn parses_identity_and_compatibility_metadata() {
     let package = valid_package();
     let parsed = parse(&package, CONTRACT).expect("v4 package is valid");
     assert_eq!(parsed.header.metadata.package_id[0], 1);
