@@ -185,6 +185,9 @@ distinguished from the kernel's fault and recovery records.
   readiness, running, fault, recovery, and terminal states; invalid skips,
   slot mismatches, and implicit restart are rejected. These tests are
   hardware-neutral contract evidence, not isolation or scheduler evidence.
+- [x] Host-level active-context ownership tests reject activation before
+  readiness, reject a second active context, and allow retirement only after
+  terminal recovery. These tests do not prove runtime scheduling or isolation.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.

@@ -128,6 +128,14 @@ terminal state: the current runtime does not implicitly restart an application,
 schedule another application, or switch MPU contexts. Those behaviors require
 separate lifecycle, scheduler, and protection contracts.
 
+### Active context ownership foundation
+
+The runtime currently permits at most one active application context. A ready
+lifecycle must be explicitly activated before it can enter `Running`, and a
+second activation is rejected. The active context retains the package identity
+and manifest-owned slot allocation. Retirement is accepted only after the
+lifecycle reaches `Terminated`; no implicit restart or context switch exists.
+
 ### SVC gateway
 
 All application services use one SVC gateway. The SVC immediate is a named

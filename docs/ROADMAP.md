@@ -587,6 +587,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Define and host-test the bounded application lifecycle state machine from
   package discovery through terminal recovery without adding restart or
   context switching behavior.
+- [x] Define and host-test single active-context ownership, including duplicate
+  activation rejection and terminal-only retirement without a scheduler.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
