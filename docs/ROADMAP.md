@@ -599,9 +599,58 @@ Compilation and host tests do not replace hardware evidence.
   require a manual reset and the read-only package boundary has no rollback.
 - [x] Define the watchdog safety gate: do not arm hardware watchdogs until a
   bounded heartbeat/feed owner contract exists.
-- [ ] Implement and test PendSV/SysTick context switching.
-- [ ] Verify MPU region switching during application context switches.
-- [ ] Verify application-to-application memory isolation.
+- [x] Define and host-test the bounded saved-context record and context-table
+  selection contract; keep PendSV, SysTick, and MPU switching disabled.
+- [x] Define and host-test the board-independent SysTick quantum and one-shot
+  PendSV request contract without selecting a timer frequency in runtime code.
+- [x] Add target-compiled, feature-gated ARM save/restore primitives for the
+  kernel-owned context record; keep scheduler selection, interrupt enablement,
+  and MPU switching separate.
+- [x] Add a bounded scheduler facade that sequences tick requests, active-state
+  capture, and next-ready selection without owning an interrupt vector.
+- [x] Define and host-test the bounded PendSV preparation transition, including
+  no-op behavior without a request and save-before-selection ordering.
+- [x] Generate scheduler capacity from each target manifest's declared
+  isolation slots before introducing kernel-owned scheduler storage.
+- [x] Add one-time kernel-owned scheduler storage with explicit exclusive
+  interrupt-access requirements; keep the storage disconnected from vectors.
+- [x] Move the scheduler quantum into target-profile configuration so runtime
+  code does not hardcode board timing values.
+- [x] Initialize kernel-owned scheduler storage from the selected target
+  profile without enabling PendSV or timer interrupts.
+- [x] Bind each scheduler CPU record to its manifest-owned application slot so
+  a future protected switch can select CPU state and MPU layout together.
+- [x] Register validated loaded application contexts and activate the first
+  scheduler context without enabling timer interrupts or concurrent execution.
+- [x] Add a feature-gated SysTick exception hook that accounts for target ticks
+  and requests PendSV only when a ready context exists; keep timer enablement,
+  register transfer, and MPU switching separate.
+- [x] Add a target-compiled privileged PendSV wrapper that captures the outgoing
+  CPU record and routes the selected record to the restore primitive; keep
+  lifecycle ownership separate until hardware evidence.
+- [x] Declare target scheduler tick frequency and enable SysTick only after the
+  first loaded context is active.
+- [x] Obtain first F405 hardware evidence for a slot0-to-slot1 scheduler
+  handoff using the two manifest-backed v4 fixtures.
+- [x] Add per-slot progress markers to the real hardware fixtures for
+  repeatable context-switch observation without changing production code.
+- [x] Implement and test repeated PendSV/SysTick CPU context switching with
+  independent progress markers on F405; MPU region switching is verified
+  separately below.
+- [x] Add and run a manifest-derived slot1-to-slot0 MPU fault fixture; F405
+  hardware recorded a precise MemManage with the slot0 code origin.
+- [x] Retire a faulted scheduler context before selecting the next ready
+  context; host tests verify that terminated contexts cannot be selected again.
+- [x] Verify MPU region switching during application context switches on F405;
+  GDB observed slot0 code/data bases `0x20008000`/`0x2000C000` and slot1
+  bases `0x20010000`/`0x20014000` at `restore_selected`.
+- [x] Verify on F405 hardware that a faulted context is excluded and a ready
+  application resumes; GDB observed one slot1 entry and continued slot0
+  progress after recovery.
+- [x] Verify bidirectional CPU-side application-memory isolation; both
+  slot1-to-slot0 and slot0-to-slot1 reads were rejected on F405 hardware.
+- [x] Add and run the reverse slot0-to-slot1 CPU isolation fixture so both
+  directions are hardware-tested. DMA isolation remains separate.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.
 - [x] Define application crash, restart, and rollback lifecycle policy;
   hardware watchdog implementation remains deferred until heartbeat ownership.

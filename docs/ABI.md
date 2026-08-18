@@ -145,6 +145,68 @@ transition. The current policy requires a manual reset after termination,
 provides no rollback on the read-only package boundary, and does not arm a
 watchdog without a bounded feed owner.
 
+### Context-switch foundation
+
+The runtime defines a hardware-neutral saved-context record containing the
+application PSP, `r4..r11`, `CONTROL`, and `EXC_RETURN`. Each scheduler record
+also retains the manifest-owned application slot that must accompany the CPU
+state during a future protected switch. A fixed-capacity context table enforces
+one running owner, bounded insertion, terminal exclusion, and
+round-robin-style selection of ready contexts. This is a scheduler contract
+only: SysTick does not yet request a switch, PendSV does not yet save or restore
+multiple contexts, and MPU regions are not switched between applications.
+
+The scheduling contract also defines a board-independent tick budget. Each
+target profile declares the platform timer frequency and the quantum in timer
+ticks. The budget emits a one-shot PendSV request when its quantum expires, and
+the deferred handler remains responsible for the actual register save/restore.
+
+The optional `abi-context-switch` feature now provides target-compiled ARM
+save/restore primitives for the kernel-owned context record. The primitives do
+not select a context, validate a PSP, program the MPU, or enable an interrupt;
+they remain separate from the default one-context launch path until scheduler
+ownership and validation are integrated.
+
+The scheduler facade now owns the bounded sequence around those primitives:
+SysTick records a preemption request, PendSV saves the active record, and the
+facade selects the next ready context. A feature-gated target SysTick hook now
+feeds the scheduler and only pends PendSV when both active and ready contexts
+exist. The selected platform enables SysTick only after the first application
+context is active. Fault recovery permanently retires the active scheduler
+context and can select the next ready record; the ARM recovery transfer and
+MPU reprogramming still require target evidence. F405 hardware has verified
+repeated CPU context switching with independent slot progress markers, but
+has now also verified faulted-context exclusion and continued slot0 execution
+after slot1 recovery; F405 GDB evidence also verified the slot-specific MPU
+code/data bases at `restore_selected`. Bidirectional CPU-side application
+memory rejection is hardware-verified; DMA isolation and authenticity remain
+separate security claims.
+
+The scheduler capacity is generated from the selected target's declared
+isolation slots. It is not derived from filesystem enumeration limits and is
+not a board-independent hardcoded slot count.
+
+The preemption quantum and timer frequency are declared by the target profile.
+The kernel does not embed a deployment-specific timing literal in scheduler
+code.
+
+Kernel-owned scheduler storage is initialized once during bootstrap. Mutable
+access requires an explicit interrupt-exclusivity guarantee; uninitialized or
+repeated initialization is rejected before PendSV integration.
+
+With `abi-context-switch`, bootstrap constructs this storage from the selected
+target profile. The loader registers validated application launch records,
+activates the first scheduler context, and then enables the target SysTick.
+The scheduler contract includes permanent retirement of a faulted context;
+F405 hardware has verified that recovery resumes a ready context without
+re-entering the terminated slot. F405 GDB evidence also verified that
+`restore_selected` observes the slot-specific MPU code/data regions.
+
+`prepare_pendsv` makes that sequence explicit and bounded: without a pending
+request it leaves the active context unchanged; with a request it records the
+outgoing state before selecting the next ready context. Register restoration and
+exception return remain the responsibility of the low-level adapter.
+
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This
 state channel records ownership without exposing a mutable application pointer

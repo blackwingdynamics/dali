@@ -6,8 +6,8 @@ use crate::security::launch::{self, LaunchFrame};
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
     runtime::{
-        lifecycle::{ApplicationIdentity, ApplicationLifecycle},
-        slots::SlotAllocation,
+        application::lifecycle::{ApplicationIdentity, ApplicationLifecycle},
+        memory::slots::SlotAllocation,
     },
     storage::filesystem::AmrnFile,
 };
@@ -19,7 +19,7 @@ const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
 
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -75,7 +75,7 @@ where
 
 pub(super) fn parse_target_header(
     bytes: &[u8; v4::HEADER_SIZE],
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<(v4::Header, v3::Contract, SlotAllocation), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target

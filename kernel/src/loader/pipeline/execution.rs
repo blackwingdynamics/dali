@@ -5,9 +5,12 @@ use dali_amrn::{Crc32, v2};
 use crate::security::launch::{self, LaunchFrame};
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
-    runtime::{lifecycle::ApplicationLifecycle, slots::SlotAllocation},
+    runtime::{application::lifecycle::ApplicationLifecycle, memory::slots::SlotAllocation},
     storage::filesystem::AmrnFile,
 };
+
+#[cfg(feature = "abi-context-switch")]
+use crate::runtime::scheduling::{record::ScheduledContext, saved_state::UNPRIVILEGED_PSP_CONTROL};
 
 /// Values retained after an ABI v3 package has been copied into SRAM.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -24,6 +27,19 @@ pub struct LoadedApplication {
     pub(crate) allocation: SlotAllocation,
     /// Identity lifecycle for v4 packages; legacy packages remain untracked.
     pub(crate) lifecycle: Option<ApplicationLifecycle>,
+}
+
+impl LoadedApplication {
+    /// Builds the initial scheduler record from the validated launch frame.
+    #[cfg(feature = "abi-context-switch")]
+    pub(crate) const fn scheduler_context(self) -> ScheduledContext {
+        ScheduledContext::initial(
+            self.launch_frame.psp,
+            UNPRIVILEGED_PSP_CONTROL,
+            self.launch_frame.exception_return,
+            self.slot,
+        )
+    }
 }
 
 /// Fixed-capacity set of packages loaded into manifest-owned slots.
@@ -79,7 +95,7 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -137,7 +153,7 @@ where
 
 fn target_contract(
     bytes: &[u8; v2::HEADER_SIZE],
-    slot_manager: &mut crate::runtime::slots::SlotManager,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<(v2::Contract, SlotAllocation), super::LoaderError> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target

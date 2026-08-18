@@ -6,6 +6,8 @@
 use crate::logging;
 use dali::svc::ExceptionFrame;
 
+pub(crate) mod scb;
+
 const EXC_RETURN_SIGNATURE_MASK: u32 = 0xFF00_0000;
 const EXC_RETURN_SIGNATURE: u32 = 0xFF00_0000;
 const EXC_RETURN_THREAD_MODE: u32 = 1 << 3;
@@ -144,7 +146,7 @@ extern "C" fn handle_usage_fault(frame_address: u32, exception_return: u32) -> !
 }
 
 extern "C" fn handle_hard_fault(exception_return: u32) -> ! {
-    let status = super::scb::read_cfsr();
+    let status = self::scb::read_cfsr();
     let kind = if status & BUSFAULT_STATUS_MASK != 0 {
         FaultKind::BusFault
     } else {
@@ -189,7 +191,7 @@ fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32)
         },
     };
     report(record);
-    if !crate::runtime::context::record_active_fault() {
+    if !crate::runtime::application::owner::record_active_fault() {
         logging::error(
             logging::SECURITY_SUBSYSTEM,
             format_args!("[SECURITY][FAULT] No active runtime context to terminate"),
@@ -204,14 +206,12 @@ fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32)
 }
 
 fn read_status(kind: FaultKind) -> (u32, Option<u32>) {
-    let status = super::scb::read_cfsr();
+    let status = self::scb::read_cfsr();
     let fault_address = match kind {
         FaultKind::MemManage if status & MEMMANAGE_ADDRESS_VALID != 0 => {
-            Some(super::scb::read_mmfar())
+            Some(self::scb::read_mmfar())
         }
-        FaultKind::BusFault if status & BUSFAULT_ADDRESS_VALID != 0 => {
-            Some(super::scb::read_bfar())
-        }
+        FaultKind::BusFault if status & BUSFAULT_ADDRESS_VALID != 0 => Some(self::scb::read_bfar()),
         _ => None,
     };
     (status, fault_address)

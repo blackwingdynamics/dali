@@ -25,6 +25,10 @@ pub(crate) trait Backend: Sized {
     /// Delays for a bounded number of milliseconds.
     fn delay_ms(&mut self, milliseconds: u32);
 
+    /// Enables the target scheduler tick after application activation.
+    #[cfg(feature = "abi-context-switch")]
+    fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool;
+
     #[cfg(feature = "sdio")]
     /// Transfers the SDIO reader to the storage policy.
     fn take_sdio_reader(&mut self) -> Option<Self::SdioReader>;
@@ -61,6 +65,11 @@ impl Platform {
 
     pub(crate) fn delay_ms(&mut self, milliseconds: u32) {
         self.0.delay_ms(milliseconds);
+    }
+
+    #[cfg(feature = "abi-context-switch")]
+    pub(crate) fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
+        self.0.enable_scheduler_tick(tick_hz)
     }
 
     #[cfg(feature = "sdio")]
@@ -101,6 +110,13 @@ pub(crate) use f405::APPLICATION_EXECUTION_SUPPORTED;
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
 pub(crate) use f405::TARGET_PROFILE;
+
+#[cfg(all(
+    feature = "board-stm32f405-sd",
+    feature = "abi-context-switch",
+    feature = "abi-current"
+))]
+pub(crate) use f405::{CONTEXT_CAPACITY, SCHEDULER_PROFILE};
 
 #[cfg(not(feature = "board-stm32f405-sd"))]
 compile_error!("Select a supported Dali OS platform feature");

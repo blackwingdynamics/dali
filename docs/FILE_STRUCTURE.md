@@ -22,8 +22,18 @@ dali-kernel/
 │       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
 │       ├── abi.rs                 # Central active ABI selector
-│       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
-│       │   └── mpu/               # MPU contract, layout, and privileged programming
+│       ├── security/              # Privilege, fault, launch, MPU, and scheduling boundaries
+│       │   ├── fault/             # Fault records, handlers, recovery, and SCB access
+│       │   │   ├── mod.rs         # Fault classification and recovery boundary
+│       │   │   └── scb.rs         # System Control Block register access
+│       │   ├── launch/            # Validated application frame and entry transition
+│       │   │   └── mod.rs         # Launch-frame materialization and recovery entry
+│       │   ├── mpu/               # MPU contract, layout, and privileged programming
+│       │   ├── privilege/         # Application privilege and service gateway
+│       │   │   ├── mod.rs         # Privilege module boundary
+│       │   │   └── svc.rs         # SVC dispatch and frame validation
+│       │   └── scheduling/        # Kernel-owned scheduler initialization boundary
+│       │       └── mod.rs         # Target-profile scheduler storage initialization
 │       ├── platform/mod.rs        # Platform facade and target entry points
 │       ├── platform/f405/          # F405-specific platform backend
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
@@ -45,7 +55,10 @@ dali-kernel/
 │       │   ├── identity.rs        # Identity-aware package loading
 │       │   └── discovery.rs       # Real root-package catalog and selection
 │       ├── logging/              # Facade, RTT, USB CDC backend
-│       ├── runtime/              # Hardware-neutral application lifecycle state
+│       ├── runtime/              # Hardware-neutral runtime contracts
+│       │   ├── application/     # Lifecycle, active ownership, recovery policy
+│       │   ├── memory/          # Manifest-owned slot allocation
+│       │   └── scheduling/      # CPU records, tick budget, and context selection
 │       └── storage/              # Read-only filesystem and storage policy
 │           └── filesystem/       # Root package discovery and file streaming
 │               └── multi.rs      # Bounded multi-package enumeration
@@ -59,6 +72,8 @@ dali-kernel/
 │   ├── dali-app-fault-hard/
 │   ├── dali-app-fault-kernel/
 │   ├── dali-app-fault-kernel-write/
+│   ├── dali-app-fault-cross-slot/       # Slot1-to-slot0 MPU fault fixture
+│   ├── dali-app-fault-cross-slot-reverse/ # Slot0-to-slot1 MPU fault fixture
 │   ├── dali-app-fault-peripheral/
 │   ├── dali-app-fault-peripheral-write/
 │   ├── dali-app-fault-no-frame/
@@ -110,7 +125,7 @@ kernel/src/
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,contract/{mod.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
-├── runtime/{mod.rs,slots.rs}
+├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs}}
 └── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
@@ -186,6 +201,13 @@ target-scaffold.md
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, fault
   recovery, and MPU protection. The hardware-neutral MPU descriptors and
   layout builder are separated from privileged register programming.
+- `kernel/src/runtime/application/` owns application lifecycle state, active
+  context ownership, and restart/rollback/watchdog policy decisions.
+- `kernel/src/runtime/memory/` owns manifest-declared slot allocation and range
+  containment.
+- `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state,
+  manifest-slot-bound scheduler records, and bounded context selection;
+  PendSV/SysTick handlers and MPU switching remain separate hardware work.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
 - `crates/dali-cli/src/commands/` contains command-specific implementation;

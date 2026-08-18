@@ -15,6 +15,7 @@ struct Manifest {
     status_led: Pin,
     usb: Usb,
     storage: Option<Storage>,
+    scheduler: Option<Scheduler>,
     capabilities: Capabilities,
 }
 
@@ -55,6 +56,12 @@ struct Clock {
     pclk1_hz: u32,
     pclk2_hz: u32,
     usb_hz: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct Scheduler {
+    quantum_ticks: u32,
+    tick_hz: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -206,6 +213,30 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         {
             return Err(format!(
                 "target manifest {} has an invalid contract identifier",
+                manifest.profile.name
+            )
+            .into());
+        }
+        if manifest.profile.application_supported
+            && manifest
+                .scheduler
+                .as_ref()
+                .is_none_or(|scheduler| scheduler.quantum_ticks == 0)
+        {
+            return Err(format!(
+                "target manifest {} has no valid scheduler quantum",
+                manifest.profile.name
+            )
+            .into());
+        }
+        if manifest.profile.application_supported
+            && manifest
+                .scheduler
+                .as_ref()
+                .is_none_or(|scheduler| scheduler.tick_hz == 0)
+        {
+            return Err(format!(
+                "target manifest {} has no valid scheduler tick frequency",
                 manifest.profile.name
             )
             .into());
@@ -422,6 +453,19 @@ fn generate_registry(manifests: &[Manifest]) -> String {
         .map(generate_profile)
         .collect::<Vec<_>>()
         .join("\n");
+    let capacities = manifests
+        .iter()
+        .map(|manifest| {
+            let constant = constant_name(&manifest.profile.name);
+            let capacity = manifest
+                .memory
+                .isolation
+                .as_ref()
+                .map_or(0, |isolation| isolation.slots.len());
+            format!("pub const {constant}_CONTEXT_CAPACITY: usize = {capacity};")
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
     let names = manifests
         .iter()
         .map(|manifest| constant_name(&manifest.profile.name))
@@ -434,14 +478,14 @@ fn generate_registry(manifests: &[Manifest]) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "{definitions}\n\npub const ALL_TARGETS: &[TargetProfile] = &[{names}];\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{supported}];\n"
+        "{definitions}\n\n{capacities}\n\npub const ALL_TARGETS: &[TargetProfile] = &[{names}];\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{supported}];\n"
     )
 }
 
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage}, scheduler: {scheduler} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
@@ -482,6 +526,21 @@ fn generate_profile(manifest: &Manifest) -> String {
             .as_ref()
             .map(generate_storage)
             .map_or_else(|| "None".to_owned(), |storage| format!("Some({storage})")),
+        scheduler = manifest
+            .scheduler
+            .as_ref()
+            .map(generate_scheduler)
+            .map_or_else(
+                || "None".to_owned(),
+                |scheduler| format!("Some({scheduler})")
+            ),
+    )
+}
+
+fn generate_scheduler(scheduler: &Scheduler) -> String {
+    format!(
+        "SchedulerProfile {{ quantum_ticks: {}, tick_hz: {} }}",
+        scheduler.quantum_ticks, scheduler.tick_hz
     )
 }
 

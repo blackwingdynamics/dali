@@ -16,6 +16,7 @@ log-colors = []
 usb-cdc = ["stm32f4xx-hal/otg-fs", "stm32f4xx-hal/usb_fs", "dep:usb-device", "dep:usbd-serial"]
 abi-current = []
 abi-mpu = ["abi-current"]
+abi-context-switch = ["abi-mpu"]
 abi-relocation = ["abi-mpu"]
 abi-test-fixtures = ["abi-mpu"]
 
