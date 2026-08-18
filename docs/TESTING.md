@@ -125,6 +125,10 @@ multi-application isolation, or watchdog support.
   relocation records; the application executed from the selected non-zero slot.
 - [x] The probe shutdown warning after flashing was classified as a transport
   teardown event after the target continued running, not as a loader failure.
+- [x] F405 hardware loaded two distinct AMRN v4 packages in one boot: the
+  loader reported `Loaded 2 application package(s) into declared slots`, and
+  deterministic slot selection entered the slot0 fixture. A later CDC console
+  attach showed no replay because prior records had already drained.
 
 ### Diagnostic evidence
 
@@ -169,6 +173,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.
+- [x] The slot0 fixture produces a separate AMRN format 4 package with a
+  distinct identity, manifest-selected slot0, and 49 retained relocation
+  records. Both package artifacts are ready for the two-package hardware run.
 - [x] Hardware execution of the v4 streaming loader, selection, relocation, and
   successful application path is documented above; target compilation alone
   would not prove this behavior. v4-specific rejection/recovery hardware tests

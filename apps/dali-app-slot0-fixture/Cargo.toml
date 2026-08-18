@@ -1,0 +1,26 @@
+[package]
+name = "dali-app-slot0-fixture"
+version = "0.1.0-alpha.1"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+dali = { path = "../../crates/dali-sdk", features = ["abi-current"] }
+
+[build-dependencies]
+dali-targets = { path = "../../crates/dali-targets" }
+
+[features]
+embedded-payload = []
+abi-current = ["dali/abi-current"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "dali-app-slot0-fixture"
+path = "src/main.rs"
+required-features = ["embedded-payload"]
+test = false

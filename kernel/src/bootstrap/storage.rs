@@ -107,6 +107,13 @@ where
             }
             #[cfg(feature = "abi-current")]
             {
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!(
+                        "[LOADER] Loaded {} application package(s) into declared slots",
+                        package.len()
+                    ),
+                );
                 #[cfg(feature = "abi-mpu")]
                 {
                     let Some(package) = package.first() else {

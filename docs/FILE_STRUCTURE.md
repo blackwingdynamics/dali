@@ -51,6 +51,7 @@ dali-kernel/
 │               └── multi.rs      # Bounded multi-package enumeration
 ├── apps/
 │   ├── dali-app-hello/
+│   ├── dali-app-slot0-fixture/       # AMRN v4 relocation fixture for slot 0
 │   ├── dali-app-relocation-fixture/
 │   ├── dali-app-svc-rejections/
 │   ├── dali-app-fault-bus/

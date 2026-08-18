@@ -51,6 +51,11 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
         self.entries.first().copied().flatten()
     }
 
+    /// Returns the number of packages copied into manifest-owned slots.
+    pub(crate) const fn len(&self) -> usize {
+        self.length
+    }
+
     /// Wraps one loaded package in a bounded set.
     pub(crate) fn single(application: LoadedApplication) -> Self {
         let mut applications = Self::new();

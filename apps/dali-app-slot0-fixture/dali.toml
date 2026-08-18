@@ -1,0 +1,16 @@
+[application]
+name = "dali-app-slot0-fixture"
+version = "0.1.0"
+sdk = "dali"
+
+[build]
+target_profile = "f405"
+abi_version = 3
+format_version = 4
+package_id = "FFEEDDCCBBAA99887766554433221100"
+minimum_kernel_version = "0.1.0"
+required_services = "0x1"
+slot = "slot0"
+profile = "dev"
+entry_symbol = "amiran_entry"
+entry_offset = 0
