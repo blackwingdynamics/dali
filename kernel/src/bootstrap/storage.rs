@@ -114,6 +114,22 @@ where
                         package.len()
                     ),
                 );
+                for application in package.iter() {
+                    let slot = application.slot;
+                    logging::info(
+                        logging::BOOT_SUBSYSTEM,
+                        format_args!(
+                            "[LOADER] Slot {} ({}) boundaries: code=0x{:08X}+{} data=0x{:08X}+{} psp_top=0x{:08X}",
+                            slot.id,
+                            slot.name,
+                            slot.code_origin,
+                            slot.code_length,
+                            slot.data_origin,
+                            slot.data_length,
+                            application.psp_top,
+                        ),
+                    );
+                }
                 #[cfg(feature = "abi-mpu")]
                 {
                     let Some(package) = package.first() else {

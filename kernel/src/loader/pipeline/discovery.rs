@@ -24,7 +24,7 @@ where
         .isolation
         .ok_or(super::LoaderError::UnsupportedCurrentAbiTarget)?;
     let device = BlockDeviceRef::new(device);
-    filesystem::with_amrn_files(device, |file| {
+    let result = filesystem::with_amrn_files(device, |file| {
         let header_bytes = super::identity::read_header(&file)?;
         let (header, _contract, slot) = crate::loader_contract::select_slot(
             &header_bytes,
@@ -36,8 +36,8 @@ where
             .register(header, slot, slot_manager.is_reserved(slot))
             .map_err(super::LoaderError::PackageCatalog)
     })
-    .map_err(super::LoaderError::Filesystem)?
-    .map_err(|error| error)?;
+    .map_err(super::LoaderError::Filesystem)?;
+    result?;
 
     let mut loaded = LoadedApplications::new();
     let mut previous_slot = None;
@@ -62,7 +62,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let mut found = false;
-    filesystem::with_amrn_files(device, |file| {
+    let result = filesystem::with_amrn_files(device, |file| {
         let header = super::identity::read_header(&file)?;
         let identity_end = v4::PACKAGE_ID_OFFSET + selected_identity.len();
         if header[v4::PACKAGE_ID_OFFSET..identity_end] != selected_identity {
@@ -78,8 +78,8 @@ where
         }
         Ok(())
     })
-    .map_err(super::LoaderError::Filesystem)?
-    .map_err(|error| error)?;
+    .map_err(super::LoaderError::Filesystem)?;
+    result?;
     if found {
         Ok(())
     } else {

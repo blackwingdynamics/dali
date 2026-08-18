@@ -135,6 +135,11 @@ multi-application isolation, or watchdog support.
 - [x] F405 hardware rejected two real packages with different identities that
   claimed the same slot with `PackageCatalog(SlotOccupied)` and entered the
   kernel heartbeat without executing either application.
+- [x] F405 hardware reported both loaded packages in their manifest-owned
+  regions: slot0 code `0x20008000+16384`, data `0x2000C000+16384`, PSP top
+  `0x2000D00C`; slot1 code `0x20010000+16384`, data `0x20014000+16384`, PSP
+  top `0x2001500C`. This verifies loader placement and reservations, not
+  runtime memory isolation or concurrent execution.
 
 ### Diagnostic evidence
 
@@ -186,8 +191,9 @@ distinguished from the kernel's fault and recovery records.
   successful application path is documented above; target compilation alone
   would not prove this behavior. v4-specific rejection/recovery hardware tests
   remain separate work.
-- [ ] Hardware two-application boundary isolation; the bounded loader now
-  loads both packages, but the runtime still enters only one application.
+- [ ] Runtime two-application memory isolation; loader placement and slot
+  reservations are hardware-evidenced, but the runtime still enters only one
+  application and does not yet switch contexts.
 - [ ] PendSV/SysTick context switching and MPU region switching.
 - [ ] DMA isolation.
 - [ ] Application restart, timeout, and watchdog lifecycle policy.

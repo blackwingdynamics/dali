@@ -52,7 +52,7 @@ where
     let device = crate::drivers::BlockDeviceRef::new(&device);
     let mut versions = [0; storage::filesystem::MAX_ROOT_AMRN_FILES];
     let mut package_count = 0;
-    storage::filesystem::with_amrn_files(device, |file| {
+    let result = storage::filesystem::with_amrn_files(device, |file| {
         let mut version = [0; dali_amrn::MAGIC.len() + core::mem::size_of::<u8>()];
         read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
         if let Some(version_slot) = versions.get_mut(package_count) {
@@ -65,8 +65,8 @@ where
             ))
         }
     })
-    .map_err(LoaderError::Filesystem)?
-    .map_err(|error| error)?;
+    .map_err(LoaderError::Filesystem)?;
+    result?;
 
     match package_count {
         0 => Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)),

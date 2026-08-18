@@ -581,7 +581,9 @@ Compilation and host tests do not replace hardware evidence.
   remain open. Detailed evidence is in `docs/TESTING.md`.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
-- [ ] Load two applications into independent slots and verify their boundaries.
+- [x] Load two applications into independent slots and verify loader placement
+  boundaries on F405; runtime memory isolation and concurrent execution remain
+  separate work.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

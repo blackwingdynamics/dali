@@ -51,6 +51,13 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
         self.entries.first().copied().flatten()
     }
 
+    /// Iterates over loaded packages in deterministic slot-selection order.
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &LoadedApplication> {
+        self.entries[..self.length]
+            .iter()
+            .filter_map(Option::as_ref)
+    }
+
     /// Returns the number of packages copied into manifest-owned slots.
     pub(crate) const fn len(&self) -> usize {
         self.length
