@@ -74,7 +74,7 @@ pub const CURRENT: LifecyclePolicy = LifecyclePolicy::current();
 
 #[cfg(test)]
 mod tests {
-    use super::{CURRENT, FaultRecoveryAction, RestartPolicy, RollbackPolicy, WatchdogPolicy};
+    use super::*;
 
     #[test]
     fn keeps_faulted_application_in_kernel_recovery() {
