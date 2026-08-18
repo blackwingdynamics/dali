@@ -148,6 +148,8 @@ mod tests {
     use super::{SlotManager, SlotManagerError, SlotRegion};
     use dali_targets::IsolationSlot;
 
+    const SLOT0_ID: u8 = 0;
+    const SLOT1_ID: u8 = 1;
     const SLOT0_CODE_ORIGIN: u32 = 0x1000;
     const SLOT0_DATA_ORIGIN: u32 = 0x5000;
     const SLOT1_CODE_ORIGIN: u32 = 0x9000;
@@ -156,6 +158,7 @@ mod tests {
     const SLOT_DATA_LENGTH: u32 = 16 * 1024;
     const SLOT_STACK_LENGTH: u32 = 4 * 1024;
     const SLOT_TEMPLATE: IsolationSlot = IsolationSlot {
+        id: SLOT0_ID,
         name: "fixture",
         code_origin: SLOT0_CODE_ORIGIN,
         code_length: SLOT_CODE_LENGTH,
@@ -165,6 +168,7 @@ mod tests {
     };
     const SLOTS: &[IsolationSlot] = &[
         IsolationSlot {
+            id: SLOT0_ID,
             name: "slot0",
             code_origin: SLOT0_CODE_ORIGIN,
             code_length: SLOT_CODE_LENGTH,
@@ -173,6 +177,7 @@ mod tests {
             stack_length: SLOT_STACK_LENGTH,
         },
         IsolationSlot {
+            id: SLOT1_ID,
             name: "slot1",
             code_origin: SLOT1_CODE_ORIGIN,
             code_length: SLOT_CODE_LENGTH,
