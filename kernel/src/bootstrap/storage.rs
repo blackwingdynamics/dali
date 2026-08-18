@@ -11,19 +11,27 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
     let Some(mut reader) = board.take_sdio_reader() else {
         logging::error(
             logging::BOOT_SUBSYSTEM,
-            format_args!("[STORAGE] SDIO resources unavailable"),
+            format_args!("[STORAGE] Storage interface unavailable"),
         );
         return status::StorageStatus::Failure;
     };
 
     if let Err(error) = reader.initialize() {
-        logging::error(
-            logging::BOOT_SUBSYSTEM,
-            format_args!("[STORAGE] SDIO initialization failed: {:?}", error),
-        );
         return match error {
-            StorageError::NotReady | StorageError::Timeout => status::StorageStatus::NotDetected,
-            _ => status::StorageStatus::Failure,
+            StorageError::NotReady | StorageError::Timeout => {
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[STORAGE] No storage medium detected; entering kernel heartbeat"),
+                );
+                status::StorageStatus::NotDetected
+            }
+            error => {
+                logging::error(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[STORAGE] Storage initialization failed: {:?}", error),
+                );
+                status::StorageStatus::Failure
+            }
         };
     }
 
@@ -96,6 +104,16 @@ where
             status::StorageStatus::Ready
         }
         Err(error) => {
+            if matches!(
+                error,
+                crate::loader::LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)
+            ) {
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[LOADER] No AMRN package found; entering kernel heartbeat"),
+                );
+                return status::StorageStatus::Idle;
+            }
             logging::error(
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[LOADER] AMRN validation failed: {:?}", error),

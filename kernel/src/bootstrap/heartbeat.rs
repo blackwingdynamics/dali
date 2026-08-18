@@ -16,6 +16,13 @@ pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
             StorageStatus::Ready => {
                 board.set_status_led(true);
             }
+            StorageStatus::Idle => {
+                if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
+                    led_on = !led_on;
+                    board.set_status_led(led_on);
+                    elapsed_ms = 0;
+                }
+            }
             StorageStatus::NotDetected => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;

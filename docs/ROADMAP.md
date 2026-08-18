@@ -641,6 +641,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Precise F405 BusFault decoding with `CFSR`, `BFAR`, stacked `PC/LR`, and
   kernel recovery.
 - [x] No-frame HardFault recovery verified through SWD/GDB boundary tracing.
+- [x] Empty-storage and empty-package boot states remain informational and
+  enter the heartbeat without reporting a user-facing transport error.
 
 ### Remaining single-application isolation tests
 
