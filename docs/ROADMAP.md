@@ -590,7 +590,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Define and host-test single active-context ownership, including duplicate
   activation rejection and terminal-only retirement without a scheduler.
 - [x] Integrate the v4 loader and MPU launch path with the lifecycle and active
-  context owner; hardware lifecycle evidence remains pending.
+  context owner; F405 hardware confirmed `Loaded -> Ready -> Running` during
+  two-package boot and slot0 execution.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

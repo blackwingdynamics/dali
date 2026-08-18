@@ -139,6 +139,8 @@ The v4 loader creates the lifecycle after validated copy and relocation, then
 the launch path performs the `Loaded -> Ready -> Running` transition before
 MPU activation. Legacy v2/v3 package paths retain their existing launch
 behavior until they receive an identity-aware lifecycle contract.
+F405 hardware has confirmed these transitions together with two-package
+loading, manifest slot boundaries, and slot0 execution.
 
 ### SVC gateway
 
