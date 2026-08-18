@@ -7,6 +7,7 @@ pub mod compatibility;
 mod stream;
 pub mod v2;
 pub mod v3;
+pub mod v4;
 
 pub use builder::{BuildError, encode_package};
 #[cfg(test)]

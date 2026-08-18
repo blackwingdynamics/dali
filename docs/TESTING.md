@@ -144,6 +144,8 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-level root-package selection classification distinguishes no package,
   exactly one package, and ambiguous multiple packages without inferring
   identity from filenames.
+- [x] Host-level AMRN v4 parsing validates non-zero package identity, ABI v3
+  image metadata, explicit slot metadata, and the extended package checksum.
 - [ ] Hardware two-application boundary isolation; only one application is
   loaded and executed at a time.
 - [ ] PendSV/SysTick context switching and MPU region switching.
