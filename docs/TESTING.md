@@ -148,6 +148,10 @@ distinguished from the kernel's fault and recovery records.
   image metadata, explicit slot metadata, and the extended package checksum.
 - [x] Host-level CLI tests cover v4 manifest parsing, package identity/version
   validation, target slot IDs, and v4 inspection output.
+- [x] Host-side fake-reader fixtures cover v4 bounded read order, CRC mismatch,
+  invalid relocation, and undeclared-slot rejection.
+- [ ] Hardware execution of the v4 streaming loader; target compilation alone
+  does not prove v4 loading, relocation, or recovery.
 - [ ] Hardware two-application boundary isolation; only one application is
   loaded and executed at a time.
 - [ ] PendSV/SysTick context switching and MPU region switching.

@@ -10,6 +10,14 @@ pub const FORMAT_VERSION: u8 = 4;
 pub const ABI_VERSION: u8 = v3::ABI_VERSION;
 /// Encoded relocation entry length retained from format v3.
 pub const RELOCATION_ENTRY_SIZE: usize = v3::RELOCATION_ENTRY_SIZE;
+/// Offset of the target identifier in the fixed header.
+pub const TARGET_ID_OFFSET: usize = 5;
+/// Offset of the manifest-owned slot identifier in the extension header.
+pub const SLOT_ID_OFFSET: usize = 112;
+/// Offset of the package CRC32 field in the extension header.
+pub const PACKAGE_CRC32_OFFSET: usize = 116;
+/// Offset where the package CRC32 input resumes after the reserved header tail.
+pub const RESERVED_BYTES_OFFSET: usize = 120;
 const V3_HEADER_SIZE: usize = v3::HEADER_SIZE;
 const CODE_SIZE_OFFSET: usize = 8;
 const DATA_INIT_SIZE_OFFSET: usize = 12;
@@ -29,11 +37,8 @@ const PACKAGE_ID_OFFSET: usize = 80;
 const PACKAGE_VERSION_OFFSET: usize = 96;
 const MINIMUM_KERNEL_VERSION_OFFSET: usize = 102;
 const REQUIRED_SERVICES_OFFSET: usize = 108;
-const SLOT_ID_OFFSET: usize = 112;
 const FLAGS_OFFSET: usize = 113;
 const RESERVED_U16_OFFSET: usize = 114;
-const PACKAGE_CRC32_OFFSET: usize = 116;
-const RESERVED_BYTES_OFFSET: usize = 120;
 
 /// Semantic version represented by three bounded unsigned components.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

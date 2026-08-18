@@ -546,9 +546,11 @@ Compilation and host tests do not replace hardware evidence.
   enabling v4 packages in the kernel.
 - [x] Add manifest-driven v4 package generation and inspection without
   changing the existing ABI v2/v3 package paths.
-- [ ] Add a kernel-side v4 selection and bounded streaming loader contract;
-  reject v4 explicitly until this implementation and its hardware-neutral
-  tests are complete.
+- [x] Add a kernel-side v4 selection and bounded streaming loader path without
+  changing the ABI v2/v3 loaders.
+- [x] Add host-testable streaming-loader fixtures for v4 selection, bounded
+  reads, CRC, and relocation validation.
+- [ ] Validate v4 selection, relocation, and recovery on hardware.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.

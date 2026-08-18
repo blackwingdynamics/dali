@@ -3,5 +3,6 @@
 //! Hardware-independent kernel contracts exposed for host-side testing.
 
 pub mod drivers;
+pub mod loader_contract;
 pub mod runtime;
 pub mod storage;
