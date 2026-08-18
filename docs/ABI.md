@@ -172,8 +172,8 @@ The scheduler facade now owns the bounded sequence around those primitives:
 SysTick records a preemption request, PendSV saves the active record, and the
 facade selects the next ready context. A feature-gated target SysTick hook now
 feeds the scheduler and only pends PendSV when both active and ready contexts
-exist. The hook does not enable the timer, insert application contexts, perform
-the register transfer, or switch MPU regions; those remain integration work.
+exist. The hook does not enable the timer, perform the register transfer, or
+switch MPU regions; those remain integration work.
 
 The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is
@@ -187,9 +187,10 @@ Kernel-owned scheduler storage is initialized once during bootstrap. Mutable
 access requires an explicit interrupt-exclusivity guarantee; uninitialized or
 repeated initialization is rejected before PendSV integration.
 
-With `abi-context-switch`, bootstrap now constructs this storage from the
-selected target profile. The scheduler remains disconnected from the vector
-table and no application context is inserted until PendSV ownership is wired.
+With `abi-context-switch`, bootstrap constructs this storage from the selected
+target profile. The loader registers validated application launch records and
+activates the first scheduler context, but the scheduler remains disconnected
+from timer enablement and register-transfer ownership.
 
 `prepare_pendsv` makes that sequence explicit and bounded: without a pending
 request it leaves the active context unchanged; with a request it records the

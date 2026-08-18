@@ -228,15 +228,14 @@ distinguished from the kernel's fault and recovery records.
   configuration; no timer frequency or quantum literal is embedded in the
   scheduler implementation.
 - [x] Embedded target compilation verifies bootstrap scheduler initialization
-  from target-profile configuration; interrupt vectors and application context
-  insertion remain disabled.
+  from target-profile configuration; timer enablement and interrupt register
+  transfer remain disabled.
 - [x] Host-level scheduler-record tests retain the manifest-owned slot beside
   each saved CPU context. This is metadata-binding evidence only; it does not
   prove PendSV register transfer or MPU region switching.
 - [x] Embedded target compilation verifies the feature-gated SysTick exception
-  hook and guarded PendSV request path. No timer is enabled and no application
-  context is inserted by this step, so it is not hardware context-switch
-  evidence.
+  hook and guarded PendSV request path. No timer is enabled and no register
+  transfer occurs, so it is not hardware context-switch evidence.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.

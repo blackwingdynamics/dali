@@ -15,6 +15,16 @@ pub struct ScheduledContext {
 }
 
 impl ScheduledContext {
+    /// Creates an initial scheduler record for a validated launch frame.
+    pub const fn initial(
+        psp: u32,
+        control: u32,
+        exception_return: u32,
+        slot: IsolationSlot,
+    ) -> Self {
+        Self::new(SavedContext::initial(psp, control, exception_return), slot)
+    }
+
     /// Creates a scheduler record from validated CPU state and slot metadata.
     pub const fn new(cpu: SavedContext, slot: IsolationSlot) -> Self {
         Self { cpu, slot }

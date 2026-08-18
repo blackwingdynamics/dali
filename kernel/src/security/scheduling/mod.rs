@@ -1,6 +1,7 @@
 //! Kernel-owned scheduler initialization before interrupt integration.
 
 use crate::runtime::scheduling::{
+    record::ScheduledContext,
     scheduler::{Scheduler, SchedulerError},
     storage::{SchedulerStorage, SchedulerStorageError},
 };
@@ -23,6 +24,14 @@ pub(crate) enum SchedulerInitializationError {
     Storage(SchedulerStorageError),
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum SchedulerAccessError {
+    /// The scheduler storage was not ready for an operation.
+    Storage(SchedulerStorageError),
+    /// The scheduler rejected the requested context transition.
+    Scheduler(SchedulerError),
+}
+
 /// Initializes scheduler state once from the selected target profile.
 pub(crate) fn initialize() -> Result<(), SchedulerInitializationError> {
     let profile =
@@ -32,6 +41,43 @@ pub(crate) fn initialize() -> Result<(), SchedulerInitializationError> {
     SCHEDULER_STORAGE
         .initialize(scheduler)
         .map_err(SchedulerInitializationError::Storage)
+}
+
+/// Applies one exclusive operation to the initialized scheduler state.
+fn with_scheduler<R>(
+    operation: impl FnOnce(&mut TargetScheduler) -> R,
+) -> Result<R, SchedulerStorageError> {
+    let pointer = unsafe {
+        // SAFETY: Callers run during bootstrap or a scheduler exception path
+        // with scheduler access serialized by the interrupt boundary.
+        SCHEDULER_STORAGE.get_mut_ptr()?
+    };
+    Ok(operation(unsafe {
+        // SAFETY: `get_mut_ptr` verifies initialization and the caller owns
+        // the exclusive scheduler access for the complete operation.
+        &mut *pointer
+    }))
+}
+
+/// Registers validated application launch contexts in manifest order.
+pub(crate) fn register_contexts(
+    contexts: impl IntoIterator<Item = ScheduledContext>,
+) -> Result<(), SchedulerAccessError> {
+    with_scheduler(|scheduler| {
+        contexts
+            .into_iter()
+            .try_for_each(|context| scheduler.insert(context).map(|_| ()))
+    })
+    .map_err(SchedulerAccessError::Storage)?
+    .map_err(SchedulerAccessError::Scheduler)
+}
+
+/// Activates the first registered context without performing an exception return.
+pub(crate) fn activate_first() -> Result<(), SchedulerAccessError> {
+    with_scheduler(|scheduler| scheduler.activate_first())
+        .map_err(SchedulerAccessError::Storage)?
+        .map(|_| ())
+        .map_err(SchedulerAccessError::Scheduler)
 }
 
 /// Accounts for one target-provided SysTick interrupt.

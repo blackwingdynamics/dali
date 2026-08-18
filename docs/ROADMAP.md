@@ -617,12 +617,14 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Move the scheduler quantum into target-profile configuration so runtime
   code does not hardcode board timing values.
 - [x] Initialize kernel-owned scheduler storage from the selected target
-  profile without enabling PendSV or inserting application contexts.
+  profile without enabling PendSV or timer interrupts.
 - [x] Bind each scheduler CPU record to its manifest-owned application slot so
   a future protected switch can select CPU state and MPU layout together.
+- [x] Register validated loaded application contexts and activate the first
+  scheduler context without enabling timer interrupts or concurrent execution.
 - [x] Add a feature-gated SysTick exception hook that accounts for target ticks
   and requests PendSV only when a ready context exists; keep timer enablement,
-  context insertion, register transfer, and MPU switching separate.
+  register transfer, and MPU switching separate.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

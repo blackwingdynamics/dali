@@ -3,6 +3,9 @@
 /// Number of ARM callee-saved registers preserved by a context switch.
 pub const CALLEE_SAVED_REGISTER_COUNT: usize = 8;
 
+/// ARM `CONTROL` value for unprivileged Thread mode using PSP.
+pub const UNPRIVILEGED_PSP_CONTROL: u32 = 0b11;
+
 /// Kernel-owned CPU state required to resume one application context.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -18,6 +21,16 @@ pub struct SavedContext {
 }
 
 impl SavedContext {
+    /// Creates the initial CPU record for a validated launch frame.
+    pub const fn initial(psp: u32, control: u32, exception_return: u32) -> Self {
+        Self {
+            psp,
+            callee_saved: [0; CALLEE_SAVED_REGISTER_COUNT],
+            control,
+            exception_return,
+        }
+    }
+
     /// Byte offset of the saved PSP field in the ARM assembly layout.
     pub const PSP_OFFSET: usize = core::mem::offset_of!(Self, psp);
     /// Byte offset of the first saved callee-saved register.

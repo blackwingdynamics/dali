@@ -9,6 +9,9 @@ use crate::{
     storage::filesystem::AmrnFile,
 };
 
+#[cfg(feature = "abi-context-switch")]
+use crate::runtime::scheduling::{record::ScheduledContext, saved_state::UNPRIVILEGED_PSP_CONTROL};
+
 /// Values retained after an ABI v3 package has been copied into SRAM.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LoadedApplication {
@@ -24,6 +27,19 @@ pub struct LoadedApplication {
     pub(crate) allocation: SlotAllocation,
     /// Identity lifecycle for v4 packages; legacy packages remain untracked.
     pub(crate) lifecycle: Option<ApplicationLifecycle>,
+}
+
+impl LoadedApplication {
+    /// Builds the initial scheduler record from the validated launch frame.
+    #[cfg(feature = "abi-context-switch")]
+    pub(crate) const fn scheduler_context(self) -> ScheduledContext {
+        ScheduledContext::initial(
+            self.launch_frame.psp,
+            UNPRIVILEGED_PSP_CONTROL,
+            self.launch_frame.exception_return,
+            self.slot,
+        )
+    }
 }
 
 /// Fixed-capacity set of packages loaded into manifest-owned slots.

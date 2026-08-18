@@ -138,6 +138,21 @@ where
                         ),
                     );
                 }
+                #[cfg(feature = "abi-context-switch")]
+                if let Err(error) = crate::security::scheduling::register_contexts(
+                    package
+                        .iter()
+                        .map(|application| application.scheduler_context()),
+                ) {
+                    logging::error(
+                        logging::SECURITY_SUBSYSTEM,
+                        format_args!(
+                            "[SECURITY] Scheduler context registration failed: {:?}",
+                            error
+                        ),
+                    );
+                    return status::StorageStatus::Failure;
+                }
                 #[cfg(feature = "abi-mpu")]
                 {
                     let Some(package) = package.first() else {
@@ -185,6 +200,17 @@ where
                         logging::SECURITY_SUBSYSTEM,
                         format_args!("[SECURITY] Active application context: Running"),
                     );
+                    #[cfg(feature = "abi-context-switch")]
+                    if let Err(error) = crate::security::scheduling::activate_first() {
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[SECURITY] Scheduler context activation failed: {:?}",
+                                error
+                            ),
+                        );
+                        return status::StorageStatus::Failure;
+                    }
                     let Some(active) = context_owner.active() else {
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
