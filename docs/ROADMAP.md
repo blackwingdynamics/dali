@@ -610,6 +610,13 @@ unverified.
 The fault-context decoder was then verified on 2026-08-16 with the F405 kernel
 and the kernel-memory read fixture. The observed record was:
 
+On 2026-08-18, the already accepted invalid-PSP fixture was reset three times
+on the F405 without reflashing. Each cycle completed boot, SDIO initialization,
+AMRN validation, the invalid-PSP request, and kernel recovery with the same
+fresh `UsageFault` status `0x00040000`. The `FATAL: read zero bytes from port`
+message observed while the CDC device disappeared is a console transport
+disconnect during USB re-enumeration, not a kernel recovery failure.
+
 ```text
 [ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage status=0x00000082 pc=Some(536903926) lr=Some(536903865) address=Some(536870912)
 [ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
@@ -670,7 +677,9 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Verify valid SVC calls and the initial service authorization policy:
   `Log` is accepted and undeclared or malformed requests are rejected.
 - [ ] Verify watchdog behavior after application termination and recovery.
-- [ ] Verify fault-status clearing and repeatability across repeated resets.
+- [x] Verify fault-status clearing and repeatability across three repeated
+  invalid-PSP resets; each run produced a fresh `UsageFault 0x00040000` and
+  returned to kernel recovery.
 
 ### Future multi-application and memory tests
 
