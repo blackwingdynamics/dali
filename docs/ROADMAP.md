@@ -95,12 +95,34 @@ this order:
 
 **Current priority — Harden the post-MVP platform and security contracts.**
 
-The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.1
+The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.2
 release boundary are complete. RP2350/Pico kernel support remains deferred;
 the Pico is currently used only as an external SWD probe. ABI v3, relocation,
 and the single-application isolation evidence are complete for the current
 F405 scope. The scalable platform/backend extraction is complete; remaining
 work is contract hardening, security evidence, and post-MVP lifecycle design.
+
+### Post-alpha2 implementation order
+
+Work on this sequence from a dedicated feature branch, merging each coherent
+milestone into `main` only after its documented validation evidence exists.
+
+1. **DMA isolation** — define DMA buffer ownership and allowed ranges, reject
+   unauthorized DMA configuration, and add F405 hardware evidence.
+2. **Watchdog and reset recovery** — verify timeout behavior, reset-cause
+   logging, and safe recovery on the real target.
+3. **Package authenticity** — define a signature extension, trust anchor, and
+   bounded rejected-signature path without conflating CRC32 with authenticity.
+4. **Secure Boot** — verify kernel and package authenticity, compatibility
+   metadata, and anti-rollback policy.
+5. **Application lifecycle** — implement and test restart, rollback, package
+   replacement, and slot recovery semantics.
+6. **Storage hardening** — add retry policy, media health states,
+   insertion/removal handling, and tests across SD cards and filesystems.
+7. **CI and release hardening** — require reproducible builds, artifact hashes,
+   target builds, host tests, Clippy, and release validation.
+8. **Additional board families** — add family backends and generated target
+   profiles only when a second MCU family is introduced.
 
 ### Platform scalability foundation
 
