@@ -43,6 +43,8 @@ pub struct TargetProfile {
     pub usb: UsbProfile,
     /// Storage bus metadata.
     pub storage: Option<StorageProfile>,
+    /// Scheduler configuration declared by the target manifest.
+    pub scheduler: Option<SchedulerProfile>,
 }
 
 /// Optional hardware and runtime capabilities declared by a target profile.
@@ -88,6 +90,13 @@ pub struct ClockProfile {
     pub pclk2_hz: u32,
     /// USB clock domain frequency in hertz.
     pub usb_hz: u32,
+}
+
+/// Bounded scheduler configuration declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SchedulerProfile {
+    /// Number of platform timer ticks in one preemption quantum.
+    pub quantum_ticks: u32,
 }
 
 /// SRAM regions declared by a board manifest.
@@ -234,6 +243,7 @@ mod tests {
     #[test]
     fn exposes_manifest_metadata() {
         assert_eq!(SUPPORTED_TARGETS.len(), 1);
+        assert_eq!(SUPPORTED_TARGETS[0].scheduler.unwrap().quantum_ticks, 1);
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");

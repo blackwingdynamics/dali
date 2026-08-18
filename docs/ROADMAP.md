@@ -614,6 +614,8 @@ Compilation and host tests do not replace hardware evidence.
   isolation slots before introducing kernel-owned scheduler storage.
 - [x] Add one-time kernel-owned scheduler storage with explicit exclusive
   interrupt-access requirements; keep the storage disconnected from vectors.
+- [x] Move the scheduler quantum into target-profile configuration so runtime
+  code does not hardcode board timing values.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

@@ -176,6 +176,10 @@ The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is
 not a board-independent hardcoded slot count.
 
+The preemption quantum is likewise declared by the target profile as a number
+of platform timer ticks. The kernel does not select a board-specific timer
+frequency or embed a deployment-specific quantum in scheduler code.
+
 Kernel-owned scheduler storage is initialized once during bootstrap. Mutable
 access requires an explicit interrupt-exclusivity guarantee; uninitialized or
 repeated initialization is rejected before PendSV integration.

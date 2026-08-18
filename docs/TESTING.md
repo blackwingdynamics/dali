@@ -224,6 +224,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-level scheduler-storage tests reject pre-initialization access,
   publish one initialized value, and reject repeated initialization. These
   tests do not prove interrupt masking on the target.
+- [x] Target-profile generation carries the scheduler quantum as declared
+  configuration; no timer frequency or quantum literal is embedded in the
+  scheduler implementation.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.
