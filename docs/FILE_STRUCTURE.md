@@ -23,7 +23,7 @@ dali-kernel/
 │       ├── main.rs                # Kernel entry and bootstrap call
 │       ├── abi.rs                 # Central active ABI selector
 │       ├── board/                 # Shared MPU descriptors
-│       ├── platform.rs            # Platform facade and target entry points
+│       ├── platform/mod.rs         # Platform facade and target entry points
 │       ├── platform/f405/          # F405-specific platform backend
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
 │       │   ├── board.rs            # F405 hardware resources and board API
@@ -31,9 +31,11 @@ dali-kernel/
 │       │   └── sdio_raw.rs         # F405 SDIO register transport
 │       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
-│       ├── loader.rs              # AMRN v1/v2/v3 dispatch and ABI services
+│       ├── loader/mod.rs           # AMRN dispatch and ABI services
+│       ├── loader/contract.rs     # Hardware-neutral streaming loader contract
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
+│       ├── loader/v4.rs           # Identity-aware streaming loader
 │       ├── logging/               # Facade, RTT, USB CDC backend
 │       ├── runtime/               # Hardware-neutral application lifecycle state
 │       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
@@ -90,11 +92,10 @@ kernel/src/
 ├── main.rs
 ├── abi.rs
 ├── board/{mod.rs,mpu.rs}
-├── platform.rs, platform/f405/{mod.rs,board.rs,sdio.rs,sdio_raw.rs}
+├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw.rs}}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader.rs
-├── loader/{v3.rs,v3_relocatable.rs}
+├── loader/{mod.rs,contract.rs,v3.rs,v3_relocatable.rs,v4.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,slots.rs}
 ├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
@@ -154,7 +155,7 @@ target-scaffold.md
 
 - `kernel/src/board/` owns processor-neutral MPU descriptors and activation
   helpers shared by the selected platform backend.
-- `kernel/src/platform.rs` and `kernel/src/platform/` own the platform facade
+- `kernel/src/platform/mod.rs` and `kernel/src/platform/` own the platform facade
   and target-specific entry points; backend ownership and contributor workflow are defined in
   `docs/PLATFORM_BACKENDS.md`.
 - `kernel/src/platform/f405/sdio*.rs` owns the F405 PAC/HAL SDIO transport;
@@ -168,7 +169,7 @@ target-scaffold.md
   board constants into kernel policy.
 - `kernel/src/storage/` owns SD/filesystem policy; generic block contracts live
   in `kernel/src/drivers/`; package parsing remains in
-  `crates/dali-amrn/` and loading policy remains in `kernel/src/loader.rs`.
+  `crates/dali-amrn/` and loading policy remains in `kernel/src/loader/`.
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, and
   fault recovery.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
