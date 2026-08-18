@@ -67,29 +67,25 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::BlockDeviceAdapter;
-    use super::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
-    use embedded_sdmmc::{Block as FilesystemBlock, BlockDevice, BlockIdx};
-
     struct MockReader {
-        blocks: [Block; 2],
+        blocks: [super::Block; 2],
     }
 
-    impl BlockReader for MockReader {
+    impl super::BlockReader for MockReader {
         fn read_block(
             &mut self,
-            address: BlockAddress,
-            buffer: &mut Block,
-        ) -> Result<(), StorageError> {
+            address: super::BlockAddress,
+            buffer: &mut super::Block,
+        ) -> Result<(), super::StorageError> {
             let source = self
                 .blocks
                 .get(address.value() as usize)
-                .ok_or(StorageError::InvalidBlockAddress)?;
+                .ok_or(super::StorageError::InvalidBlockAddress)?;
             buffer.copy_from_slice(source);
             Ok(())
         }
 
-        fn block_count(&self) -> Result<u32, StorageError> {
+        fn block_count(&self) -> Result<u32, super::StorageError> {
             Ok(self.blocks.len() as u32)
         }
     }
@@ -97,35 +93,50 @@ mod tests {
     #[test]
     fn adapts_bounded_reads_without_hardware_dependencies() {
         let reader = MockReader {
-            blocks: [[0x11; BLOCK_SIZE], [0x22; BLOCK_SIZE]],
+            blocks: [[0x11; super::BLOCK_SIZE], [0x22; super::BLOCK_SIZE]],
         };
-        let device = BlockDeviceAdapter::new(reader);
-        let mut blocks: [FilesystemBlock; 2] = core::array::from_fn(|_| FilesystemBlock {
-            contents: [0; BLOCK_SIZE],
-        });
+        let device = super::BlockDeviceAdapter::new(reader);
+        let mut blocks: [embedded_sdmmc::Block; 2] =
+            core::array::from_fn(|_| embedded_sdmmc::Block {
+                contents: [0; super::BLOCK_SIZE],
+            });
 
-        device
-            .read(&mut blocks, BlockIdx(0))
-            .expect("mock read succeeds");
+        <super::BlockDeviceAdapter<MockReader> as embedded_sdmmc::BlockDevice>::read(
+            &device,
+            &mut blocks,
+            embedded_sdmmc::BlockIdx(0),
+        )
+        .expect("mock read succeeds");
 
-        assert_eq!(blocks[0].contents, [0x11; BLOCK_SIZE]);
-        assert_eq!(blocks[1].contents, [0x22; BLOCK_SIZE]);
-        assert_eq!(device.num_blocks().expect("count succeeds").0, 2);
+        assert_eq!(blocks[0].contents, [0x11; super::BLOCK_SIZE]);
+        assert_eq!(blocks[1].contents, [0x22; super::BLOCK_SIZE]);
+        assert_eq!(
+            <super::BlockDeviceAdapter<MockReader> as embedded_sdmmc::BlockDevice>::num_blocks(
+                &device,
+            )
+            .expect("count succeeds")
+            .0,
+            2
+        );
     }
 
     #[test]
     fn keeps_the_read_only_contract() {
         let reader = MockReader {
-            blocks: [[0; BLOCK_SIZE]; 2],
+            blocks: [[0; super::BLOCK_SIZE]; 2],
         };
-        let device = BlockDeviceAdapter::new(reader);
-        let blocks = [FilesystemBlock {
-            contents: [0; BLOCK_SIZE],
+        let device = super::BlockDeviceAdapter::new(reader);
+        let blocks = [embedded_sdmmc::Block {
+            contents: [0; super::BLOCK_SIZE],
         }];
 
         assert_eq!(
-            device.write(&blocks, BlockIdx(0)),
-            Err(StorageError::Unsupported)
+            <super::BlockDeviceAdapter<MockReader> as embedded_sdmmc::BlockDevice>::write(
+                &device,
+                &blocks,
+                embedded_sdmmc::BlockIdx(0),
+            ),
+            Err(super::StorageError::Unsupported)
         );
     }
 }

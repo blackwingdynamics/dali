@@ -57,8 +57,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{SdioBlockReader, SdioTransport};
-    use crate::drivers::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
+    use super::SdioTransport;
 
     const MOCK_BLOCK_COUNT: u32 = 4;
     const READ_BLOCK: u32 = 2;
@@ -68,21 +67,21 @@ mod tests {
     }
 
     impl SdioTransport for MockTransport {
-        fn initialize(&mut self) -> Result<u32, StorageError> {
+        fn initialize(&mut self) -> Result<u32, crate::drivers::StorageError> {
             self.initialized = true;
             Ok(MOCK_BLOCK_COUNT)
         }
 
         fn read_block(
             &mut self,
-            address: BlockAddress,
-            block: &mut Block,
-        ) -> Result<(), StorageError> {
+            address: crate::drivers::BlockAddress,
+            block: &mut crate::drivers::Block,
+        ) -> Result<(), crate::drivers::StorageError> {
             if !self.initialized {
-                return Err(StorageError::NotReady);
+                return Err(crate::drivers::StorageError::NotReady);
             }
             if address.value() >= MOCK_BLOCK_COUNT {
-                return Err(StorageError::InvalidBlockAddress);
+                return Err(crate::drivers::StorageError::InvalidBlockAddress);
             }
             block.fill(address.value() as u8);
             Ok(())
@@ -91,28 +90,45 @@ mod tests {
 
     #[test]
     fn exposes_capacity_only_after_initialization() {
-        let mut reader = SdioBlockReader::new(MockTransport { initialized: false });
-        assert_eq!(reader.block_count(), Err(StorageError::NotReady));
+        let mut reader = super::SdioBlockReader::new(MockTransport { initialized: false });
+        assert_eq!(
+            <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::block_count(
+                &reader,
+            ),
+            Err(crate::drivers::StorageError::NotReady)
+        );
 
         reader.initialize().expect("mock SDIO initializes");
 
-        assert_eq!(reader.block_count(), Ok(MOCK_BLOCK_COUNT));
+        assert_eq!(
+            <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::block_count(
+                &reader,
+            ),
+            Ok(MOCK_BLOCK_COUNT)
+        );
     }
 
     #[test]
     fn delegates_bounded_reads_to_the_transport() {
-        let mut reader = SdioBlockReader::new(MockTransport { initialized: false });
-        let mut block = [0; BLOCK_SIZE];
+        let mut reader = super::SdioBlockReader::new(MockTransport { initialized: false });
+        let mut block = [0; crate::drivers::BLOCK_SIZE];
 
         reader.initialize().expect("mock SDIO initializes");
-        reader
-            .read_block(BlockAddress::new(READ_BLOCK), &mut block)
-            .expect("mock block read succeeds");
+        <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::read_block(
+            &mut reader,
+            crate::drivers::BlockAddress::new(READ_BLOCK),
+            &mut block,
+        )
+        .expect("mock block read succeeds");
 
-        assert_eq!(block, [READ_BLOCK as u8; BLOCK_SIZE]);
+        assert_eq!(block, [READ_BLOCK as u8; crate::drivers::BLOCK_SIZE]);
         assert_eq!(
-            reader.read_block(BlockAddress::new(MOCK_BLOCK_COUNT), &mut block),
-            Err(StorageError::InvalidBlockAddress)
+            <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::read_block(
+                &mut reader,
+                crate::drivers::BlockAddress::new(MOCK_BLOCK_COUNT),
+                &mut block,
+            ),
+            Err(crate::drivers::StorageError::InvalidBlockAddress)
         );
     }
 }

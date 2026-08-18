@@ -145,7 +145,6 @@ impl SlotManager {
 
 #[cfg(test)]
 mod tests {
-    use super::{SlotManager, SlotManagerError, SlotRegion};
     use dali_targets::IsolationSlot;
 
     const SLOT0_ID: u8 = 0;
@@ -189,7 +188,7 @@ mod tests {
 
     #[test]
     fn allocates_manifest_slots_in_order() {
-        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let mut manager = super::SlotManager::new(SLOTS).expect("capacity is sufficient");
 
         assert_eq!(manager.len(), 2);
         assert_eq!(manager.allocate().expect("slot 0").index(), 0);
@@ -199,7 +198,7 @@ mod tests {
 
     #[test]
     fn releases_and_reuses_a_manifest_slot() {
-        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let mut manager = super::SlotManager::new(SLOTS).expect("capacity is sufficient");
         let allocation = manager.allocate().expect("slot 0");
 
         manager
@@ -210,7 +209,7 @@ mod tests {
 
     #[test]
     fn reserves_only_the_declared_free_slot() {
-        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let mut manager = super::SlotManager::new(SLOTS).expect("capacity is sufficient");
         let slot = SLOTS[1];
 
         let allocation = manager.reserve(slot).expect("slot 1 is declared");
@@ -218,13 +217,13 @@ mod tests {
         assert!(manager.is_reserved(slot));
         assert!(matches!(
             manager.reserve(slot),
-            Err(SlotManagerError::SlotOccupied)
+            Err(super::SlotManagerError::SlotOccupied)
         ));
     }
 
     #[test]
     fn rejects_an_undeclared_slot() {
-        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let mut manager = super::SlotManager::new(SLOTS).expect("capacity is sufficient");
         let undeclared = IsolationSlot {
             name: "other",
             ..SLOTS[0]
@@ -232,29 +231,29 @@ mod tests {
 
         assert!(matches!(
             manager.reserve(undeclared),
-            Err(SlotManagerError::UndeclaredSlot)
+            Err(super::SlotManagerError::UndeclaredSlot)
         ));
     }
 
     #[test]
     fn confines_ranges_to_the_allocated_slot() {
-        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
+        let mut manager = super::SlotManager::new(SLOTS).expect("capacity is sufficient");
         let slot0 = manager.allocate().expect("slot 0");
         let slot1 = manager.allocate().expect("slot 1");
 
-        assert!(slot0.contains(SlotRegion::Code, SLOT0_CODE_ORIGIN, 4));
-        assert!(slot0.contains(SlotRegion::Data, SLOT0_DATA_ORIGIN, 4));
-        assert!(!slot0.contains(SlotRegion::Code, SLOT1_CODE_ORIGIN, 4));
-        assert!(!slot0.contains(SlotRegion::Data, SLOT1_DATA_ORIGIN, 4));
-        assert!(!slot1.contains(SlotRegion::Code, u32::MAX, 2));
+        assert!(slot0.contains(super::SlotRegion::Code, SLOT0_CODE_ORIGIN, 4));
+        assert!(slot0.contains(super::SlotRegion::Data, SLOT0_DATA_ORIGIN, 4));
+        assert!(!slot0.contains(super::SlotRegion::Code, SLOT1_CODE_ORIGIN, 4));
+        assert!(!slot0.contains(super::SlotRegion::Data, SLOT1_DATA_ORIGIN, 4));
+        assert!(!slot1.contains(super::SlotRegion::Code, u32::MAX, 2));
     }
 
     #[test]
     fn rejects_capacity_shorter_than_the_manifest() {
         const OVER_CAPACITY: &[IsolationSlot] = &[SLOT_TEMPLATE; 33];
         assert!(matches!(
-            SlotManager::new(OVER_CAPACITY),
-            Err(SlotManagerError::CapacityExceeded)
+            super::SlotManager::new(OVER_CAPACITY),
+            Err(super::SlotManagerError::CapacityExceeded)
         ));
     }
 }
