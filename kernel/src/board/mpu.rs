@@ -190,9 +190,13 @@ impl IsolationLayout {
             Some(isolation) => isolation,
             None => return None,
         };
+        let active_slot = match isolation.active_slot() {
+            Some(slot) => slot,
+            None => return None,
+        };
         let application_code = match MpuRegion::new(
-            isolation.code_origin,
-            isolation.code_length,
+            active_slot.code_origin,
+            active_slot.code_length,
             MpuAccess::ReadOnly,
             MpuExecution::Allowed,
         ) {
@@ -200,8 +204,8 @@ impl IsolationLayout {
             None => return None,
         };
         let application_data = match MpuRegion::new(
-            isolation.data_origin,
-            isolation.data_length,
+            active_slot.data_origin,
+            active_slot.data_length,
             MpuAccess::ReadWrite,
             MpuExecution::Never,
         ) {

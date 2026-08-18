@@ -149,6 +149,17 @@ pub struct IsolationMemoryProfile {
     pub slots: &'static [IsolationSlot],
 }
 
+impl IsolationMemoryProfile {
+    /// Returns the manifest's first slot used by the current single-app ABI.
+    pub const fn active_slot(self) -> Option<IsolationSlot> {
+        if self.slots.is_empty() {
+            None
+        } else {
+            Some(self.slots[0])
+        }
+    }
+}
+
 /// A manifest-owned application code/data slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct IsolationSlot {
@@ -263,5 +274,6 @@ mod tests {
         assert_eq!(isolation.slots.len(), 1);
         assert_eq!(isolation.slots[0].name, "slot0");
         assert_eq!(isolation.slots[0].code_origin, isolation.code_origin);
+        assert_eq!(isolation.active_slot(), Some(isolation.slots[0]));
     }
 }

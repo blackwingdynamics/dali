@@ -26,15 +26,12 @@ pub(super) fn render_v3_memory_script(template: &str) -> Result<String, String> 
         .memory
         .isolation
         .ok_or_else(|| format!("target `{}` has no isolation memory contract", target.name))?;
+    let slot = isolation
+        .active_slot()
+        .ok_or_else(|| format!("target `{}` has no application slot", target.name))?;
     Ok(template
-        .replace(
-            "{{ code_origin }}",
-            &format!("0x{:08X}", isolation.code_origin),
-        )
-        .replace("{{ code_length }}", &format!("{}", isolation.code_length))
-        .replace(
-            "{{ data_origin }}",
-            &format!("0x{:08X}", isolation.data_origin),
-        )
-        .replace("{{ data_length }}", &format!("{}", isolation.data_length)))
+        .replace("{{ code_origin }}", &format!("0x{:08X}", slot.code_origin))
+        .replace("{{ code_length }}", &format!("{}", slot.code_length))
+        .replace("{{ data_origin }}", &format!("0x{:08X}", slot.data_origin))
+        .replace("{{ data_length }}", &format!("{}", slot.data_length)))
 }

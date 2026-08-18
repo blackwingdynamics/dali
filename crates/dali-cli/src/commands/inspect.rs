@@ -137,12 +137,15 @@ fn inspect_v3_bytes(package: &[u8]) -> Result<String, String> {
         .memory
         .isolation
         .ok_or_else(|| format!("target {} has no ABI v3 memory contract", target.name))?;
+    let slot = isolation
+        .active_slot()
+        .ok_or_else(|| format!("target {} has no application slot", target.name))?;
     let contract = dali_amrn::v3::Contract {
         target_id,
-        code_load_address: isolation.code_origin,
-        code_capacity: isolation.code_length,
-        data_load_address: isolation.data_origin,
-        data_capacity: isolation.data_length,
+        code_load_address: slot.code_origin,
+        code_capacity: slot.code_length,
+        data_load_address: slot.data_origin,
+        data_capacity: slot.data_length,
     };
     let parsed = dali_amrn::v3::parse(package, contract)
         .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
@@ -181,12 +184,15 @@ fn inspect_v2_bytes(package: &[u8]) -> Result<String, String> {
         .memory
         .isolation
         .ok_or_else(|| format!("target `{}` has no ABI v3 memory contract", target.name))?;
+    let slot = isolation
+        .active_slot()
+        .ok_or_else(|| format!("target `{}` has no application slot", target.name))?;
     let contract = dali_amrn::v2::Contract {
         target_id,
-        code_load_address: isolation.code_origin,
-        code_capacity: isolation.code_length,
-        data_load_address: isolation.data_origin,
-        data_capacity: isolation.data_length,
+        code_load_address: slot.code_origin,
+        code_capacity: slot.code_length,
+        data_load_address: slot.data_origin,
+        data_capacity: slot.data_length,
     };
     let parsed = dali_amrn::v2::parse(package, contract)
         .map_err(|error| format!("invalid AMRN package: {error:?}"))?;

@@ -76,6 +76,9 @@ fn build_relocatable_v3_package(
         .memory
         .isolation
         .ok_or_else(|| "target does not declare ABI v3 isolation memory".to_owned())?;
+    let slot = isolation
+        .active_slot()
+        .ok_or_else(|| "target does not declare an application slot".to_owned())?;
     let code = artifacts::code_path(project_directory, target, release, &manifest.name);
     let data = artifacts::data_path(project_directory, target, release, &manifest.name);
     let elf = artifacts::elf_path(project_directory, target, release, &manifest.name);
@@ -105,10 +108,10 @@ fn build_relocatable_v3_package(
     };
     let contract = dali_amrn::v3::Contract {
         target_id: target_profile.amrn_target_id,
-        code_load_address: isolation.code_origin,
-        code_capacity: isolation.code_length,
-        data_load_address: isolation.data_origin,
-        data_capacity: isolation.data_length,
+        code_load_address: slot.code_origin,
+        code_capacity: slot.code_length,
+        data_load_address: slot.data_origin,
+        data_capacity: slot.data_length,
     };
     let relocation_bytes = relocation_artifact
         .relocations
@@ -138,6 +141,9 @@ fn build_v3_package(
         .memory
         .isolation
         .ok_or_else(|| "target does not declare ABI v3 isolation memory".to_owned())?;
+    let slot = isolation
+        .active_slot()
+        .ok_or_else(|| "target does not declare an application slot".to_owned())?;
     let code = artifacts::code_path(project_directory, target, release, &manifest.name);
     let data = artifacts::data_path(project_directory, target, release, &manifest.name);
     let code_bytes = fs::read(&code)
@@ -158,15 +164,15 @@ fn build_v3_package(
         code: &code_bytes,
         initialized_data: &data_bytes,
         data_zero_size: zero_init_size,
-        stack_size: isolation.stack_length,
+        stack_size: slot.stack_length,
         execution_offset: manifest.entry_offset,
     };
     let contract = dali_amrn::v2::Contract {
         target_id: target_profile.amrn_target_id,
-        code_load_address: isolation.code_origin,
-        code_capacity: isolation.code_length,
-        data_load_address: isolation.data_origin,
-        data_capacity: isolation.data_length,
+        code_load_address: slot.code_origin,
+        code_capacity: slot.code_length,
+        data_load_address: slot.data_origin,
+        data_capacity: slot.data_length,
     };
     let capacity = dali_amrn::v2::HEADER_SIZE
         .checked_add(code_bytes.len())

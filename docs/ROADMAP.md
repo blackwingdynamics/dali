@@ -735,6 +735,9 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Design the hardware-neutral fixed-capacity slot manager over the
   manifest-owned slot table; keep loader integration deferred until the
   relocation contract and memory map migration are stable.
+- [x] Route the current single-application linker, package, inspection, and
+  MPU boundaries through the manifest's active slot helper; preserve slot 0
+  addresses and defer slot 1 activation.
 - [ ] Add PSP/PendSV context switching only after one isolated application is
   stable and its fault boundary is tested.
 - [ ] Add multiple application slots and concurrent application execution.
