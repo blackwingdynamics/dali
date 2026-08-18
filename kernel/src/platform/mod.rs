@@ -94,7 +94,7 @@ pub(crate) use f405::MEMORY_PROFILE;
 pub(crate) use f405::{ISOLATION_LAYOUT, activate_application_regions};
 
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-mpu"))]
-pub(crate) use crate::board::mpu;
+pub(crate) use crate::security::mpu;
 
 #[cfg(all(feature = "board-stm32f405-sd", not(feature = "abi-current")))]
 pub(crate) use f405::APPLICATION_EXECUTION_SUPPORTED;

@@ -22,7 +22,8 @@ dali-kernel/
 │       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
 │       ├── abi.rs                 # Central active ABI selector
-│       ├── board/                 # Shared MPU descriptors
+│       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
+│       │   └── mpu/               # MPU contract, layout, and privileged programming
 │       ├── platform/mod.rs         # Platform facade and target entry points
 │       ├── platform/f405/          # F405-specific platform backend
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
@@ -38,7 +39,6 @@ dali-kernel/
 │       ├── loader/v4.rs           # Identity-aware streaming loader
 │       ├── logging/               # Facade, RTT, USB CDC backend
 │       ├── runtime/               # Hardware-neutral application lifecycle state
-│       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
 │       └── storage/               # Read-only filesystem and storage policy
 ├── apps/
 │   ├── dali-app-hello/
@@ -91,7 +91,7 @@ kernel/src/
 ├── lib.rs
 ├── main.rs
 ├── abi.rs
-├── board/{mod.rs,mpu.rs}
+├── security/{mod.rs,mpu/{mod.rs},fault.rs,launch.rs,scb.rs,svc.rs}
 ├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw.rs}}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
@@ -153,8 +153,8 @@ target-scaffold.md
 
 ## Ownership boundaries
 
-- `kernel/src/board/` owns processor-neutral MPU descriptors and activation
-  helpers shared by the selected platform backend.
+- `kernel/src/security/mpu/` owns MPU descriptors, memory-layout validation,
+  and privileged activation of application regions.
 - `kernel/src/platform/mod.rs` and `kernel/src/platform/` own the platform facade
   and target-specific entry points; backend ownership and contributor workflow are defined in
   `docs/PLATFORM_BACKENDS.md`.
