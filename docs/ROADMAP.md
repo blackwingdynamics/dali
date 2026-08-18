@@ -601,9 +601,11 @@ message, and invalid UTF-8 through the ABI v3 gateway. The observed output was:
 ```
 
 No security fault or recovery record was emitted, and the application remained
-alive after the matrix. This proves the selected malformed service requests
-were rejected at the kernel gateway; authorization policy, DMA isolation, and
-multi-application isolation remain unverified.
+alive after the matrix. The final `SVC rejection matrix complete` line is
+emitted through the bounded `Log` SVC itself, so the same run also proves that
+the declared service is accepted while unknown services and malformed
+arguments are rejected. DMA isolation and multi-application isolation remain
+unverified.
 
 The fault-context decoder was then verified on 2026-08-16 with the F405 kernel
 and the kernel-memory read fixture. The observed record was:
@@ -665,7 +667,8 @@ Compilation and host tests do not replace hardware evidence.
 
 ### Remaining single-application isolation tests
 
-- [ ] Verify valid SVC calls and service authorization/capability policy.
+- [x] Verify valid SVC calls and the initial service authorization policy:
+  `Log` is accepted and undeclared or malformed requests are rejected.
 - [ ] Verify watchdog behavior after application termination and recovery.
 - [ ] Verify fault-status clearing and repeatability across repeated resets.
 
