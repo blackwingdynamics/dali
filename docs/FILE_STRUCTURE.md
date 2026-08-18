@@ -35,7 +35,9 @@ dali-kernel/
 │       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader/mod.rs           # AMRN dispatch and ABI services
-│       ├── loader/contract.rs     # Hardware-neutral streaming loader contract
+│       ├── loader/contract/        # Hardware-neutral streaming loader contract
+│       │   ├── mod.rs              # Streaming validation API
+│       │   └── tests.rs            # Host fake-reader fixtures
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
 │       ├── loader/v4.rs           # Identity-aware streaming loader
@@ -97,7 +99,7 @@ kernel/src/
 ├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,status.rs}}}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader/{mod.rs,contract.rs,v3.rs,v3_relocatable.rs,v4.rs}
+├── loader/{mod.rs,contract/{mod.rs,tests.rs},v3.rs,v3_relocatable.rs,v4.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,slots.rs}
 ├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
