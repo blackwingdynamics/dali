@@ -58,7 +58,7 @@ dali-kernel/
 │       ├── runtime/              # Hardware-neutral runtime contracts
 │       │   ├── application/     # Lifecycle, active ownership, recovery policy
 │       │   ├── memory/          # Manifest-owned slot allocation
-│       │   └── scheduling/      # Saved CPU state and bounded context table
+│       │   └── scheduling/      # CPU records, tick budget, and context selection
 │       └── storage/              # Read-only filesystem and storage policy
 │           └── filesystem/       # Root package discovery and file streaming
 │               └── multi.rs      # Bounded multi-package enumeration
@@ -123,7 +123,7 @@ kernel/src/
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,contract/{mod.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
-├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,context_table.rs}}
+├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs}}
 └── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
@@ -203,9 +203,9 @@ target-scaffold.md
   context ownership, and restart/rollback/watchdog policy decisions.
 - `kernel/src/runtime/memory/` owns manifest-declared slot allocation and range
   containment.
-- `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state and
-  bounded context selection; PendSV/SysTick handlers and MPU switching remain
-  separate hardware work.
+- `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state,
+  manifest-slot-bound scheduler records, and bounded context selection;
+  PendSV/SysTick handlers and MPU switching remain separate hardware work.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
 - `crates/dali-cli/src/commands/` contains command-specific implementation;

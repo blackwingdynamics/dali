@@ -618,6 +618,8 @@ Compilation and host tests do not replace hardware evidence.
   code does not hardcode board timing values.
 - [x] Initialize kernel-owned scheduler storage from the selected target
   profile without enabling PendSV or inserting application contexts.
+- [x] Bind each scheduler CPU record to its manifest-owned application slot so
+  a future protected switch can select CPU state and MPU layout together.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

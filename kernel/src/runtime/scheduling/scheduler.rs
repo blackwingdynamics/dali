@@ -1,8 +1,7 @@
 //! Bounded scheduler orchestration for the future PendSV integration.
 
 use super::{
-    context_table::{ContextId, ContextTable, ContextTableError},
-    saved_state::SavedContext,
+    context_table::{ContextId, ContextTable, ContextTableError, ScheduledContext},
     tick::{TickBudget, TickBudgetError},
 };
 
@@ -48,7 +47,7 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
     }
 
     /// Adds a ready context to the bounded scheduler table.
-    pub fn insert(&mut self, context: SavedContext) -> Result<ContextId, SchedulerError> {
+    pub fn insert(&mut self, context: ScheduledContext) -> Result<ContextId, SchedulerError> {
         self.contexts
             .insert(context)
             .map_err(SchedulerError::Context)
@@ -80,7 +79,7 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
     /// preemption request is pending.
     pub fn prepare_pendsv(
         &mut self,
-        saved_context: SavedContext,
+        saved_context: ScheduledContext,
     ) -> Result<Option<SwitchSelection>, SchedulerError> {
         if !self.take_preemption_request() {
             return Ok(None);
@@ -90,7 +89,7 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
     }
 
     /// Replaces the saved state after PendSV captured the outgoing context.
-    pub fn save_active(&mut self, context: SavedContext) -> Result<ContextId, SchedulerError> {
+    pub fn save_active(&mut self, context: ScheduledContext) -> Result<ContextId, SchedulerError> {
         let id = self
             .contexts
             .active()
@@ -121,7 +120,7 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
     }
 
     /// Returns the saved state for a selected context.
-    pub fn context(&self, id: ContextId) -> Result<SavedContext, SchedulerError> {
+    pub fn context(&self, id: ContextId) -> Result<ScheduledContext, SchedulerError> {
         self.contexts.get(id).map_err(SchedulerError::Context)
     }
 }
@@ -130,13 +129,28 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
 mod tests {
     use super::*;
     use crate::runtime::scheduling::context_table::CALLEE_SAVED_REGISTER_COUNT;
+    use crate::runtime::scheduling::saved_state::SavedContext;
+    use dali_targets::IsolationSlot;
 
-    const CONTEXT: SavedContext = SavedContext {
-        psp: 0x2000_C000,
-        callee_saved: [0; CALLEE_SAVED_REGISTER_COUNT],
-        control: 0x03,
-        exception_return: 0xFFFF_FFFD,
+    const SLOT: IsolationSlot = IsolationSlot {
+        id: 0,
+        name: "test-slot",
+        code_origin: 0x1000,
+        code_length: 0x4000,
+        data_origin: 0x5000,
+        data_length: 0x4000,
+        stack_length: 0x1000,
     };
+
+    const CONTEXT: ScheduledContext = ScheduledContext::new(
+        SavedContext {
+            psp: 0x2000_C000,
+            callee_saved: [0; CALLEE_SAVED_REGISTER_COUNT],
+            control: 0x03,
+            exception_return: 0xFFFF_FFFD,
+        },
+        SLOT,
+    );
 
     #[test]
     fn rejects_an_empty_tick_quantum() {
@@ -169,12 +183,15 @@ mod tests {
         let first = scheduler.insert(CONTEXT).unwrap();
         let _second = scheduler.insert(CONTEXT).unwrap();
         assert_eq!(scheduler.activate_first(), Ok(first));
-        let saved = SavedContext {
-            psp: 0x2000_D000,
-            callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
-            control: 0x03,
-            exception_return: 0xFFFF_FFFD,
-        };
+        let saved = ScheduledContext::new(
+            SavedContext {
+                psp: 0x2000_D000,
+                callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
+                control: 0x03,
+                exception_return: 0xFFFF_FFFD,
+            },
+            SLOT,
+        );
         assert_eq!(scheduler.save_active(saved), Ok(first));
         assert_eq!(scheduler.context(first), Ok(saved));
     }
@@ -195,12 +212,15 @@ mod tests {
         let second = scheduler.insert(CONTEXT).unwrap();
         assert_eq!(scheduler.activate_first(), Ok(first));
         scheduler.on_tick();
-        let saved = SavedContext {
-            psp: 0x2000_D000,
-            callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
-            control: 0x03,
-            exception_return: 0xFFFF_FFFD,
-        };
+        let saved = ScheduledContext::new(
+            SavedContext {
+                psp: 0x2000_D000,
+                callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
+                control: 0x03,
+                exception_return: 0xFFFF_FFFD,
+            },
+            SLOT,
+        );
         assert_eq!(
             scheduler.prepare_pendsv(saved),
             Ok(Some(SwitchSelection {

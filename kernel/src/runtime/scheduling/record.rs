@@ -1,0 +1,37 @@
+//! Scheduler-owned CPU state and protection binding for one application.
+
+use dali_targets::IsolationSlot;
+
+use super::saved_state::SavedContext;
+
+/// Complete kernel-owned record required to resume one application.
+///
+/// The slot is retained beside the CPU state so a future privileged PendSV
+/// path can select the matching MPU layout before exception return.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ScheduledContext {
+    cpu: SavedContext,
+    slot: IsolationSlot,
+}
+
+impl ScheduledContext {
+    /// Creates a scheduler record from validated CPU state and slot metadata.
+    pub const fn new(cpu: SavedContext, slot: IsolationSlot) -> Self {
+        Self { cpu, slot }
+    }
+
+    /// Returns the saved CPU state consumed by the restore primitive.
+    pub const fn cpu(self) -> SavedContext {
+        self.cpu
+    }
+
+    /// Returns the manifest-owned slot bound to this execution context.
+    pub const fn slot(self) -> IsolationSlot {
+        self.slot
+    }
+
+    /// Replaces only the saved CPU state after PendSV captures a context.
+    pub const fn with_cpu(self, cpu: SavedContext) -> Self {
+        Self { cpu, ..self }
+    }
+}

@@ -230,6 +230,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] Embedded target compilation verifies bootstrap scheduler initialization
   from target-profile configuration; interrupt vectors and application context
   insertion remain disabled.
+- [x] Host-level scheduler-record tests retain the manifest-owned slot beside
+  each saved CPU context. This is metadata-binding evidence only; it does not
+  prove PendSV register transfer or MPU region switching.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.

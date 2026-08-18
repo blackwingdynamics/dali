@@ -148,8 +148,10 @@ watchdog without a bounded feed owner.
 ### Context-switch foundation
 
 The runtime defines a hardware-neutral saved-context record containing the
-application PSP, `r4..r11`, `CONTROL`, and `EXC_RETURN`. A fixed-capacity context
-table enforces one running owner, bounded insertion, terminal exclusion, and
+application PSP, `r4..r11`, `CONTROL`, and `EXC_RETURN`. Each scheduler record
+also retains the manifest-owned application slot that must accompany the CPU
+state during a future protected switch. A fixed-capacity context table enforces
+one running owner, bounded insertion, terminal exclusion, and
 round-robin-style selection of ready contexts. This is a scheduler contract
 only: SysTick does not yet request a switch, PendSV does not yet save or restore
 multiple contexts, and MPU regions are not switched between applications.

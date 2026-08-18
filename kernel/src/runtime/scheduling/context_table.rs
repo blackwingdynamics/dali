@@ -1,5 +1,6 @@
 //! Hardware-neutral context-switch records and bounded selection policy.
 
+pub use super::record::ScheduledContext;
 pub use super::saved_state::{CALLEE_SAVED_REGISTER_COUNT, SavedContext};
 
 /// Identifies one entry in a fixed-capacity context table.
@@ -31,7 +32,7 @@ pub enum ContextState {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct ContextSlot {
-    context: SavedContext,
+    context: ScheduledContext,
     state: ContextState,
 }
 
@@ -67,7 +68,7 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
     }
 
     /// Adds a ready context and returns its stable table identifier.
-    pub fn insert(&mut self, context: SavedContext) -> Result<ContextId, ContextTableError> {
+    pub fn insert(&mut self, context: ScheduledContext) -> Result<ContextId, ContextTableError> {
         let Some((index, slot)) = self
             .slots
             .iter_mut()
@@ -135,7 +136,7 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
     }
 
     /// Returns the saved register state for a valid context identifier.
-    pub fn get(&self, id: ContextId) -> Result<SavedContext, ContextTableError> {
+    pub fn get(&self, id: ContextId) -> Result<ScheduledContext, ContextTableError> {
         Ok(self.slot(id)?.context)
     }
 
@@ -148,7 +149,7 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
     pub fn update(
         &mut self,
         id: ContextId,
-        context: SavedContext,
+        context: ScheduledContext,
     ) -> Result<(), ContextTableError> {
         self.slot_mut(id)?.context = context;
         Ok(())
@@ -178,13 +179,25 @@ impl<const CAPACITY: usize> Default for ContextTable<CAPACITY> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dali_targets::IsolationSlot;
 
-    const CONTEXT: SavedContext = SavedContext {
+    const SLOT: IsolationSlot = IsolationSlot {
+        id: 0,
+        name: "test-slot",
+        code_origin: 0x1000,
+        code_length: 0x4000,
+        data_origin: 0x5000,
+        data_length: 0x4000,
+        stack_length: 0x1000,
+    };
+
+    const CPU: SavedContext = SavedContext {
         psp: 0x2000_C000,
         callee_saved: [0; CALLEE_SAVED_REGISTER_COUNT],
         control: 0x03,
         exception_return: 0xFFFF_FFFD,
     };
+    const CONTEXT: ScheduledContext = ScheduledContext::new(CPU, SLOT);
 
     #[test]
     fn keeps_the_table_bounded() {
@@ -221,12 +234,15 @@ mod tests {
     #[test]
     fn preserves_saved_register_state() {
         let mut table = ContextTable::<1>::new();
-        let context = SavedContext {
-            psp: 0x2001_4000,
-            callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
-            control: 0x03,
-            exception_return: 0xFFFF_FFFD,
-        };
+        let context = ScheduledContext::new(
+            SavedContext {
+                psp: 0x2001_4000,
+                callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
+                control: 0x03,
+                exception_return: 0xFFFF_FFFD,
+            },
+            SLOT,
+        );
         let id = table.insert(context).unwrap();
         assert_eq!(table.get(id), Ok(context));
     }
