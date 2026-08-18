@@ -24,7 +24,7 @@ dali-kernel/
 │       ├── abi.rs                 # Central active ABI selector
 │       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
 │       │   └── mpu/               # MPU contract, layout, and privileged programming
-│       ├── platform/mod.rs         # Platform facade and target entry points
+│       ├── platform/mod.rs        # Platform facade and target entry points
 │       ├── platform/f405/          # F405-specific platform backend
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
 │       │   ├── board.rs            # F405 hardware resources and board API
@@ -34,28 +34,31 @@ dali-kernel/
 │       │       └── status.rs       # SDIO status and interrupt helpers
 │       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
-│       ├── loader/mod.rs           # AMRN dispatch and ABI services
-│       ├── loader/contract/        # Hardware-neutral streaming loader contract
+│       ├── loader/mod.rs          # AMRN dispatch and ABI services
+│       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
 │       │   └── tests.rs            # Host fake-reader fixtures
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
 │       ├── loader/v4.rs           # Identity-aware streaming loader
-│       ├── logging/               # Facade, RTT, USB CDC backend
-│       ├── runtime/               # Hardware-neutral application lifecycle state
-│       └── storage/               # Read-only filesystem and storage policy
+│       ├── logging/              # Facade, RTT, USB CDC backend
+│       ├── runtime/              # Hardware-neutral application lifecycle state
+│       └── storage/              # Read-only filesystem and storage policy
+│           └── filesystem/       # Root package discovery and file streaming
 ├── apps/
 │   ├── dali-app-hello/
 │   ├── dali-app-relocation-fixture/
 │   ├── dali-app-svc-rejections/
 │   ├── dali-app-fault-bus/
 │   ├── dali-app-fault-execution/
+│   ├── dali-app-fault-hard/
 │   ├── dali-app-fault-kernel/
 │   ├── dali-app-fault-kernel-write/
 │   ├── dali-app-fault-peripheral/
 │   ├── dali-app-fault-peripheral-write/
 │   ├── dali-app-fault-no-frame/
-│   └── dali-app-fault-psp/
+│   ├── dali-app-fault-psp/
+│   └── dali-app-fault-usage/
 ├── crates/
 │   ├── dali-amrn/                 # AMRN format contracts and validation
 │   ├── dali-cli/                  # Installed `dali` CLI
@@ -95,14 +98,14 @@ kernel/src/
 ├── lib.rs
 ├── main.rs
 ├── abi.rs
-├── security/{mod.rs,mpu/{mod.rs},fault.rs,launch.rs,scb.rs,svc.rs}
+├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
+├── security/mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs}
 ├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,status.rs}}}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,contract/{mod.rs,tests.rs},v3.rs,v3_relocatable.rs,v4.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,slots.rs}
-├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
 └── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
@@ -162,7 +165,8 @@ target-scaffold.md
 - `kernel/src/platform/mod.rs` and `kernel/src/platform/` own the platform facade
   and target-specific entry points; backend ownership and contributor workflow are defined in
   `docs/PLATFORM_BACKENDS.md`.
-- `kernel/src/platform/f405/sdio*.rs` owns the F405 PAC/HAL SDIO transport;
+- `kernel/src/platform/f405/sdio.rs` and `kernel/src/platform/f405/sdio_raw/`
+  own the F405 PAC/HAL SDIO transport;
   bootstrap consumes it only through the platform facade.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
@@ -174,8 +178,9 @@ target-scaffold.md
 - `kernel/src/storage/` owns SD/filesystem policy; generic block contracts live
   in `kernel/src/drivers/`; package parsing remains in
   `crates/dali-amrn/` and loading policy remains in `kernel/src/loader/`.
-- `kernel/src/security/` owns privileged SVC dispatch, launch frames, and
-  fault recovery.
+- `kernel/src/security/` owns privileged SVC dispatch, launch frames, fault
+  recovery, and MPU protection. The hardware-neutral MPU descriptors and
+  layout builder are separated from privileged register programming.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
 - `crates/dali-cli/src/commands/` contains command-specific implementation;

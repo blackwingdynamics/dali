@@ -19,8 +19,9 @@ The boundary is intentionally split:
   documentation checklist from an existing profile without overwriting files.
   The template renders the declared board values as named constants before the
   typed HAL mapping is reviewed.
-- `kernel/src/board/` maps the selected profile to typed HAL peripherals and
-  owns the compile-time GPIO, RCC, DMA, and peripheral initialization.
+- `kernel/src/platform/<profile>/` maps the selected profile to typed HAL
+  peripherals and owns the compile-time GPIO, RCC, DMA, and peripheral
+  initialization behind the platform facade.
 
 The manifest does not perform runtime hardware autodetection. A kernel must
 know its board mapping before clock and peripheral initialization. Future
