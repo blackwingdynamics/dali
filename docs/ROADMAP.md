@@ -636,6 +636,7 @@ Compilation and host tests do not replace hardware evidence.
   repeatable context-switch observation without changing production code.
 - [x] Implement and test repeated PendSV/SysTick CPU context switching with
   independent progress markers on F405; MPU region switching remains separate.
+- [ ] Add and run a manifest-derived slot1-to-slot0 MPU fault fixture.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.

@@ -97,6 +97,36 @@ manifest-declared peripheral region. It does not prove peripheral writes,
 invalid execution, PSP bounds, DMA isolation, or complete application
 isolation.
 
+## Cross-slot application-memory test
+
+Build and package the slot1 fixture:
+
+```text
+cd apps/dali-app-fault-cross-slot
+dali app build
+```
+
+Copy only this package to the SD-card root. The package declares `slot1` and
+its fixture reads the code origin of the manifest-declared slot0. Build and
+flash the MPU-enabled kernel:
+
+```text
+cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-relocation --target thumbv7em-none-eabihf
+dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-kernel
+```
+
+Expected output is:
+
+```text
+[INFO][APP] Fault injection: slot1 read of slot0 memory
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves that the active slot1 application cannot read the manifest-owned
+slot0 code region through the processor MPU. It does not prove DMA isolation,
+context-switch MPU reprogramming, or complete multi-application isolation.
+
 ## Peripheral-write test
 
 Build and package the dedicated peripheral-write fixture:
