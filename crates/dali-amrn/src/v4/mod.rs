@@ -8,6 +8,8 @@ pub const HEADER_SIZE: usize = 128;
 pub const FORMAT_VERSION: u8 = 4;
 /// ABI revision retained by the v4 container contract.
 pub const ABI_VERSION: u8 = v3::ABI_VERSION;
+/// Length of the opaque package identity in bytes.
+pub const PACKAGE_ID_LENGTH: usize = 16;
 /// Encoded relocation entry length retained from format v3.
 pub const RELOCATION_ENTRY_SIZE: usize = v3::RELOCATION_ENTRY_SIZE;
 /// Offset of the target identifier in the fixed header.
@@ -56,7 +58,7 @@ pub struct Version {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Metadata {
     /// Stable opaque application identity.
-    pub package_id: [u8; 16],
+    pub package_id: [u8; PACKAGE_ID_LENGTH],
     /// Application package version.
     pub package_version: Version,
     /// Minimum compatible kernel API version.
@@ -242,7 +244,7 @@ pub fn parse_header(bytes: &[u8], contract: v3::Contract) -> Result<Header, Erro
     {
         return Err(Error::InvalidHeader);
     }
-    let package_id = read_array::<16>(bytes, PACKAGE_ID_OFFSET);
+    let package_id = read_array::<PACKAGE_ID_LENGTH>(bytes, PACKAGE_ID_OFFSET);
     if package_id.iter().all(|byte| *byte == 0) {
         return Err(Error::InvalidIdentity);
     }

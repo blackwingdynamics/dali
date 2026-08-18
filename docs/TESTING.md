@@ -181,6 +181,10 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-side AMRN v4 codec tests cover package bytes, CRC mismatch, and
   invalid relocation; the loader contract test covers undeclared-slot
   rejection. These tests are not hardware evidence.
+- [x] Host-level application lifecycle tests cover ordered discovery, loading,
+  readiness, running, fault, recovery, and terminal states; invalid skips,
+  slot mismatches, and implicit restart are rejected. These tests are
+  hardware-neutral contract evidence, not isolation or scheduler evidence.
 - [x] The relocation fixture manifest produces an AMRN format 4 package with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.

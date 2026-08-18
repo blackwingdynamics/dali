@@ -113,6 +113,21 @@ are available for controlled F405 testing but are not enabled by default.
 - The application entry point and return behavior must be replaced by an
   explicit v3 launch frame; the v2 entry function is not compatible.
 
+### Application lifecycle foundation
+
+The kernel runtime defines a bounded lifecycle record for one discovered
+package and its manifest-owned slot:
+
+```text
+Discovered -> Loaded -> Ready -> Running -> Faulted -> Recovering -> Terminated
+```
+
+Each transition is explicit and invalid transitions are rejected. A declared
+slot must match the slot allocation recorded at load time. `Terminated` is a
+terminal state: the current runtime does not implicitly restart an application,
+schedule another application, or switch MPU contexts. Those behaviors require
+separate lifecycle, scheduler, and protection contracts.
+
 ### SVC gateway
 
 All application services use one SVC gateway. The SVC immediate is a named

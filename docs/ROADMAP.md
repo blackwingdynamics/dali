@@ -584,6 +584,9 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Load two applications into independent slots and verify loader placement
   boundaries on F405; runtime memory isolation and concurrent execution remain
   separate work.
+- [x] Define and host-test the bounded application lifecycle state machine from
+  package discovery through terminal recovery without adding restart or
+  context switching behavior.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
