@@ -542,7 +542,7 @@ Compilation and host tests do not replace hardware evidence.
   root packages before adding identity-aware multi-application loading.
 - [x] Define the AMRN format v4 identity, compatibility, service-requirement,
   and explicit slot-selection fields without changing ABI v3.
-- [x] Implement and host-test the hardware-neutral AMRN v4 parser before
+- [x] Implement and host-test the hardware-neutral AMRN v4 codec before
   enabling v4 packages in the kernel.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.

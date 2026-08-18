@@ -42,6 +42,43 @@ fn valid_package() -> std::vec::Vec<u8> {
 }
 
 #[test]
+fn encodes_and_parses_v4_identity_metadata() {
+    let image = Image {
+        image: v3::Image {
+            code: &[0, 0, 0, 0],
+            initialized_data: &[],
+            data_zero_size: 0,
+            stack_size: 0x1000,
+            linked_code_base: 0x2000_8000,
+            linked_data_base: 0x2000_c000,
+            execution_offset: 0,
+            relocations: &[],
+        },
+        metadata: Metadata {
+            package_id: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            package_version: Version {
+                major: 1,
+                minor: 2,
+                patch: 3,
+            },
+            minimum_kernel_version: Version {
+                major: 0,
+                minor: 1,
+                patch: 0,
+            },
+            required_services: 0,
+            slot_id: 1,
+        },
+    };
+    let mut package = std::vec![0; HEADER_SIZE + 4];
+    let size = encode(image, CONTRACT, &mut package).expect("v4 package encodes");
+    package.truncate(size);
+    let parsed = parse(&package, CONTRACT).expect("encoded v4 package parses");
+    assert_eq!(parsed.header.metadata.package_version.patch, 3);
+    assert_eq!(parsed.header.metadata.slot_id, 1);
+}
+
+#[test]
 fn parses_v4_identity_and_compatibility_metadata() {
     let package = valid_package();
     let parsed = parse(&package, CONTRACT).expect("v4 package is valid");

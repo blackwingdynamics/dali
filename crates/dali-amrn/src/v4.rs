@@ -10,6 +10,7 @@ pub const FORMAT_VERSION: u8 = 4;
 pub const ABI_VERSION: u8 = v3::ABI_VERSION;
 /// Encoded relocation entry length retained from format v3.
 pub const RELOCATION_ENTRY_SIZE: usize = v3::RELOCATION_ENTRY_SIZE;
+const V3_HEADER_SIZE: usize = v3::HEADER_SIZE;
 const CODE_SIZE_OFFSET: usize = 8;
 const DATA_INIT_SIZE_OFFSET: usize = 12;
 const DATA_ZERO_SIZE_OFFSET: usize = 16;
@@ -58,6 +59,15 @@ pub struct Metadata {
     pub required_services: u32,
     /// Explicit target-manifest slot identifier.
     pub slot_id: u8,
+}
+
+/// Input image and metadata used to construct an AMRN v4 package.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct Image<'a> {
+    /// ABI v3 code, data, and relocation image.
+    pub image: v3::Image<'a>,
+    /// Identity and compatibility metadata.
+    pub metadata: Metadata,
 }
 
 /// Decoded v4 header combining the v3 image contract and selection metadata.
@@ -112,6 +122,53 @@ pub enum Error {
     InvalidRelocation,
     /// The package checksum is invalid.
     CrcMismatch,
+    /// The output buffer cannot contain the encoded package.
+    OutputTooSmall,
+}
+
+/// Encodes an ABI v3 relocation image with v4 identity metadata.
+pub fn encode(image: Image<'_>, contract: v3::Contract, output: &mut [u8]) -> Result<usize, Error> {
+    if image.metadata.package_id.iter().all(|byte| *byte == 0) {
+        return Err(Error::InvalidIdentity);
+    }
+    let payload_size = image
+        .image
+        .code
+        .len()
+        .checked_add(image.image.initialized_data.len())
+        .and_then(|size| {
+            image
+                .image
+                .relocations
+                .len()
+                .checked_mul(RELOCATION_ENTRY_SIZE)
+                .and_then(|table| size.checked_add(table))
+        })
+        .ok_or(Error::InvalidPayload)?;
+    let v3_size = V3_HEADER_SIZE
+        .checked_add(payload_size)
+        .ok_or(Error::OutputTooSmall)?;
+    let package_size = HEADER_SIZE
+        .checked_add(payload_size)
+        .ok_or(Error::OutputTooSmall)?;
+    if output.len() < package_size {
+        return Err(Error::OutputTooSmall);
+    }
+    let written = v3::encode(image.image, contract, output).map_err(|error| match error {
+        v3::Error::OutputTooSmall => Error::OutputTooSmall,
+        v3::Error::InvalidRelocation => Error::InvalidRelocation,
+        _ => Error::InvalidPayload,
+    })?;
+    if written != v3_size {
+        return Err(Error::InvalidPayload);
+    }
+    output.copy_within(V3_HEADER_SIZE..v3_size, HEADER_SIZE);
+    let image_header =
+        v3::parse_header(&output[..V3_HEADER_SIZE], contract).map_err(|_| Error::InvalidHeader)?;
+    write_header(output, image_header, image.metadata);
+    let package_crc = package_checksum(output, PACKAGE_CRC32_OFFSET);
+    write_u32(output, PACKAGE_CRC32_OFFSET, package_crc);
+    Ok(package_size)
 }
 
 /// Parses and validates a v4 package against a target slot contract.
@@ -258,6 +315,63 @@ fn read_u32(bytes: &[u8], offset: usize) -> u32 {
         bytes[offset + 2],
         bytes[offset + 3],
     ])
+}
+
+fn write_header(output: &mut [u8], image: v3::Header, metadata: Metadata) {
+    output[..MAGIC.len()].copy_from_slice(&MAGIC);
+    output[4] = FORMAT_VERSION;
+    output[5] = image.target_id;
+    write_u16(output, 6, HEADER_SIZE as u16);
+    write_u32(output, CODE_SIZE_OFFSET, image.code_size);
+    write_u32(output, DATA_INIT_SIZE_OFFSET, image.data_init_size);
+    write_u32(output, DATA_ZERO_SIZE_OFFSET, image.data_zero_size);
+    write_u32(output, STACK_SIZE_OFFSET, image.stack_size);
+    write_u32(output, LINKED_CODE_BASE_OFFSET, image.linked_code_base);
+    write_u32(output, LINKED_DATA_BASE_OFFSET, image.linked_data_base);
+    write_u32(output, CODE_LOAD_ADDRESS_OFFSET, image.code_load_address);
+    write_u32(output, DATA_LOAD_ADDRESS_OFFSET, image.data_load_address);
+    write_u32(output, EXECUTION_OFFSET_OFFSET, image.execution_offset);
+    write_u32(
+        output,
+        RELOCATION_OFFSET_OFFSET,
+        image.relocation_offset + (HEADER_SIZE - V3_HEADER_SIZE) as u32,
+    );
+    write_u32(output, RELOCATION_COUNT_OFFSET, image.relocation_count);
+    write_u16(
+        output,
+        RELOCATION_ENTRY_SIZE_OFFSET,
+        RELOCATION_ENTRY_SIZE as u16,
+    );
+    write_u32(output, PAYLOAD_CRC32_OFFSET, image.crc32);
+    output[ABI_VERSION_OFFSET] = ABI_VERSION;
+    output[PACKAGE_ID_OFFSET..PACKAGE_ID_OFFSET + metadata.package_id.len()]
+        .copy_from_slice(&metadata.package_id);
+    write_version(output, PACKAGE_VERSION_OFFSET, metadata.package_version);
+    write_version(
+        output,
+        MINIMUM_KERNEL_VERSION_OFFSET,
+        metadata.minimum_kernel_version,
+    );
+    write_u32(output, REQUIRED_SERVICES_OFFSET, metadata.required_services);
+    output[SLOT_ID_OFFSET] = metadata.slot_id;
+    output[FLAGS_OFFSET] = 0;
+    write_u16(output, RESERVED_U16_OFFSET, 0);
+    write_u32(output, PACKAGE_CRC32_OFFSET, 0);
+    output[RESERVED_BYTES_OFFSET..HEADER_SIZE].fill(0);
+}
+
+fn write_version(bytes: &mut [u8], offset: usize, version: Version) {
+    write_u16(bytes, offset, version.major);
+    write_u16(bytes, offset + 2, version.minor);
+    write_u16(bytes, offset + 4, version.patch);
+}
+
+fn write_u16(bytes: &mut [u8], offset: usize, value: u16) {
+    bytes[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
+}
+
+fn write_u32(bytes: &mut [u8], offset: usize, value: u32) {
+    bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
 
 #[cfg(test)]
