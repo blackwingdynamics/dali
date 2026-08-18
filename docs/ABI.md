@@ -172,6 +172,11 @@ facade selects the next ready context. This remains an integration contract;
 the scheduler is not installed as a global interrupt owner and does not yet
 switch MPU regions.
 
+`prepare_pendsv` makes that sequence explicit and bounded: without a pending
+request it leaves the active context unchanged; with a request it records the
+outgoing state before selecting the next ready context. Register restoration and
+exception return remain the responsibility of the low-level adapter.
+
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This
 state channel records ownership without exposing a mutable application pointer

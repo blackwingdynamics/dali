@@ -608,6 +608,8 @@ Compilation and host tests do not replace hardware evidence.
   and MPU switching separate.
 - [x] Add a bounded scheduler facade that sequences tick requests, active-state
   capture, and next-ready selection without owning an interrupt vector.
+- [x] Define and host-test the bounded PendSV preparation transition, including
+  no-op behavior without a request and save-before-selection ordering.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.

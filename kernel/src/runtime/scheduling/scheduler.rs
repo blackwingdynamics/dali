@@ -76,6 +76,19 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
         self.tick.take_pendsv_request()
     }
 
+    /// Saves the active context and selects the next ready context when a
+    /// preemption request is pending.
+    pub fn prepare_pendsv(
+        &mut self,
+        saved_context: SavedContext,
+    ) -> Result<Option<SwitchSelection>, SchedulerError> {
+        if !self.take_preemption_request() {
+            return Ok(None);
+        }
+        self.save_active(saved_context)?;
+        self.select_next().map(Some)
+    }
+
     /// Replaces the saved state after PendSV captured the outgoing context.
     pub fn save_active(&mut self, context: SavedContext) -> Result<ContextId, SchedulerError> {
         let id = self
@@ -163,6 +176,38 @@ mod tests {
             exception_return: 0xFFFF_FFFD,
         };
         assert_eq!(scheduler.save_active(saved), Ok(first));
+        assert_eq!(scheduler.context(first), Ok(saved));
+    }
+
+    #[test]
+    fn does_not_switch_without_a_preemption_request() {
+        let mut scheduler = Scheduler::<1>::new(1).unwrap();
+        let first = scheduler.insert(CONTEXT).unwrap();
+        assert_eq!(scheduler.activate_first(), Ok(first));
+        assert_eq!(scheduler.prepare_pendsv(CONTEXT), Ok(None));
+        assert_eq!(scheduler.context(first), Ok(CONTEXT));
+    }
+
+    #[test]
+    fn prepares_save_and_selection_as_one_bounded_transition() {
+        let mut scheduler = Scheduler::<2>::new(1).unwrap();
+        let first = scheduler.insert(CONTEXT).unwrap();
+        let second = scheduler.insert(CONTEXT).unwrap();
+        assert_eq!(scheduler.activate_first(), Ok(first));
+        scheduler.on_tick();
+        let saved = SavedContext {
+            psp: 0x2000_D000,
+            callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
+            control: 0x03,
+            exception_return: 0xFFFF_FFFD,
+        };
+        assert_eq!(
+            scheduler.prepare_pendsv(saved),
+            Ok(Some(SwitchSelection {
+                outgoing: first,
+                incoming: second,
+            }))
+        );
         assert_eq!(scheduler.context(first), Ok(saved));
     }
 }
