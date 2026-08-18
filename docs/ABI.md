@@ -176,6 +176,10 @@ The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is
 not a board-independent hardcoded slot count.
 
+Kernel-owned scheduler storage is initialized once during bootstrap. Mutable
+access requires an explicit interrupt-exclusivity guarantee; uninitialized or
+repeated initialization is rejected before PendSV integration.
+
 `prepare_pendsv` makes that sequence explicit and bounded: without a pending
 request it leaves the active context unchanged; with a request it records the
 outgoing state before selecting the next ready context. Register restoration and

@@ -612,6 +612,8 @@ Compilation and host tests do not replace hardware evidence.
   no-op behavior without a request and save-before-selection ordering.
 - [x] Generate scheduler capacity from each target manifest's declared
   isolation slots before introducing kernel-owned scheduler storage.
+- [x] Add one-time kernel-owned scheduler storage with explicit exclusive
+  interrupt-access requirements; keep the storage disconnected from vectors.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
