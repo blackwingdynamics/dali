@@ -129,6 +129,12 @@ multi-application isolation, or watchdog support.
   loader reported `Loaded 2 application package(s) into declared slots`, and
   deterministic slot selection entered the slot0 fixture. A later CDC console
   attach showed no replay because prior records had already drained.
+- [x] F405 hardware rejected two real packages carrying the same identity with
+  `PackageCatalog(DuplicateIdentity)` and entered the kernel heartbeat without
+  executing either application.
+- [x] F405 hardware rejected two real packages with different identities that
+  claimed the same slot with `PackageCatalog(SlotOccupied)` and entered the
+  kernel heartbeat without executing either application.
 
 ### Diagnostic evidence
 

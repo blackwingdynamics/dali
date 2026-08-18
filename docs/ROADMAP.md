@@ -43,7 +43,8 @@ this order:
    including deterministic rejection of duplicate identities and occupied
    slots.
 2. [x] Enumerate real root-directory packages and feed their validated v4
-   metadata into the catalog; F405 verification remains pending.
+   metadata into the catalog; F405 discovery and catalog rejection are
+   hardware-verified.
 3. [x] Integrate the bounded two-slot load path without enabling concurrent
    execution or context switching; the runtime still enters only the first
    loaded context.
@@ -575,8 +576,9 @@ Compilation and host tests do not replace hardware evidence.
   relocation validation; streaming-loader behavior remains target-tested.
 - [x] Validate v4 selection, relocation, and successful application execution
   on F405 hardware; the format 4 slot1 fixture passed AMRN validation and
-  executed the relocation proof application. v4-specific rejection/recovery
-  hardware tests remain open. Detailed evidence is in `docs/TESTING.md`.
+  executed the relocation proof application. F405 duplicate-identity and
+  occupied-slot rejection are also hardware-verified; broader recovery tests
+  remain open. Detailed evidence is in `docs/TESTING.md`.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.
