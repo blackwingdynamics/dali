@@ -75,6 +75,16 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
         self.tick.take_pendsv_request()
     }
 
+    /// Returns whether a pending quantum has a valid ready target.
+    pub fn switch_requested(&self) -> bool {
+        self.tick.pendsv_requested()
+            && self
+                .contexts
+                .active()
+                .and_then(|active| self.contexts.next_ready(Some(active)))
+                .is_some()
+    }
+
     /// Saves the active context and selects the next ready context when a
     /// preemption request is pending.
     pub fn prepare_pendsv(
@@ -203,6 +213,25 @@ mod tests {
         assert_eq!(scheduler.activate_first(), Ok(first));
         assert_eq!(scheduler.prepare_pendsv(CONTEXT), Ok(None));
         assert_eq!(scheduler.context(first), Ok(CONTEXT));
+    }
+
+    #[test]
+    fn does_not_request_switch_without_a_ready_target() {
+        let mut scheduler = Scheduler::<1>::new(1).unwrap();
+        let first = scheduler.insert(CONTEXT).unwrap();
+        assert_eq!(scheduler.activate_first(), Ok(first));
+        scheduler.on_tick();
+        assert!(!scheduler.switch_requested());
+    }
+
+    #[test]
+    fn requests_switch_only_with_another_ready_target() {
+        let mut scheduler = Scheduler::<2>::new(1).unwrap();
+        let first = scheduler.insert(CONTEXT).unwrap();
+        let _second = scheduler.insert(CONTEXT).unwrap();
+        assert_eq!(scheduler.activate_first(), Ok(first));
+        scheduler.on_tick();
+        assert!(scheduler.switch_requested());
     }
 
     #[test]

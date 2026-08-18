@@ -170,9 +170,10 @@ ownership and validation are integrated.
 
 The scheduler facade now owns the bounded sequence around those primitives:
 SysTick records a preemption request, PendSV saves the active record, and the
-facade selects the next ready context. This remains an integration contract;
-the scheduler is not installed as a global interrupt owner and does not yet
-switch MPU regions.
+facade selects the next ready context. A feature-gated target SysTick hook now
+feeds the scheduler and only pends PendSV when both active and ready contexts
+exist. The hook does not enable the timer, insert application contexts, perform
+the register transfer, or switch MPU regions; those remain integration work.
 
 The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is

@@ -45,6 +45,11 @@ impl TickBudget {
         requested
     }
 
+    /// Returns whether the current quantum has requested deferred switching.
+    pub const fn pendsv_requested(self) -> bool {
+        self.pendsv_requested
+    }
+
     /// Returns the number of ticks elapsed in the current quantum.
     pub const fn elapsed_ticks(self) -> u32 {
         self.elapsed_ticks

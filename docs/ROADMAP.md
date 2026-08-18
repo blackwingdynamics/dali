@@ -620,6 +620,9 @@ Compilation and host tests do not replace hardware evidence.
   profile without enabling PendSV or inserting application contexts.
 - [x] Bind each scheduler CPU record to its manifest-owned application slot so
   a future protected switch can select CPU state and MPU layout together.
+- [x] Add a feature-gated SysTick exception hook that accounts for target ticks
+  and requests PendSV only when a ready context exists; keep timer enablement,
+  context insertion, register transfer, and MPU switching separate.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
