@@ -540,6 +540,10 @@ Compilation and host tests do not replace hardware evidence.
   before adding concurrent execution.
 - [x] Define the bounded single-package selection result and reject ambiguous
   root packages before adding identity-aware multi-application loading.
+- [x] Define the AMRN format v4 identity, compatibility, service-requirement,
+  and explicit slot-selection fields without changing ABI v3.
+- [ ] Implement and host-test the hardware-neutral AMRN v4 codec before
+  enabling v4 packages in the kernel.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.

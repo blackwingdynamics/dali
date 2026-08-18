@@ -131,6 +131,13 @@ required_services
 memory_requirements
 ```
 
+AMRN format version `4` is reserved for package identity and selection
+metadata. It remains ABI v3-compatible: format v4 changes the container
+header and compatibility checks, not the application calling convention,
+service gateway, or MPU contract. A kernel may support format v3 without
+supporting format v4, and must reject v4 explicitly when the identity and
+compatibility fields cannot be validated.
+
 ## 6. Release tags
 
 Release tags use the component name and semantic version:

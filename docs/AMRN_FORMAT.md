@@ -218,6 +218,58 @@ work.
 
 ## Post-MVP extensions
 
+## AMRN format version 4: package identity and selection metadata
+
+Format version `4` extends the relocatable ABI v3 package contract for
+multi-package storage. It does not introduce an ABI v4: the package continues
+to declare ABI version `3`, and the code/data/relocation semantics remain those
+of format version `3`.
+
+The v4 header is fixed at 128 bytes. The first 80 bytes retain the v3 segment,
+relocation, target, and ABI fields at the same offsets. The additional fields
+are:
+
+| Offset | Field | Size | Description |
+| --- | --- | ---: | --- |
+| `0x50` | package_id | 16 bytes | Opaque stable application identity; not derived from a filename |
+| `0x60` | package_version_major | 2 bytes | Little-endian semantic package version component |
+| `0x62` | package_version_minor | 2 bytes | Little-endian semantic package version component |
+| `0x64` | package_version_patch | 2 bytes | Little-endian semantic package version component |
+| `0x66` | minimum_kernel_major | 2 bytes | Minimum compatible kernel API version component |
+| `0x68` | minimum_kernel_minor | 2 bytes | Minimum compatible kernel API version component |
+| `0x6A` | minimum_kernel_patch | 2 bytes | Minimum compatible kernel API version component |
+| `0x6C` | required_services | 4 bytes | Manifest-defined service capability bitset |
+| `0x70` | slot_id | 1 byte | Explicit target-manifest slot identifier |
+| `0x71` | flags | 1 byte | Must be zero until a flag is specified by this document |
+| `0x72` | reserved | 2 bytes | Must be zero |
+| `0x74` | crc32 | 4 bytes | CRC32 of header bytes after this field, payload, and relocation table |
+| `0x78` | reserved | 8 bytes | Must be zero |
+
+The v4 header retains the v3 fields through offset `0x4F`, including the
+relocation metadata and ABI version. The v4 `crc32` field is moved to the
+extension area so the integrity check covers the complete selection metadata;
+the old v3 payload-only checksum rule is unchanged for format version `3`.
+The exact CRC input order is the bytes from `0x78` through the end of the
+package followed by the bytes from `0x00` through `0x73`, excluding the v4
+`crc32` field itself. A builder and loader must use this order exactly.
+
+Selection rules are bounded and explicit:
+
+- `package_id` must be non-zero and must be unique among installed packages;
+- package version and minimum kernel version use three unsigned, little-endian
+  semantic components and must not overflow their field widths;
+- `required_services` must be a subset of services declared by the kernel;
+- `slot_id` must name a slot declared by the target manifest;
+- target ID, ABI version, relocation contract, and memory ranges must still
+  pass the format v3 validation rules;
+- a missing identity, incompatible package, duplicate identity, or occupied
+  slot is a rejection, never an implicit filename- or directory-order choice;
+- format v3 packages remain valid under their existing single-package rules.
+
+The current v4 design is a specification boundary only until the hardware-
+neutral codec, CLI builder/inspection, kernel selection policy, and host tests
+are implemented. It must not be advertised as multi-application support yet.
+
 Future revisions may add manifest data, kernel compatibility, required services, memory declarations, signatures, encryption metadata, and rollback information. These require a new format revision or an explicitly versioned extension area.
 
 ## Payload rules
