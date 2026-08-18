@@ -272,6 +272,11 @@ distinguished from the kernel's fault and recovery records.
   `0x2F4`. This proves repeated CPU context execution, but not MPU region
   switching or cross-slot memory isolation.
 - [ ] Runtime two-application memory isolation and MPU region switching.
+- [x] F405 hardware ran the manifest-derived slot1 cross-slot fixture. The
+  application read slot0 code origin `0x20008000` and the kernel reported
+  `MemManage status=0x00000082 address=Some(536903680)`, followed by
+  `Faulted`, `Recovering`, and `Terminated`. This proves CPU MPU rejection of
+  a slot1-to-slot0 read, but not DMA isolation or faulted-context scheduling.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
   contract; hardware watchdog implementation remains separate and pending.
