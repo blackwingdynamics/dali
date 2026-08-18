@@ -1,17 +1,20 @@
 //! Minimal SCB MMIO access used by kernel fault and test paths.
 
 const SCB_BASE: usize = 0xE000_ED00;
+#[cfg(feature = "abi-test-fixtures")]
 const SHCSR_OFFSET: usize = 0x24;
 const CFSR_OFFSET: usize = 0x28;
 const MMFAR_OFFSET: usize = 0x34;
 const BFAR_OFFSET: usize = 0x38;
 
 #[inline]
+#[cfg(feature = "abi-test-fixtures")]
 pub(crate) fn read_shcsr() -> u32 {
     read_register(SCB_BASE + SHCSR_OFFSET)
 }
 
 #[inline]
+#[cfg(feature = "abi-test-fixtures")]
 pub(crate) fn write_shcsr(value: u32) {
     write_register(SCB_BASE + SHCSR_OFFSET, value);
 }
@@ -49,6 +52,7 @@ fn read_register(address: usize) -> u32 {
 }
 
 #[inline]
+#[cfg(feature = "abi-test-fixtures")]
 fn write_register(address: usize, value: u32) {
     unsafe {
         // SAFETY: These addresses are fixed, word-aligned ARMv7-M SCB registers.

@@ -67,12 +67,16 @@ where
 fn target_contract() -> Option<v2::Contract> {
     let target = crate::platform::TARGET_PROFILE;
     let isolation = target.memory.isolation?;
+    let slot = crate::runtime::slots::SlotManager::new(isolation.slots)
+        .ok()?
+        .allocate()?;
+    let slot = slot.slot();
     Some(v2::Contract {
         target_id: target.amrn_target_id,
-        code_load_address: isolation.code_origin,
-        code_capacity: isolation.code_length,
-        data_load_address: isolation.data_origin,
-        data_capacity: isolation.data_length,
+        code_load_address: slot.code_origin,
+        code_capacity: slot.code_length,
+        data_load_address: slot.data_origin,
+        data_capacity: slot.data_length,
     })
 }
 

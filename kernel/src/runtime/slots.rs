@@ -2,6 +2,8 @@
 
 use dali_targets::IsolationSlot;
 
+const SLOT_MASK_BITS: usize = u32::BITS as usize;
+
 /// A selected application slot and its stable manifest index.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SlotAllocation {
@@ -35,21 +37,18 @@ pub enum SlotManagerError {
 /// The manager owns only allocation state. Slot boundaries remain immutable
 /// values supplied by the target manifest; no address arithmetic or filename
 /// convention can create a slot.
-pub struct SlotManager<const MAX_SLOTS: usize> {
+pub struct SlotManager {
     slots: &'static [IsolationSlot],
-    occupied: [bool; MAX_SLOTS],
+    occupied: u32,
 }
 
-impl<const MAX_SLOTS: usize> SlotManager<MAX_SLOTS> {
+impl SlotManager {
     /// Creates a manager for a manifest-owned slot table.
     pub const fn new(slots: &'static [IsolationSlot]) -> Result<Self, SlotManagerError> {
-        if slots.len() > MAX_SLOTS {
+        if slots.len() > SLOT_MASK_BITS {
             return Err(SlotManagerError::CapacityExceeded);
         }
-        Ok(Self {
-            slots,
-            occupied: [false; MAX_SLOTS],
-        })
+        Ok(Self { slots, occupied: 0 })
     }
 
     /// Returns the number of manifest slots managed by this instance.
@@ -65,8 +64,9 @@ impl<const MAX_SLOTS: usize> SlotManager<MAX_SLOTS> {
     /// Reserves the first free manifest slot.
     pub fn allocate(&mut self) -> Option<SlotAllocation> {
         for (index, slot) in self.slots.iter().copied().enumerate() {
-            if !self.occupied[index] {
-                self.occupied[index] = true;
+            let mask = 1_u32 << index;
+            if self.occupied & mask == 0 {
+                self.occupied |= mask;
                 return Some(SlotAllocation { index, slot });
             }
         }
@@ -78,10 +78,11 @@ impl<const MAX_SLOTS: usize> SlotManager<MAX_SLOTS> {
         let Some(slot) = self.slots.get(allocation.index).copied() else {
             return Err(SlotManagerError::InvalidAllocation);
         };
-        if slot != allocation.slot || !self.occupied[allocation.index] {
+        let mask = 1_u32 << allocation.index;
+        if slot != allocation.slot || self.occupied & mask == 0 {
             return Err(SlotManagerError::InvalidAllocation);
         }
-        self.occupied[allocation.index] = false;
+        self.occupied &= !mask;
         Ok(())
     }
 }
@@ -98,6 +99,14 @@ mod tests {
     const SLOT_CODE_LENGTH: u32 = 16 * 1024;
     const SLOT_DATA_LENGTH: u32 = 16 * 1024;
     const SLOT_STACK_LENGTH: u32 = 4 * 1024;
+    const SLOT_TEMPLATE: IsolationSlot = IsolationSlot {
+        name: "fixture",
+        code_origin: SLOT0_CODE_ORIGIN,
+        code_length: SLOT_CODE_LENGTH,
+        data_origin: SLOT0_DATA_ORIGIN,
+        data_length: SLOT_DATA_LENGTH,
+        stack_length: SLOT_STACK_LENGTH,
+    };
     const SLOTS: &[IsolationSlot] = &[
         IsolationSlot {
             name: "slot0",
@@ -119,7 +128,7 @@ mod tests {
 
     #[test]
     fn allocates_manifest_slots_in_order() {
-        let mut manager = SlotManager::<2>::new(SLOTS).expect("capacity is sufficient");
+        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
 
         assert_eq!(manager.len(), 2);
         assert_eq!(manager.allocate().expect("slot 0").index(), 0);
@@ -129,7 +138,7 @@ mod tests {
 
     #[test]
     fn releases_and_reuses_a_manifest_slot() {
-        let mut manager = SlotManager::<2>::new(SLOTS).expect("capacity is sufficient");
+        let mut manager = SlotManager::new(SLOTS).expect("capacity is sufficient");
         let allocation = manager.allocate().expect("slot 0");
 
         manager
@@ -140,8 +149,9 @@ mod tests {
 
     #[test]
     fn rejects_capacity_shorter_than_the_manifest() {
+        const OVER_CAPACITY: &[IsolationSlot] = &[SLOT_TEMPLATE; 33];
         assert!(matches!(
-            SlotManager::<1>::new(SLOTS),
+            SlotManager::new(OVER_CAPACITY),
             Err(SlotManagerError::CapacityExceeded)
         ));
     }
