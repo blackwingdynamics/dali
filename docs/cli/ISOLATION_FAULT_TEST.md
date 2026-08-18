@@ -136,6 +136,30 @@ the slot0 progress marker increased from `0x0000024C` to `0x01289A9C`,
 evidence for faulted-context exclusion and continued execution, not DMA
 isolation or a complete multi-application security guarantee.
 
+## Reverse cross-slot application-memory test
+
+Build and package the slot0 reverse-direction fixture:
+
+```text
+cd apps/dali-app-fault-cross-slot-reverse
+dali app build
+```
+
+Use this package together with the existing slot1 fixture on the SD-card root.
+The reverse fixture declares `slot0` and reads the manifest-declared slot1 code
+origin. Build and flash the same MPU-enabled kernel. Expected application
+output is:
+
+```text
+[INFO][APP] Fault injection: slot0 read of slot1 memory
+[ERROR][SECURITY] [SECURITY][FAULT] kind=MemManage
+[ERROR][SECURITY] [SECURITY][FAULT] Application terminated; kernel recovery active
+```
+
+This proves the reverse processor-side rejection direction. Both directions
+must be accepted on hardware before claiming bidirectional application-memory
+isolation; DMA isolation and complete multi-application security remain open.
+
 ## Peripheral-write test
 
 Build and package the dedicated peripheral-write fixture:

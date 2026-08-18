@@ -646,8 +646,10 @@ Compilation and host tests do not replace hardware evidence.
   bases `0x20010000`/`0x20014000` at `restore_selected`.
 - [x] Verify on F405 hardware that a faulted context is excluded and a ready
   application resumes; GDB observed one slot1 entry and continued slot0
-  progress after recovery. MPU region switching remains a separate item.
+  progress after recovery.
 - [ ] Verify application-to-application memory isolation.
+- [ ] Add and run the reverse slot0-to-slot1 CPU isolation fixture so both
+  directions are hardware-tested before claiming bidirectional isolation.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.
 - [x] Define application crash, restart, and rollback lifecycle policy;
   hardware watchdog implementation remains deferred until heartbeat ownership.

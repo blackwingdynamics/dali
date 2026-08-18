@@ -73,6 +73,7 @@ dali-kernel/
 │   ├── dali-app-fault-kernel/
 │   ├── dali-app-fault-kernel-write/
 │   ├── dali-app-fault-cross-slot/       # Slot1-to-slot0 MPU fault fixture
+│   ├── dali-app-fault-cross-slot-reverse/ # Slot0-to-slot1 MPU fault fixture
 │   ├── dali-app-fault-peripheral/
 │   ├── dali-app-fault-peripheral-write/
 │   ├── dali-app-fault-no-frame/
