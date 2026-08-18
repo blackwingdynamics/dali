@@ -33,6 +33,21 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - SWD showed SDIO DMA enabled with active receive data while DMA2 Stream 3 registers were zero; DMA2 reset-before-setup and a bounded inactive-transfer failure path were added.
 - SWD then showed DMA2 Stream 3 at `NDTR=4` with `HTIF3=1`, so the DMA FIFO tail was the remaining failure; full FIFO mode with four-word bursts and a bounded tail drain are now hardware-confirmed.
 - The DMA receive path now handles the observed `DCOUNT=0` and `NDTR=4` terminal tail with a bounded direct FIFO drain.
+
+### Next session plan
+
+The next implementation session resumes the post-v4 multi-application work in
+this order:
+
+1. Add a hardware-neutral multi-package discovery and identity-selection
+   contract, including deterministic rejection of duplicate identities and
+   occupied slots.
+2. Extend the host fake-reader fixtures to load two independent v4 packages
+   into slot0 and slot1 and verify code/data range containment.
+3. Integrate the bounded two-slot load path without enabling concurrent
+   execution or context switching.
+4. Run host and target validation before scheduling the corresponding F405
+   hardware test.
 - A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.
 - FAT long-file-name enumeration now discovers host-created packages with the four-character `.amrn` extension without a package-name assumption.
 - The `dali-amrn` crate decodes the fixed header, validates payload bounds and entry metadata, and verifies CRC32 with 15 host tests.
