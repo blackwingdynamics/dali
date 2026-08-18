@@ -211,10 +211,11 @@ fn read_application_frame(frame_address: u32, exception_return: u32) -> Option<E
         return None;
     }
     let memory = crate::platform::MEMORY_PROFILE.isolation?;
+    let slot = memory.active_slot()?;
     let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
-    let data_start = memory.data_origin as usize;
-    let data_end = data_start.checked_add(memory.data_length as usize)?;
+    let data_start = slot.data_origin as usize;
+    let data_end = data_start.checked_add(slot.data_length as usize)?;
     let frame_end = frame_address.checked_add(frame_size)?;
     if frame_address == 0
         || !frame_address.is_multiple_of(core::mem::align_of::<ExceptionFrame>())

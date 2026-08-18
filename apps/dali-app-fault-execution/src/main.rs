@@ -8,7 +8,9 @@ const TARGET_MEMORY: dali_targets::MemoryProfile = dali_targets::TARGET_F405.mem
 
 const fn data_probe_address() -> usize {
     match TARGET_MEMORY.isolation {
-        Some(isolation) => isolation.data_origin as usize,
+        Some(isolation) => isolation
+            .active_slot()
+            .map_or(0, |slot| slot.data_origin as usize),
         None => 0,
     }
 }

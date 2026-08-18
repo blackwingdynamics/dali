@@ -105,17 +105,16 @@ the target manifest's declared origins and does not select multiple slots.
 
 ## Slot-manager prerequisite
 
-The current F405 memory manifest provides one 32 KiB code region and one
-32 KiB data/PSP region. The selected candidate replaces that with two 16 KiB
+The target memory contract provides an ordered slot table. The current F405
+manifest uses two 16 KiB
 code/data pairs, keeps 32 KiB of DMA-accessible SRAM for kernel transport
 buffers, and moves kernel runtime/static state/stack to the 64 KiB CCM region.
-The candidate also reserves the final 32 KiB for future expansion or an
-explicitly permissioned shared-memory design.
+The final 32 KiB remains the target's runtime/shared-memory reserve.
 
-This layout is not active yet. The next implementation task is to add a
-manifest-owned slot table, migrate the linker and every kernel static that
-must remain DMA-visible, then validate the new MPU regions. A slot manager
-must never infer slots from arithmetic on the current single-slot addresses.
+The manifest-owned slot table now drives the application linker, package
+contract, loader, and MPU active-slot boundaries. The slot manager must never
+infer slots from arithmetic on addresses; slot 1 activation and concurrent
+execution remain future work.
 
 ## Required evidence before implementation
 

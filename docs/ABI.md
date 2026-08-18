@@ -138,19 +138,22 @@ with the expected PSP frame. Handler-mode calls and invalid EXC_RETURN values
 are rejected. The handler returns through the original exception frame only
 after the service has completed its bounded work.
 
-### F405 application memory contract
+### Target application memory contract
 
-The current 64 KiB application boundary is decomposed into two aligned MPU
-regions for v3:
+The target manifest owns an ordered slot table. The current F405 manifest
+decomposes its 64 KiB application pool into two aligned slots for v3:
 
 ```text
-0x20008000 - 0x2000FFFF   Application code, 32 KiB, read/execute
-0x20010000 - 0x20017FFF   Application data and PSP, 32 KiB, read/write, XN
+0x20008000 - 0x2000BFFF   Slot 0 code, 16 KiB, read/execute
+0x2000C000 - 0x2000FFFF   Slot 0 data/PSP, 16 KiB, read/write, XN
+0x20010000 - 0x20013FFF   Slot 1 code, 16 KiB, read/execute
+0x20014000 - 0x20017FFF   Slot 1 data/PSP, 16 KiB, read/write, XN
 ```
 
-The v3 application linker contract must place code and read-only data in the
-first region and writable data, zero-initialized data, and the PSP stack in the
-second region. The loader must validate both bounds before copying. The v2
+The v3 application linker contract places the current application in the
+manifest's active slot (slot 0). The loader and MPU validate that slot before
+copying or launching. Slot 1 is declared and validated by the target contract,
+but concurrent execution and context switching remain future work. The v2
 single-image linker contract remains unchanged for existing packages.
 
 The initial eight-region budget is:
@@ -188,10 +191,10 @@ a feature-gated streaming validator/copy path. The default kernel remains
 ABI v2-only; the feature-gated path is experimental and its hardware evidence
 is incomplete.
 
-For the current F405 target, the linker must emit:
+For a target selected through the manifest, the linker must emit:
 
-- code and read-only data at `0x20008000` within a 32 KiB region;
-- initialized data at `0x20010000` within a 32 KiB region;
+- code and read-only data within the active slot's declared code region;
+- initialized data within the active slot's declared data region;
 - zero-initialized data followed by the PSP stack within that same data
   region;
 - a word-aligned entry offset relative to the code origin;

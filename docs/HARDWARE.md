@@ -61,10 +61,10 @@ The STM32F405 also provides CCM RAM at `0x10000000`. Its suitability for the
 privileged kernel runtime and stack is a future isolation design question;
 peripheral DMA buffers must remain in DMA-accessible SRAM.
 
-## Candidate multi-slot isolation layout
+## Multi-slot isolation layout
 
-The following layout is the selected design candidate for the next isolation
-contract; it is not active in the current linker or target manifest:
+The following layout is active in the F405 target manifest and is generated
+from target metadata rather than embedded in kernel policy:
 
 ```text
 0x20000000 - 0x20007FFF   Kernel DMA and transport buffers, 32 KiB

@@ -724,17 +724,17 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Execute a format 3 relocation fixture on F405 hardware at the canonical
   manifest origins.
 - [ ] Execute the same relocation metadata with a non-zero slot delta.
-- [x] Define the candidate F405 multi-slot memory contract: two 16 KiB
+- [x] Define the F405 multi-slot memory contract: two 16 KiB
   code/data pairs, 32 KiB DMA-visible SRAM, and CCM kernel runtime storage.
 - [x] Generate the F405 kernel linker memory map from target metadata, placing
   ordinary runtime/static state in CCM and DMA buffers in SRAM.
-- [ ] Migrate the application linker, loader, and MPU code/data regions to the
-  candidate multi-slot contract.
+- [x] Migrate the application linker, loader, and MPU code/data regions to the
+  manifest-owned multi-slot contract while preserving slot 0 execution.
 - [x] Add and validate the manifest-owned code/data slot table without changing
   the active single-application loader contract.
 - [x] Design the hardware-neutral fixed-capacity slot manager over the
-  manifest-owned slot table; keep loader integration deferred until the
-  relocation contract and memory map migration are stable.
+  manifest-owned slot table and integrate slot 0 selection without enabling
+  concurrent applications.
 - [x] Route the current single-application linker, package, inspection, and
   MPU boundaries through the manifest's active slot helper; preserve slot 0
   addresses and defer slot 1 activation.

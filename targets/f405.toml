@@ -46,11 +46,6 @@ dma = { origin = 0x2000_0000, length = 32_768 }
 ccm = { origin = 0x1000_0000, length = 65_536 }
 
 [memory.isolation]
-code_origin = 0x2000_8000
-code_length = 32_768
-data_origin = 0x2001_0000
-data_length = 32_768
-stack_length = 4_096
 peripheral_origin = 0x4000_0000
 peripheral_length = 536_870_912
 # RM0090 Table 3: 1 MiB flash ends at 0x000F_FFFF; the next code-region
@@ -61,9 +56,17 @@ bus_fault_length = 32
 [[memory.isolation.slots]]
 name = "slot0"
 code_origin = 0x2000_8000
-code_length = 32_768
-data_origin = 0x2001_0000
-data_length = 32_768
+code_length = 16_384
+data_origin = 0x2000_C000
+data_length = 16_384
+stack_length = 4_096
+
+[[memory.isolation.slots]]
+name = "slot1"
+code_origin = 0x2001_0000
+code_length = 16_384
+data_origin = 0x2001_4000
+data_length = 16_384
 stack_length = 4_096
 
 [status_led]

@@ -43,8 +43,9 @@ fn creates_the_documented_project_files() -> Result<(), Box<dyn std::error::Erro
     let linker = fs::read_to_string(root.join("demo/memory.v3.x"))?;
     let target = dali_targets::SUPPORTED_TARGETS[0];
     let isolation = target.memory.isolation.expect("isolation metadata");
-    assert!(linker.contains(&format!("ORIGIN = 0x{:08X}", isolation.code_origin)));
-    assert!(linker.contains(&format!("ORIGIN = 0x{:08X}", isolation.data_origin)));
+    let slot = isolation.active_slot().expect("active slot");
+    assert!(linker.contains(&format!("ORIGIN = 0x{:08X}", slot.code_origin)));
+    assert!(linker.contains(&format!("ORIGIN = 0x{:08X}", slot.data_origin)));
     fs::remove_dir_all(root)?;
     Ok(())
 }

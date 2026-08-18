@@ -79,11 +79,6 @@ struct TargetMemoryRegion {
 
 #[derive(Debug, Deserialize)]
 struct IsolationMemory {
-    code_origin: u32,
-    code_length: u32,
-    data_origin: u32,
-    data_length: u32,
-    stack_length: u32,
     peripheral_origin: Option<u32>,
     peripheral_length: Option<u32>,
     bus_fault_origin: Option<u32>,
@@ -312,24 +307,6 @@ fn validate_isolation_memory(
                 manifest.profile.name
             )
         })?;
-    let code_end = isolation
-        .code_origin
-        .checked_add(isolation.code_length)
-        .ok_or_else(|| {
-            format!(
-                "target {} isolation code memory overflows",
-                manifest.profile.name
-            )
-        })?;
-    let data_end = isolation
-        .data_origin
-        .checked_add(isolation.data_length)
-        .ok_or_else(|| {
-            format!(
-                "target {} isolation data memory overflows",
-                manifest.profile.name
-            )
-        })?;
     match (isolation.peripheral_origin, isolation.peripheral_length) {
         (Some(origin), Some(length)) if valid_mpu_region(origin, length) => {}
         _ => {
@@ -350,22 +327,6 @@ fn validate_isolation_memory(
             )
             .into());
         }
-    }
-    if isolation.code_length == 0
-        || isolation.data_length == 0
-        || isolation.stack_length == 0
-        || isolation.stack_length > isolation.data_length
-        || isolation.code_origin != manifest.memory.application_origin
-        || isolation.data_origin != code_end
-        || data_end != application_end
-        || !valid_mpu_region(isolation.code_origin, isolation.code_length)
-        || !valid_mpu_region(isolation.data_origin, isolation.data_length)
-    {
-        return Err(format!(
-            "target {} isolation memory must cover application memory contiguously",
-            manifest.profile.name
-        )
-        .into());
     }
     validate_slots(manifest, isolation, application_end)?;
     Ok(())
@@ -417,7 +378,7 @@ fn validate_slots(
                 .data_origin
                 .checked_add(previous.data_length)
                 .ok_or_else(|| format!("target {} slot bounds overflow", manifest.profile.name))?;
-            if slot.name == previous.name || slot.code_origin < previous_end {
+            if slot.name == previous.name || slot.code_origin != previous_end {
                 return Err(format!(
                     "target {} has duplicate or overlapping isolation slots",
                     manifest.profile.name
@@ -426,15 +387,21 @@ fn validate_slots(
             }
         }
     }
-    if let Some(first) = isolation.slots.first()
-        && (first.code_origin != isolation.code_origin
-            || first.code_length != isolation.code_length
-            || first.data_origin != isolation.data_origin
-            || first.data_length != isolation.data_length
-            || first.stack_length != isolation.stack_length)
+    let Some(first) = isolation.slots.first() else {
+        return Err(format!(
+            "target {} isolation memory must declare at least one slot",
+            manifest.profile.name
+        )
+        .into());
+    };
+    let last_end = isolation
+        .slots
+        .last()
+        .and_then(|slot| slot.data_origin.checked_add(slot.data_length));
+    if first.code_origin != manifest.memory.application_origin || last_end != Some(application_end)
     {
         return Err(format!(
-            "target {} slot 0 must preserve the active isolation contract",
+            "target {} isolation slots must cover application memory contiguously",
             manifest.profile.name
         )
         .into());
@@ -576,12 +543,7 @@ fn generate_target_memory_region(region: &TargetMemoryRegion) -> String {
 
 fn generate_isolation_memory(memory: &IsolationMemory) -> String {
     format!(
-        "IsolationMemoryProfile {{ code_origin: 0x{:08X}, code_length: {}, data_origin: 0x{:08X}, data_length: {}, stack_length: {}, peripheral_origin: {}, peripheral_length: {}, bus_fault_origin: {}, bus_fault_length: {}, slots: &[{}] }}",
-        memory.code_origin,
-        memory.code_length,
-        memory.data_origin,
-        memory.data_length,
-        memory.stack_length,
+        "IsolationMemoryProfile {{ peripheral_origin: {}, peripheral_length: {}, bus_fault_origin: {}, bus_fault_length: {}, slots: &[{}] }}",
         memory
             .peripheral_origin
             .map_or_else(|| "None".to_owned(), |value| format!("Some(0x{value:08X})")),

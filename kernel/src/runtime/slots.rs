@@ -92,10 +92,10 @@ mod tests {
     use super::{SlotManager, SlotManagerError};
     use dali_targets::IsolationSlot;
 
-    const SLOT0_CODE_ORIGIN: u32 = 0x2000_8000;
-    const SLOT0_DATA_ORIGIN: u32 = 0x2000_C000;
-    const SLOT1_CODE_ORIGIN: u32 = 0x2001_0000;
-    const SLOT1_DATA_ORIGIN: u32 = 0x2001_4000;
+    const SLOT0_CODE_ORIGIN: u32 = 0x1000;
+    const SLOT0_DATA_ORIGIN: u32 = 0x2000;
+    const SLOT1_CODE_ORIGIN: u32 = 0x3000;
+    const SLOT1_DATA_ORIGIN: u32 = 0x4000;
     const SLOT_CODE_LENGTH: u32 = 16 * 1024;
     const SLOT_DATA_LENGTH: u32 = 16 * 1024;
     const SLOT_STACK_LENGTH: u32 = 4 * 1024;

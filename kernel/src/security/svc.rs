@@ -4,11 +4,9 @@
 //! only with `abi-current` while the privilege transition and MPU activation remain
 //! separate implementation steps.
 
-use dali::svc::{ExceptionFrame, ServiceId, ServiceStatus};
-use dali_targets::IsolationMemoryProfile;
-
 use crate::logging;
 use crate::security::fault::{self, FaultKind, FaultRecord};
+use dali::svc::{ExceptionFrame, ServiceId, ServiceStatus};
 
 #[unsafe(export_name = "SVCall")]
 #[unsafe(naked)]
@@ -45,8 +43,12 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
         Some(memory) => memory,
         None => return,
     };
-    let data_start = memory.data_origin as usize;
-    let data_end = match data_start.checked_add(memory.data_length as usize) {
+    let slot = match memory.active_slot() {
+        Some(slot) => slot,
+        None => return,
+    };
+    let data_start = slot.data_origin as usize;
+    let data_end = match data_start.checked_add(slot.data_length as usize) {
         Some(end) => end,
         None => return,
     };
@@ -66,7 +68,7 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
         // against the manifest-declared application data/PSP region above.
         &mut *(frame_address as *mut ExceptionFrame)
     };
-    dispatch(frame, memory);
+    dispatch(frame, slot);
 }
 
 fn valid_exception_return(value: u32) -> bool {
@@ -82,14 +84,14 @@ fn valid_exception_return(value: u32) -> bool {
         && value & BASIC_FRAME_FLAG != 0
 }
 
-fn dispatch(frame: &mut ExceptionFrame, memory: IsolationMemoryProfile) {
+fn dispatch(frame: &mut ExceptionFrame, slot: dali_targets::IsolationSlot) {
     let status = match ServiceId::from_raw(frame.r0) {
-        Some(ServiceId::Log) => dispatch_log(frame, memory),
+        Some(ServiceId::Log) => dispatch_log(frame, slot),
         #[cfg(feature = "abi-test-fixtures")]
-        None if frame.r0 == dali::svc::TEST_INVALID_PSP_SERVICE => dispatch_invalid_psp(memory),
+        None if frame.r0 == dali::svc::TEST_INVALID_PSP_SERVICE => dispatch_invalid_psp(slot),
         #[cfg(feature = "abi-test-fixtures")]
         None if frame.r0 == dali::svc::TEST_NO_FRAME_HARDFAULT_SERVICE => {
-            dispatch_no_frame_hardfault(memory)
+            dispatch_no_frame_hardfault(slot)
         }
         None => ServiceStatus::rejected(),
     };
@@ -97,9 +99,9 @@ fn dispatch(frame: &mut ExceptionFrame, memory: IsolationMemoryProfile) {
 }
 
 #[cfg(feature = "abi-test-fixtures")]
-fn dispatch_invalid_psp(memory: IsolationMemoryProfile) -> ServiceStatus {
+fn dispatch_invalid_psp(slot: dali_targets::IsolationSlot) -> ServiceStatus {
     const INVALID_PSP_OFFSET: u32 = 4;
-    let Some(invalid_psp) = memory.data_origin.checked_add(INVALID_PSP_OFFSET) else {
+    let Some(invalid_psp) = slot.data_origin.checked_add(INVALID_PSP_OFFSET) else {
         return ServiceStatus::rejected();
     };
     unsafe {
@@ -112,20 +114,20 @@ fn dispatch_invalid_psp(memory: IsolationMemoryProfile) -> ServiceStatus {
 }
 
 #[cfg(feature = "abi-test-fixtures")]
-fn dispatch_no_frame_hardfault(memory: IsolationMemoryProfile) -> ServiceStatus {
+fn dispatch_no_frame_hardfault(slot: dali_targets::IsolationSlot) -> ServiceStatus {
     const USAGEFAULT_ENABLE_BIT: u32 = 1 << 18;
     // This path is compiled only for the non-production fixture kernel.
     // Disabling UsageFault forces the deliberate INVPC condition to escalate
     // through the HardFault entry under test.
     let shcsr = super::scb::read_shcsr();
     super::scb::write_shcsr(shcsr & !USAGEFAULT_ENABLE_BIT);
-    dispatch_invalid_psp(memory)
+    dispatch_invalid_psp(slot)
 }
 
-fn dispatch_log(frame: &ExceptionFrame, memory: IsolationMemoryProfile) -> ServiceStatus {
+fn dispatch_log(frame: &ExceptionFrame, slot: dali_targets::IsolationSlot) -> ServiceStatus {
     let message = frame.r1 as usize;
     let length = frame.r2 as usize;
-    if length > dali::MAX_LOG_MESSAGE_BYTES || !contains(memory, message, length) {
+    if length > dali::MAX_LOG_MESSAGE_BYTES || !contains(slot, message, length) {
         return ServiceStatus::rejected();
     }
 
@@ -141,19 +143,19 @@ fn dispatch_log(frame: &ExceptionFrame, memory: IsolationMemoryProfile) -> Servi
     ServiceStatus::accepted()
 }
 
-fn contains(memory: IsolationMemoryProfile, start: usize, length: usize) -> bool {
+fn contains(slot: dali_targets::IsolationSlot, start: usize, length: usize) -> bool {
     if start > u32::MAX as usize || length > u32::MAX as usize {
         return false;
     }
     dali::svc::contains_range(
         start as u32,
         length as u32,
-        memory.code_origin,
-        memory.code_length,
+        slot.code_origin,
+        slot.code_length,
     ) || dali::svc::contains_range(
         start as u32,
         length as u32,
-        memory.data_origin,
-        memory.data_length,
+        slot.data_origin,
+        slot.data_length,
     )
 }

@@ -280,9 +280,9 @@ mod tests {
         dali_amrn::v2::Contract {
             target_id: 2,
             code_load_address: 0x2000_8000,
-            code_capacity: 32 * 1024,
-            data_load_address: 0x2001_0000,
-            data_capacity: 32 * 1024,
+            code_capacity: 16 * 1024,
+            data_load_address: 0x2000_C000,
+            data_capacity: 16 * 1024,
         }
     }
 }

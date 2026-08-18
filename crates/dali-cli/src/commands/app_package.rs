@@ -100,7 +100,7 @@ fn build_relocatable_v3_package(
         code: &code_bytes,
         initialized_data: &data_bytes,
         data_zero_size: artifacts::read_zero_init_size(&context)?,
-        stack_size: isolation.stack_length,
+        stack_size: slot.stack_length,
         linked_code_base: relocation_artifact.linked_code_base,
         linked_data_base: relocation_artifact.linked_data_base,
         execution_offset: manifest.entry_offset,

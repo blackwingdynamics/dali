@@ -127,16 +127,6 @@ pub struct TargetMemoryRegion {
 /// Application code and data boundaries used by the planned isolated ABI.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct IsolationMemoryProfile {
-    /// Start of the application code region.
-    pub code_origin: u32,
-    /// Size of the application code region in bytes.
-    pub code_length: u32,
-    /// Start of the application data and PSP region.
-    pub data_origin: u32,
-    /// Size of the application data and PSP region in bytes.
-    pub data_length: u32,
-    /// PSP stack reservation inside the application data region.
-    pub stack_length: u32,
     /// Start of the ordinary peripheral register region, when declared.
     pub peripheral_origin: Option<u32>,
     /// Size of the ordinary peripheral register region, when declared.
@@ -271,9 +261,10 @@ mod tests {
             .memory
             .isolation
             .expect("isolation metadata");
-        assert_eq!(isolation.slots.len(), 1);
+        assert_eq!(isolation.slots.len(), 2);
         assert_eq!(isolation.slots[0].name, "slot0");
-        assert_eq!(isolation.slots[0].code_origin, isolation.code_origin);
+        assert_eq!(isolation.slots[1].name, "slot1");
+        assert_eq!(isolation.slots[0].code_origin, 0x2000_8000);
         assert_eq!(isolation.active_slot(), Some(isolation.slots[0]));
     }
 }
