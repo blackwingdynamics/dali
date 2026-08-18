@@ -2,4 +2,5 @@
 
 pub mod context;
 pub mod lifecycle;
+pub mod policy;
 pub mod slots;

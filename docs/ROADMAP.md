@@ -595,11 +595,16 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Connect the kernel fault boundary and recovery entry to the atomic active
   context state channel; F405 hardware verified `Faulted -> Recovering ->
   Terminated` with the v4 invalid-PSP application fixture.
+- [x] Define the current restart and rollback policy: terminated applications
+  require a manual reset and the read-only package boundary has no rollback.
+- [x] Define the watchdog safety gate: do not arm hardware watchdogs until a
+  bounded heartbeat/feed owner contract exists.
 - [ ] Implement and test PendSV/SysTick context switching.
 - [ ] Verify MPU region switching during application context switches.
 - [ ] Verify application-to-application memory isolation.
 - [ ] Verify DMA isolation and reject unauthorized DMA configuration.
-- [ ] Test application crash, restart, timeout, and watchdog lifecycle policy.
+- [x] Define application crash, restart, and rollback lifecycle policy;
+  hardware watchdog implementation remains deferred until heartbeat ownership.
 
 ### Future package and platform security tests
 

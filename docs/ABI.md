@@ -140,7 +140,10 @@ the launch path performs the `Loaded -> Ready -> Running` transition before
 MPU activation. Legacy v2/v3 package paths retain their existing launch
 behavior until they receive an identity-aware lifecycle contract.
 F405 hardware has confirmed these transitions together with two-package
-loading, manifest slot boundaries, and slot0 execution.
+loading, manifest slot boundaries, slot0 execution, and the complete fault
+transition. The current policy requires a manual reset after termination,
+provides no rollback on the read-only package boundary, and does not arm a
+watchdog without a bounded feed owner.
 
 The kernel fault boundary updates the shared runtime state atomically through
 `Faulted -> Recovering -> Terminated` before entering the recovery loop. This

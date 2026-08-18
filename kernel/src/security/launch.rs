@@ -127,8 +127,10 @@ extern "C" fn fault_recovery() -> ! {
             format_args!("[SECURITY][FAULT] Active context state: Terminated"),
         );
     }
-    loop {
-        cortex_m::asm::wfi();
+    match crate::runtime::policy::CURRENT.fault_recovery() {
+        crate::runtime::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
+            cortex_m::asm::wfi();
+        },
     }
 }
 

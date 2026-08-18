@@ -164,8 +164,12 @@ distinguished from the kernel's fault and recovery records.
 
 ## Not yet evidenced
 
-- [ ] Watchdog behavior after application termination; watchdog support is not
-  implemented yet.
+- [x] Application restart and rollback policy is explicit: termination enters
+  the kernel recovery heartbeat, automatic restart is rejected, and rollback is
+  unavailable while package storage is read-only.
+- [ ] Hardware watchdog arming, feed ownership, timeout, and safe-mode reset;
+  the watchdog remains intentionally disabled until its heartbeat contract is
+  implemented.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
@@ -192,6 +196,9 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-level active-context ownership tests reject activation before
   readiness, reject a second active context, and allow retirement only after
   terminal recovery. These tests do not prove runtime scheduling or isolation.
+- [x] Host-level lifecycle policy tests require manual reset after termination,
+  reject rollback on the read-only package boundary, and keep the watchdog
+  disabled until a bounded heartbeat/feed owner exists.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.
@@ -212,7 +219,8 @@ distinguished from the kernel's fault and recovery records.
   application and does not yet switch contexts.
 - [ ] PendSV/SysTick context switching and MPU region switching.
 - [ ] DMA isolation.
-- [ ] Application restart, timeout, and watchdog lifecycle policy.
+- [x] Application restart and rollback policy is covered by the lifecycle policy
+  contract; hardware watchdog implementation remains separate and pending.
 
 ## MVP acceptance test
 

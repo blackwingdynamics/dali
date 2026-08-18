@@ -37,14 +37,14 @@ sandbox.
 The F405 evidence covers kernel/peripheral access rejection, execute-never
 rejection, invalid PSP entry, SVC rejection, precise BusFault decoding,
 repeated invalid-PSP recovery, and the no-frame HardFault handler boundary.
-The no-frame trace proves the handler/recovery boundary, but not a complete
-application restart lifecycle.
+The no-frame trace proves the handler/recovery boundary, but not automatic
+application restart or rollback.
 
 The following remain outside the current guarantee boundary:
 
 - DMA isolation and DMA ownership enforcement;
 - multi-application package loading and application-to-application isolation;
-- watchdog, restart, timeout, and safe-mode policy;
+- hardware watchdog arming, feed ownership, timeout, and safe-mode reset;
 - package authenticity, secure boot, confidentiality, and anti-rollback;
 - production debug-lock and key-storage policy.
 
@@ -56,7 +56,7 @@ The following remain outside the current guarantee boundary:
 - anti-rollback counters;
 - production debug lock;
 - broader MPU-backed isolation and multi-application ownership where supported;
-- watchdog and recovery policy;
+- hardware watchdog and timeout implementation;
 - atomic update and rollback;
 - security review of package parsing and storage access.
 
@@ -83,8 +83,10 @@ MemManage and BusFault paths.
 This milestone still does not claim a secure kernel, complete sandbox,
 complete fault isolation, DMA isolation, confidentiality, or authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
-restart lifecycle; watchdog behavior and multi-application isolation remain
-open. The initial valid-service authorization policy and repeated invalid-PSP
-fault-status clearing are hardware-tested. MPU protection applies to
+automatic restart or rollback. The current policy requires a manual reset
+after termination, keeps the read-only package boundary rollback-free, and does
+not arm a watchdog without a feed owner. The initial valid-service
+authorization policy and repeated invalid-PSP fault-status clearing are
+hardware-tested. MPU protection applies to
 processor accesses; DMA buffer ownership and kernel memory safety require
 separate controls.

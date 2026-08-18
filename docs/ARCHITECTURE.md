@@ -56,8 +56,10 @@ F405 execution mode. It implements privileged kernel bootstrap, unprivileged
 application Thread mode, PSP ownership, MPU regions, SVC-based services, and a
 kernel-owned fault boundary. These processor-side mechanisms and their listed
 fault-injection cases have F405 evidence, but the result must not be described
-as a microkernel, secure boot, or complete sandbox: DMA ownership,
-multi-application isolation, and lifecycle policy remain open.
+as a microkernel, secure boot, or complete sandbox: DMA ownership and
+multi-application isolation remain open. The current lifecycle policy requires
+manual reset after termination, does not provide rollback on read-only storage,
+and keeps hardware watchdog arming disabled until heartbeat ownership exists.
 
 ## 4. Reference platform
 
