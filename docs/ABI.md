@@ -81,8 +81,9 @@ multi-application contract is enabled.
 
 ABI v3 is feature-gated and is not the default kernel execution path. ABI v2
 remains the default. ABI v3 requires explicit feature selection and is still
-an experimental single-application isolation path because no-frame fault
-recovery, watchdog behavior, and repeated fault-reset behavior remain open.
+an experimental single-application isolation path. The processor-side fault
+cases and repeated invalid-PSP recovery are hardware-tested; watchdog and
+lifecycle policy, DMA isolation, and multi-application isolation remain open.
 
 The source code uses the central `abi-current` selector and the version-neutral
 `abi-mpu` and `abi-relocation` capabilities. These are the only ABI-related
@@ -189,7 +190,8 @@ runtime stack reservations. The v2 package contract is defined in
 construction. The CLI can build and inspect ABI v3 packages, and the kernel has
 a feature-gated streaming validator/copy path. The default kernel remains
 ABI v2-only; the feature-gated path is experimental and its hardware evidence
-is incomplete.
+is complete for the documented single-application F405 cases. It does not
+enable concurrent applications or claim the remaining security guarantees.
 
 For a target selected through the manifest, the linker must emit:
 
@@ -205,7 +207,9 @@ The package payload stores code followed by initialized data. Zero data and
 the PSP stack are reservations, not file bytes. The loader must copy the two
 file segments only after validating every region bound, then clear the
 zero-data range and construct the PSP launch frame. This is a fixed-address
-single-application contract; PIC, relocation, and multiple slots remain
+single-application contract. Explicit relocation is defined by AMRN format
+version 3 and hardware-tested separately; compiler PIC or RWPI alone is not
+treated as an AMRN relocation contract. Multiple-package execution remains
 deferred.
 
 Format version 3 is the movable ABI v3 contract. Its host-side header,
@@ -255,8 +259,8 @@ region to unprivileged read/write, execute-never, before entering the PSP
 context. This ordering prevents the protection map from blocking a valid
 kernel-owned load. The default kernel does not enable this path. It provides
 single-application processor-side isolation evidence, but it must not be
-treated as complete application isolation because no-frame recovery, DMA
-isolation, and multi-application isolation remain open.
+treated as complete application isolation because DMA isolation, lifecycle
+policy, and multi-application isolation remain open.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the

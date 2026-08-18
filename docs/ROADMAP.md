@@ -453,13 +453,15 @@ protection boundary is implemented and accepted.
   with validated PSP bounds and a kernel-owned exception-return selector; do
   not enable it in the default ABI v2 path.
 - [x] Add an explicitly disabled-by-default PendSV transition primitive for
-  the prepared PSP frame; keep fault recovery and acceptance evidence pending.
+  the prepared PSP frame; full concurrent scheduling remains disabled.
 - [x] Add a feature-gated kernel-stack fault recovery return that terminates the
-  application without reusing its PSP; keep hardware fault evidence pending.
+  application without reusing its PSP; hardware evidence is recorded below.
 - [x] Add a feature-gated no-frame HardFault recovery path for exception-entry
-  failures where an application stack frame is not valid.
+  failures where an application stack frame is not valid; the handler boundary
+  is SWD/GDB-tested, while full restart lifecycle semantics remain open.
 - [x] Implement MPU and privilege transition for one application only; keep
-  watchdog, repeatability, DMA, and multi-application evidence pending.
+  watchdog, DMA, and multi-application behavior pending; repeatability evidence
+  is recorded below.
 - [x] Implement the SVC gateway and versioned service dispatch; rejection
   evidence is recorded below.
 - [x] Implement a privileged fault boundary that records the fault context and
@@ -567,9 +569,10 @@ Compilation and host tests do not replace hardware evidence.
   changing the ABI v2/v3 loaders.
 - [x] Add host-testable streaming-loader fixtures for v4 selection, bounded
   reads, CRC, and relocation validation.
-- [x] Validate v4 selection, relocation, and recovery on F405 hardware; the
-  format 4 slot1 fixture passed AMRN validation and executed the relocation
-  proof application. Detailed evidence is in `docs/TESTING.md`.
+- [x] Validate v4 selection, relocation, and successful application execution
+  on F405 hardware; the format 4 slot1 fixture passed AMRN validation and
+  executed the relocation proof application. v4-specific rejection/recovery
+  hardware tests remain open. Detailed evidence is in `docs/TESTING.md`.
 - [x] Add a host-tested slot ownership/range contract before enabling two
   application contexts.
 - [ ] Load two applications into independent slots and verify their boundaries.

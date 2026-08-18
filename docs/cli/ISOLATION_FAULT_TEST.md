@@ -171,8 +171,8 @@ regions and the breakpoint at `launch::enter` has stopped execution. Then set
 breakpoints at `dali_kernel::security::fault::handle_hard_fault` and
 `dali_kernel::security::fault::handle_with_frame`, continue, and inspect the
 registers and `CFSR`, `HFSR`, and `BFAR` values when the fault is reached.
-Hardware acceptance remains pending until the decoded `PC`, `LR`, and address
-are observed on the target.
+The decoded `PC`, `LR`, and address were observed on the target and are
+recorded in `docs/TESTING.md`; this confirms the precise BusFault boundary.
 
 ## Invalid-execution test
 
@@ -270,7 +270,8 @@ The F405 test was verified through the Pico CMSIS-DAP probe and GDB. The
 execution reached `HardFault`, `handle_hard_fault`,
 `handle_with_frame(kind=HardFault)`, and `recover` in order. The SCB reported
 `CFSR=0x00040000` (`INVPC`) with UsageFault disabled, and recovery entered the
-kernel-owned `WFI` loop. This is SWD/GDB evidence for no-frame recovery; the
+kernel-owned `WFI` loop. This is SWD/GDB evidence for the no-frame handler and
+recovery boundary; the
 debugger's post-fault unwind output is not itself a pass criterion.
 
 ## SVC rejection-matrix test

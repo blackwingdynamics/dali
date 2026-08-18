@@ -131,12 +131,11 @@ required_services
 memory_requirements
 ```
 
-AMRN format version `4` is reserved for package identity and selection
-metadata. It remains ABI v3-compatible: format v4 changes the container
-header and compatibility checks, not the application calling convention,
-service gateway, or MPU contract. A kernel may support format v3 without
-supporting format v4, and must reject v4 explicitly when the identity and
-compatibility fields cannot be validated.
+AMRN format version `4` defines package identity and selection metadata. It
+remains ABI v3-compatible: format v4 changes the container header and
+compatibility checks, not the application calling convention, service gateway,
+or MPU contract. The current feature-gated F405 loader supports format v4 for
+one selected package; it does not yet provide multi-package execution.
 
 ## 6. Release tags
 

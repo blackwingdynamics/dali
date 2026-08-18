@@ -171,7 +171,9 @@ derived from the same manifest.
 
 ## Unsupported commands
 
-Unknown commands fail with usage information. SD-card and package installation
-are not currently implemented. Probe flashing is not implemented yet. The
-device discovery contract is defined separately in
-[DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md).
+Unknown commands fail with usage information. SD-card package installation,
+replacement, removal, and application lifecycle commands are not currently
+implemented. Probe and DFU flashing, device discovery, console access, and
+debug attachment are implemented for the declared F405 workflow. The device
+discovery contract is defined separately in
+[DEVICE_DISCOVERY.md](../DEVICE_DISCOVERY.md).

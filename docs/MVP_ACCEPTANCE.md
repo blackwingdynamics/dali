@@ -1,6 +1,6 @@
-# Dali OS MVP Acceptance Test
+# Dali OS Baseline ABI v2 MVP Acceptance Test
 
-This procedure validates the first complete Dali OS path on physical hardware:
+This procedure validates the baseline ABI v2 MVP path on physical hardware:
 
 ```text
 Kernel boot
@@ -15,6 +15,10 @@ Kernel boot
 ## 1. Acceptance scope
 
 The MVP passes only when the kernel reads and executes an independently built `.amrn` package from an SD card on the reference board.
+
+This is the baseline release acceptance procedure. It does not replace the
+feature-gated ABI v3 isolation and AMRN v4 hardware evidence recorded in
+`docs/TESTING.md`.
 
 This test does not prove:
 

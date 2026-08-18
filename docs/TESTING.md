@@ -87,7 +87,8 @@ multi-application isolation, or watchdog support.
 - [x] Execute-never instruction rejection with `MemManage` recovery.
 - [x] Invalid-PSP exception-entry rejection with recovery.
 - [x] Precise BusFault decoding with `CFSR`, `BFAR`, and stacked `PC/LR`.
-- [x] No-frame HardFault recovery verified through SWD/GDB boundary tracing.
+- [x] No-frame HardFault handler and kernel recovery boundary verified through
+  SWD/GDB tracing; complete application restart lifecycle remains unverified.
 - [x] SVC rejection matrix for unknown services, invalid pointers, oversized
   messages, and invalid UTF-8.
 - [x] Accepted `Log` SVC and initial service authorization policy.
@@ -164,8 +165,9 @@ distinguished from the kernel's fault and recovery records.
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.
 - [x] Hardware execution of the v4 streaming loader, selection, relocation, and
-  recovery path is documented above; target compilation alone would not prove
-  this behavior.
+  successful application path is documented above; target compilation alone
+  would not prove this behavior. v4-specific rejection/recovery hardware tests
+  remain separate work.
 - [ ] Hardware two-application boundary isolation; only one application is
   loaded and executed at a time.
 - [ ] PendSV/SysTick context switching and MPU region switching.
