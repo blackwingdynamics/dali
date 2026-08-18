@@ -18,6 +18,58 @@ pub struct BlockDeviceAdapter<R> {
     reader: RefCell<R>,
 }
 
+/// Borrows an existing block device for repeated read-only filesystem passes.
+#[cfg(feature = "abi-current")]
+pub struct BlockDeviceRef<'a, D> {
+    device: &'a D,
+}
+
+#[cfg(feature = "abi-current")]
+impl<D> Copy for BlockDeviceRef<'_, D> {}
+
+#[cfg(feature = "abi-current")]
+impl<D> Clone for BlockDeviceRef<'_, D> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+#[cfg(feature = "abi-current")]
+impl<'a, D> BlockDeviceRef<'a, D> {
+    /// Creates a read-only borrowed view of an initialized block device.
+    pub const fn new(device: &'a D) -> Self {
+        Self { device }
+    }
+}
+
+#[cfg(feature = "abi-current")]
+impl<D> BlockDevice for BlockDeviceRef<'_, D>
+where
+    D: BlockDevice,
+{
+    type Error = D::Error;
+
+    fn read(
+        &self,
+        blocks: &mut [FilesystemBlock],
+        start_block_idx: BlockIdx,
+    ) -> Result<(), Self::Error> {
+        self.device.read(blocks, start_block_idx)
+    }
+
+    fn write(
+        &self,
+        blocks: &[FilesystemBlock],
+        start_block_idx: BlockIdx,
+    ) -> Result<(), Self::Error> {
+        self.device.write(blocks, start_block_idx)
+    }
+
+    fn num_blocks(&self) -> Result<BlockCount, Self::Error> {
+        self.device.num_blocks()
+    }
+}
+
 impl<R> BlockDeviceAdapter<R> {
     /// Wraps an initialized block reader for read-only filesystem use.
     pub const fn new(reader: R) -> Self {

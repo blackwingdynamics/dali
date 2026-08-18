@@ -8,7 +8,7 @@ use crate::{
     storage::filesystem::AmrnFile,
 };
 
-use super::v3::LoadedApplication;
+use super::execution::LoadedApplication;
 
 const RELOCATION_BYTES: usize = v4::RELOCATION_ENTRY_SIZE;
 const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
@@ -60,7 +60,7 @@ where
     })
 }
 
-fn parse_target_header(
+pub(super) fn parse_target_header(
     bytes: &[u8; v4::HEADER_SIZE],
     slot_manager: &mut crate::runtime::slots::SlotManager,
 ) -> Result<(v4::Header, v3::Contract, dali_targets::IsolationSlot), super::LoaderError> {
@@ -97,7 +97,9 @@ fn prepare_launch(
     })
 }
 
-fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v4::HEADER_SIZE], super::LoaderError>
+pub(crate) fn read_header<D>(
+    file: &AmrnFile<'_, D>,
+) -> Result<[u8; v4::HEADER_SIZE], super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
@@ -248,7 +250,7 @@ fn map_stream_error(
     }
 }
 
-fn v4_error(error: v4::Error) -> super::LoaderError {
+pub(crate) fn v4_error(error: v4::Error) -> super::LoaderError {
     super::LoaderError::V4IdentityPackage(error)
 }
 

@@ -12,6 +12,8 @@ pub const ABI_VERSION: u8 = v3::ABI_VERSION;
 pub const RELOCATION_ENTRY_SIZE: usize = v3::RELOCATION_ENTRY_SIZE;
 /// Offset of the target identifier in the fixed header.
 pub const TARGET_ID_OFFSET: usize = 5;
+/// Offset of the stable package identity in the fixed header.
+pub const PACKAGE_ID_OFFSET: usize = 80;
 /// Offset of the manifest-owned slot identifier in the extension header.
 pub const SLOT_ID_OFFSET: usize = 112;
 /// Offset of the package CRC32 field in the extension header.
@@ -33,7 +35,6 @@ const RELOCATION_COUNT_OFFSET: usize = 48;
 const RELOCATION_ENTRY_SIZE_OFFSET: usize = 52;
 const PAYLOAD_CRC32_OFFSET: usize = 56;
 const ABI_VERSION_OFFSET: usize = 60;
-const PACKAGE_ID_OFFSET: usize = 80;
 const PACKAGE_VERSION_OFFSET: usize = 96;
 const MINIMUM_KERNEL_VERSION_OFFSET: usize = 102;
 const REQUIRED_SERVICES_OFFSET: usize = 108;

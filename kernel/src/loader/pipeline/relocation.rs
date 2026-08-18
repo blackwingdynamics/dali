@@ -8,7 +8,7 @@ use crate::{
     storage::filesystem::AmrnFile,
 };
 
-use super::v3::LoadedApplication;
+use super::execution::LoadedApplication;
 
 const RELOCATION_BYTES: usize = v3::RELOCATION_ENTRY_SIZE;
 

@@ -8,11 +8,16 @@ use embedded_sdmmc::{
     VolumeManager,
 };
 
+mod multi;
 #[cfg(test)]
 mod tests;
 
+pub use multi::with_amrn_files;
+
 /// The package extension recognized by the MVP root-directory scan.
 pub const AMRN_EXTENSION: &[u8] = b"AMRN";
+/// Maximum number of root AMRN files processed in one bounded scan.
+pub const MAX_ROOT_AMRN_FILES: usize = 4;
 // These bounds are defined by the FAT long-file-name representation and the
 // UTF-8 encoding used by `embedded-sdmmc`.
 const FAT_LFN_MAX_CHARACTERS: usize = 255;
@@ -72,6 +77,7 @@ where
     manager: &'a FilesystemManager<D>,
     raw_file: RawFile,
     length: u32,
+    name: ShortFileName,
 }
 
 impl<D> AmrnFile<'_, D>
@@ -81,6 +87,11 @@ where
     /// Returns the file length recorded in the FAT directory entry.
     pub const fn length(&self) -> u32 {
         self.length
+    }
+
+    /// Returns the short directory key used to reopen this file.
+    pub const fn name(&self) -> ShortFileName {
+        self.name
     }
 
     /// Reads the next bounded portion of the package.
@@ -157,10 +168,12 @@ where
         manager: &manager,
         raw_file,
         length,
+        name: candidate.name,
     });
     finish_file_operation(&manager, root, raw_file, result)
 }
 
+/// Runs a bounded read-only operation for every root AMRN file.
 fn abort_file_operation<D, R, E>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,

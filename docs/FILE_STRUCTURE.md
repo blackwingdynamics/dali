@@ -38,13 +38,17 @@ dali-kernel/
 │       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
 │       │   └── tests.rs            # Hardware-neutral contract tests
-│       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
-│       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
-│       ├── loader/v4.rs           # Identity-aware streaming loader
+│       ├── loader/pipeline/       # Responsibility-specific loading paths
+│       │   ├── mod.rs             # Pipeline ownership and shared loader imports
+│       │   ├── execution.rs       # Fixed-origin ABI execution path
+│       │   ├── relocation.rs      # Relocation application path
+│       │   ├── identity.rs        # Identity-aware package loading
+│       │   └── discovery.rs       # Real root-package catalog and selection
 │       ├── logging/              # Facade, RTT, USB CDC backend
 │       ├── runtime/              # Hardware-neutral application lifecycle state
 │       └── storage/              # Read-only filesystem and storage policy
 │           └── filesystem/       # Root package discovery and file streaming
+│               └── multi.rs      # Bounded multi-package enumeration
 ├── apps/
 │   ├── dali-app-hello/
 │   ├── dali-app-relocation-fixture/
@@ -103,7 +107,7 @@ kernel/src/
 ├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,status.rs}}}
 ├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader/{mod.rs,contract/{mod.rs,tests.rs},v3.rs,v3_relocatable.rs,v4.rs}
+├── loader/{mod.rs,contract/{mod.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,slots.rs}
 └── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}

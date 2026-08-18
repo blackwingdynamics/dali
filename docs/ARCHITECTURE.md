@@ -129,14 +129,16 @@ an 8.3 short entry, so short-name-only enumeration would miss packages. The
 filesystem layer exposes a read-only stream for the single package selected by
 the MVP loader policy. Zero matching files is `NotFound`; more than one
 matching regular file is `Unsupported`. The loader never silently chooses
-between multiple application packages.
+between multiple legacy application packages. The feature-gated v4 loader now
+enumerates bounded root packages, validates their identity/slot metadata, and
+reopens only the deterministic selection for the full load pass.
 
 The post-v4 multi-application phase adds a bounded, hardware-neutral package
 catalog at the loader boundary. It accepts only headers already validated
 against a target manifest, rejects duplicate identities and occupied slots,
 and selects by manifest slot rather than directory order or filename. This
-catalog does not change the current single-package filesystem policy and does
-not enable concurrent application execution.
+catalog does not enable concurrent application execution; legacy ABI paths keep
+the single-package policy.
 
 The hardware-independent `dali-amrn` crate exposes header decoding and payload
 validation separately as well as a contiguous-package convenience API. The
