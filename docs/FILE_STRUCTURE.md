@@ -22,8 +22,18 @@ dali-kernel/
 │       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
 │       ├── abi.rs                 # Central active ABI selector
-│       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
-│       │   └── mpu/               # MPU contract, layout, and privileged programming
+│       ├── security/              # Privilege, fault, launch, MPU, and scheduling boundaries
+│       │   ├── fault/             # Fault records, handlers, recovery, and SCB access
+│       │   │   ├── mod.rs         # Fault classification and recovery boundary
+│       │   │   └── scb.rs         # System Control Block register access
+│       │   ├── launch/            # Validated application frame and entry transition
+│       │   │   └── mod.rs         # Launch-frame materialization and recovery entry
+│       │   ├── mpu/               # MPU contract, layout, and privileged programming
+│       │   ├── privilege/         # Application privilege and service gateway
+│       │   │   ├── mod.rs         # Privilege module boundary
+│       │   │   └── svc.rs         # SVC dispatch and frame validation
+│       │   └── scheduling/        # Kernel-owned scheduler initialization boundary
+│       │       └── mod.rs         # Target-profile scheduler storage initialization
 │       ├── platform/mod.rs        # Platform facade and target entry points
 │       ├── platform/f405/          # F405-specific platform backend
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings

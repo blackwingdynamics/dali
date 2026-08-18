@@ -113,8 +113,8 @@ fn dispatch_no_frame_hardfault(slot: dali_targets::IsolationSlot) -> ServiceStat
     // This path is compiled only for the non-production fixture kernel.
     // Disabling UsageFault forces the deliberate INVPC condition to escalate
     // through the HardFault entry under test.
-    let shcsr = super::scb::read_shcsr();
-    super::scb::write_shcsr(shcsr & !USAGEFAULT_ENABLE_BIT);
+    let shcsr = crate::security::fault::scb::read_shcsr();
+    crate::security::fault::scb::write_shcsr(shcsr & !USAGEFAULT_ENABLE_BIT);
     dispatch_invalid_psp(slot)
 }
 
