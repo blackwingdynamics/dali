@@ -4,6 +4,8 @@ use dali_targets::TARGET_F405;
 
 #[cfg(feature = "abi-current")]
 use dali_targets::MemoryProfile;
+#[cfg(feature = "abi-context-switch")]
+use stm32f4xx_hal::timer::{SysCounterHz, SysEvent};
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
 /// First planned single-application F405 isolation layout.
@@ -35,6 +37,10 @@ pub const MEMORY_PROFILE: MemoryProfile = TARGET_F405.memory;
 const HZ_PER_MHZ: u32 = 1_000_000;
 /// System clock in megahertz for the common platform facade.
 pub const SYSTEM_CLOCK_MHZ: u32 = SYSTEM_CLOCK_HZ / HZ_PER_MHZ;
+#[cfg(feature = "abi-context-switch")]
+const SYSTICK_MIN_RELOAD: u32 = 1;
+#[cfg(feature = "abi-context-switch")]
+const SYSTICK_MAX_RELOAD: u32 = 0x00FF_FFFF;
 
 const _: () = assert!(TARGET_F405.amrn_target_id == dali_amrn::TARGET_ID);
 #[cfg(feature = "abi-current")]
@@ -96,7 +102,7 @@ pub type SdioPins = (
 /// Peripherals owned by the kernel after board initialization.
 pub struct Board {
     /// Blocking delay driven by the initialized SysTick timer.
-    pub delay: SysDelay,
+    delay: Option<TimerMode>,
     /// WeAct board status LED on active-high PB2.
     pub status_led: StatusLed,
     /// Hardware SDIO 4-bit pins for the on-board microSD socket.
@@ -108,6 +114,15 @@ pub struct Board {
     /// USB FS resources reserved for the CDC logging backend.
     #[cfg(feature = "usb-cdc")]
     usb: Option<UsbResources>,
+}
+
+/// Exclusive ownership mode for the board's single SysTick peripheral.
+enum TimerMode {
+    /// Bootstrap and heartbeat delay mode.
+    Delay(SysDelay),
+    /// Scheduler interrupt mode after an application context is active.
+    #[cfg(feature = "abi-context-switch")]
+    Scheduler(SysCounterHz),
 }
 
 impl Board {
@@ -123,6 +138,31 @@ impl Board {
     pub fn take_usb_resources(&mut self) -> Option<UsbResources> {
         self.usb.take()
     }
+}
+
+/// Enables SysTick for the scheduler after the application context is ready.
+#[cfg(feature = "abi-context-switch")]
+pub fn enable_scheduler_tick(board: &mut Board, tick_hz: u32) -> bool {
+    let Some(core_ticks) = SYSTEM_CLOCK_HZ.checked_div(tick_hz) else {
+        return false;
+    };
+    let Some(reload) = core_ticks.checked_sub(1) else {
+        return false;
+    };
+    if !(SYSTICK_MIN_RELOAD..=SYSTICK_MAX_RELOAD).contains(&reload) {
+        return false;
+    }
+
+    let Some(TimerMode::Delay(delay)) = board.delay.take() else {
+        return false;
+    };
+    let mut counter = delay.release().counter_hz();
+    if counter.start(Hertz::from_raw(tick_hz)).is_err() {
+        return false;
+    }
+    counter.listen(SysEvent::Update);
+    board.delay = Some(TimerMode::Scheduler(counter));
+    true
 }
 
 /// Takes singleton peripherals and initializes the STM32F405 board hardware.
@@ -142,7 +182,7 @@ pub fn initialize() -> Board {
     #[cfg(feature = "usb-cdc")]
     let clocks = clocks.require_pll48clk();
     let clocks = clocks.freeze();
-    let delay = core.SYST.delay(&clocks);
+    let delay = TimerMode::Delay(core.SYST.delay(&clocks));
 
     let gpiob = device.GPIOB.split();
     #[cfg(feature = "usb-cdc")]
@@ -172,7 +212,7 @@ pub fn initialize() -> Board {
     });
 
     Board {
-        delay,
+        delay: Some(delay),
         status_led,
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
@@ -189,6 +229,28 @@ pub fn set_status_led(board: &mut Board, on: bool) {
     } else {
         board.status_led.set_low();
     }
+}
+
+/// Delays through the bootstrap-owned SysTick mode.
+pub fn delay_ms(board: &mut Board, milliseconds: u32) {
+    let Some(mode) = board.delay.take() else {
+        return;
+    };
+    let delay = match mode {
+        TimerMode::Delay(mut delay) => {
+            delay.delay_ms(milliseconds);
+            delay
+        }
+        #[cfg(feature = "abi-context-switch")]
+        TimerMode::Scheduler(counter) => {
+            // The scheduler mode is installed immediately before the
+            // non-returning application launch. Keeping it installed preserves
+            // SysTick ownership if an unexpected caller reaches the heartbeat.
+            board.delay = Some(TimerMode::Scheduler(counter));
+            return;
+        }
+    };
+    board.delay = Some(TimerMode::Delay(delay));
 }
 
 /// Enables the board's USB interrupt after the CDC backend is initialized.

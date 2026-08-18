@@ -157,10 +157,9 @@ only: SysTick does not yet request a switch, PendSV does not yet save or restore
 multiple contexts, and MPU regions are not switched between applications.
 
 The scheduling contract also defines a board-independent tick budget. Each
-platform supplies timer interrupts, the budget emits a one-shot PendSV request
-when its quantum expires, and the deferred handler remains responsible for the
-actual register save/restore. No timer frequency or quantum is selected by the
-runtime contract.
+target profile declares the platform timer frequency and the quantum in timer
+ticks. The budget emits a one-shot PendSV request when its quantum expires, and
+the deferred handler remains responsible for the actual register save/restore.
 
 The optional `abi-context-switch` feature now provides target-compiled ARM
 save/restore primitives for the kernel-owned context record. The primitives do
@@ -172,25 +171,26 @@ The scheduler facade now owns the bounded sequence around those primitives:
 SysTick records a preemption request, PendSV saves the active record, and the
 facade selects the next ready context. A feature-gated target SysTick hook now
 feeds the scheduler and only pends PendSV when both active and ready contexts
-exist. The hook does not enable the timer, perform the register transfer, or
-switch MPU regions; those remain integration work.
+exist. The selected platform enables SysTick only after the first application
+context is active; the hook itself does not perform the register transfer or
+switch MPU regions. Those remain integration work.
 
 The scheduler capacity is generated from the selected target's declared
 isolation slots. It is not derived from filesystem enumeration limits and is
 not a board-independent hardcoded slot count.
 
-The preemption quantum is likewise declared by the target profile as a number
-of platform timer ticks. The kernel does not select a board-specific timer
-frequency or embed a deployment-specific quantum in scheduler code.
+The preemption quantum and timer frequency are declared by the target profile.
+The kernel does not embed a deployment-specific timing literal in scheduler
+code.
 
 Kernel-owned scheduler storage is initialized once during bootstrap. Mutable
 access requires an explicit interrupt-exclusivity guarantee; uninitialized or
 repeated initialization is rejected before PendSV integration.
 
 With `abi-context-switch`, bootstrap constructs this storage from the selected
-target profile. The loader registers validated application launch records and
-activates the first scheduler context, but the scheduler remains disconnected
-from timer enablement and register-transfer ownership.
+target profile. The loader registers validated application launch records,
+activates the first scheduler context, and then enables the target SysTick.
+Register-transfer ownership and hardware context-switch evidence remain open.
 
 `prepare_pendsv` makes that sequence explicit and bounded: without a pending
 request it leaves the active context unchanged; with a request it records the

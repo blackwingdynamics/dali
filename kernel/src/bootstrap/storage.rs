@@ -65,6 +65,7 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
     match reader.read_block(BlockAddress::new(0), &mut block) {
         Ok(()) => load_package(
             reader,
+            board,
             #[cfg(feature = "abi-current")]
             &mut slot_manager,
             #[cfg(feature = "abi-mpu")]
@@ -83,6 +84,7 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
 #[cfg(feature = "sdio")]
 fn load_package<R>(
     reader: R,
+    board: &mut platform::Platform,
     #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     #[cfg(feature = "abi-mpu")]
     context_owner: &mut crate::runtime::application::owner::ActiveContextOwner,
@@ -90,6 +92,9 @@ fn load_package<R>(
 where
     R: BlockReader,
 {
+    #[cfg(not(feature = "abi-context-switch"))]
+    let _ = board;
+
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Read block 0 successfully"),
@@ -219,6 +224,23 @@ where
                         return status::StorageStatus::Failure;
                     };
                     if platform::activate_application_regions(active.allocation().slot()) {
+                        #[cfg(feature = "abi-context-switch")]
+                        {
+                            let Some(profile) = platform::SCHEDULER_PROFILE else {
+                                logging::error(
+                                    logging::SECURITY_SUBSYSTEM,
+                                    format_args!("[SECURITY] Scheduler profile unavailable"),
+                                );
+                                return status::StorageStatus::Failure;
+                            };
+                            if !board.enable_scheduler_tick(profile.tick_hz) {
+                                logging::error(
+                                    logging::SECURITY_SUBSYSTEM,
+                                    format_args!("[SECURITY] Scheduler tick configuration invalid"),
+                                );
+                                return status::StorageStatus::Failure;
+                            }
+                        }
                         crate::security::launch::enter(package.launch_frame);
                     }
                     logging::error(

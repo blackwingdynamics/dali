@@ -36,6 +36,7 @@ usb_hz = 48_000_000
 
 [scheduler]
 quantum_ticks = 1
+tick_hz = 1000
 
 [memory]
 flash = { origin = 0x0800_0000, length = 524_288 }

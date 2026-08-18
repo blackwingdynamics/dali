@@ -1,7 +1,5 @@
 //! STM32F405 target selection and interrupt bindings.
 
-use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
-
 #[cfg(feature = "board-stm32f405-sd")]
 mod board;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
@@ -39,7 +37,12 @@ impl crate::platform::Backend for board::Board {
     }
 
     fn delay_ms(&mut self, milliseconds: u32) {
-        self.delay.delay_ms(milliseconds);
+        board::delay_ms(self, milliseconds);
+    }
+
+    #[cfg(feature = "abi-context-switch")]
+    fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
+        board::enable_scheduler_tick(self, tick_hz)
     }
 
     #[cfg(feature = "sdio")]

@@ -224,18 +224,18 @@ distinguished from the kernel's fault and recovery records.
 - [x] Host-level scheduler-storage tests reject pre-initialization access,
   publish one initialized value, and reject repeated initialization. These
   tests do not prove interrupt masking on the target.
-- [x] Target-profile generation carries the scheduler quantum as declared
-  configuration; no timer frequency or quantum literal is embedded in the
+- [x] Target-profile generation carries the scheduler quantum and timer
+  frequency as declared configuration; no timing literal is embedded in the
   scheduler implementation.
 - [x] Embedded target compilation verifies bootstrap scheduler initialization
-  from target-profile configuration; timer enablement and interrupt register
-  transfer remain disabled.
+  and delayed SysTick enablement from target-profile configuration. This does
+  not prove interrupt delivery or context switching on hardware.
 - [x] Host-level scheduler-record tests retain the manifest-owned slot beside
   each saved CPU context. This is metadata-binding evidence only; it does not
   prove PendSV register transfer or MPU region switching.
 - [x] Embedded target compilation verifies the feature-gated SysTick exception
-  hook and guarded PendSV request path. No timer is enabled and no register
-  transfer occurs, so it is not hardware context-switch evidence.
+  hook and guarded PendSV request path. No register transfer is proven, so it
+  is not hardware context-switch evidence.
 - [x] Target ELF inspection verifies the feature-gated PendSV wrapper contains
   the raw `r4..r11` save, PSP/CONTROL/EXC_RETURN capture, scheduler helper call,
   and restore-primitive branch. This is target/source evidence only; hardware

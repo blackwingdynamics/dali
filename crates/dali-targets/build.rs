@@ -61,6 +61,7 @@ struct Clock {
 #[derive(Debug, Deserialize)]
 struct Scheduler {
     quantum_ticks: u32,
+    tick_hz: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -224,6 +225,18 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         {
             return Err(format!(
                 "target manifest {} has no valid scheduler quantum",
+                manifest.profile.name
+            )
+            .into());
+        }
+        if manifest.profile.application_supported
+            && manifest
+                .scheduler
+                .as_ref()
+                .is_none_or(|scheduler| scheduler.tick_hz == 0)
+        {
+            return Err(format!(
+                "target manifest {} has no valid scheduler tick frequency",
                 manifest.profile.name
             )
             .into());
@@ -526,8 +539,8 @@ fn generate_profile(manifest: &Manifest) -> String {
 
 fn generate_scheduler(scheduler: &Scheduler) -> String {
     format!(
-        "SchedulerProfile {{ quantum_ticks: {} }}",
-        scheduler.quantum_ticks
+        "SchedulerProfile {{ quantum_ticks: {}, tick_hz: {} }}",
+        scheduler.quantum_ticks, scheduler.tick_hz
     )
 }
 

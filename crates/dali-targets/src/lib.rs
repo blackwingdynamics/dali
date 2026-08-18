@@ -97,6 +97,8 @@ pub struct ClockProfile {
 pub struct SchedulerProfile {
     /// Number of platform timer ticks in one preemption quantum.
     pub quantum_ticks: u32,
+    /// Target timer interrupt frequency in hertz.
+    pub tick_hz: u32,
 }
 
 /// SRAM regions declared by a board manifest.
@@ -244,6 +246,7 @@ mod tests {
     fn exposes_manifest_metadata() {
         assert_eq!(SUPPORTED_TARGETS.len(), 1);
         assert_eq!(SUPPORTED_TARGETS[0].scheduler.unwrap().quantum_ticks, 1);
+        assert_eq!(SUPPORTED_TARGETS[0].scheduler.unwrap().tick_hz, 1_000);
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
