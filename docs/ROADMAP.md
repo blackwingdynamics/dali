@@ -635,12 +635,15 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Add per-slot progress markers to the real hardware fixtures for
   repeatable context-switch observation without changing production code.
 - [x] Implement and test repeated PendSV/SysTick CPU context switching with
-  independent progress markers on F405; MPU region switching remains separate.
+  independent progress markers on F405; MPU region switching is verified
+  separately below.
 - [x] Add and run a manifest-derived slot1-to-slot0 MPU fault fixture; F405
   hardware recorded a precise MemManage with the slot0 code origin.
 - [x] Retire a faulted scheduler context before selecting the next ready
   context; host tests verify that terminated contexts cannot be selected again.
-- [ ] Verify MPU region switching during application context switches.
+- [x] Verify MPU region switching during application context switches on F405;
+  GDB observed slot0 code/data bases `0x20008000`/`0x2000C000` and slot1
+  bases `0x20010000`/`0x20014000` at `restore_selected`.
 - [x] Verify on F405 hardware that a faulted context is excluded and a ready
   application resumes; GDB observed one slot1 entry and continued slot0
   progress after recovery. MPU region switching remains a separate item.

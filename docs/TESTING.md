@@ -243,8 +243,8 @@ distinguished from the kernel's fault and recovery records.
 - [x] Target ELF inspection verifies the feature-gated PendSV wrapper contains
   the raw `r4..r11` save, PSP/CONTROL/EXC_RETURN capture, scheduler helper call,
   and restore-primitive branch. This is target/source evidence for the wrapper;
-  repeated CPU context switching is separately hardware-verified below, while
-  MPU switching remains unverified.
+  repeated CPU context switching and MPU switching are separately
+  hardware-verified below.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
   and `Running` after loading two packages; the kernel logged both slot
   boundaries and then executed the slot0 fixture.
@@ -275,7 +275,12 @@ distinguished from the kernel's fault and recovery records.
   ranges, while slot0 progress reached `0x26A` and slot1 progress reached
   `0x2F4`. This proves repeated CPU context execution, but not MPU region
   switching or cross-slot memory isolation.
-- [ ] Runtime two-application memory isolation and MPU region switching.
+- [x] F405 GDB hardware evidence verified MPU region switching at
+  `restore_selected`: slot0 used code/data bases
+  `0x20008000`/`0x2000C000`, and slot1 used `0x20010000`/`0x20014000`.
+  Code RASR was `0x0603001B` and data RASR was `0x1303001B` for both slots.
+- [ ] Runtime two-application memory isolation beyond the tested
+  slot1-to-slot0 rejection.
 - [x] F405 hardware ran the manifest-derived slot1 cross-slot fixture. The
   application read slot0 code origin `0x20008000` and the kernel reported
   `MemManage status=0x00000082 address=Some(536903680)`, followed by
