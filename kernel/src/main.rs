@@ -8,6 +8,7 @@ pub(crate) mod drivers;
 pub mod loader;
 pub mod logging;
 pub(crate) mod platform;
+pub mod runtime;
 pub mod storage;
 
 #[cfg(feature = "abi-current")]

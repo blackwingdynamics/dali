@@ -732,8 +732,9 @@ Compilation and host tests do not replace hardware evidence.
   candidate multi-slot contract.
 - [x] Add and validate the manifest-owned code/data slot table without changing
   the active single-application loader contract.
-- [ ] Design a slot manager only after the relocation contract and memory map
-  are stable.
+- [x] Design the hardware-neutral fixed-capacity slot manager over the
+  manifest-owned slot table; keep loader integration deferred until the
+  relocation contract and memory map migration are stable.
 - [ ] Add PSP/PendSV context switching only after one isolated application is
   stable and its fault boundary is tested.
 - [ ] Add multiple application slots and concurrent application execution.

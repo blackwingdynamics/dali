@@ -35,6 +35,7 @@ dali-kernel/
 │       ├── loader/v3.rs           # Fixed-origin ABI v3 loader
 │       ├── loader/v3_relocatable.rs # Feature-gated format 3 loader
 │       ├── logging/               # Facade, RTT, USB CDC backend
+│       ├── runtime/               # Hardware-neutral application lifecycle state
 │       ├── security/              # MPU, SCB MMIO, SVC, launch, and fault recovery
 │       └── storage/               # Read-only filesystem and storage policy
 ├── apps/
@@ -95,6 +96,7 @@ kernel/src/
 ├── loader.rs
 ├── loader/{v3.rs,v3_relocatable.rs}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
+├── runtime/{mod.rs,slots.rs}
 ├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
 └── storage/{mod.rs,filesystem.rs}
 
