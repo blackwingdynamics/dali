@@ -1,12 +1,9 @@
 //! AMRN format version 3 relocation metadata for movable ABI v3 applications.
 
-use crate::{MAGIC, stream::Crc32};
+use crate::{MAGIC, legacy::stream::Crc32};
 
-#[path = "v3_apply.rs"]
 mod apply;
-#[path = "v3_codec.rs"]
 mod codec;
-#[path = "v3_wire.rs"]
 mod wire;
 pub use apply::apply;
 pub use codec::{decode_relocation, encode, parse, validate_header, validate_relocation};
@@ -250,5 +247,5 @@ pub enum Error {
 }
 
 #[cfg(test)]
-#[path = "v3_tests.rs"]
+#[cfg(test)]
 mod tests;

@@ -1,6 +1,6 @@
 //! AMRN format version 2 for the ABI v3 application contract.
 
-use crate::{MAGIC, stream::checksum_parts};
+use crate::{MAGIC, legacy::stream::checksum_parts};
 
 /// The fixed AMRN v2 header length in bytes.
 pub const HEADER_SIZE: usize = 64;
@@ -298,5 +298,5 @@ fn write_u32(bytes: &mut [u8], offset: usize, value: u32) {
 }
 
 #[cfg(test)]
-#[path = "v2_tests.rs"]
+#[cfg(test)]
 mod tests;

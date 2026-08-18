@@ -375,5 +375,5 @@ fn write_u32(bytes: &mut [u8], offset: usize, value: u32) {
 }
 
 #[cfg(test)]
-#[path = "v4_tests.rs"]
+#[cfg(test)]
 mod tests;

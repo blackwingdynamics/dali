@@ -51,7 +51,7 @@ dali-kernel/
 │   ├── dali-app-fault-no-frame/
 │   └── dali-app-fault-psp/
 ├── crates/
-│   ├── dali-amrn/                 # AMRN v1, v2, and v3 contracts
+│   ├── dali-amrn/                 # AMRN format contracts and validation
 │   ├── dali-cli/                  # Installed `dali` CLI
 │   │   ├── src/main.rs
 │   │   ├── src/commands/           # One focused module per command
@@ -101,9 +101,16 @@ kernel/src/
 └── storage/{mod.rs,filesystem.rs}
 
 crates/dali-amrn/src/
-├── lib.rs, builder.rs, stream.rs, tests.rs
-├── v2.rs, v2_tests.rs
-└── v3.rs, v3_apply.rs, v3_codec.rs, v3_tests.rs, v3_wire.rs
+├── lib.rs                         # Stable crate facade and legacy re-exports
+├── compatibility/mod.rs           # ABI-to-format compatibility rules
+├── legacy/                        # Original fixed-origin package contract
+│   ├── mod.rs, builder.rs, stream.rs, tests.rs
+├── v2/                            # Segmented ABI v3 package contract
+│   ├── mod.rs, tests.rs
+├── v3/                            # Relocatable ABI v3 package contract
+│   ├── mod.rs, apply.rs, codec.rs, wire.rs, tests.rs
+└── v4/                            # Identity and selection metadata extension
+    ├── mod.rs, tests.rs
 
 crates/dali-cli/src/
 ├── main.rs
