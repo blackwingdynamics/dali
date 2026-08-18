@@ -47,8 +47,9 @@ this order:
 3. [x] Integrate the bounded two-slot load path without enabling concurrent
    execution or context switching; the runtime still enters only the first
    loaded context.
-4. [ ] Run host and target validation before scheduling the corresponding F405
-   hardware test.
+4. [x] Run host and target validation and verify bounded two-package loading
+   on F405 hardware. Full multi-application isolation and context switching
+   remain separate work.
 - A FAT32 hardware scan on the reformatted 128GB SD card reached the root directory; the scan no longer attempts the library's FSInfo write-back on the read-only block device.
 - FAT long-file-name enumeration now discovers host-created packages with the four-character `.amrn` extension without a package-name assumption.
 - The `dali-amrn` crate decodes the fixed header, validates payload bounds and entry metadata, and verifies CRC32 with 15 host tests.
