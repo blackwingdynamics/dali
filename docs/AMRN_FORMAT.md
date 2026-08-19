@@ -305,7 +305,10 @@ provisioning, production/development authentication policy, rejected-signature
 behavior, and compatibility with CRC32 before authenticity is claimed.
 The `SignatureVerifier` trait is the hardware-neutral boundary for an audited
 host signer and a target trust-store verifier; it does not provide a default
-or bypass implementation.
+or bypass implementation. The `dali-crypto` facade now provides a bounded
+incremental verifier backed by `ed25519-dalek 3.0.0`; its standard-Ed25519
+chunked verification is host-tested and thumb-target checked. This backend
+selection does not, by itself, enable kernel-side verification or Secure Boot.
 
 ### Signed package container (format version 5, not yet accepted by the kernel)
 

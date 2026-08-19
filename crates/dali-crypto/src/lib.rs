@@ -2,7 +2,7 @@
 
 //! Hardware-neutral Ed25519 signing and verification primitives.
 
-use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, StreamVerifier, Verifier, VerifyingKey};
 
 /// Ed25519 public-key length in bytes.
 pub const PUBLIC_KEY_LENGTH: usize = 32;
@@ -32,6 +32,25 @@ pub enum VerificationError {
     InvalidSignature,
 }
 
+/// Incremental verifier for one standard Ed25519 signature.
+pub struct StreamingVerifier {
+    backend: StreamVerifier,
+}
+
+impl StreamingVerifier {
+    /// Adds the next caller-owned message chunk to the verification state.
+    pub fn update(&mut self, chunk: &[u8]) {
+        self.backend.update(chunk);
+    }
+
+    /// Finalizes verification after all signed bytes have been supplied.
+    pub fn finalize(self) -> Result<(), VerificationError> {
+        self.backend
+            .finalize_and_verify()
+            .map_err(|_| VerificationError::InvalidSignature)
+    }
+}
+
 /// Verifies one Ed25519 signature over caller-owned bytes.
 pub fn verify(
     public_key: &[u8; PUBLIC_KEY_LENGTH],
@@ -43,6 +62,20 @@ pub fn verify(
     let signature = Signature::from_bytes(signature);
     key.verify(message, &signature)
         .map_err(|_| VerificationError::InvalidSignature)
+}
+
+/// Starts incremental verification over caller-owned message chunks.
+pub fn begin_verify(
+    public_key: &[u8; PUBLIC_KEY_LENGTH],
+    signature: &[u8; SIGNATURE_LENGTH],
+) -> Result<StreamingVerifier, VerificationError> {
+    let key =
+        VerifyingKey::from_bytes(public_key).map_err(|_| VerificationError::InvalidPublicKey)?;
+    let signature = Signature::from_bytes(signature);
+    let backend = key
+        .verify_stream(&signature)
+        .map_err(|_| VerificationError::InvalidSignature)?;
+    Ok(StreamingVerifier { backend })
 }
 
 /// Verifies a signature after selecting a public key by its stable identifier.
@@ -57,6 +90,19 @@ pub fn verify_with_trust_store(
         .find(|anchor| &anchor.key_id == key_id)
         .ok_or(TrustStoreError::UnknownKey)?;
     verify(&anchor.public_key, message, signature).map_err(TrustStoreError::Verification)
+}
+
+/// Starts incremental verification after selecting a key by its stable identifier.
+pub fn begin_verify_with_trust_store(
+    anchors: &[TrustAnchor],
+    key_id: &[u8; KEY_ID_LENGTH],
+    signature: &[u8; SIGNATURE_LENGTH],
+) -> Result<StreamingVerifier, TrustStoreError> {
+    let anchor = anchors
+        .iter()
+        .find(|anchor| &anchor.key_id == key_id)
+        .ok_or(TrustStoreError::UnknownKey)?;
+    begin_verify(&anchor.public_key, signature).map_err(TrustStoreError::Verification)
 }
 
 /// Errors returned by trust-anchor selection and verification.
@@ -126,6 +172,27 @@ mod tests {
         assert_eq!(
             verify_with_trust_store(&anchors, &[8; KEY_ID_LENGTH], b"trusted", &signature),
             Err(TrustStoreError::UnknownKey)
+        );
+    }
+
+    #[test]
+    fn verifies_a_message_in_multiple_chunks() {
+        let signature = sign(&PRIVATE_KEY, b"streamed message");
+        let mut verifier = begin_verify(&PUBLIC_KEY, &signature).unwrap();
+        verifier.update(b"streamed ");
+        verifier.update(b"message");
+        assert_eq!(verifier.finalize(), Ok(()));
+    }
+
+    #[test]
+    fn rejects_a_modified_stream_chunk() {
+        let signature = sign(&PRIVATE_KEY, b"streamed message");
+        let mut verifier = begin_verify(&PUBLIC_KEY, &signature).unwrap();
+        verifier.update(b"streamed ");
+        verifier.update(b"modified");
+        assert_eq!(
+            verifier.finalize(),
+            Err(VerificationError::InvalidSignature)
         );
     }
 }
