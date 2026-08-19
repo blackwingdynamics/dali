@@ -27,6 +27,11 @@ where
     let signed_size = read_u32(&header_bytes, v5::SIGNED_SIZE_OFFSET);
     let envelope = read_envelope(&file, signed_size)?;
     let (header, contract, allocation) = select_header(&header_bytes, &envelope, slot_manager)?;
+    if !super::supports_required_services(header.metadata.required_services) {
+        return Err(super::LoaderError::UnsupportedServices(
+            header.metadata.required_services,
+        ));
+    }
     validate_package(&file, header, contract, signed_size)?;
     file.rewind().map_err(super::LoaderError::Filesystem)?;
     let _header = read_header(&file)?;

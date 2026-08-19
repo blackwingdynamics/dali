@@ -47,6 +47,9 @@ pub enum LoaderError {
     /// The signed package failed cryptographic verification.
     #[cfg(feature = "abi-authentication")]
     SignatureVerification(dali_crypto::VerificationError),
+    /// The package requested a service not exposed by the current kernel.
+    #[cfg(feature = "abi-relocation")]
+    UnsupportedServices(u32),
 }
 
 #[cfg(feature = "abi-current")]

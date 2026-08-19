@@ -128,6 +128,8 @@ milestone into `main` only after its documented validation evidence exists.
    trust-anchor lookup, bounded CRC/relocation checks, and authentication
    before SRAM copy. The F405 development profile provisions only the RFC8032
    test anchor behind `abi-test-fixtures`; the release profile remains empty.
+   v4/v5 identity metadata now rejects undeclared required-service bits before
+   any SRAM copy.
    Valid signed-package hardware evidence now exists for the documented F405
    development profile, and the loader rejects an unknown trust anchor before
    SRAM copy. Modified-content rejection now has F405 evidence through the

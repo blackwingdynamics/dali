@@ -26,6 +26,11 @@ where
 {
     let header = read_header(&file)?;
     let (header, contract, allocation) = parse_target_header(&header, slot_manager)?;
+    if !super::supports_required_services(header.metadata.required_services) {
+        return Err(super::LoaderError::UnsupportedServices(
+            header.metadata.required_services,
+        ));
+    }
     let relocation_offset = u32::try_from(v4::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.image.code_size))

@@ -344,6 +344,8 @@ distinguished from the kernel's fault and recovery records.
   boundary validation.
 - [x] The feature-gated kernel target build covers v5 streaming signature,
   CRC32, relocation, and target-profile trust-anchor checks before SRAM copy.
+- [x] The loader service-capability policy accepts the declared Log service and
+  rejects undeclared required-service bits in host/unit coverage.
 - [x] A real v5 relocation package is generated and inspected with the
   development test key; this is host/package evidence, not hardware evidence.
 - The F405 signed-loader hardware image must be built with Cargo's `release`
