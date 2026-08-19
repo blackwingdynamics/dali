@@ -4,6 +4,7 @@
 
 pub mod compatibility;
 mod legacy;
+pub mod signature;
 pub mod v2;
 pub mod v3;
 pub mod v4;

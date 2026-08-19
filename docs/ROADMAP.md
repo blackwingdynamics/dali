@@ -116,8 +116,10 @@ milestone into `main` only after its documented validation evidence exists.
    and a real F405 IWDG timeout/reset-cause test are complete. Remaining work
    is feed-failure policy implementation and explicit safe-mode recovery
    evidence.
-3. **Package authenticity** — define a signature extension, trust anchor, and
-   bounded rejected-signature path without conflating CRC32 with authenticity.
+3. **Package authenticity** — [in progress] define a bounded signature
+   envelope and trust-anchor identifier; next integrate the envelope into a
+   versioned AMRN extension and add a real verifier/trust-store boundary
+   without conflating CRC32 with authenticity.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package

@@ -277,7 +277,32 @@ selection, relocation, and successful execution. v4-specific rejection and
 recovery hardware tests remain open. Format v4 must not be advertised as
 multi-application support yet.
 
-Future revisions may add manifest data, kernel compatibility, required services, memory declarations, signatures, encryption metadata, and rollback information. These require a new format revision or an explicitly versioned extension area.
+Future revisions may add manifest data, kernel compatibility, required services,
+memory declarations, encryption metadata, and rollback information. These
+require a new format revision or an explicitly versioned extension area.
+
+### Signature envelope contract
+
+The hardware-neutral `dali-amrn::signature` module defines a bounded `DSIG`
+envelope for a future versioned AMRN signature extension. The fixed envelope is
+88 bytes:
+
+| Offset | Field | Size | Description |
+| --- | --- | ---: | --- |
+| `0x00` | magic | 4 bytes | ASCII `DSIG` |
+| `0x04` | envelope_version | 1 byte | Value is `1` |
+| `0x05` | algorithm | 1 byte | Value `1` means Ed25519 |
+| `0x06` | key_id_length | 1 byte | Value is `16` |
+| `0x07` | signature_length | 1 byte | Value is `64` |
+| `0x08` | key_id | 16 bytes | Opaque trust-anchor identifier |
+| `0x18` | signature | 64 bytes | Algorithm-specific signature bytes |
+
+The current parser validates only structure and bounded lengths; it does not
+verify signatures, select keys, or make unsigned v4 packages secure. The
+envelope is not accepted by the v4 loader yet. A future format or explicitly
+versioned extension must define the signed byte range, trust-anchor
+provisioning, production/development authentication policy, rejected-signature
+behavior, and compatibility with CRC32 before authenticity is claimed.
 
 ## Payload rules
 
