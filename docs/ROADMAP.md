@@ -135,6 +135,8 @@ milestone into `main` only after its documented validation evidence exists.
    SRAM copy. Modified-content rejection now has F405 evidence through the
    package CRC path, and a truncated DSIG trailer is rejected before loading.
    Secure Boot and release trust-anchor provisioning remain separate work.
+   The host CLI now generates Ed25519 seeds from OS CSPRNG output and exports
+   only the public trust-anchor fragment for release provisioning.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package

@@ -119,6 +119,11 @@ pub fn sign(private_key: &[u8; PRIVATE_KEY_LENGTH], message: &[u8]) -> [u8; SIGN
     SigningKey::from_bytes(private_key).sign(message).to_bytes()
 }
 
+/// Derives the Ed25519 public key corresponding to a private seed.
+pub fn public_key_from_seed(seed: &[u8; PRIVATE_KEY_LENGTH]) -> [u8; PUBLIC_KEY_LENGTH] {
+    SigningKey::from_bytes(seed).verifying_key().to_bytes()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
