@@ -346,6 +346,9 @@ distinguished from the kernel's fault and recovery records.
   CRC32, relocation, and target-profile trust-anchor checks before SRAM copy.
 - [x] A real v5 relocation package is generated and inspected with the
   development test key; this is host/package evidence, not hardware evidence.
+- The F405 signed-loader hardware image must be built with Cargo's `release`
+  profile; the feature-complete development link does not fit the board's
+  documented flash region.
 - [ ] F405 hardware: provision a documented test public key and execute a
   valid signed v5 package.
 - [ ] F405 hardware: reject an unknown key ID before SRAM copy.
