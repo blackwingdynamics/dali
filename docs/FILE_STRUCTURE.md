@@ -125,7 +125,7 @@ kernel/src/
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,contract/{mod.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
-├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs}}
+├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs},watchdog/mod.rs}
 └── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
@@ -208,6 +208,9 @@ target-scaffold.md
   context ownership, and restart/rollback/watchdog policy decisions.
 - `kernel/src/runtime/memory/` owns manifest-declared slot allocation and range
   containment.
+- `kernel/src/runtime/watchdog/` owns the hardware-neutral watchdog feed-owner,
+  timing, and reset-cause contracts; target backends implement the hardware
+  adapter separately.
 - `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state,
   manifest-slot-bound scheduler records, and bounded context selection;
   PendSV/SysTick handlers and MPU switching remain separate hardware work.

@@ -111,9 +111,10 @@ milestone into `main` only after its documented validation evidence exists.
    target-declared ranges before peripheral configuration, and F405 hardware
    confirms block reads after that check. Extend the policy to every
    DMA-capable backend before claiming general DMA isolation.
-2. **Watchdog and reset recovery** — [in progress] declare target watchdog
-   facts without enabling hardware; then define feed ownership, reset-cause
-   logging, safe recovery, and real-target timeout evidence.
+2. **Watchdog and reset recovery** — [in progress] target watchdog facts and
+   the kernel-heartbeat feed-owner contract are defined without enabling
+   hardware; next add reset-cause logging, safe recovery, and real-target
+   timeout evidence.
 3. **Package authenticity** — define a signature extension, trust anchor, and
    bounded rejected-signature path without conflating CRC32 with authenticity.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility

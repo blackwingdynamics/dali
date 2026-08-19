@@ -163,6 +163,13 @@ multi-application isolation, or watchdog support.
   DMA. The current ABI exposes no application DMA service, so general DMA
   isolation is not claimed yet.
 
+### Watchdog and reset recovery
+
+- [x] Host contract tests validate target timing metadata, explicit kernel
+  heartbeat ownership, single-arm behavior, and feed rejection before arming.
+- [ ] F405 IWDG backend and reset-cause logging.
+- [ ] F405 hardware timeout, reset-cause, and safe-recovery evidence.
+
 ### Diagnostic evidence
 
 - Precise kernel-RAM read decoding preserved `CFSR=0x00000082`,
