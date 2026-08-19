@@ -118,9 +118,10 @@ milestone into `main` only after its documented validation evidence exists.
    evidence.
 3. **Package authenticity** — [in progress] define a bounded signature
    envelope, trust-anchor identifier, and declarative development/release
-   policy, and validate the selected no_std Ed25519 backend; next integrate
-   the envelope into a versioned AMRN extension and add a trust-store
-   implementation without conflating CRC32 with authenticity.
+   policy, and validate the selected no_std Ed25519 backend. The signed AMRN
+   container contract now uses a new versioned extension without changing v4;
+   next add CLI signing, target trust-store lookup, and kernel verification
+   before release packages are accepted.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package
@@ -689,9 +690,9 @@ Compilation and host tests do not replace hardware evidence.
 
 - [ ] Test package installation, selection, replacement, and removal semantics
   after writable filesystem support exists.
-- [ ] Define a versioned package-signature extension for Secure Boot and
-  authenticity verification; do not overload the AMRN v4 reserved bytes, which
-  are too small for a digital signature.
+- [x] Define a versioned package-signature extension for Secure Boot and
+  authenticity verification without modifying the AMRN v4 bytes; the host
+  codec uses the DSIG trailer and has boundary/CRC coverage.
 - [ ] Test signed package verification and rejected signatures.
 - [ ] Test secure boot and kernel image authenticity.
 - [ ] Test version compatibility, anti-rollback, update, and rollback flows.

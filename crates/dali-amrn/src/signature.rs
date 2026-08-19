@@ -13,12 +13,12 @@ pub const SIGNATURE_LENGTH: usize = 64;
 /// Length of the fixed signature envelope.
 pub const ENVELOPE_SIZE: usize = 8 + KEY_ID_LENGTH + SIGNATURE_LENGTH;
 
-const VERSION_OFFSET: usize = 4;
-const ALGORITHM_OFFSET: usize = 5;
-const KEY_ID_LENGTH_OFFSET: usize = 6;
-const SIGNATURE_LENGTH_OFFSET: usize = 7;
-const KEY_ID_OFFSET: usize = 8;
-const SIGNATURE_OFFSET: usize = KEY_ID_OFFSET + KEY_ID_LENGTH;
+pub const VERSION_OFFSET: usize = 4;
+pub const ALGORITHM_OFFSET: usize = 5;
+pub const KEY_ID_LENGTH_OFFSET: usize = 6;
+pub const SIGNATURE_LENGTH_OFFSET: usize = 7;
+pub const KEY_ID_OFFSET: usize = 8;
+pub const SIGNATURE_OFFSET: usize = KEY_ID_OFFSET + KEY_ID_LENGTH;
 
 /// A validated signature envelope borrowing caller-owned bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

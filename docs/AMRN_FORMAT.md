@@ -307,6 +307,49 @@ The `SignatureVerifier` trait is the hardware-neutral boundary for an audited
 host signer and a target trust-store verifier; it does not provide a default
 or bypass implementation.
 
+### Signed package container (format version 5, not yet accepted by the kernel)
+
+Format version `5` is the signed successor to the identity-aware relocatable
+contract. It does not modify the v4 byte layout. A v5 package uses the v3/v4
+image and identity fields in the first 128 bytes, extends the fixed header to
+160 bytes, stores the image payload after that header, and appends one fixed
+88-byte `DSIG` envelope:
+
+```text
+┌──────────────────────────────┐
+│ AMRN v5 fixed header (160 B)  │
+├──────────────────────────────┤
+│ code + data + relocation data │ signed bytes
+├──────────────────────────────┤
+│ DSIG envelope (88 B)          │ not signed
+└──────────────────────────────┘
+```
+
+The first 128 bytes retain the v4 field offsets. Their format-version field is
+`5`, their header-size field is `160`, and the relocation offset is adjusted
+from the v3 linked image to the v5 payload origin. The extension fields are:
+
+| Offset | Field | Size | Description |
+| --- | --- | ---: | --- |
+| `0x80` | signature_offset | 4 bytes | Little-endian; exact start of the DSIG trailer |
+| `0x84` | signature_size | 2 bytes | Little-endian; value is `88` |
+| `0x86` | reserved | 2 bytes | Must be zero |
+| `0x88` | signed_size | 4 bytes | Little-endian; equal to `signature_offset` |
+| `0x8C` | reserved | 4 bytes | Must be zero |
+| `0x90` | reserved | 16 bytes | Must be zero |
+
+The signed byte range is exactly `package[0..signature_offset]`. It includes
+the final header and package CRC32, but excludes the DSIG trailer. The package
+CRC32 is calculated over the signed range with its own four bytes treated as
+zero, so CRC construction is not circular with signature construction. The
+signature envelope is structurally validated by `dali-amrn`; cryptographic
+verification and trust-anchor lookup remain separate responsibilities.
+
+The host codec currently encodes and parses this contract with boundary tests.
+The kernel loader does not accept format 5 until the CLI signer and a target
+trust store are integrated. Therefore format 5 is not hardware evidence and
+must not be described as secure boot or package authenticity yet.
+
 ## Payload rules
 
 - The payload is linked for `0x20008000`.

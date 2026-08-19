@@ -140,8 +140,10 @@ crates/dali-amrn/src/
 │   ├── mod.rs, tests.rs
 ├── v3/                            # Relocatable ABI v3 package contract
 │   ├── mod.rs, apply.rs, codec.rs, wire.rs, tests.rs
-└── v4/                            # Identity and selection metadata extension
-    ├── mod.rs, tests.rs
+├── v4/                            # Identity and selection metadata extension
+│   ├── mod.rs, tests.rs
+└── v5/                            # Signed container extension; kernel-gated
+    ├── mod.rs, codec.rs, tests.rs
 
 crates/dali-cli/src/
 ├── main.rs
