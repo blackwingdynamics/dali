@@ -349,8 +349,9 @@ distinguished from the kernel's fault and recovery records.
 - The F405 signed-loader hardware image must be built with Cargo's `release`
   profile; the feature-complete development link does not fit the board's
   documented flash region.
-- [ ] F405 hardware: provision a documented test public key and execute a
-  valid signed v5 package.
+- [x] F405 hardware: provision the documented development test public key and
+  execute a valid signed v5 package; the kernel verified the signature before
+  loading slot 1 and the relocation fixture ran.
 - [ ] F405 hardware: reject an unknown key ID before SRAM copy.
 - [ ] F405 hardware: reject a modified signed header or payload.
 - [ ] F405 hardware: reject a truncated or malformed DSIG trailer.

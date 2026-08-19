@@ -128,8 +128,9 @@ milestone into `main` only after its documented validation evidence exists.
    trust-anchor lookup, bounded CRC/relocation checks, and authentication
    before SRAM copy. The F405 development profile provisions only the RFC8032
    test anchor behind `abi-test-fixtures`; the release profile remains empty.
-   Signed-package hardware evidence and rejected-signature tests remain
-   required before authenticity or Secure Boot is claimed.
+   Valid signed-package hardware evidence now exists for the documented F405
+   development profile; rejected-signature tests remain required before
+   package authenticity or Secure Boot is claimed.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package
