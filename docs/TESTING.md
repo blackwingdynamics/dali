@@ -167,7 +167,8 @@ multi-application isolation, or watchdog support.
 
 - [x] Host contract tests validate target timing metadata, explicit kernel
   heartbeat ownership, single-arm behavior, and feed rejection before arming.
-- [ ] F405 IWDG backend and reset-cause logging.
+- [x] F405 IWDG backend compiles, captures reset flags during early bootstrap,
+  clears the latch, and exposes the cause through the platform boundary.
 - [ ] F405 hardware timeout, reset-cause, and safe-recovery evidence.
 
 ### Diagnostic evidence

@@ -39,9 +39,11 @@ dali-kernel/
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
 │       │   ├── board.rs            # F405 hardware resources and board API
 │       │   ├── sdio.rs             # F405 SDIO transport implementation
-│       │   └── sdio_raw/           # F405 SDIO register transport
+│       │   ├── sdio_raw/           # F405 SDIO register transport
 │       │       ├── mod.rs          # DMA-backed raw block reader
 │       │       └── status.rs       # SDIO status and interrupt helpers
+│       │   └── watchdog/           # F405 watchdog register adapter
+│       │       └── mod.rs          # IWDG and reset-cause implementation
 │       ├── bootstrap/             # Startup, storage policy, status, heartbeat
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader/mod.rs          # AMRN dispatch and ABI services
@@ -188,6 +190,8 @@ target-scaffold.md
 - `kernel/src/platform/f405/sdio.rs` and `kernel/src/platform/f405/sdio_raw/`
   own the F405 PAC/HAL SDIO transport;
   bootstrap consumes it only through the platform facade.
+- `kernel/src/platform/f405/watchdog/` owns the F405 IWDG and RCC reset-cause
+  register adapter; watchdog policy remains in `kernel/src/runtime/watchdog/`.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
 - `kernel/src/drivers/sdio.rs` owns the generic SDIO transport contract and

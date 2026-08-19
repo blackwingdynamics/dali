@@ -67,6 +67,10 @@ impl Platform {
         self.0.delay_ms(milliseconds);
     }
 
+    pub(crate) fn reset_cause(&self) -> crate::runtime::watchdog::ResetCause {
+        self.0.reset_cause()
+    }
+
     #[cfg(feature = "abi-context-switch")]
     pub(crate) fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
         self.0.enable_scheduler_tick(tick_hz)

@@ -15,6 +15,10 @@ pub fn run() -> ! {
     }
 
     initialize_logging();
+    logging::info(
+        logging::BOOT_SUBSYSTEM,
+        format_args!("[BOOT] Reset cause: {:?}", board.reset_cause()),
+    );
     #[cfg(feature = "usb-cdc")]
     if let Some(resources) = board.take_usb_resources() {
         logging::initialize_usb(resources);

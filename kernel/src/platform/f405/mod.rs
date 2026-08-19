@@ -6,6 +6,7 @@ mod board;
 mod sdio;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
 mod sdio_raw;
+mod watchdog;
 
 #[cfg(all(feature = "board-stm32f405-sd", not(feature = "abi-current")))]
 pub(crate) use board::APPLICATION_EXECUTION_SUPPORTED;
@@ -17,6 +18,7 @@ pub(crate) use board::MEMORY_PROFILE;
 pub(crate) use board::{ISOLATION_LAYOUT, activate_application_regions};
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
 pub(crate) use sdio::Stm32f405SdioTransport;
+pub(crate) use watchdog::F405Watchdog;
 
 #[cfg(feature = "board-stm32f405-sd")]
 impl crate::platform::Backend for board::Board {
