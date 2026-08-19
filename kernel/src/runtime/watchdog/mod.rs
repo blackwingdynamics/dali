@@ -127,6 +127,58 @@ pub trait WatchdogBackend {
     fn clear_reset_cause(&mut self);
 }
 
+/// Errors returned by the runtime wrapper around a platform backend.
+#[derive(Debug, Eq, PartialEq)]
+pub enum WatchdogRuntimeError<E> {
+    /// The ownership contract rejected the requested operation.
+    Contract(WatchdogError),
+    /// The hardware backend rejected or failed the operation.
+    Backend(E),
+}
+
+/// Couples one platform watchdog backend to the kernel ownership contract.
+pub struct WatchdogRuntime<B> {
+    backend: B,
+    contract: WatchdogContract,
+}
+
+impl<B> WatchdogRuntime<B>
+where
+    B: WatchdogBackend,
+{
+    /// Creates a disabled runtime wrapper after validating target metadata.
+    pub fn new(backend: B, profile: WatchdogProfile) -> Result<Self, WatchdogError> {
+        let contract = WatchdogContract::new(profile)?;
+        Ok(Self { backend, contract })
+    }
+
+    /// Arms hardware only after establishing the requested feed owner.
+    pub fn arm(&mut self, owner: FeedOwner) -> Result<(), WatchdogRuntimeError<B::Error>> {
+        if self.contract.state() != WatchdogState::Disabled {
+            return Err(WatchdogRuntimeError::Contract(WatchdogError::AlreadyArmed));
+        }
+        self.backend
+            .arm(self.contract.profile())
+            .map_err(WatchdogRuntimeError::Backend)?;
+        self.contract
+            .arm(owner)
+            .map_err(WatchdogRuntimeError::Contract)
+    }
+
+    /// Feeds hardware only through the established ownership contract.
+    pub fn feed(&mut self, owner: FeedOwner) -> Result<(), WatchdogRuntimeError<B::Error>> {
+        self.contract
+            .feed(owner)
+            .map_err(WatchdogRuntimeError::Contract)?;
+        self.backend.feed().map_err(WatchdogRuntimeError::Backend)
+    }
+
+    /// Returns the reset cause captured by the platform backend.
+    pub fn reset_cause(&self) -> ResetCause {
+        self.backend.reset_cause()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use dali_targets::WatchdogProfile;

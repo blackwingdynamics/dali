@@ -144,6 +144,7 @@ dependencies = [
  "dali-targets",
  "dali-usb",
  "embedded-sdmmc",
+ "fugit",
  "panic-halt",
  "rtt-target",
  "stm32f4xx-hal",
