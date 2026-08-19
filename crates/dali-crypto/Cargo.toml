@@ -1,0 +1,11 @@
+[package]
+name = "dali-crypto"
+version = "0.1.0-alpha.1"
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+ed25519-dalek = { version = "3.0.0", default-features = false, features = ["zeroize"] }

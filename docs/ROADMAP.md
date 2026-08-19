@@ -118,9 +118,9 @@ milestone into `main` only after its documented validation evidence exists.
    evidence.
 3. **Package authenticity** — [in progress] define a bounded signature
    envelope, trust-anchor identifier, and declarative development/release
-   policy; next integrate the envelope into a versioned AMRN extension and
-   add an audited verifier/trust-store implementation without conflating
-   CRC32 with authenticity.
+   policy, and validate the selected no_std Ed25519 backend; next integrate
+   the envelope into a versioned AMRN extension and add a trust-store
+   implementation without conflating CRC32 with authenticity.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package

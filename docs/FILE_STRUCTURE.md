@@ -83,6 +83,7 @@ dali-kernel/
 │   └── dali-app-fault-usage/
 ├── crates/
 │   ├── dali-amrn/                 # AMRN format contracts and validation
+│   ├── dali-crypto/               # no_std Ed25519 signing/verification primitives
 │   ├── dali-cli/                  # Installed `dali` CLI
 │   │   ├── src/main.rs
 │   │   ├── src/commands/           # One focused module per command
