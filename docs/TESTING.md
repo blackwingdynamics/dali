@@ -352,7 +352,8 @@ distinguished from the kernel's fault and recovery records.
 - [x] F405 hardware: provision the documented development test public key and
   execute a valid signed v5 package; the kernel verified the signature before
   loading slot 1 and the relocation fixture ran.
-- [ ] F405 hardware: reject an unknown key ID before SRAM copy.
+- [x] F405 hardware: reject an unknown key ID before SRAM copy; the loader
+  returned `UnknownTrustAnchor` and entered the kernel heartbeat.
 - [ ] F405 hardware: reject a modified signed header or payload.
 - [ ] F405 hardware: reject a truncated or malformed DSIG trailer.
 - [ ] Secure Boot and kernel-image authenticity.
