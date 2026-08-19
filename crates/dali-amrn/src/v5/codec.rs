@@ -71,7 +71,20 @@ pub fn append_signature(
 
 /// Parses and validates a complete signed package against a target contract.
 pub fn parse<'a>(package: &'a [u8], contract: v3::Contract) -> Result<Package<'a>, Error> {
-    let header = parse_header(package, contract)?;
+    if package.len() < HEADER_SIZE {
+        return Err(Error::TruncatedHeader);
+    }
+    let signed_size = read_u32(package, SIGNED_SIZE_FIELD) as usize;
+    let signature_end = signed_size
+        .checked_add(SIGNATURE_SIZE)
+        .ok_or(Error::InvalidSignature)?;
+    if signature_end > package.len() {
+        return Err(Error::InvalidSignature);
+    }
+    let header_bytes: &[u8; HEADER_SIZE] = package[..HEADER_SIZE]
+        .try_into()
+        .map_err(|_| Error::TruncatedHeader)?;
+    let header = parse_header_parts(header_bytes, &package[signed_size..signature_end], contract)?;
     let code_size = header.image.code_size as usize;
     let data_size = header.image.data_init_size as usize;
     let table_size = (header.image.relocation_count as usize)
@@ -86,9 +99,6 @@ pub fn parse<'a>(package: &'a [u8], contract: v3::Contract) -> Result<Package<'a
     let signed_size = data_end
         .checked_add(table_size)
         .ok_or(Error::InvalidPayload)?;
-    let signature_end = signed_size
-        .checked_add(SIGNATURE_SIZE)
-        .ok_or(Error::InvalidSignature)?;
     if header.image.relocation_offset as usize != data_end
         || package.len() != signature_end
         || read_u32(package, SIGNATURE_OFFSET_FIELD) as usize != signed_size
@@ -122,69 +132,74 @@ pub fn parse<'a>(package: &'a [u8], contract: v3::Contract) -> Result<Package<'a
     })
 }
 
-fn parse_header<'a>(bytes: &'a [u8], contract: v3::Contract) -> Result<Header<'a>, Error> {
-    if bytes.len() < HEADER_SIZE
-        || bytes[MAGIC_OFFSET..MAGIC_OFFSET + MAGIC.len()] != MAGIC
-        || bytes[FORMAT_VERSION_OFFSET] != FORMAT_VERSION
-        || read_u16(bytes, HEADER_SIZE_OFFSET) != HEADER_SIZE as u16
-        || read_u16(bytes, SIGNATURE_SIZE_FIELD) != SIGNATURE_SIZE as u16
-        || read_u16(bytes, SIGNATURE_SIZE_FIELD + 2) != 0
-        || bytes[V4_RESERVED_START..PACKAGE_ID_OFFSET]
+/// Parses a v5 fixed header and its separately read DSIG trailer.
+pub fn parse_header_parts<'a>(
+    header: &[u8; HEADER_SIZE],
+    envelope: &'a [u8],
+    contract: v3::Contract,
+) -> Result<Header<'a>, Error> {
+    if header[MAGIC_OFFSET..MAGIC_OFFSET + MAGIC.len()] != MAGIC
+        || header[FORMAT_VERSION_OFFSET] != FORMAT_VERSION
+        || read_u16(header, HEADER_SIZE_OFFSET) != HEADER_SIZE as u16
+        || read_u16(header, SIGNATURE_SIZE_FIELD) != SIGNATURE_SIZE as u16
+        || read_u16(header, SIGNATURE_SIZE_FIELD + 2) != 0
+        || header[V4_RESERVED_START..PACKAGE_ID_OFFSET]
             .iter()
             .any(|byte| *byte != 0)
-        || bytes[FLAGS_OFFSET] != 0
-        || read_u16(bytes, RESERVED_U16_OFFSET) != 0
-        || bytes[RESERVED_START..HEADER_SIZE]
+        || header[FLAGS_OFFSET] != 0
+        || read_u16(header, RESERVED_U16_OFFSET) != 0
+        || header[RESERVED_START..HEADER_SIZE]
             .iter()
             .any(|byte| *byte != 0)
     {
         return Err(Error::InvalidHeader);
     }
-    let package_id = read_array::<{ v4::PACKAGE_ID_LENGTH }>(bytes, PACKAGE_ID_OFFSET);
+    let package_id = read_array::<{ v4::PACKAGE_ID_LENGTH }>(header, PACKAGE_ID_OFFSET);
     if package_id.iter().all(|byte| *byte == 0) {
         return Err(Error::InvalidIdentity);
     }
     let image = v3::Header {
-        target_id: bytes[TARGET_ID_OFFSET],
-        code_size: read_u32(bytes, CODE_SIZE_OFFSET),
-        data_init_size: read_u32(bytes, DATA_INIT_SIZE_OFFSET),
-        data_zero_size: read_u32(bytes, DATA_ZERO_SIZE_OFFSET),
-        stack_size: read_u32(bytes, STACK_SIZE_OFFSET),
-        linked_code_base: read_u32(bytes, LINKED_CODE_BASE_OFFSET),
-        linked_data_base: read_u32(bytes, LINKED_DATA_BASE_OFFSET),
-        code_load_address: read_u32(bytes, CODE_LOAD_ADDRESS_OFFSET),
-        data_load_address: read_u32(bytes, DATA_LOAD_ADDRESS_OFFSET),
-        execution_offset: read_u32(bytes, EXECUTION_OFFSET_OFFSET),
-        relocation_offset: read_u32(bytes, RELOCATION_OFFSET_OFFSET),
-        relocation_count: read_u32(bytes, RELOCATION_COUNT_OFFSET),
-        crc32: read_u32(bytes, PAYLOAD_CRC32_OFFSET),
+        target_id: header[TARGET_ID_OFFSET],
+        code_size: read_u32(header, CODE_SIZE_OFFSET),
+        data_init_size: read_u32(header, DATA_INIT_SIZE_OFFSET),
+        data_zero_size: read_u32(header, DATA_ZERO_SIZE_OFFSET),
+        stack_size: read_u32(header, STACK_SIZE_OFFSET),
+        linked_code_base: read_u32(header, LINKED_CODE_BASE_OFFSET),
+        linked_data_base: read_u32(header, LINKED_DATA_BASE_OFFSET),
+        code_load_address: read_u32(header, CODE_LOAD_ADDRESS_OFFSET),
+        data_load_address: read_u32(header, DATA_LOAD_ADDRESS_OFFSET),
+        execution_offset: read_u32(header, EXECUTION_OFFSET_OFFSET),
+        relocation_offset: read_u32(header, RELOCATION_OFFSET_OFFSET),
+        relocation_count: read_u32(header, RELOCATION_COUNT_OFFSET),
+        crc32: read_u32(header, PAYLOAD_CRC32_OFFSET),
     };
     if image.target_id != contract.target_id
-        || read_u16(bytes, RELOCATION_ENTRY_SIZE_OFFSET) != v3::RELOCATION_ENTRY_SIZE as u16
-        || bytes[ABI_VERSION_OFFSET] != v3::ABI_VERSION
-        || read_u16(bytes, RELOCATION_ENTRY_SIZE_OFFSET + 2) != 0
-        || bytes[ABI_VERSION_OFFSET + 1] != 0
-        || read_u16(bytes, ABI_VERSION_OFFSET + 2) != 0
+        || read_u16(header, RELOCATION_ENTRY_SIZE_OFFSET) != v3::RELOCATION_ENTRY_SIZE as u16
+        || header[ABI_VERSION_OFFSET] != v3::ABI_VERSION
+        || read_u16(header, RELOCATION_ENTRY_SIZE_OFFSET + 2) != 0
+        || header[ABI_VERSION_OFFSET + 1] != 0
+        || read_u16(header, ABI_VERSION_OFFSET + 2) != 0
     {
         return Err(Error::InvalidHeader);
     }
     v3::validate_header(image, contract).map_err(|_| Error::InvalidHeader)?;
-    let signature_offset = read_u32(bytes, SIGNATURE_OFFSET_FIELD) as usize;
-    if signature_offset < HEADER_SIZE || signature_offset > bytes.len() {
+    let signature_offset = read_u32(header, SIGNATURE_OFFSET_FIELD) as usize;
+    if signature_offset < HEADER_SIZE
+        || signature_offset != read_u32(header, SIGNED_SIZE_FIELD) as usize
+    {
         return Err(Error::InvalidSignature);
     }
-    let envelope =
-        signature::parse(&bytes[signature_offset..]).map_err(|_| Error::InvalidSignature)?;
+    let envelope = signature::parse(envelope).map_err(|_| Error::InvalidSignature)?;
     Ok(Header {
         image,
         metadata: v4::Metadata {
             package_id,
-            package_version: read_version(bytes, PACKAGE_VERSION_OFFSET),
-            minimum_kernel_version: read_version(bytes, MINIMUM_KERNEL_VERSION_OFFSET),
-            required_services: read_u32(bytes, REQUIRED_SERVICES_OFFSET),
-            slot_id: bytes[SLOT_ID_OFFSET],
+            package_version: read_version(header, PACKAGE_VERSION_OFFSET),
+            minimum_kernel_version: read_version(header, MINIMUM_KERNEL_VERSION_OFFSET),
+            required_services: read_u32(header, REQUIRED_SERVICES_OFFSET),
+            slot_id: header[SLOT_ID_OFFSET],
         },
-        package_crc32: read_u32(bytes, PACKAGE_CRC32_OFFSET),
+        package_crc32: read_u32(header, PACKAGE_CRC32_OFFSET),
         signature: envelope,
     })
 }

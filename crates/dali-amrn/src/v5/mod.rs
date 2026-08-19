@@ -112,7 +112,7 @@ pub enum Error {
 }
 
 mod codec;
-pub use codec::{append_signature, encode_unsigned, parse};
+pub use codec::{append_signature, encode_unsigned, parse, parse_header_parts};
 
 fn image_payload_size(image: v3::Image<'_>) -> Result<usize, Error> {
     image

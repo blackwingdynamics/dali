@@ -348,7 +348,9 @@ zero, so CRC construction is not circular with signature construction. The
 signature envelope is structurally validated by `dali-amrn`; cryptographic
 verification and trust-anchor lookup remain separate responsibilities.
 
-The host codec currently encodes and parses this contract with boundary tests.
+The host codec currently encodes and parses this contract with boundary tests;
+its v5 API can also parse the fixed header and DSIG trailer separately for a
+bounded streaming loader.
 The CLI can now produce format 5 when the application manifest declares
 `signing_key_id` and the private seed is supplied through the external
 `DALI_SIGNING_KEY_HEX` environment variable. The kernel loader does not accept

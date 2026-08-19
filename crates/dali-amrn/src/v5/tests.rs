@@ -52,7 +52,11 @@ fn encodes_and_parses_the_signed_container() {
         append_signature(&signed, &[7; 16], &[9; 64], &mut package).expect("trailer appends");
     package.truncate(size);
     let parsed = parse(&package, CONTRACT).expect("signed package parses");
+    let header: &[u8; HEADER_SIZE] = package[..HEADER_SIZE].try_into().unwrap();
+    let parts = parse_header_parts(header, &package[signed_size..], CONTRACT)
+        .expect("split header and trailer parse");
     assert_eq!(parsed.header.signature.key_id, &[7; 16]);
+    assert_eq!(parts, parsed.header);
     assert_eq!(parsed.signed_bytes(), &package[..signed_size]);
 }
 
