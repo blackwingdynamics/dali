@@ -12,6 +12,7 @@ executable is named dali.
 | dali target list | List supported Dali application targets | Supported |
 | dali package | Wrap a linked native payload in an AMRN package | Supported |
 | dali inspect | Validate and display an AMRN package | Supported |
+| dali key generate | Generate an Ed25519 release trust-anchor pair | Supported |
 | dali app new | Create a Dali application scaffold | Supported |
 | dali app init | Initialize the current directory as a Dali application | Supported |
 | dali app build | Build a native application payload | Supported |
@@ -74,6 +75,8 @@ exist.
 - [Errors](ERRORS.md) — failure categories and recovery guidance.
 - [Exit codes](EXIT_CODES.md) — scripting and CI contract.
 - [Compatibility](COMPATIBILITY.md) — CLI, AMRN, target, and ABI compatibility.
+- [Key management](KEY_MANAGEMENT.md) — release trust anchors, signing keys,
+  generation, provisioning, rotation, and incident response.
 - [Troubleshooting](TROUBLESHOOTING.md) — common host-side problems.
 - [Testing](TESTING.md) — CLI validation strategy.
 - [Contributing](CONTRIBUTING.md) — rules for extending the CLI.

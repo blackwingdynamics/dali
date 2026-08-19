@@ -145,6 +145,22 @@ input.
 
 See commands/inspect.md.
 
+### dali key generate
+
+Generates an Ed25519 private seed, public key, and opaque 16-byte key
+identifier using the host operating system's CSPRNG:
+
+```text
+dali key generate \
+  --private-output <seed-file> \
+  --public-output <trust-anchor-fragment>
+```
+
+The private output is created with restrictive permissions where supported and
+existing files are never overwritten. The public output is a manifest-ready
+trust-anchor fragment. See [Key management](KEY_MANAGEMENT.md) for the
+security boundary and release procedure.
+
 ## Application commands
 
 The following commands are supported:
