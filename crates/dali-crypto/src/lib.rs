@@ -11,6 +11,18 @@ pub const PRIVATE_KEY_LENGTH: usize = 32;
 /// Ed25519 signature length in bytes.
 pub const SIGNATURE_LENGTH: usize = 64;
 
+/// Stable key identifier length shared by the AMRN signature envelope.
+pub const KEY_ID_LENGTH: usize = 16;
+
+/// One public key registered in a target trust store.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TrustAnchor {
+    /// Opaque identifier carried by a signed package.
+    pub key_id: [u8; KEY_ID_LENGTH],
+    /// Ed25519 public key associated with the identifier.
+    pub public_key: [u8; PUBLIC_KEY_LENGTH],
+}
+
 /// Errors returned when a public key cannot be decoded.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum VerificationError {
@@ -31,6 +43,29 @@ pub fn verify(
     let signature = Signature::from_bytes(signature);
     key.verify(message, &signature)
         .map_err(|_| VerificationError::InvalidSignature)
+}
+
+/// Verifies a signature after selecting a public key by its stable identifier.
+pub fn verify_with_trust_store(
+    anchors: &[TrustAnchor],
+    key_id: &[u8; KEY_ID_LENGTH],
+    message: &[u8],
+    signature: &[u8; SIGNATURE_LENGTH],
+) -> Result<(), TrustStoreError> {
+    let anchor = anchors
+        .iter()
+        .find(|anchor| &anchor.key_id == key_id)
+        .ok_or(TrustStoreError::UnknownKey)?;
+    verify(&anchor.public_key, message, signature).map_err(TrustStoreError::Verification)
+}
+
+/// Errors returned by trust-anchor selection and verification.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TrustStoreError {
+    /// No configured key has the package's requested identifier.
+    UnknownKey,
+    /// The selected key or signature failed cryptographic verification.
+    Verification(VerificationError),
 }
 
 /// Signs caller-owned bytes with an externally supplied private-key seed.
@@ -65,6 +100,32 @@ mod tests {
         assert_eq!(
             verify(&PUBLIC_KEY, b"modified", &signature),
             Err(VerificationError::InvalidSignature)
+        );
+    }
+
+    #[test]
+    fn selects_the_matching_trust_anchor() {
+        let anchors = [TrustAnchor {
+            key_id: [7; KEY_ID_LENGTH],
+            public_key: PUBLIC_KEY,
+        }];
+        let signature = sign(&PRIVATE_KEY, b"trusted");
+        assert_eq!(
+            verify_with_trust_store(&anchors, &[7; KEY_ID_LENGTH], b"trusted", &signature),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn rejects_an_unknown_trust_anchor() {
+        let anchors = [TrustAnchor {
+            key_id: [7; KEY_ID_LENGTH],
+            public_key: PUBLIC_KEY,
+        }];
+        let signature = sign(&PRIVATE_KEY, b"trusted");
+        assert_eq!(
+            verify_with_trust_store(&anchors, &[8; KEY_ID_LENGTH], b"trusted", &signature),
+            Err(TrustStoreError::UnknownKey)
         );
     }
 }

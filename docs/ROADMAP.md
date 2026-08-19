@@ -120,9 +120,10 @@ milestone into `main` only after its documented validation evidence exists.
    envelope, trust-anchor identifier, and declarative development/release
    policy, and validate the selected no_std Ed25519 backend. The signed AMRN
    container contract now uses a new versioned extension without changing v4;
-   CLI signing is now wired to external key material, and the next step is
-   target trust-store lookup plus kernel verification before release packages
-   are accepted.
+   CLI signing is now wired to external key material, and a hardware-neutral
+   key-id trust-store lookup is implemented and tested. The next step is
+   target trust-store provisioning plus kernel verification before release
+   packages are accepted.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package

@@ -149,7 +149,9 @@ one selected package; it does not yet provide multi-package execution.
 AMRN format version `5` is the signed successor to format v4. It leaves the
 v4 bytes unchanged, signs the fixed header and payload, and appends a DSIG
 trailer. Format v5 is a host/CLI contract only until target-side verification
-is implemented; it must not be described as Secure Boot.
+is implemented. The crypto crate now rejects unknown key identifiers before
+verification; this still must not be described as Secure Boot until the target
+trust store is provisioned and the kernel loader enforces it.
 
 ## 6. Release tags
 
