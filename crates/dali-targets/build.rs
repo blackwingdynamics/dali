@@ -16,6 +16,7 @@ struct Manifest {
     usb: Usb,
     storage: Option<Storage>,
     scheduler: Option<Scheduler>,
+    watchdog: Option<Watchdog>,
     capabilities: Capabilities,
 }
 
@@ -62,6 +63,14 @@ struct Clock {
 struct Scheduler {
     quantum_ticks: u32,
     tick_hz: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct Watchdog {
+    controller: String,
+    timeout_ms: u32,
+    feed_interval_ms: u32,
+    reset_cause_supported: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -485,7 +494,7 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage}, scheduler: {scheduler} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage}, scheduler: {scheduler}, watchdog: {watchdog} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
@@ -534,6 +543,11 @@ fn generate_profile(manifest: &Manifest) -> String {
                 || "None".to_owned(),
                 |scheduler| format!("Some({scheduler})")
             ),
+        watchdog = manifest
+            .watchdog
+            .as_ref()
+            .map(generate_watchdog)
+            .map_or_else(|| "None".to_owned(), |watchdog| format!("Some({watchdog})")),
     )
 }
 
@@ -541,6 +555,16 @@ fn generate_scheduler(scheduler: &Scheduler) -> String {
     format!(
         "SchedulerProfile {{ quantum_ticks: {}, tick_hz: {} }}",
         scheduler.quantum_ticks, scheduler.tick_hz
+    )
+}
+
+fn generate_watchdog(watchdog: &Watchdog) -> String {
+    format!(
+        "WatchdogProfile {{ controller: {}, timeout_ms: {}, feed_interval_ms: {}, reset_cause_supported: {} }}",
+        string_literal(&watchdog.controller),
+        watchdog.timeout_ms,
+        watchdog.feed_interval_ms,
+        watchdog.reset_cause_supported
     )
 }
 

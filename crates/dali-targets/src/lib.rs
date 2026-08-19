@@ -45,6 +45,8 @@ pub struct TargetProfile {
     pub storage: Option<StorageProfile>,
     /// Scheduler configuration declared by the target manifest.
     pub scheduler: Option<SchedulerProfile>,
+    /// Watchdog configuration declared by the target manifest.
+    pub watchdog: Option<WatchdogProfile>,
 }
 
 /// Optional hardware and runtime capabilities declared by a target profile.
@@ -99,6 +101,19 @@ pub struct SchedulerProfile {
     pub quantum_ticks: u32,
     /// Target timer interrupt frequency in hertz.
     pub tick_hz: u32,
+}
+
+/// Hardware watchdog facts declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WatchdogProfile {
+    /// Backend watchdog controller identifier.
+    pub controller: &'static str,
+    /// Configured timeout in milliseconds.
+    pub timeout_ms: u32,
+    /// Maximum interval between kernel feed operations in milliseconds.
+    pub feed_interval_ms: u32,
+    /// Whether reset-cause status can identify this watchdog source.
+    pub reset_cause_supported: bool,
 }
 
 /// SRAM regions declared by a board manifest.

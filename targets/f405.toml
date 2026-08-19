@@ -38,6 +38,12 @@ usb_hz = 48_000_000
 quantum_ticks = 1
 tick_hz = 1000
 
+[watchdog]
+controller = "IWDG"
+timeout_ms = 2000
+feed_interval_ms = 500
+reset_cause_supported = true
+
 [memory]
 flash = { origin = 0x0800_0000, length = 524_288 }
 kernel_origin = 0x2000_0000
