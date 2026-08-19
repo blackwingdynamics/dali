@@ -47,6 +47,7 @@ reset_cause_supported = true
 [authentication]
 development = "unsigned"
 release = "ed25519"
+trust_anchors = []
 
 [memory]
 flash = { origin = 0x0800_0000, length = 524_288 }

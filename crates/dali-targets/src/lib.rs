@@ -67,6 +67,17 @@ pub struct AuthenticationProfile {
     pub development: PackageAuthentication,
     /// Policy for release packages.
     pub release: PackageAuthentication,
+    /// Public keys provisioned for target-side package verification.
+    pub trust_anchors: &'static [TrustAnchorProfile],
+}
+
+/// One manifest-owned Ed25519 trust anchor.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TrustAnchorProfile {
+    /// Opaque identifier carried by a signed package.
+    pub key_id: [u8; 16],
+    /// Ed25519 public key bytes provisioned for verification.
+    pub public_key: [u8; 32],
 }
 
 /// Optional hardware and runtime capabilities declared by a target profile.

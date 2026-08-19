@@ -119,8 +119,9 @@ milestone into `main` only after its documented validation evidence exists.
 3. **Package authenticity** — [in progress] define a bounded signature
    envelope, trust-anchor identifier, and declarative development/release
    policy. The signed AMRN container contract now uses a new versioned
-   extension without changing v4; CLI signing and hardware-neutral key-id
-   trust-store lookup are implemented and tested. The `ed25519-dalek 3.0.0`
+   extension without changing v4; CLI signing, hardware-neutral key-id
+   lookup, and target-manifest trust-anchor provisioning are implemented and
+   tested. The `ed25519-dalek 3.0.0`
    backend passed the no_std thumb-target check and chunked standard-Ed25519
    verification tests through the `dali-crypto` facade. Kernel loader
    verification remains the next implementation step; target trust-store
