@@ -184,6 +184,7 @@ name = "dali-cli"
 version = "0.1.0-alpha.1"
 dependencies = [
  "dali-amrn",
+ "dali-crypto",
  "dali-device",
  "dali-targets",
  "object",

@@ -4,6 +4,7 @@ use super::super::package as package_command;
 use super::{artifacts, build};
 
 const AMRN_EXTENSION: &str = "amrn";
+const SIGNING_KEY_ENVIRONMENT: &str = "DALI_SIGNING_KEY_HEX";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if arguments.len() != 2 {
@@ -18,7 +19,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let abi_contract = dali_amrn::compatibility::for_abi(abi_version)
         .ok_or_else(|| format!("unsupported application ABI version {abi_version}"))?;
     let release = build::cargo_profile_is_release(&manifest.profile)?;
-    build::validate_package_authentication(target_profile, release)?;
+    build::validate_package_authentication(target_profile, release, manifest.format_version)?;
     let output = build::payload_path(&project_directory, target, release, &manifest.name)
         .with_extension(AMRN_EXTENSION);
     let format_version = manifest
@@ -27,8 +28,9 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if manifest.slot_name.is_some()
         && format_version != dali_amrn::v3::FORMAT_VERSION
         && format_version != dali_amrn::v4::FORMAT_VERSION
+        && format_version != dali_amrn::v5::FORMAT_VERSION
     {
-        return Err("manifest slot selection requires AMRN format version 3 or 4".to_owned());
+        return Err("manifest slot selection requires AMRN format version 3, 4, or 5".to_owned());
     }
     build::validate_target_capabilities(target_profile, abi_version, Some(format_version))?;
     if !abi_contract.supports_format(format_version) {
@@ -70,6 +72,13 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
                 target,
                 release,
             )?,
+            dali_amrn::v5::FORMAT_VERSION => build_signed_identity_package(
+                &project_directory,
+                &manifest,
+                target_profile,
+                target,
+                release,
+            )?,
             _ => return Err(format!("unsupported AMRN format version {format_version}")),
         }
     };
@@ -77,6 +86,125 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         .map_err(|error| format!("cannot write AMRN package {}: {error}", output.display()))?;
     println!("Created AMRN package: {}", output.display());
     Ok(())
+}
+
+fn build_signed_identity_package(
+    project_directory: &std::path::Path,
+    manifest: &build::ApplicationManifest,
+    target_profile: &dali_targets::TargetProfile,
+    target: &str,
+    release: bool,
+) -> Result<Vec<u8>, String> {
+    let slot_name = manifest
+        .slot_name
+        .as_deref()
+        .ok_or_else(|| "AMRN format version 5 requires an explicit `slot`".to_owned())?;
+    let package_id = manifest
+        .package_id
+        .as_deref()
+        .ok_or_else(|| "AMRN format version 5 requires `package_id`".to_owned())?;
+    let signing_key_id = manifest
+        .signing_key_id
+        .as_deref()
+        .ok_or_else(|| "AMRN format version 5 requires `signing_key_id`".to_owned())?;
+    let package_version = manifest
+        .package_version
+        .as_deref()
+        .ok_or_else(|| "AMRN format version 5 requires `version`".to_owned())?;
+    let minimum_kernel_version = manifest
+        .minimum_kernel_version
+        .as_deref()
+        .ok_or_else(|| "AMRN format version 5 requires `minimum_kernel_version`".to_owned())?;
+    let key_hex = env::var(SIGNING_KEY_ENVIRONMENT).map_err(|_| {
+        format!("AMRN format version 5 requires {SIGNING_KEY_ENVIRONMENT} to be configured")
+    })?;
+    let private_key =
+        parse_fixed_hex::<{ dali_crypto::PRIVATE_KEY_LENGTH }>(&key_hex, "signing key")?;
+    let key_id = build::parse_package_id(signing_key_id)?;
+    let slot = build::application_slot(target_profile, Some(slot_name))?;
+    let code = artifacts::code_path(project_directory, target, release, &manifest.name);
+    let data = artifacts::data_path(project_directory, target, release, &manifest.name);
+    let elf = artifacts::elf_path(project_directory, target, release, &manifest.name);
+    let code_bytes = fs::read(&code)
+        .map_err(|error| format!("cannot read ABI v3 code {}: {error}", code.display()))?;
+    let data_bytes = fs::read(&data)
+        .map_err(|error| format!("cannot read ABI v3 data {}: {error}", data.display()))?;
+    let relocation_artifact = super::relocations::extract(&elf)?;
+    let features = build::features_for_abi(dali_amrn::v2::ABI_VERSION)?;
+    let context = artifacts::ArtifactContext {
+        project_directory,
+        manifest: &project_directory.join("Cargo.toml"),
+        target,
+        release,
+        binary: &manifest.name,
+        features: &features,
+    };
+    let image = dali_amrn::v5::Image {
+        image: dali_amrn::v3::Image {
+            code: &code_bytes,
+            initialized_data: &data_bytes,
+            data_zero_size: artifacts::read_zero_init_size(&context)?,
+            stack_size: slot.stack_length,
+            linked_code_base: relocation_artifact.linked_code_base,
+            linked_data_base: relocation_artifact.linked_data_base,
+            execution_offset: manifest.entry_offset,
+            relocations: &relocation_artifact.relocations,
+        },
+        metadata: dali_amrn::v4::Metadata {
+            package_id: build::parse_package_id(package_id)?,
+            package_version: build::parse_version(package_version, "version")?,
+            minimum_kernel_version: build::parse_version(
+                minimum_kernel_version,
+                "minimum_kernel_version",
+            )?,
+            required_services: manifest.required_services.unwrap_or(0),
+            slot_id: slot.id,
+        },
+    };
+    let contract = dali_amrn::v3::Contract {
+        target_id: target_profile.amrn_target_id,
+        code_load_address: slot.code_origin,
+        code_capacity: slot.code_length,
+        data_load_address: slot.data_origin,
+        data_capacity: slot.data_length,
+    };
+    let relocation_bytes = relocation_artifact
+        .relocations
+        .len()
+        .checked_mul(dali_amrn::v3::RELOCATION_ENTRY_SIZE)
+        .ok_or_else(|| "AMRN v5 relocation table size overflow".to_owned())?;
+    let signed_capacity = dali_amrn::v5::HEADER_SIZE
+        .checked_add(code_bytes.len())
+        .and_then(|size| size.checked_add(data_bytes.len()))
+        .and_then(|size| size.checked_add(relocation_bytes))
+        .ok_or_else(|| "AMRN v5 package size overflow".to_owned())?;
+    let mut signed = vec![0; signed_capacity];
+    let signed_size = dali_amrn::v5::encode_unsigned(image, contract, &mut signed)
+        .map_err(|error| format!("cannot encode AMRN v5 package: {error:?}"))?;
+    signed.truncate(signed_size);
+    let signature = dali_crypto::sign(&private_key, &signed);
+    let mut package = vec![0; signed_size + dali_amrn::v5::SIGNATURE_SIZE];
+    let size = dali_amrn::v5::append_signature(&signed, &key_id, &signature, &mut package)
+        .map_err(|error| format!("cannot append AMRN v5 signature: {error:?}"))?;
+    package.truncate(size);
+    Ok(package)
+}
+
+fn parse_fixed_hex<const N: usize>(value: &str, field: &str) -> Result<[u8; N], String> {
+    let value = value.strip_prefix("0x").unwrap_or(value);
+    if value.len() != N * 2 {
+        return Err(format!(
+            "{field} must contain exactly {} hexadecimal digits",
+            N * 2
+        ));
+    }
+    let mut result = [0; N];
+    for (index, byte) in result.iter_mut().enumerate() {
+        let start = index * 2;
+        *byte = u8::from_str_radix(&value[start..start + 2], 16)
+            .map_err(|_| format!("{field} contains invalid hexadecimal data"))?;
+    }
+    Ok(result)
 }
 
 fn build_relocatable_identity_package(

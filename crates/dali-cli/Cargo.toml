@@ -9,6 +9,7 @@ workspace = true
 
 [dependencies]
 dali-amrn = { path = "../dali-amrn" }
+dali-crypto = { path = "../dali-crypto" }
 dali-device = { path = "../dali-device" }
 dali-targets = { path = "../dali-targets" }
 object = { version = "0.40", default-features = false, features = ["read", "elf"] }

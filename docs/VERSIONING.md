@@ -134,15 +134,22 @@ memory_requirements
 Target profiles permanently declare package authentication policy for both
 development and release builds. The current F405 policy permits unsigned
 development packages for local bring-up and requires Ed25519 for release
-packages. The CLI rejects unsigned release packaging; kernel-side signature
-verification is not claimed until the versioned AMRN extension and trust store
-are implemented.
+packages. Release manifests must select AMRN format `5`, declare a
+`signing_key_id`, and provide the private seed through the external
+`DALI_SIGNING_KEY_HEX` environment variable. The CLI creates the DSIG
+envelope; kernel-side signature verification is not claimed until the target
+trust store and loader verification are implemented.
 
 AMRN format version `4` defines package identity and selection metadata. It
 remains ABI v3-compatible: format v4 changes the container header and
 compatibility checks, not the application calling convention, service gateway,
 or MPU contract. The current feature-gated F405 loader supports format v4 for
 one selected package; it does not yet provide multi-package execution.
+
+AMRN format version `5` is the signed successor to format v4. It leaves the
+v4 bytes unchanged, signs the fixed header and payload, and appends a DSIG
+trailer. Format v5 is a host/CLI contract only until target-side verification
+is implemented; it must not be described as Secure Boot.
 
 ## 6. Release tags
 

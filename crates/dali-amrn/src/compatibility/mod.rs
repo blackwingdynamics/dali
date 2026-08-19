@@ -29,6 +29,7 @@ impl AbiContract {
                 format_version == crate::v2::FORMAT_VERSION
                     || format_version == crate::v3::FORMAT_VERSION
                     || format_version == crate::v4::FORMAT_VERSION
+                    || format_version == crate::v5::FORMAT_VERSION
             }
         }
     }
@@ -72,6 +73,7 @@ mod tests {
         assert!(isolation.supports_format(crate::v2::FORMAT_VERSION));
         assert!(isolation.supports_format(crate::v3::FORMAT_VERSION));
         assert!(isolation.supports_format(crate::v4::FORMAT_VERSION));
+        assert!(isolation.supports_format(crate::v5::FORMAT_VERSION));
     }
 
     #[test]

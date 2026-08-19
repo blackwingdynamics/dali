@@ -346,9 +346,12 @@ signature envelope is structurally validated by `dali-amrn`; cryptographic
 verification and trust-anchor lookup remain separate responsibilities.
 
 The host codec currently encodes and parses this contract with boundary tests.
-The kernel loader does not accept format 5 until the CLI signer and a target
-trust store are integrated. Therefore format 5 is not hardware evidence and
-must not be described as secure boot or package authenticity yet.
+The CLI can now produce format 5 when the application manifest declares
+`signing_key_id` and the private seed is supplied through the external
+`DALI_SIGNING_KEY_HEX` environment variable. The kernel loader does not accept
+format 5 until target trust-store lookup and cryptographic verification are
+integrated. Therefore format 5 is not hardware evidence and must not be
+described as secure boot or completed package authenticity yet.
 
 ## Payload rules
 
