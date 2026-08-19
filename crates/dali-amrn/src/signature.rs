@@ -42,6 +42,16 @@ pub enum Error {
     UnsupportedAlgorithm,
 }
 
+/// Cryptographic verification boundary owned by the selected platform or host
+/// signer backend.
+pub trait SignatureVerifier {
+    /// Backend-specific verification failure.
+    type Error;
+
+    /// Verifies an envelope over the caller-owned signed byte range.
+    fn verify(&self, signed_bytes: &[u8], envelope: &Envelope<'_>) -> Result<(), Self::Error>;
+}
+
 /// Parses one fixed-size signature envelope without performing cryptographic verification.
 pub fn parse(bytes: &[u8]) -> Result<Envelope<'_>, Error> {
     if bytes.len() != ENVELOPE_SIZE {

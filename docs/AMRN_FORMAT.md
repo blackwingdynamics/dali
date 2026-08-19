@@ -303,6 +303,9 @@ envelope is not accepted by the v4 loader yet. A future format or explicitly
 versioned extension must define the signed byte range, trust-anchor
 provisioning, production/development authentication policy, rejected-signature
 behavior, and compatibility with CRC32 before authenticity is claimed.
+The `SignatureVerifier` trait is the hardware-neutral boundary for an audited
+host signer and a target trust-store verifier; it does not provide a default
+or bypass implementation.
 
 ## Payload rules
 
