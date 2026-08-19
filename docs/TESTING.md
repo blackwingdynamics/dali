@@ -173,7 +173,10 @@ multi-application isolation, or watchdog support.
   heartbeat running, halting the CPU for more than the declared 2000 ms IWDG
   timeout caused a reset, and the next boot logged `Reset cause: Watchdog`
   before returning to the kernel heartbeat.
-- [ ] F405 feed-failure policy and explicit safe-mode recovery evidence.
+- [x] Feed-failure policy is explicit: after a backend feed error, the kernel
+  stops issuing further feeds and allows the armed hardware watchdog to reset
+  the target.
+- [ ] F405 hardware feed-failure and explicit safe-mode recovery evidence.
 
 ### Diagnostic evidence
 
@@ -201,7 +204,7 @@ distinguished from the kernel's fault and recovery records.
   the platform facade and target-checked; this is not hardware evidence.
 - [x] Hardware watchdog timeout and reset-cause behavior was observed on F405
   with a real IWDG reset; feed-failure policy and explicit safe-mode behavior
-  remain unverified.
+  are not yet hardware-triggered.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot

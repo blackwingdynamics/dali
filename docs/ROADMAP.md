@@ -114,7 +114,8 @@ milestone into `main` only after its documented validation evidence exists.
 2. **Watchdog and reset recovery** — [in progress] target facts,
    reset-cause logging, platform integration, kernel-heartbeat feed ownership,
    and a real F405 IWDG timeout/reset-cause test are complete. Remaining work
-   is feed-failure policy and explicit safe-mode recovery evidence.
+   is feed-failure policy implementation and explicit safe-mode recovery
+   evidence.
 3. **Package authenticity** — define a signature extension, trust anchor, and
    bounded rejected-signature path without conflating CRC32 with authenticity.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility

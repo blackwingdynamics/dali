@@ -4,6 +4,7 @@
 use super::status::FAST_BLINK_PERIOD_MS;
 use super::status::{HEARTBEAT_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus};
 use crate::platform;
+use crate::runtime::application::policy::{CURRENT, WatchdogFailureAction};
 use crate::runtime::watchdog::FeedOwner;
 
 /// Displays the storage status through the board's single status LED forever.
@@ -61,8 +62,14 @@ pub fn run(
         {
             crate::logging::error(
                 crate::logging::BOOT_SUBSYSTEM,
-                format_args!("[WATCHDOG] Feed failed: {:?}", error),
+                format_args!(
+                    "[WATCHDOG] Feed failed: {:?}; allowing hardware reset",
+                    error
+                ),
             );
+            if CURRENT.watchdog_failure() == WatchdogFailureAction::AllowHardwareReset {
+                watchdog = None;
+            }
         }
     }
 }
