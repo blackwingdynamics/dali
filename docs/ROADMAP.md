@@ -117,9 +117,10 @@ milestone into `main` only after its documented validation evidence exists.
    is feed-failure policy implementation and explicit safe-mode recovery
    evidence.
 3. **Package authenticity** — [in progress] define a bounded signature
-   envelope and trust-anchor identifier; next integrate the envelope into a
-   versioned AMRN extension and add a real verifier/trust-store boundary
-   without conflating CRC32 with authenticity.
+   envelope, trust-anchor identifier, and declarative development/release
+   policy; next integrate the envelope into a versioned AMRN extension and
+   add a real verifier/trust-store boundary without conflating CRC32 with
+   authenticity.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package

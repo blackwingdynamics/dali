@@ -37,6 +37,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let abi_version = manifest.abi_version.unwrap_or(target_profile.abi_version);
     validate_target_capabilities(target_profile, abi_version, manifest.format_version)?;
     let release = cargo_profile_is_release(&manifest.profile)?;
+    validate_package_authentication(target_profile, release)?;
     let cargo_manifest = project_directory.join(CARGO_MANIFEST_FILE);
     run_cargo_build(
         &project_directory,
@@ -234,6 +235,25 @@ pub(super) fn cargo_profile_is_release(profile: &str) -> Result<bool, String> {
     }
 }
 
+/// Rejects unsigned release packaging until a configured signer exists.
+pub(super) fn validate_package_authentication(
+    target: &dali_targets::TargetProfile,
+    release: bool,
+) -> Result<(), String> {
+    let policy = if release {
+        target.authentication.release
+    } else {
+        target.authentication.development
+    };
+    if policy == dali_targets::PackageAuthentication::Ed25519Required {
+        return Err(format!(
+            "target `{}` requires an Ed25519 signature for release packages; configure a signer before packaging",
+            target.name
+        ));
+    }
+    Ok(())
+}
+
 fn run_cargo_build(
     project_directory: &Path,
     manifest: &Path,
@@ -391,6 +411,13 @@ mod tests {
     #[test]
     fn rejects_unknown_profiles() {
         assert!(cargo_profile_is_release("custom").is_err());
+    }
+
+    #[test]
+    fn requires_signatures_for_f405_release_packages() {
+        let target = super::target_profile("f405").expect("F405 target is declared");
+        assert!(super::validate_package_authentication(target, true).is_err());
+        assert!(super::validate_package_authentication(target, false).is_ok());
     }
 
     #[test]

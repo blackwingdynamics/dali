@@ -47,6 +47,26 @@ pub struct TargetProfile {
     pub scheduler: Option<SchedulerProfile>,
     /// Watchdog configuration declared by the target manifest.
     pub watchdog: Option<WatchdogProfile>,
+    /// Package authentication policy for development and release builds.
+    pub authentication: AuthenticationProfile,
+}
+
+/// Package authentication policy selected by a target build profile.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PackageAuthentication {
+    /// Packages may be unsigned in an explicitly non-production build.
+    UnsignedAllowed,
+    /// Packages must carry a valid Ed25519 signature before release.
+    Ed25519Required,
+}
+
+/// Authentication policy for the two supported application build profiles.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct AuthenticationProfile {
+    /// Policy for development packages.
+    pub development: PackageAuthentication,
+    /// Policy for release packages.
+    pub release: PackageAuthentication,
 }
 
 /// Optional hardware and runtime capabilities declared by a target profile.

@@ -18,6 +18,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let abi_contract = dali_amrn::compatibility::for_abi(abi_version)
         .ok_or_else(|| format!("unsupported application ABI version {abi_version}"))?;
     let release = build::cargo_profile_is_release(&manifest.profile)?;
+    build::validate_package_authentication(target_profile, release)?;
     let output = build::payload_path(&project_directory, target, release, &manifest.name)
         .with_extension(AMRN_EXTENSION);
     let format_version = manifest

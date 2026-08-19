@@ -131,6 +131,13 @@ required_services
 memory_requirements
 ```
 
+Target profiles permanently declare package authentication policy for both
+development and release builds. The current F405 policy permits unsigned
+development packages for local bring-up and requires Ed25519 for release
+packages. The CLI rejects unsigned release packaging; kernel-side signature
+verification is not claimed until the versioned AMRN extension and trust store
+are implemented.
+
 AMRN format version `4` defines package identity and selection metadata. It
 remains ABI v3-compatible: format v4 changes the container header and
 compatibility checks, not the application calling convention, service gateway,
