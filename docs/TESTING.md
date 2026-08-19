@@ -356,7 +356,8 @@ distinguished from the kernel's fault and recovery records.
   returned `UnknownTrustAnchor` and entered the kernel heartbeat.
 - [x] F405 hardware: reject a modified signed payload; the loader returned
   `V5SignedPackage(CrcMismatch)` and entered the kernel heartbeat.
-- [ ] F405 hardware: reject a truncated or malformed DSIG trailer.
+- [x] F405 hardware: reject a truncated DSIG trailer; the loader returned
+  `V5SignedPackage(InvalidSignature)` and entered the kernel heartbeat.
 - [ ] Secure Boot and kernel-image authenticity.
 
 ## MVP acceptance test
