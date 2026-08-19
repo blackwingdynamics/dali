@@ -209,6 +209,7 @@ dependencies = [
  "cortex-m-rt",
  "dali",
  "dali-amrn",
+ "dali-crypto",
  "dali-targets",
  "dali-usb",
  "embedded-sdmmc",

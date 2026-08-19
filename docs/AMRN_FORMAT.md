@@ -353,10 +353,12 @@ its v5 API can also parse the fixed header and DSIG trailer separately for a
 bounded streaming loader.
 The CLI can now produce format 5 when the application manifest declares
 `signing_key_id` and the private seed is supplied through the external
-`DALI_SIGNING_KEY_HEX` environment variable. The kernel loader does not accept
-format 5 until target trust-store lookup and cryptographic verification are
-integrated. Therefore format 5 is not hardware evidence and must not be
-described as secure boot or completed package authenticity yet.
+`DALI_SIGNING_KEY_HEX` environment variable. The feature-gated kernel loader
+now has a bounded v5 path that authenticates the signed range before copying
+or relocating the image, using trust anchors from the selected target profile.
+The reference F405 profile currently declares an empty trust-anchor set, so
+format 5 remains unverified on hardware and must not be described as Secure
+Boot or completed package authenticity.
 
 ## Payload rules
 

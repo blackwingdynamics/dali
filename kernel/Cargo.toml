@@ -19,12 +19,14 @@ abi-mpu = ["abi-current"]
 abi-context-switch = ["abi-mpu"]
 abi-relocation = ["abi-mpu"]
 abi-test-fixtures = ["abi-mpu"]
+abi-authentication = ["abi-relocation", "dep:dali-crypto"]
 
 [lints]
 workspace = true
 
 [dependencies]
 dali-amrn = { path = "../crates/dali-amrn" }
+dali-crypto = { path = "../crates/dali-crypto", optional = true }
 dali = { path = "../crates/dali-sdk" }
 dali-usb = { path = "../crates/dali-usb" }
 dali-targets = { path = "../crates/dali-targets" }

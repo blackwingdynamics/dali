@@ -124,8 +124,10 @@ milestone into `main` only after its documented validation evidence exists.
    tested. The `ed25519-dalek 3.0.0`
    backend passed the no_std thumb-target check and chunked standard-Ed25519
    verification tests through the `dali-crypto` facade. Kernel loader
-   verification remains the next implementation step; target trust-store
-   provisioning, bounded failure handling, and hardware evidence are still
+   verification now has a feature-gated v5 streaming path with target-profile
+   trust-anchor lookup, bounded CRC/relocation checks, and authentication
+   before SRAM copy. The F405 manifest intentionally has no provisioned key
+   yet; signed-package hardware evidence and rejected-signature tests remain
    required before authenticity or Secure Boot is claimed.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.

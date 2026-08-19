@@ -10,6 +10,10 @@ pub const FORMAT_VERSION: u8 = 5;
 pub const SIGNATURE_SIZE: usize = signature::ENVELOPE_SIZE;
 /// Offset of the package checksum retained from v4.
 pub const PACKAGE_CRC32_OFFSET: usize = 116;
+/// Header offset of the signed-range start and DSIG trailer.
+pub const SIGNATURE_OFFSET: usize = 128;
+/// Header offset of the signed-range length.
+pub const SIGNED_SIZE_OFFSET: usize = 136;
 const MAGIC_OFFSET: usize = 0;
 const FORMAT_VERSION_OFFSET: usize = 4;
 const TARGET_ID_OFFSET: usize = 5;

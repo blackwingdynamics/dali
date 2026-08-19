@@ -13,3 +13,5 @@ pub(crate) mod execution;
 pub(crate) mod identity;
 #[cfg(feature = "abi-relocation")]
 pub(crate) mod relocation;
+#[cfg(feature = "abi-authentication")]
+pub(crate) mod signed;

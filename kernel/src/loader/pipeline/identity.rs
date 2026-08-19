@@ -40,6 +40,8 @@ where
         return Err(v4_error(v4::Error::InvalidPayload));
     }
     validate_payload(&file, header, contract)?;
+    file.rewind().map_err(super::LoaderError::Filesystem)?;
+    let _header = read_header(&file)?;
     copy_segments_and_relocate(&file, header.image, contract)?;
     let entry_address = header
         .image
@@ -145,7 +147,7 @@ where
     crate::loader_contract::validate_stream(&reader, header, contract).map_err(map_stream_error)
 }
 
-fn copy_segments_and_relocate<D>(
+pub(super) fn copy_segments_and_relocate<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
     contract: v3::Contract,
@@ -153,8 +155,6 @@ fn copy_segments_and_relocate<D>(
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    file.rewind().map_err(super::LoaderError::Filesystem)?;
-    let _header = read_header(file)?;
     copy_segment(file, header.code_load_address, header.code_size)?;
     copy_segment(file, header.data_load_address, header.data_init_size)?;
     let zero_start = header
@@ -184,7 +184,7 @@ where
     Ok(())
 }
 
-fn copy_segment<D>(
+pub(super) fn copy_segment<D>(
     file: &AmrnFile<'_, D>,
     destination: u32,
     size: u32,
@@ -214,7 +214,10 @@ where
     Ok(())
 }
 
-fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::LoaderError> {
+pub(super) fn mutable_segment(
+    address: u32,
+    size: u32,
+) -> Result<&'static mut [u8], super::LoaderError> {
     let length = usize::try_from(size).map_err(|_| v4_error(v4::Error::InvalidPayload))?;
     let target = unsafe {
         // SAFETY: v4 validation proved the complete segment fits its manifest slot.
@@ -223,13 +226,13 @@ fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::
     Ok(target)
 }
 
-fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
+pub(super) fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let target = mutable_segment(destination, size)?;
     target.fill(0);
     Ok(())
 }
 
-struct FileReader<'a, 'file, D>
+pub(super) struct FileReader<'a, 'file, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
