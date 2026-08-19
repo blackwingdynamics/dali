@@ -107,8 +107,10 @@ work is contract hardening, security evidence, and post-MVP lifecycle design.
 Work on this sequence from a dedicated feature branch, merging each coherent
 milestone into `main` only after its documented validation evidence exists.
 
-1. **DMA isolation** — define DMA buffer ownership and allowed ranges, reject
-   unauthorized DMA configuration, and add F405 hardware evidence.
+1. **DMA isolation** — [in progress] the kernel-owned SDIO path now validates
+   target-declared ranges before peripheral configuration, and F405 hardware
+   confirms block reads after that check. Extend the policy to every
+   DMA-capable backend before claiming general DMA isolation.
 2. **Watchdog and reset recovery** — verify timeout behavior, reset-cause
    logging, and safe recovery on the real target.
 3. **Package authenticity** — define a signature extension, trust anchor, and

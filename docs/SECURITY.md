@@ -89,4 +89,8 @@ not arm a watchdog without a feed owner. The initial valid-service
 authorization policy and repeated invalid-PSP fault-status clearing are
 hardware-tested. MPU protection applies to
 processor accesses; DMA buffer ownership and kernel memory safety require
-separate controls.
+separate controls. The DMA contract now validates every F405 SDIO transfer
+buffer against the target-declared DMA region and keeps the mutable borrow
+exclusive for the active transfer. This is a kernel transport boundary, not
+yet proof that arbitrary future DMA-capable peripherals or application-owned
+DMA are isolated.

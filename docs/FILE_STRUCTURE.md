@@ -125,7 +125,7 @@ kernel/src/
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,contract/{mod.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
-├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs}}
+├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs}}
 └── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
 
 crates/dali-amrn/src/
@@ -192,6 +192,9 @@ target-scaffold.md
   it must not import a board PAC or HAL.
 - `kernel/src/drivers/sdio.rs` owns the generic SDIO transport contract and
   block-reader adapter; platform code supplies the concrete transport.
+- `kernel/src/runtime/memory/dma.rs` owns the target-independent DMA buffer
+  ownership and range-validation contract; SDIO, USB, SPI, ADC, and future
+  peripheral backends may consume it without changing the contract.
 - `targets/*.toml` owns declarative target facts; hardware implementations must
   consume those facts through generated target metadata instead of copying
   board constants into kernel policy.

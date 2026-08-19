@@ -74,6 +74,10 @@ use dali_targets::TargetProfile;
 #[cfg(feature = "abi-current")]
 pub(crate) const TARGET_PROFILE: &TargetProfile = &dali_targets::TARGET_F405;
 
+/// DMA-visible region reserved by the target manifest for kernel transport buffers.
+pub(crate) const DMA_REGION: dali_targets::TargetMemoryRegion =
+    dali_targets::TARGET_F405.memory.dma;
+
 #[cfg(all(feature = "abi-context-switch", feature = "abi-current"))]
 pub(crate) const CONTEXT_CAPACITY: usize = dali_targets::TARGET_F405_CONTEXT_CAPACITY;
 

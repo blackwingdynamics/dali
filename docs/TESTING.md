@@ -34,6 +34,11 @@ filesystem adapter's multi-block reads, capacity reporting, and read-only
 write rejection. Embedded target checks remain separate evidence for the F405
 PAC adapter.
 
+The DMA contract has hardware-neutral tests for aligned in-range ranges,
+out-of-range rejection, alignment and empty-range rejection, and arithmetic
+overflow. These tests validate the range policy only; they are not evidence
+that a DMA controller, peripheral, or application can access memory safely.
+
 These tests cover FIFO ordering, bounded overflow behavior, partial writes,
 disconnect/reconnect retention, link-state transitions, and deterministic
 interleaving of storage progress with USB service events. They do not prove USB
@@ -144,6 +149,19 @@ multi-application isolation, or watchdog support.
   console reported `Ready`, `Running`, `UsageFault 0x00040000`, then
   `Faulted`, `Recovering`, and `Terminated`; recovery entered the kernel
   recovery loop without restarting the application.
+
+### DMA isolation
+
+- [x] Host contract tests validate kernel DMA-buffer range, alignment, empty
+  range, and overflow rejection.
+- [x] The F405 SDIO path validates its manifest-declared DMA buffer before
+  programming DMA2 and retains exclusive mutable ownership for the transfer.
+- [x] F405 hardware evidence that the guarded SDIO path remains operational
+  after the ownership check: firmware reported `SDIO card initialized` and
+  `Read block 0 successfully` before loading two AMRN v4 packages.
+- [ ] Hardware evidence for unauthorized DMA configuration or application-owned
+  DMA. The current ABI exposes no application DMA service, so general DMA
+  isolation is not claimed yet.
 
 ### Diagnostic evidence
 

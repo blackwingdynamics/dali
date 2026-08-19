@@ -111,6 +111,9 @@ pub(crate) use f405::APPLICATION_EXECUTION_SUPPORTED;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
 pub(crate) use f405::TARGET_PROFILE;
 
+#[cfg(feature = "board-stm32f405-sd")]
+pub(crate) use f405::DMA_REGION;
+
 #[cfg(all(
     feature = "board-stm32f405-sd",
     feature = "abi-context-switch",

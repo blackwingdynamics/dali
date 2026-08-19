@@ -48,7 +48,11 @@ The F405 board is selected with the `board-stm32f405-sd` Cargo feature. Its
 SDIO pin tuple is owned by the board backend and is consumed by the storage
 subsystem. The current F405 backend uses HAL card initialization and a
 board-local DMA2 Stream 3, Channel 4 receive path with an aligned word buffer
-for block reads. It is the current AMRN package target; AMRN target
+for block reads. Before programming DMA2, the kernel validates that buffer
+against the target manifest's DMA-visible region and retains exclusive mutable
+ownership for the transfer. This protects the current kernel SDIO path; it is
+not a claim of general application or peripheral DMA isolation. It is the
+current AMRN package target; AMRN target
 compatibility remains defined by `AMRN_FORMAT.md`.
 
 The manufacturer and target metadata for this board is declared in
