@@ -22,9 +22,11 @@ is verified with the public key associated with that identifier.
 ## Current security boundary
 
 The F405 development profile contains the RFC8032 test anchor and is enabled
-only for `abi-test-fixtures`. The F405 release trust-anchor set is currently
-empty. Consequently, a development signed package has hardware evidence, but
-the release profile is not yet a production trust configuration.
+only for `abi-test-fixtures`. The F405 release profile now contains the public
+anchor generated for this checkout. This provisions the verification path, but
+does not by itself make the key production-grade: secret custody, rotation
+procedure, release build approval, and hardware release acceptance are still
+required.
 
 Do not put the RFC8032 test seed or any locally generated private seed into
 the repository, a target manifest, firmware, an issue, or a chat message.

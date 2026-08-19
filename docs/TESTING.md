@@ -354,6 +354,12 @@ distinguished from the kernel's fault and recovery records.
 - [x] F405 hardware: provision the documented development test public key and
   execute a valid signed v5 package; the kernel verified the signature before
   loading slot 1 and the relocation fixture ran.
+- [x] F405 hardware: provision the generated release public trust anchor and
+  execute a release-profile signed v5 package; the kernel logged
+  `AMRN signature verified`, loaded one package into slot 1, and ran the
+  relocation fixture. This verifies the configured release trust-anchor path
+  on the development board; production key custody, rotation, and Secure Boot
+  remain separate acceptance requirements.
 - [x] F405 hardware: reject an unknown key ID before SRAM copy; the loader
   returned `UnknownTrustAnchor` and entered the kernel heartbeat.
 - [x] F405 hardware: reject a modified signed payload; the loader returned

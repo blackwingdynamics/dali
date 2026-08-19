@@ -127,14 +127,16 @@ milestone into `main` only after its documented validation evidence exists.
    verification now has a feature-gated v5 streaming path with target-profile
    trust-anchor lookup, bounded CRC/relocation checks, and authentication
    before SRAM copy. The F405 development profile provisions only the RFC8032
-   test anchor behind `abi-test-fixtures`; the release profile remains empty.
+   test anchor behind `abi-test-fixtures`; the release profile now contains a
+   locally generated public anchor, while production key custody and release
+   acceptance remain pending.
    v4/v5 identity metadata now rejects undeclared required-service bits before
    any SRAM copy.
    Valid signed-package hardware evidence now exists for the documented F405
    development profile, and the loader rejects an unknown trust anchor before
    SRAM copy. Modified-content rejection now has F405 evidence through the
    package CRC path, and a truncated DSIG trailer is rejected before loading.
-   Secure Boot and release trust-anchor provisioning remain separate work.
+   Secure Boot and production release acceptance remain separate work.
    The host CLI now generates Ed25519 seeds from OS CSPRNG output and exports
    only the public trust-anchor fragment for release provisioning.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
