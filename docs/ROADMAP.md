@@ -139,15 +139,25 @@ milestone into `main` only after its documented validation evidence exists.
    Secure Boot and production release acceptance remain separate work.
    The host CLI now generates Ed25519 seeds from OS CSPRNG output and exports
    only the public trust-anchor fragment for release provisioning.
-4. **Secure Boot** — verify kernel and package authenticity, compatibility
+4. **Multi-developer package trust and distribution** — design and implement a
+   kernel-independent developer identity contract. The shipped kernel must
+   contain a Dali root public key, while developers generate and retain their
+   own private keys locally. A signed developer certificate or trust-store
+   update must authorize developer public keys without requiring an end user
+   or application developer to rebuild the kernel. Define package key
+   ownership, certificate fields, enrollment authority, offline trust-store
+   updates, revocation, expiry, rotation, roles, and recovery before exposing
+   a public application ecosystem. Never distribute the Dali root private key
+   or a shared developer signing key.
+5. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
-5. **Application lifecycle** — implement and test restart, rollback, package
+6. **Application lifecycle** — implement and test restart, rollback, package
    replacement, and slot recovery semantics.
-6. **Storage hardening** — add retry policy, media health states,
+7. **Storage hardening** — add retry policy, media health states,
    insertion/removal handling, and tests across SD cards and filesystems.
-7. **CI and release hardening** — require reproducible builds, artifact hashes,
+8. **CI and release hardening** — require reproducible builds, artifact hashes,
    target builds, host tests, Clippy, and release validation.
-8. **Additional board families** — add family backends and generated target
+9. **Additional board families** — add family backends and generated target
    profiles only when a second MCU family is introduced.
 
 ### Platform scalability foundation
