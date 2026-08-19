@@ -169,7 +169,11 @@ multi-application isolation, or watchdog support.
   heartbeat ownership, single-arm behavior, and feed rejection before arming.
 - [x] F405 IWDG backend compiles, captures reset flags during early bootstrap,
   clears the latch, and exposes the cause through the platform boundary.
-- [ ] F405 hardware timeout, reset-cause, and safe-recovery evidence.
+- [x] F405 hardware watchdog timeout and reset-cause evidence: with the kernel
+  heartbeat running, halting the CPU for more than the declared 2000 ms IWDG
+  timeout caused a reset, and the next boot logged `Reset cause: Watchdog`
+  before returning to the kernel heartbeat.
+- [ ] F405 feed-failure policy and explicit safe-mode recovery evidence.
 
 ### Diagnostic evidence
 
@@ -195,8 +199,9 @@ distinguished from the kernel's fault and recovery records.
   unavailable while package storage is read-only.
 - [x] Kernel-heartbeat watchdog arming and feed ownership are integrated behind
   the platform facade and target-checked; this is not hardware evidence.
-- [ ] Hardware watchdog timeout, reset-cause, feed-failure, and safe-mode
-  recovery evidence.
+- [x] Hardware watchdog timeout and reset-cause behavior was observed on F405
+  with a real IWDG reset; feed-failure policy and explicit safe-mode behavior
+  remain unverified.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
