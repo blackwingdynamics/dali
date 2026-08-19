@@ -700,6 +700,8 @@ Compilation and host tests do not replace hardware evidence.
 - [x] Define a versioned package-signature extension for Secure Boot and
   authenticity verification without modifying the AMRN v4 bytes; the host
   codec uses the DSIG trailer and has boundary/CRC coverage.
+- [x] Implement the feature-gated v5 kernel streaming verifier with
+  target-profile trust-anchor lookup before SRAM copy and relocation.
 - [ ] Test signed package verification and rejected signatures.
 - [ ] Test secure boot and kernel image authenticity.
 - [ ] Test version compatibility, anti-rollback, update, and rollback flows.

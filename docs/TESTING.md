@@ -338,6 +338,19 @@ distinguished from the kernel's fault and recovery records.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
   contract; hardware watchdog timeout and recovery evidence remain pending.
 
+## Signed package acceptance
+
+- [x] Host AMRN tests cover v5 header/trailer split parsing and signed-range
+  boundary validation.
+- [x] The feature-gated kernel target build covers v5 streaming signature,
+  CRC32, relocation, and target-profile trust-anchor checks before SRAM copy.
+- [ ] F405 hardware: provision a documented test public key and execute a
+  valid signed v5 package.
+- [ ] F405 hardware: reject an unknown key ID before SRAM copy.
+- [ ] F405 hardware: reject a modified signed header or payload.
+- [ ] F405 hardware: reject a truncated or malformed DSIG trailer.
+- [ ] Secure Boot and kernel-image authenticity.
+
 ## MVP acceptance test
 
 The MVP passes only when a freshly flashed kernel discovers an `.amrn` package on the SD card, validates its 32-byte header and CRC32, loads it into the reserved SRAM region, transfers control to `unsafe extern "C" fn(*const ServiceTable) -> !`, produces the documented application LED pattern, and delivers the application log messages on hardware.
