@@ -298,11 +298,10 @@ envelope for a future versioned AMRN signature extension. The fixed envelope is
 | `0x18` | signature | 64 bytes | Algorithm-specific signature bytes |
 
 The current parser validates only structure and bounded lengths; it does not
-verify signatures, select keys, or make unsigned v4 packages secure. The
-envelope is not accepted by the v4 loader yet. A future format or explicitly
-versioned extension must define the signed byte range, trust-anchor
-provisioning, production/development authentication policy, rejected-signature
-behavior, and compatibility with CRC32 before authenticity is claimed.
+make unsigned v4 packages secure. The v5 loader adds feature-gated signature
+verification and static target trust-anchor selection. The complete
+multi-developer trust chain, metadata roles, and update policy are defined by
+`docs/PACKAGE_DISTRIBUTION.md` and are not implemented by this envelope alone.
 The `SignatureVerifier` trait is the hardware-neutral boundary for an audited
 host signer and a target trust-store verifier; it does not provide a default
 or bypass implementation. The `dali-crypto` facade now provides a bounded
@@ -355,11 +354,10 @@ The CLI can now produce format 5 when the application manifest declares
 `signing_key_id` and the private seed is supplied through the external
 `DALI_SIGNING_KEY_HEX` environment variable. The feature-gated kernel loader
 now has a bounded v5 path that authenticates the signed range before copying
-or relocating the image, using trust anchors from the selected target profile.
-The reference F405 development profile contains only the RFC8032 test anchor,
-selected by `abi-test-fixtures`; its release trust-anchor set is empty. Format
-5 remains unverified on hardware and must not be described as Secure Boot or
-completed package authenticity.
+or relocating the image, using static trust anchors from the selected target
+profile. F405 hardware has verified the configured release-anchor path. This
+is not Secure Boot and is not the completed multi-developer distribution
+contract.
 
 ## Payload rules
 

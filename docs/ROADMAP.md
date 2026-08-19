@@ -148,7 +148,9 @@ milestone into `main` only after its documented validation evidence exists.
    ownership, certificate fields, enrollment authority, offline trust-store
    updates, revocation, expiry, rotation, roles, and recovery before exposing
    a public application ecosystem. Never distribute the Dali root private key
-   or a shared developer signing key.
+   or a shared developer signing key. The normative contract is
+   `docs/PACKAGE_DISTRIBUTION.md`; implementation must follow its frozen
+   initial-profile decisions and acceptance gates.
 5. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 6. **Application lifecycle** — implement and test restart, rollback, package

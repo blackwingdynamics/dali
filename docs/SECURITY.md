@@ -62,6 +62,13 @@ The following remain outside the current guarantee boundary:
 
 Security claims must be added only after the corresponding mechanism and test evidence exist.
 
+The future multi-developer package ecosystem is defined in
+`docs/PACKAGE_DISTRIBUTION.md`. That document is the source of truth for the
+Dali root, repository metadata roles, developer delegations, signed trust-store
+updates, revocation, rotation, rollback, and offline installation. The current
+F405 static release trust-anchor path is a precursor to that design and must
+not be described as a completed multi-developer registry.
+
 ## F405 isolation foundation (feature-gated, single-application hardware evidence)
 
 The first isolation milestone is limited to one F405 application. It uses

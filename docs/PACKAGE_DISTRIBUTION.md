@@ -1,0 +1,608 @@
+# Dali Package Distribution and Trust Contract
+
+Status: design contract and source of truth for the multi-developer package
+ecosystem.
+
+This document defines how a prebuilt Dali kernel can accept applications from
+multiple independent developers without rebuilding the kernel for every new
+developer. It is normative for the repository, CLI, package registry, trust
+store, update agent, and target loader. Implementation must not begin by
+guessing fields or behavior that are not defined here.
+
+## 1. Goals
+
+The distribution system must:
+
+1. allow a user to install a prebuilt kernel and use it without a Rust toolchain;
+2. allow each developer to create and retain a private signing key locally;
+3. prevent a developer from receiving or sharing Dali's root private key;
+4. authorize developers without rebuilding or reflashing the kernel for every
+   new developer;
+5. support offline devices that receive a bounded update bundle over storage;
+6. detect modified, substituted, truncated, stale, and replayed metadata;
+7. support developer-key rotation, expiry, revocation, and incident response;
+8. preserve the existing AMRN package validation and memory-safety boundaries;
+9. make repository and target metadata reproducible and reviewable; and
+10. fail closed when trust, compatibility, or freshness cannot be established.
+
+The design is TUF-like rather than a claim that Dali implements the complete
+upstream TUF specification. Any deviation from this contract requires a
+versioned contract change and new acceptance evidence.
+
+## 2. Non-goals
+
+This contract does not by itself provide:
+
+- confidentiality or encryption of applications;
+- a secure boot chain for the kernel image;
+- protection from a compromised kernel or compromised root authority;
+- protection from a physically invasive attacker with unrestricted debug access;
+- automatic network access on a microcontroller;
+- arbitrary native code safety without the separately documented ABI/MPU path;
+- application scheduling, DMA isolation, or storage hot-plug behavior; or
+- permission for an application to install another application.
+
+Package authenticity and package authorization are separate from application
+memory isolation. A correctly signed malicious application remains malicious
+code unless the target's isolation contract contains it.
+
+## 3. Normative language and invariants
+
+The words MUST, MUST NOT, REQUIRED, SHOULD, SHOULD NOT, and MAY are normative.
+
+The following invariants are mandatory:
+
+- Private keys MUST never be shipped in firmware, target manifests, AMRN
+  packages, CI artifacts, issue reports, or logs.
+- A public key MUST NOT become trusted merely because it appears in a package.
+- Every accepted package MUST be authorized by the active target policy and a
+  valid trust chain rooted in a kernel-provisioned Dali root key.
+- Every signed byte range MUST be specified before a signer or verifier is
+  implemented.
+- Metadata MUST be bounded before parsing, allocation, copying, or execution.
+- A failed signature, hash, version, expiry, role, or rollback check MUST
+  reject the update without partially activating it.
+- Trust-store replacement MUST be atomic: power loss may leave the previous
+  valid store active, but never a partially written store.
+- A package MUST be verified before relocation, MPU locking, application entry,
+  or any application-owned state transition.
+- A package hash and an AMRN signature are complementary controls; neither may
+  be silently treated as a substitute for the other.
+
+## 4. Threat model
+
+### 4.1 Protected assets
+
+The system protects:
+
+- the Dali root of trust;
+- developer private signing keys;
+- target trust policy and revocation state;
+- package identity, version, size, and hash metadata;
+- the integrity of the installed application image; and
+- the monotonic state used to prevent rollback where hardware supports it.
+
+### 4.2 Threats in scope
+
+The design MUST address:
+
+- a modified package or metadata file;
+- a package replaced by another valid package;
+- an unknown developer key;
+- a revoked or expired developer certificate;
+- replay of an old metadata bundle;
+- rollback to an older application version;
+- truncation, duplication, and inconsistent repository metadata;
+- compromise of one developer key;
+- loss or planned rotation of one signing key;
+- power loss during trust-store installation; and
+- a registry mirror serving stale or incomplete data.
+
+### 4.3 Threats outside this contract
+
+The design does not solve compromise of the offline Dali root keys, a
+compromised kernel binary, or an attacker able to bypass the MCU's debug and
+flash protections. Production hardware must define debug-lock, root-key
+custody, and recovery policy separately.
+
+## 5. Trust hierarchy
+
+The trust chain is:
+
+```text
+Dali root keys
+    |
+    +-- sign repository roles and developer delegations
+            |
+            +-- developer public key / certificate
+                    |
+                    +-- sign AMRN application package
+```
+
+The installed kernel contains only the Dali root public-key set and a target
+policy identifier. It does not contain every developer key and it does not
+contain any private key.
+
+### 5.1 Root role
+
+The root role is the highest authority. It MUST be kept offline or in an
+approved hardware-backed signing system. Root metadata defines:
+
+- the root key identifiers and public keys;
+- the threshold required for root metadata updates;
+- the allowed roles and their key identifiers;
+- metadata format and version rules;
+- supported target-policy identifiers; and
+- root key expiry and rotation information.
+
+The initial production configuration SHOULD use at least three independently
+stored root keys with a two-of-three signing threshold. A single root key MAY
+be used only for development and must be labelled non-production.
+
+Root keys MUST NOT sign application packages directly. Their compromise is an
+ecosystem incident and requires an emergency recovery procedure.
+
+### 5.2 Targets role
+
+The targets role authorizes package names, target profiles, developer
+delegations, package hashes, package lengths, package versions, and package
+compatibility metadata. It MUST be signed by a key authorized by root
+metadata.
+
+Targets metadata MUST contain enough information to reject a package before
+loading it:
+
+- package identity;
+- target profile and AMRN format;
+- ABI and minimum kernel version;
+- package version;
+- exact byte length;
+- cryptographic hash of the complete AMRN artifact;
+- developer key identifier or delegation identifier;
+- expiry or repository freshness policy; and
+- optional required-service and slot policy.
+
+### 5.3 Snapshot role
+
+The snapshot role binds an internally consistent version of the targets
+metadata and delegated metadata. It prevents a client from combining a new
+targets file with an old delegated file or vice versa.
+
+Snapshot metadata MUST identify the version and hash of every metadata file it
+covers. A client MUST reject a bundle whose referenced files do not match.
+
+### 5.4 Timestamp role
+
+The timestamp role gives clients a freshness boundary for snapshot metadata.
+It SHOULD be short-lived and signed by a dedicated online or controlled
+service key, not by a root key. Devices without a real-time clock MUST use the
+target's declared freshness policy and monotonic update state; they MUST NOT
+pretend that an unavailable wall clock proves freshness.
+
+Timestamp metadata MUST NOT be the only anti-rollback mechanism on a device
+without a trustworthy clock. Hardware monotonic counters or an equivalent
+durable version policy are required for a production anti-rollback claim.
+
+### 5.5 Developer delegation
+
+Each developer receives a delegated identity containing:
+
+- developer identifier;
+- developer public key and key identifier;
+- allowed package namespace or application ownership scope;
+- allowed target profiles and ABI families;
+- certificate validity interval;
+- delegation version; and
+- revocation status or revocation reference.
+
+A developer delegation MUST be signed by an authorized targets/delegation key.
+The developer private key signs application artifacts, never delegation
+metadata. A developer MUST NOT be able to authorize another developer.
+
+## 6. Metadata format contract
+
+The repository metadata wire format MUST be canonical and deterministic. The
+first implementation MUST select one canonical encoding and document it before
+writing a parser. Equivalent values with multiple byte encodings MUST NOT be
+accepted if that creates signature ambiguity.
+
+The initial Dali profile MUST use canonical JSON compatible with the relevant
+TUF canonicalization rules for repository metadata. The embedded trust-store
+update MAY use a bounded binary envelope containing the canonical metadata
+bytes, but the signed bytes and encoding MUST remain identical across host and
+target implementations.
+
+Every metadata document MUST include:
+
+- a format identifier and metadata version;
+- a role identifier;
+- a key identifier for the signer;
+- a signed expiration or freshness field where applicable;
+- a monotonic version number;
+- a canonical signed body; and
+- an explicit signature list with algorithm and key identifier.
+
+The parser MUST enforce maximum sizes for the document, signature list, key
+list, package list, namespace length, and string fields before parsing nested
+content. Unknown fields MUST be rejected in security-critical metadata unless
+the metadata version explicitly permits extension fields.
+
+### 6.1 Hash and length rules
+
+Repository metadata MUST record both the exact package length and a
+cryptographic hash of the complete AMRN file. The hash MUST cover the bytes as
+stored and transported, including the AMRN header and signature trailer.
+
+CRC32 remains the bounded corruption detector inside AMRN. It is not a trust
+anchor, certificate, or authenticity mechanism.
+
+### 6.2 Signature rules
+
+The initial profile uses Ed25519 for developer and metadata signatures. The
+algorithm identifier, key length, signature length, and signed range MUST be
+named constants in implementation code and versioned in the contract.
+
+The same key MUST NOT be reused across root, repository, developer, and
+timestamp roles. Role separation limits the effect of one compromised key.
+
+## 7. Package acceptance flow
+
+The target-side acceptance flow is fixed:
+
+1. discover the candidate package from the supported storage backend;
+2. read bounded repository metadata and the signed trust-store state;
+3. validate metadata structure, size, version, role, and expiration policy;
+4. verify the root-to-role metadata chain;
+5. verify snapshot references and every referenced metadata hash;
+6. locate the package target record by package identity and target profile;
+7. verify package length and complete-file hash;
+8. verify the developer delegation and its validity/revocation state;
+9. verify the AMRN v5 developer signature over its specified signed range;
+10. validate AMRN fields, CRC32, bounds, compatibility, services, and entry;
+11. copy only after all checks pass;
+12. apply relocation only within the declared code/data contract;
+13. configure MPU and privilege state only after relocation is complete; and
+14. enter the application only after the active lifecycle state permits it.
+
+Any failure before step 11 MUST leave the previous valid application and trust
+store unchanged. The loader MUST report a typed reason without exposing keys
+or sensitive metadata.
+
+## 8. Trust-store update flow
+
+Trust-store updates are separate from application packages. An application
+MUST NOT be able to update the trust store.
+
+The update flow is:
+
+1. obtain a complete signed update bundle from the supported transport;
+2. validate the bundle length before reading it into bounded storage;
+3. verify root and role signatures using the kernel-provisioned root keys;
+4. reject a bundle below the stored monotonic trust-store version;
+5. validate target profile, key scope, validity interval, and revocations;
+6. write the new bundle to the inactive durable slot;
+7. verify the written bytes and metadata again;
+8. atomically mark the new slot active; and
+9. retain the previous valid slot for recovery until the next update is
+   committed and verified.
+
+Power loss at any point MUST recover either the old valid trust store or the
+new fully verified trust store. It MUST NOT activate a partially written slot.
+
+The current Dali implementation does not yet provide this flow. The existing
+`release_trust_anchors` target manifest is the single-image development
+precursor and must not be presented as a multi-developer trust store.
+
+## 9. Key lifecycle
+
+### 9.1 Developer key creation
+
+The CLI MUST generate developer private keys using the host OS CSPRNG. It MUST
+write restrictive permissions, refuse accidental overwrite, and never print
+private material. The private key belongs to the developer and MUST be backed
+up in approved secret storage.
+
+### 9.2 Enrollment
+
+Enrollment MUST authenticate the developer through an out-of-band process
+before a delegation is issued. The registry MUST record who approved the
+delegation, its scope, and its validity interval. Self-published public keys
+are not trusted merely because they are available in a repository.
+
+### 9.3 Rotation
+
+Rotation MUST overlap old and new keys long enough to update supported devices.
+The new key MUST be added before packages are signed with it. The old key MUST
+be removed only after the migration window and acceptance evidence.
+
+### 9.4 Revocation
+
+Revocation metadata MUST identify the key or certificate, reason, effective
+version, and issuing authority. A revoked developer key MUST prevent new
+package installation while preserving an explicit policy for already-installed
+packages.
+
+### 9.5 Compromise and loss
+
+If a developer private key is lost, existing packages remain verifiable, but
+new packages cannot be signed with that key. The developer must enroll a new
+key. If a key is suspected compromised, it MUST be revoked immediately and a
+replacement package/trust update must be issued. The root-key incident
+procedure is separate and requires root threshold recovery.
+
+## 10. Repository and CLI responsibilities
+
+The registry is responsible for:
+
+- issuing and revoking developer delegations;
+- generating canonical root, targets, snapshot, and timestamp metadata;
+- enforcing namespace and target authorization;
+- publishing complete, hash-addressed package artifacts; and
+- preserving auditable metadata history.
+
+The CLI is responsible for:
+
+- generating local developer keys;
+- creating signing requests without exposing private keys;
+- building and signing AMRN packages;
+- generating and inspecting metadata bundles;
+- verifying packages and metadata before installation; and
+- producing deterministic, reviewable release artifacts.
+
+The CLI MUST NOT silently generate a new trust root, replace a key, bypass an
+expired metadata role, or accept an unsigned production package. Commands that
+change trust state MUST require explicit input and display the resulting key
+identifier, version, and target scope.
+
+The kernel is responsible for:
+
+- storing the root public-key set;
+- verifying bounded trust-store updates;
+- enforcing the active trust policy;
+- verifying package metadata and AMRN contents before copy/relocation; and
+- failing closed on any unsupported role, algorithm, version, or scope.
+
+The kernel is not responsible for developer account management or for
+transporting arbitrary registry data without a bounded storage contract.
+
+## 11. Development, release, and recovery modes
+
+Development mode MAY use an explicitly documented test anchor and unsigned
+packages. It MUST be impossible to confuse development artifacts with release
+artifacts through names, metadata, or logs.
+
+Release mode MUST require:
+
+- AMRN format v5;
+- a valid developer delegation;
+- valid repository metadata;
+- a supported target and ABI;
+- an unexpired and non-revoked key;
+- complete-file hash and length matches; and
+- an accepted signature chain.
+
+Recovery mode MUST accept only a separately authorized recovery bundle. A
+normal application package MUST NOT activate recovery mode or modify root
+trust. Recovery behavior, physical authorization, and anti-rollback policy
+must be documented for each target family.
+
+## 12. Failure and logging policy
+
+The system MUST distinguish these failures:
+
+- malformed metadata;
+- unsupported metadata version or role;
+- unknown root or delegated key;
+- invalid signature;
+- hash or length mismatch;
+- expired metadata;
+- revoked key or certificate;
+- rollback or stale version;
+- unauthorized package namespace or target;
+- AMRN validation failure; and
+- durable trust-store commit failure.
+
+Logs MAY include role, key identifier, package identity, version, and typed
+failure reason. Logs MUST NOT include private keys, signatures when not needed
+for diagnosis, seed material, or complete metadata dumps from untrusted input.
+
+## 13. Validation gates
+
+No implementation milestone is complete without the matching evidence.
+
+### Host and codec tests
+
+Host tests MUST cover:
+
+- canonical encoding stability;
+- every role's accepted and rejected signature;
+- unknown fields and unsupported versions;
+- bounded document and list sizes;
+- hash and length mismatch;
+- expiry, revocation, and rollback;
+- delegation scope and namespace rejection;
+- duplicate identities and conflicting metadata;
+- key rotation overlap and removal; and
+- interrupted trust-store commit state transitions.
+
+These tests prove codec and policy behavior only; they are not hardware
+evidence.
+
+### Target tests
+
+The embedded target checks MUST prove:
+
+- no allocation or unbounded parsing in the loader/update path;
+- the selected crypto facade builds for the target;
+- trust-store verification completes before application copy;
+- trust-store writes use the declared storage ownership boundary; and
+- every failure returns to a safe, deterministic lifecycle state.
+
+### Hardware acceptance
+
+Each supported board must demonstrate:
+
+1. valid metadata and package acceptance;
+2. unknown developer rejection;
+3. revoked or expired developer rejection;
+4. modified metadata rejection;
+5. modified package rejection;
+6. rollback rejection;
+7. power-loss-safe trust-store replacement, where testable;
+8. key rotation with old/new overlap; and
+9. recovery after an interrupted or invalid update.
+
+The current F405 release-anchor signature verification is evidence for the
+single static-anchor path only. It is not evidence for this multi-developer
+contract.
+
+## 14. Implementation order
+
+Implementation MUST follow this order:
+
+1. freeze this document and version its contract identifier;
+2. define canonical metadata schemas and bounded size constants;
+3. implement a hardware-neutral metadata codec and policy validator;
+4. implement root, role, delegation, hash, expiry, and revocation checks;
+5. extend the CLI to generate requests and build signed metadata bundles;
+6. define the offline bundle layout and atomic storage-update contract;
+7. implement target trust-store verification and durable activation;
+8. connect package installation to metadata authorization;
+9. add host, target, and hardware acceptance evidence; and
+10. only then publish a public multi-developer registry workflow.
+
+No application scheduler, board backend, or package loader feature may silently
+implement part of this design under a different name. All changes must point
+back to this document and the corresponding versioned contract.
+
+## 15. Frozen initial-profile decisions
+
+The following decisions are part of the initial profile. Implementation may
+refine internal code structure, but it MUST NOT change these wire or security
+rules without a contract revision.
+
+### 15.1 Encoding and cryptography
+
+- Repository metadata uses UTF-8 canonical JSON: no insignificant whitespace,
+  UTF-8 object keys sorted lexicographically, deterministic number encoding,
+  and no duplicate object keys.
+- Ed25519 is the only accepted signature algorithm in profile version `1`.
+- SHA-256 is the repository metadata and complete-package hash algorithm.
+- CRC32 remains only the AMRN corruption detector.
+- Signatures cover the canonical serialized body, never an ambiguous parsed
+  representation.
+
+### 15.2 Root and role custody
+
+- Production root uses three independently held keys and a two-of-three
+  threshold.
+- Root keys are offline or hardware-backed and never live in CI variables used
+  for ordinary package builds.
+- Targets, snapshot, and timestamp use separate delegated keys.
+- Developer keys never sign root, snapshot, or timestamp metadata.
+- Development may use one clearly labelled non-production root key.
+
+### 15.3 Certificate and namespace rules
+
+A developer delegation contains exactly these security fields:
+
+```text
+certificate_version
+developer_id
+key_id
+public_key
+allowed_namespaces
+allowed_targets
+allowed_abis
+not_before
+not_after
+delegation_version
+```
+
+`developer_id` is an opaque registry identifier. `key_id` is a random fixed
+16-byte identifier. Namespaces use lowercase UTF-8 package names separated by
+`/`; a delegation MUST name an exact namespace or an explicitly bounded
+namespace prefix. Wildcard access to every package is forbidden for developer
+delegations.
+
+### 15.4 Bounded metadata limits
+
+The first F405 profile uses named, target-owned limits:
+
+| Document | Maximum encoded size | Maximum records |
+| --- | ---: | ---: |
+| root | 16 KiB | 16 keys and 16 roles |
+| timestamp | 4 KiB | 1 snapshot reference |
+| snapshot | 16 KiB | 64 metadata references |
+| targets | 64 KiB | 256 package records |
+| developer delegation | 4 KiB | 32 package scopes |
+| trust-store update bundle | 128 KiB | 64 developer delegations |
+
+These values are named constants in the target policy, not raw literals in
+parsers. A future target may declare larger limits through a versioned target
+profile; it may not silently accept an unbounded document.
+
+### 15.5 Offline bundle and durable storage
+
+An offline update bundle contains these files at fixed logical names:
+
+```text
+metadata/root.json
+metadata/timestamp.json
+metadata/snapshot.json
+metadata/targets.json
+metadata/delegations/<delegation-id>.json
+packages/<package-sha256>.amrn
+bundle.manifest
+```
+
+`bundle.manifest` is signed by the authorized update role and records the
+bundle version, target profile, file lengths, and SHA-256 hashes. The physical
+filesystem and transport are not trust boundaries; the signed metadata is.
+
+The target stores two trust-store slots, `active` and `candidate`, in a
+target-declared persistent area. A candidate is never active until it has
+passed full verification and a final read-back check. The active slot is the
+fallback after power loss.
+
+### 15.6 Time, freshness, and rollback
+
+- `timestamp` expiry is enforced only when the target has a trustworthy wall
+  clock; a missing RTC MUST NOT be treated as current time.
+- Every accepted trust-store bundle has a strictly increasing durable version.
+- Every package namespace has a strictly increasing accepted package version.
+- A target without a hardware monotonic counter MUST label rollback protection
+  as limited to its durable trust-store and package-version state.
+- A production anti-rollback claim requires a hardware monotonic counter or an
+  equivalent tamper-resistant durable counter.
+
+### 15.7 Revocation behavior
+
+Revocation prevents installation, restart, and replacement of newly evaluated
+packages signed by the revoked key. A currently running package is not
+forcibly interrupted solely because a later revocation arrives; it becomes
+ineligible at its next lifecycle transition. Emergency recovery MAY override
+this only through a separately authorized recovery bundle.
+
+### 15.8 Registry and mirror behavior
+
+The registry publishes immutable, hash-addressed package artifacts and signed
+metadata. Mirrors MAY cache and serve the same bytes but MUST NOT rewrite
+metadata. A client MUST accept a mirror response only after verifying the
+root-to-target chain, referenced hashes, target scope, and freshness policy.
+
+The first embedded implementation uses offline bundles. Network registry APIs,
+authentication, account management, and mirror discovery are host-side
+concerns and must not be required by the kernel.
+
+### 15.9 Recovery authorization
+
+Recovery bundles require a dedicated recovery role authorized by root metadata.
+An application key, developer delegation, or ordinary targets key MUST NOT
+authorize a root/trust-store recovery. Physical recovery procedures and debug
+lock behavior remain target-specific, but the signature and role rules are
+common.
+
+Until this profile is implemented and hardware-accepted, the existing static
+F405 trust-anchor path remains the only supported release authentication
+mechanism.

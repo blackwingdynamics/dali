@@ -141,12 +141,10 @@ verification public keys through `authentication.development_trust_anchors`
 and `authentication.release_trust_anchors`; private key material must never be
 placed in a target manifest or firmware source. The reference F405 development
 anchor is the RFC8032 test vector and is enabled only by `abi-test-fixtures`;
-the release manifest now contains a generated public anchor. Generate a
-release keypair on an offline or controlled host with `dali key generate`; keep
-the private seed in secret storage and copy only the generated public
-trust-anchor fragment into the target release manifest. The CLI creates the
-DSIG envelope and the F405 development profile has hardware verification
-evidence; production key custody and release acceptance remain pending.
+the release manifest contains a generated public anchor and has hardware
+verification evidence. This static target-profile mechanism is the precursor
+to the multi-developer repository trust contract in
+`docs/PACKAGE_DISTRIBUTION.md`; it is not that contract's dynamic trust store.
 
 AMRN format version `4` defines package identity and selection metadata. It
 remains ABI v3-compatible: format v4 changes the container header and
