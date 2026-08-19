@@ -137,10 +137,13 @@ development packages for local bring-up and requires Ed25519 for release
 packages. Release manifests must select AMRN format `5`, declare a
 `signing_key_id`, and provide the private seed through the external
 `DALI_SIGNING_KEY_HEX` environment variable. Target manifests provision
-verification public keys through `authentication.trust_anchors`; private key
-material must never be placed in a target manifest or firmware source. The CLI
-creates the DSIG envelope; kernel-side signature verification is not claimed
-until the target trust store and loader verification are implemented.
+verification public keys through `authentication.development_trust_anchors`
+and `authentication.release_trust_anchors`; private key material must never be
+placed in a target manifest or firmware source. The reference F405 development
+anchor is the RFC8032 test vector and is enabled only by `abi-test-fixtures`;
+its release anchor set remains empty. The CLI creates the DSIG envelope;
+kernel-side signature verification is not claimed until target hardware
+evidence exists.
 
 AMRN format version `4` defines package identity and selection metadata. It
 remains ABI v3-compatible: format v4 changes the container header and

@@ -344,6 +344,8 @@ distinguished from the kernel's fault and recovery records.
   boundary validation.
 - [x] The feature-gated kernel target build covers v5 streaming signature,
   CRC32, relocation, and target-profile trust-anchor checks before SRAM copy.
+- [x] A real v5 relocation package is generated and inspected with the
+  development test key; this is host/package evidence, not hardware evidence.
 - [ ] F405 hardware: provision a documented test public key and execute a
   valid signed v5 package.
 - [ ] F405 hardware: reject an unknown key ID before SRAM copy.

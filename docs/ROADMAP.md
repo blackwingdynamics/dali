@@ -120,14 +120,15 @@ milestone into `main` only after its documented validation evidence exists.
    envelope, trust-anchor identifier, and declarative development/release
    policy. The signed AMRN container contract now uses a new versioned
    extension without changing v4; CLI signing, hardware-neutral key-id
-   lookup, and target-manifest trust-anchor provisioning are implemented and
-   tested. The `ed25519-dalek 3.0.0`
+   lookup, and target-manifest development/release trust-anchor provisioning
+   are implemented and tested. The `ed25519-dalek 3.0.0`
    backend passed the no_std thumb-target check and chunked standard-Ed25519
    verification tests through the `dali-crypto` facade. Kernel loader
    verification now has a feature-gated v5 streaming path with target-profile
    trust-anchor lookup, bounded CRC/relocation checks, and authentication
-   before SRAM copy. The F405 manifest intentionally has no provisioned key
-   yet; signed-package hardware evidence and rejected-signature tests remain
+   before SRAM copy. The F405 development profile provisions only the RFC8032
+   test anchor behind `abi-test-fixtures`; the release profile remains empty.
+   Signed-package hardware evidence and rejected-signature tests remain
    required before authenticity or Secure Boot is claimed.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.

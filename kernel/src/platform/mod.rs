@@ -56,6 +56,16 @@ pub(crate) type WatchdogRuntime = crate::runtime::watchdog::WatchdogRuntime<f405
 pub(crate) const WATCHDOG_PROFILE: Option<dali_targets::WatchdogProfile> =
     dali_targets::TARGET_F405.watchdog;
 
+#[cfg(all(feature = "abi-authentication", feature = "abi-test-fixtures"))]
+pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targets::TARGET_F405
+    .authentication
+    .development_trust_anchors;
+
+#[cfg(all(feature = "abi-authentication", not(feature = "abi-test-fixtures")))]
+pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targets::TARGET_F405
+    .authentication
+    .release_trust_anchors;
+
 #[cfg(feature = "board-stm32f405-sd")]
 pub(crate) const SYSTEM_CLOCK_MHZ: u32 = <f405::Board as Backend>::SYSTEM_CLOCK_MHZ;
 

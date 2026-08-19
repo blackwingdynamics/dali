@@ -114,6 +114,11 @@ where
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[LOADER] AMRN header and payload validated"),
             );
+            #[cfg(feature = "abi-authentication")]
+            logging::info(
+                logging::SECURITY_SUBSYSTEM,
+                format_args!("[SECURITY] AMRN signature verified"),
+            );
             #[cfg(not(feature = "abi-current"))]
             if platform::APPLICATION_EXECUTION_SUPPORTED {
                 crate::loader::start_application(package);

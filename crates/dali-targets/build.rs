@@ -79,7 +79,9 @@ struct Authentication {
     development: String,
     release: String,
     #[serde(default)]
-    trust_anchors: Vec<TrustAnchor>,
+    development_trust_anchors: Vec<TrustAnchor>,
+    #[serde(default)]
+    release_trust_anchors: Vec<TrustAnchor>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -585,11 +587,17 @@ fn validate_authentication(
 
 fn generate_authentication(authentication: &Authentication) -> String {
     format!(
-        "AuthenticationProfile {{ development: {}, release: {}, trust_anchors: &[{}] }}",
+        "AuthenticationProfile {{ development: {}, release: {}, development_trust_anchors: &[{}], release_trust_anchors: &[{}] }}",
         generate_authentication_policy(&authentication.development),
         generate_authentication_policy(&authentication.release),
         authentication
-            .trust_anchors
+            .development_trust_anchors
+            .iter()
+            .map(generate_trust_anchor)
+            .collect::<Vec<_>>()
+            .join(", "),
+        authentication
+            .release_trust_anchors
             .iter()
             .map(generate_trust_anchor)
             .collect::<Vec<_>>()

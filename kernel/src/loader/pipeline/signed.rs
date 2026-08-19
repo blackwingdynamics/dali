@@ -150,9 +150,7 @@ where
     {
         return Err(v5_error(v5::Error::InvalidPayload));
     }
-    let anchor = crate::platform::TARGET_PROFILE
-        .authentication
-        .trust_anchors
+    let anchor = crate::platform::TRUST_ANCHORS
         .iter()
         .find(|anchor| header.signature.key_id == anchor.key_id)
         .ok_or(super::LoaderError::UnknownTrustAnchor)?;

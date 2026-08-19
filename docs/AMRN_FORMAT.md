@@ -310,7 +310,7 @@ incremental verifier backed by `ed25519-dalek 3.0.0`; its standard-Ed25519
 chunked verification is host-tested and thumb-target checked. This backend
 selection does not, by itself, enable kernel-side verification or Secure Boot.
 
-### Signed package container (format version 5, not yet accepted by the kernel)
+### Signed package container (format version 5, feature-gated kernel path)
 
 Format version `5` is the signed successor to the identity-aware relocatable
 contract. It does not modify the v4 byte layout. A v5 package uses the v3/v4
@@ -356,9 +356,10 @@ The CLI can now produce format 5 when the application manifest declares
 `DALI_SIGNING_KEY_HEX` environment variable. The feature-gated kernel loader
 now has a bounded v5 path that authenticates the signed range before copying
 or relocating the image, using trust anchors from the selected target profile.
-The reference F405 profile currently declares an empty trust-anchor set, so
-format 5 remains unverified on hardware and must not be described as Secure
-Boot or completed package authenticity.
+The reference F405 development profile contains only the RFC8032 test anchor,
+selected by `abi-test-fixtures`; its release trust-anchor set is empty. Format
+5 remains unverified on hardware and must not be described as Secure Boot or
+completed package authenticity.
 
 ## Payload rules
 

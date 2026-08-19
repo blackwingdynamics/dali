@@ -11,7 +11,8 @@ abi_version = 0
 [authentication]
 development = "unsigned"
 release = "ed25519"
-trust_anchors = []
+development_trust_anchors = []
+release_trust_anchors = []
 
 [capabilities]
 storage = false

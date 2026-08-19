@@ -6,6 +6,10 @@ use crate::{Crc32, MAGIC, signature, v3, v4};
 pub const HEADER_SIZE: usize = 160;
 /// Signed AMRN format revision.
 pub const FORMAT_VERSION: u8 = 5;
+/// Byte offset of the format revision in the common AMRN prefix.
+pub const FORMAT_VERSION_OFFSET: usize = 4;
+/// Byte offset of the target identifier in the common AMRN prefix.
+pub const TARGET_ID_OFFSET: usize = 5;
 /// Fixed trailer length supplied by the DSIG envelope contract.
 pub const SIGNATURE_SIZE: usize = signature::ENVELOPE_SIZE;
 /// Offset of the package checksum retained from v4.
@@ -15,8 +19,6 @@ pub const SIGNATURE_OFFSET: usize = 128;
 /// Header offset of the signed-range length.
 pub const SIGNED_SIZE_OFFSET: usize = 136;
 const MAGIC_OFFSET: usize = 0;
-const FORMAT_VERSION_OFFSET: usize = 4;
-const TARGET_ID_OFFSET: usize = 5;
 const HEADER_SIZE_OFFSET: usize = 6;
 const V4_RESERVED_START: usize = 64;
 const FLAGS_OFFSET: usize = 113;

@@ -67,8 +67,10 @@ pub struct AuthenticationProfile {
     pub development: PackageAuthentication,
     /// Policy for release packages.
     pub release: PackageAuthentication,
-    /// Public keys provisioned for target-side package verification.
-    pub trust_anchors: &'static [TrustAnchorProfile],
+    /// Public keys provisioned for development/test package verification.
+    pub development_trust_anchors: &'static [TrustAnchorProfile],
+    /// Public keys provisioned for release package verification.
+    pub release_trust_anchors: &'static [TrustAnchorProfile],
 }
 
 /// One manifest-owned Ed25519 trust anchor.
