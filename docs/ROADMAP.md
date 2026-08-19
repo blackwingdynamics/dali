@@ -130,8 +130,9 @@ milestone into `main` only after its documented validation evidence exists.
    test anchor behind `abi-test-fixtures`; the release profile remains empty.
    Valid signed-package hardware evidence now exists for the documented F405
    development profile, and the loader rejects an unknown trust anchor before
-   SRAM copy. Modified-content and malformed-envelope tests remain required
-   before package authenticity or Secure Boot is claimed.
+   SRAM copy. Modified-content rejection now has F405 evidence through the
+   package CRC path; malformed-envelope tests remain required before package
+   authenticity or Secure Boot is claimed.
 4. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
 5. **Application lifecycle** — implement and test restart, rollback, package

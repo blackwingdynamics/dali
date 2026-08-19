@@ -354,7 +354,8 @@ distinguished from the kernel's fault and recovery records.
   loading slot 1 and the relocation fixture ran.
 - [x] F405 hardware: reject an unknown key ID before SRAM copy; the loader
   returned `UnknownTrustAnchor` and entered the kernel heartbeat.
-- [ ] F405 hardware: reject a modified signed header or payload.
+- [x] F405 hardware: reject a modified signed payload; the loader returned
+  `V5SignedPackage(CrcMismatch)` and entered the kernel heartbeat.
 - [ ] F405 hardware: reject a truncated or malformed DSIG trailer.
 - [ ] Secure Boot and kernel-image authenticity.
 
