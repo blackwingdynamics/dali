@@ -193,9 +193,10 @@ distinguished from the kernel's fault and recovery records.
 - [x] Application restart and rollback policy is explicit: termination enters
   the kernel recovery heartbeat, automatic restart is rejected, and rollback is
   unavailable while package storage is read-only.
-- [ ] Hardware watchdog arming, feed ownership, timeout, and safe-mode reset;
-  the watchdog remains intentionally disabled until its heartbeat contract is
-  implemented.
+- [x] Kernel-heartbeat watchdog arming and feed ownership are integrated behind
+  the platform facade and target-checked; this is not hardware evidence.
+- [ ] Hardware watchdog timeout, reset-cause, feed-failure, and safe-mode
+  recovery evidence.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
@@ -223,8 +224,8 @@ distinguished from the kernel's fault and recovery records.
   readiness, reject a second active context, and allow retirement only after
   terminal recovery. These tests do not prove runtime scheduling or isolation.
 - [x] Host-level lifecycle policy tests require manual reset after termination,
-  reject rollback on the read-only package boundary, and keep the watchdog
-  disabled until a bounded heartbeat/feed owner exists.
+  reject rollback on the read-only package boundary, and require a bounded
+  heartbeat/feed owner before watchdog arming.
 - [x] Host-level context-switch contract tests preserve the PSP, `r4..r11`,
   `CONTROL`, and `EXC_RETURN` record, enforce one running context, bound table
   capacity, exclude terminated contexts, and select ready contexts in order.
@@ -327,7 +328,7 @@ distinguished from the kernel's fault and recovery records.
   rejection and recovery direction, not DMA isolation.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
-  contract; hardware watchdog implementation remains separate and pending.
+  contract; hardware watchdog timeout and recovery evidence remain pending.
 
 ## MVP acceptance test
 

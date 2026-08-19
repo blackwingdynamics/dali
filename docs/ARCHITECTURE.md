@@ -59,7 +59,7 @@ fault-injection cases have F405 evidence, but the result must not be described
 as a microkernel, secure boot, or complete sandbox: DMA ownership and
 multi-application isolation remain open. The current lifecycle policy requires
 manual reset after termination, does not provide rollback on read-only storage,
-and keeps hardware watchdog arming disabled until heartbeat ownership exists.
+and arms the hardware watchdog only from the kernel-owned heartbeat path.
 
 ## 4. Reference platform
 

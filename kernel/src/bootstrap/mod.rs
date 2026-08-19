@@ -4,6 +4,7 @@ mod heartbeat;
 mod status;
 mod storage;
 
+use crate::runtime::watchdog::WatchdogRuntime;
 use crate::{logging, platform};
 
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
@@ -39,6 +40,8 @@ pub fn run() -> ! {
         format_args!("Hardware bootstrap complete"),
     );
 
+    let watchdog = initialize_watchdog(&mut board);
+
     #[cfg(feature = "abi-context-switch")]
     if let Err(error) = crate::security::scheduling::initialize() {
         logging::error(
@@ -60,7 +63,34 @@ pub fn run() -> ! {
         format_args!("Entering kernel heartbeat"),
     );
 
-    heartbeat::run(board, storage_status);
+    heartbeat::run(board, storage_status, watchdog);
+}
+
+fn initialize_watchdog(board: &mut platform::Platform) -> Option<platform::WatchdogRuntime> {
+    let Some(profile) = platform::WATCHDOG_PROFILE else {
+        logging::info(
+            logging::BOOT_SUBSYSTEM,
+            format_args!("[WATCHDOG] No target watchdog profile; runtime disabled"),
+        );
+        return None;
+    };
+    let Some(backend) = board.take_watchdog() else {
+        logging::error(
+            logging::BOOT_SUBSYSTEM,
+            format_args!("[WATCHDOG] Backend unavailable; runtime disabled"),
+        );
+        return None;
+    };
+    match WatchdogRuntime::new(backend, profile) {
+        Ok(runtime) => Some(runtime),
+        Err(error) => {
+            logging::error(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[WATCHDOG] Invalid target contract: {:?}", error),
+            );
+            None
+        }
+    }
 }
 
 fn initialize_logging() {

@@ -85,7 +85,7 @@ complete fault isolation, DMA isolation, confidentiality, or authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
 after termination, keeps the read-only package boundary rollback-free, and does
-not arm a watchdog without a feed owner. The initial valid-service
+arms a watchdog only through the kernel heartbeat feed owner. The initial valid-service
 authorization policy and repeated invalid-PSP fault-status clearing are
 hardware-tested. MPU protection applies to
 processor accesses; DMA buffer ownership and kernel memory safety require

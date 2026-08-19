@@ -150,6 +150,11 @@ impl Board {
                 watchdog.reset_cause()
             })
     }
+
+    /// Transfers the unarmed watchdog backend to the kernel runtime owner.
+    pub fn take_watchdog(&mut self) -> Option<super::F405Watchdog> {
+        self.watchdog.take()
+    }
 }
 
 /// Enables SysTick for the scheduler after the application context is ready.
