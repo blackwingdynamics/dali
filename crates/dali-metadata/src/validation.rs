@@ -2,7 +2,7 @@
 
 use crate::{
     KEY_ID_LENGTH, MAX_DEVELOPER_ID_BYTES, MAX_NAMESPACE_BYTES, MAX_ROLE_KEYS, MetadataHeader,
-    MetadataRole, RoleDefinition,
+    MetadataRole, RoleDefinition, RoleKey,
 };
 
 /// Errors returned when contract values violate the initial metadata profile.
@@ -16,6 +16,8 @@ pub enum MetadataError {
     Expired,
     /// A key identifier contains no meaningful identity.
     InvalidKeyId,
+    /// A role references a key that is absent from the root key set.
+    UnknownRoleKey,
     /// A role threshold or key count is outside its declared bounds.
     InvalidRoleThreshold,
     /// A namespace is empty, too long, or not in canonical form.
@@ -48,6 +50,21 @@ pub fn validate_role(role: RoleDefinition) -> Result<(), MetadataError> {
     for key in role.keys.iter().take(key_count) {
         if key.0 == [0; KEY_ID_LENGTH] {
             return Err(MetadataError::InvalidKeyId);
+        }
+    }
+    Ok(())
+}
+
+/// Validates that every role reference resolves to a declared public key.
+pub fn validate_role_references(
+    keys: &[RoleKey],
+    roles: &[RoleDefinition],
+) -> Result<(), MetadataError> {
+    for role in roles {
+        for key_id in role.keys.iter().take(usize::from(role.key_count)) {
+            if !keys.iter().any(|key| key.key_id == *key_id) {
+                return Err(MetadataError::UnknownRoleKey);
+            }
         }
     }
     Ok(())
@@ -154,6 +171,25 @@ mod tests {
                 threshold: 2,
             }),
             Err(MetadataError::InvalidRoleThreshold)
+        );
+    }
+
+    #[test]
+    fn rejects_a_role_reference_to_an_unknown_key() {
+        let role = RoleDefinition {
+            role: MetadataRole::Targets,
+            keys: [KeyId([9; crate::KEY_ID_LENGTH]); MAX_ROLE_KEYS],
+            key_count: 1,
+            threshold: 1,
+        };
+        let keys = [RoleKey {
+            role: MetadataRole::Root,
+            key_id: KeyId([1; crate::KEY_ID_LENGTH]),
+            public_key: crate::PublicKey([2; crate::PUBLIC_KEY_LENGTH]),
+        }];
+        assert_eq!(
+            validate_role_references(&keys, &[role]),
+            Err(MetadataError::UnknownRoleKey)
         );
     }
 

@@ -1,7 +1,7 @@
 //! Root metadata document parsing.
 
 use super::{DecodeError, cursor::Cursor};
-use crate::{MetadataHeader, MetadataRole, RootMetadata, SCHEMA_ID};
+use crate::{MetadataHeader, MetadataRole, RootMetadata, SCHEMA_ID, validate_role_references};
 
 /// Parses one canonical root signed body into fixed-capacity storage.
 pub fn parse_root_signed(bytes: &[u8]) -> Result<RootMetadata, DecodeError> {
@@ -30,6 +30,11 @@ pub fn parse_root_signed(bytes: &[u8]) -> Result<RootMetadata, DecodeError> {
     if role_count == 0 {
         return Err(DecodeError::InvalidValue);
     }
+    validate_role_references(
+        &keys[..usize::from(key_count)],
+        &roles[..usize::from(role_count)],
+    )
+    .map_err(|_| DecodeError::InvalidValue)?;
     cursor.byte(b',')?;
     cursor.field("schema")?;
     if cursor.string()? != SCHEMA_ID {

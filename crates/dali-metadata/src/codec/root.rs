@@ -1,6 +1,6 @@
 use crate::{
     EncodeError, MAX_ROOT_KEYS, MAX_ROOT_ROLES, MetadataHeader, MetadataRole, RoleDefinition,
-    RoleKey, SCHEMA_ID, validate_role,
+    RoleKey, SCHEMA_ID, validate_role, validate_role_references,
 };
 
 use super::writer::Writer;
@@ -42,6 +42,7 @@ fn validate_root_input(
         let active = usize::from(role.key_count);
         validate_order(&role.keys[..active], |left, right| left.0 < right.0)?;
     }
+    validate_role_references(keys, roles).map_err(|_| EncodeError::InvalidValue)?;
     Ok(())
 }
 
