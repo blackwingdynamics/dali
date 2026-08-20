@@ -1,6 +1,9 @@
 //! Kernel startup orchestration.
 
+#[cfg(feature = "storage-write")]
+mod acceptance;
 mod heartbeat;
+mod package;
 mod status;
 mod storage;
 

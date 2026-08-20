@@ -153,6 +153,9 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Define named active, candidate, and commit-marker FAT artifacts and
    add bounded read-back accessors; their durable transition sequence remains
    pending hardware acceptance.
+   [x] Connect the real F405 SDIO write transport to the bounded filesystem
+   artifact acceptance path; disposable-card hardware evidence remains
+   pending.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

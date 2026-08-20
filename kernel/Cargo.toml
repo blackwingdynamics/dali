@@ -20,6 +20,7 @@ abi-context-switch = ["abi-mpu"]
 abi-relocation = ["abi-mpu"]
 abi-test-fixtures = ["abi-mpu"]
 abi-authentication = ["abi-relocation", "dep:dali-crypto"]
+storage-write = []
 
 [lints]
 workspace = true

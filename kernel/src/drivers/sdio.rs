@@ -9,6 +9,10 @@ pub trait SdioTransport {
 
     /// Reads one complete block from the initialized card.
     fn read_block(&mut self, address: BlockAddress, block: &mut Block) -> Result<(), StorageError>;
+
+    /// Writes one complete block to the initialized card.
+    #[cfg(feature = "storage-write")]
+    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError>;
 }
 
 /// Adapts any SDIO transport to the generic bounded block-reader contract.
@@ -55,6 +59,16 @@ where
     }
 }
 
+#[cfg(feature = "storage-write")]
+impl<T> super::BlockWriter for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
+        self.transport.write_block(address, block)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::SdioTransport;
@@ -85,6 +99,19 @@ mod tests {
             }
             block.fill(address.value() as u8);
             Ok(())
+        }
+
+        #[cfg(feature = "storage-write")]
+        fn write_block(
+            &mut self,
+            _address: crate::drivers::BlockAddress,
+            _block: &crate::drivers::Block,
+        ) -> Result<(), crate::drivers::StorageError> {
+            if self.initialized {
+                Ok(())
+            } else {
+                Err(crate::drivers::StorageError::NotReady)
+            }
         }
     }
 

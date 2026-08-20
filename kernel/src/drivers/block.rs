@@ -66,3 +66,10 @@ pub trait BlockReader {
     /// Returns the number of addressable blocks after initialization.
     fn block_count(&self) -> Result<u32, StorageError>;
 }
+
+/// Writes complete fixed-size blocks to a storage medium.
+#[cfg(feature = "storage-write")]
+pub trait BlockWriter {
+    /// Writes one complete block to the selected sector.
+    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError>;
+}

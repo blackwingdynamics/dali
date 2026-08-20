@@ -34,6 +34,25 @@ filesystem adapter's multi-block reads, capacity reporting, and read-only
 write rejection. Embedded target checks remain separate evidence for the F405
 PAC adapter.
 
+The feature-gated `storage-write` target build contains a real storage
+acceptance path. On an initialized F405 SDIO card it writes and reads back the
+three reserved trust-store artifact names (`DALI-ACT.BIN`, `DALI-CAN.BIN`, and
+`DALI-CMT.BIN`) through the FAT filesystem boundary. The path is destructive
+to those reserved files, so it is for a disposable test card only. A successful
+build is not hardware evidence; the console must report:
+
+```text
+[STORAGE] Trust-store artifact write/read-back test passed
+```
+
+Build this mode explicitly; it is not part of the default kernel profile:
+
+```text
+cargo build -p dali-kernel --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-relocation,storage-write \
+  --target thumbv7em-none-eabihf
+```
+
 The DMA contract has hardware-neutral tests for aligned in-range ranges,
 out-of-range rejection, alignment and empty-range rejection, and arithmetic
 overflow. These tests validate the range policy only; they are not evidence
@@ -367,6 +386,8 @@ distinguished from the kernel's fault and recovery records.
 - [x] F405 hardware: reject a truncated DSIG trailer; the loader returned
   `V5SignedPackage(InvalidSignature)` and entered the kernel heartbeat.
 - [ ] Secure Boot and kernel-image authenticity.
+- [ ] F405 hardware: run the feature-gated trust-store artifact write/read-back
+  acceptance path on a disposable FAT32 card and record the console result.
 
 ## MVP acceptance test
 

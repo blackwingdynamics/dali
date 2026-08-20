@@ -61,6 +61,14 @@ impl SdioTransport for Stm32f405SdioTransport {
             Ok(())
         })
     }
+
+    #[cfg(feature = "storage-write")]
+    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
+        self.device
+            .borrow_mut()
+            .write_block(address.value(), block)
+            .map_err(map_sdio_error)
+    }
 }
 
 fn map_sdio_error(error: stm32f4xx_hal::sdio::Error) -> StorageError {
