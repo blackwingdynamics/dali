@@ -150,6 +150,9 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Add the explicit FAT root-file write boundary; target read-back,
    candidate/commit-marker sequencing, and durable trust-store activation
    remain pending hardware acceptance.
+   [x] Define named active, candidate, and commit-marker FAT artifacts and
+   add bounded read-back accessors; their durable transition sequence remains
+   pending hardware acceptance.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

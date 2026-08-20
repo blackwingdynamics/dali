@@ -8,12 +8,19 @@ use embedded_sdmmc::{
     VolumeManager,
 };
 
+mod artifacts;
 mod multi;
+mod read;
 #[cfg(test)]
 mod tests;
 mod write;
 
+pub use artifacts::{
+    TRUST_STORE_ACTIVE_FILE, TRUST_STORE_CANDIDATE_FILE, TRUST_STORE_COMMIT_FILE,
+    TrustStoreArtifact, read_trust_store_artifact, write_trust_store_artifact,
+};
 pub use multi::with_amrn_files;
+pub use read::read_root_file;
 pub use write::write_root_file;
 
 /// The package extension recognized by the MVP root-directory scan.

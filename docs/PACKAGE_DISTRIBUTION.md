@@ -777,6 +777,18 @@ target-declared persistent area. A candidate is never active until it has
 passed full verification and a final read-back check. The active slot is the
 fallback after power loss.
 
+The initial FAT adapter uses the following root-level artifact names:
+
+```text
+DALI-ACT.BIN   active trust-store bundle
+DALI-CAN.BIN   candidate trust-store bundle
+DALI-CMT.BIN   commit marker
+```
+
+These names are kernel-owned and are not application packages. The commit
+marker contains only the bounded commit record defined by the installer; it
+must never be inferred from a filename or directory order.
+
 The kernel's FAT write boundary is intentionally separate from package
 verification: `write_root_file` can create or truncate one bounded root-level
 artifact and flush its directory entry, but it does not provide a transaction.
