@@ -45,4 +45,8 @@ pub enum DecodeError {
     InvalidValue,
     /// Bytes remain after one complete document.
     TrailingBytes,
+    /// The binary metadata magic does not match the v2 contract.
+    InvalidMagic,
+    /// The binary metadata format version is unsupported.
+    UnsupportedFormat,
 }

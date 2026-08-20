@@ -10,6 +10,7 @@ Dali OS has several versioned contracts. They must not be treated as one number 
 | `dali` | Semantic Versioning | Application developer API |
 | `dali-cli` | Semantic Versioning | Package and device tooling |
 | `.amrn` format | Integer format version | Binary package parsing rules |
+| Metadata wire format | Integer format version | Canonical repository metadata encoding |
 | Application ABI | Integer ABI version | Kernel-to-application entry contract |
 | Application package | Semantic Versioning | Application release identity |
 

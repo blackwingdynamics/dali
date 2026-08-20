@@ -195,6 +195,9 @@ milestone into `main` only after its documented validation evidence exists.
    kernel/runtime RAM region. This requires selective streaming parsers for
    canonical metadata roles and a streamed AMRN header/payload verifier; only
    after that work may the chain be called from the real boot sequence.
+   [ ] Replace metadata JSON v1 repository files with the frozen custom binary
+   v2 envelope and length-prefixed streaming records. Keep JSON v1 as a
+   host-only migration format until binary v2 has CLI and F405 acceptance.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

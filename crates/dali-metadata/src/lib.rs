@@ -7,6 +7,8 @@
 //! a concrete cryptographic backend.
 
 mod authorization;
+mod binary;
+mod binary_roles;
 mod chain;
 mod codec;
 mod crypto;
@@ -18,6 +20,8 @@ mod validation;
 mod verification;
 
 pub use authorization::*;
+pub use binary::*;
+pub use binary_roles::*;
 pub use chain::*;
 pub use codec::*;
 pub use crypto::*;

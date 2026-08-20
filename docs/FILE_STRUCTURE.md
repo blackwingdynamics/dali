@@ -106,7 +106,7 @@ dali-kernel/
 │   ├── CODING_STANDARDS.md, DEVELOPMENT.md, VERSIONING.md
 │   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
-│   ├── PACKAGE_DISTRIBUTION.md, RELOCATION.md, FILE_STRUCTURE.md
+│   ├── PACKAGE_DISTRIBUTION.md, METADATA_BINARY_V2.md, RELOCATION.md, FILE_STRUCTURE.md
 │   ├── cli/                        # CLI guides and command references
 │   └── changelog/                  # Archived generated release changelogs
 ├── scripts/
