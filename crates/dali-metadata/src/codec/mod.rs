@@ -1,5 +1,6 @@
 //! Canonical, bounded metadata encoders.
 
+pub(crate) mod binary;
 mod bundle;
 mod delegation;
 mod envelope;
@@ -14,6 +15,7 @@ mod writer;
 #[cfg(test)]
 mod tests;
 
+pub use binary::*;
 pub use bundle::encode_bundle_signed;
 pub use delegation::encode_delegation_signed;
 pub use envelope::encode_signed_envelope;

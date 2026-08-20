@@ -181,6 +181,16 @@ crates/dali-cli/templates/app/
 └── memory.x.template, memory.v3.x.template
 
 crates/dali-device/src/lib.rs
+crates/dali-metadata/src/
+├── codec/
+│   ├── mod.rs, binary/mod.rs
+│   └── bundle.rs, delegation.rs, envelope.rs, revocation.rs, root.rs,
+│       signatures.rs, snapshot.rs, targets.rs, timestamp.rs, writer.rs
+├── parser/
+│   ├── mod.rs, binary/mod.rs
+│   └── bundle.rs, cursor.rs, delegation.rs, envelope.rs, revocation.rs,
+│       root.rs, signatures.rs, snapshot.rs, targets.rs, timestamp.rs
+└── model.rs, validation.rs, verification.rs, chain.rs, trust_store.rs
 crates/dali-sdk/src/{lib.rs,svc.rs,svc_log.rs}
 crates/dali-targets/src/lib.rs
 crates/dali-targets/build.rs

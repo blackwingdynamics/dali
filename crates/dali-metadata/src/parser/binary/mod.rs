@@ -1,6 +1,6 @@
 //! Canonical Binary Metadata v2 role bodies.
 
-use crate::binary::{BodyReader, BodyWriter};
+use crate::codec::binary::{BodyReader, BodyWriter};
 use crate::{
     BoundedText, BundleFile, BundleFileKind, BundleMetadata, DecodeError, DelegationMetadata,
     DelegationReference, EncodeError, KeyId, MetadataHeader, MetadataRole, PublicKey,
@@ -32,12 +32,12 @@ pub fn encode_binary_root_body(
     writer.u8(metadata.key_count)?;
     for key in metadata.keys.iter().take(usize::from(metadata.key_count)) {
         writer.bytes(&key.key_id.0)?;
-        writer.u8(crate::binary::role_number(key.role))?;
+        writer.u8(crate::codec::binary::role_number(key.role))?;
         writer.bytes(&key.public_key.0)?;
     }
     writer.u8(metadata.role_count)?;
     for role in metadata.roles.iter().take(usize::from(metadata.role_count)) {
-        writer.u8(crate::binary::role_number(role.role))?;
+        writer.u8(crate::codec::binary::role_number(role.role))?;
         writer.u8(role.threshold)?;
         writer.u8(role.key_count)?;
         for key in role.keys.iter().take(usize::from(role.key_count)) {
@@ -61,8 +61,8 @@ pub fn parse_binary_root_body(bytes: &[u8]) -> Result<crate::RootMetadata, Decod
     }; crate::MAX_ROOT_KEYS];
     for key in keys.iter_mut().take(usize::from(key_count)) {
         key.key_id = KeyId(reader.array()?);
-        key.role =
-            crate::binary::role_from_number(reader.u8()?).ok_or(DecodeError::InvalidValue)?;
+        key.role = crate::codec::binary::role_from_number(reader.u8()?)
+            .ok_or(DecodeError::InvalidValue)?;
         key.public_key = PublicKey(reader.array()?);
     }
     let role_count = reader.u8()?;
@@ -77,8 +77,8 @@ pub fn parse_binary_root_body(bytes: &[u8]) -> Result<crate::RootMetadata, Decod
     };
     let mut roles = [empty_role; crate::MAX_ROOT_ROLES];
     for role in roles.iter_mut().take(usize::from(role_count)) {
-        role.role =
-            crate::binary::role_from_number(reader.u8()?).ok_or(DecodeError::InvalidValue)?;
+        role.role = crate::codec::binary::role_from_number(reader.u8()?)
+            .ok_or(DecodeError::InvalidValue)?;
         role.threshold = reader.u8()?;
         role.key_count = reader.u8()?;
         if role.key_count == 0 || usize::from(role.key_count) > crate::MAX_ROLE_KEYS {
