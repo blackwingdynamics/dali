@@ -184,6 +184,17 @@ milestone into `main` only after its documented validation evidence exists.
    decoder, and bounded `Active -> CandidateWritten -> CandidateVerified ->
    CommitPending -> Active` persistence coordinator; F405 acceptance and
    kernel-loader wiring remain pending.
+   [x] Wire the hardware-neutral metadata verification chain through
+   `RepositoryStorage` and the durable coordinator in the feature-gated kernel
+   repository loader; target adapters and F405 acceptance remain pending.
+   [x] Add the concrete FAT32/LFN `FatRepositoryStorage` adapter over the
+   existing block-device boundary. F405 boot wiring remains gated on the
+   streaming/storage-backed verification design below.
+   [ ] Replace the retained-slice repository verification API with a bounded
+   streaming or storage-backed verifier that fits the F405 32 KiB
+   kernel/runtime RAM region. This requires selective streaming parsers for
+   canonical metadata roles and a streamed AMRN header/payload verifier; only
+   after that work may the chain be called from the real boot sequence.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

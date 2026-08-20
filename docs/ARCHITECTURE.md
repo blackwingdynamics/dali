@@ -361,6 +361,28 @@ does not enumerate directories or choose packages from filenames. This keeps
 future board adapters replaceable without changing trust policy or loader
 logic.
 
+The current `load_repository` implementation is a host/contract integration
+step, not yet an F405 boot entry point. Its verification API retains every
+signed role and the selected package as borrowed slices for one complete
+verification pass. With the frozen metadata limits this requires 360,448
+bytes of caller-owned RAM, while the F405 kernel/runtime region is 32 KiB.
+The F405 boot path MUST therefore remain on the existing bounded AMRN loader
+until a storage-backed or streaming verification API is implemented. Wiring
+the current buffer type into boot would be an invalid memory-layout change,
+not hardware acceptance.
+
+The concrete F405 adapter is `FatRepositoryStorage<D>`. It resolves the
+board-agnostic logical documents through `metadata/`, `metadata/delegations/`,
+and `packages/`, including FAT long filenames, while durable artifacts remain
+the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
+
+The adapter now also exposes a bounded chunk stream. The stream is suitable
+for digest and signature accumulation, but it is not yet the complete kernel
+verification path: the metadata parser still requires a contiguous signed
+body and `TargetsMetadata` retains the maximum package-record array. The
+loader MUST NOT be wired to this partial stream until selective streaming
+parsers are available for every role and the AMRN package path.
+
 ### Future multi-application package selection
 
 The current read-only filesystem contract intentionally accepts exactly one

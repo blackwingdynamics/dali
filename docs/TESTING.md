@@ -397,6 +397,28 @@ distinguished from the kernel's fault and recovery records.
 
 ## Signed package acceptance
 
+### Repository loader hardware acceptance status (2026-08-21)
+
+The feature-gated board-agnostic repository loader compiles for
+`thumbv7em-none-eabihf`, and its host-visible boundary tests pass. The F405
+acceptance scenarios were not executed in this run because the target was not
+available to the test process:
+
+```text
+probe-rs list
+The following debug probes were found:
+[0]: Debugprobe on Pico (CMSIS-DAP) -- 2e8a:000c-0:D08DDA0AD07514B4 (CMSIS-DAP) (inaccessible)
+
+findmnt -rn -t vfat -o TARGET,SOURCE,FSTYPE
+/boot /dev/nvme0n1p1 vfat
+```
+
+No removable FAT volume was mounted and the probe was reported inaccessible,
+so no flash, reset, SD-card mutation, or acceptance claim was made. The five
+required scenarios remain pending: valid active bundle boot; candidate
+write/read-back/atomic commit; tampered metadata or package rejection; revoked
+developer-key rejection; and interrupted-write/power-loss recovery.
+
 - [x] Host AMRN tests cover v5 header/trailer split parsing and signed-range
   boundary validation.
 - [x] The feature-gated kernel target build covers v5 streaming signature,

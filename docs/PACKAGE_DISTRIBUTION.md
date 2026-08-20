@@ -980,9 +980,19 @@ The loader performs the complete metadata and AMRN verification chain after
 reading through `RepositoryStorage`; it MUST NOT open files, interpret FAT
 paths, or select packages by directory order.
 
-The current phase defines these traits and their ownership boundary only. It
-does not yet implement the FAT adapters, persistence coordinator, journal
-encoder, or kernel loader integration.
+The kernel now provides a feature-gated repository loader over these traits.
+`load_repository<S>` reads the five fixed roles, selects the delegation from
+the target record, reads the content-addressed AMRN package, and calls the
+shared Root -> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation
+-> Package Record -> AMRN verification chain. `install_repository<S>` then
+stages the verified package, performs adapter read-back, and commits through
+the durable coordinator. The feature is intentionally excluded from the
+default MVP build. The F405 target now has a concrete `FatRepositoryStorage<D>`
+adapter, but the retained-slice verification API is not boot-safe on this
+target: its frozen maximum buffers require 360,448 bytes versus the 32 KiB
+kernel/runtime region. A streaming or storage-backed verification API must
+land before this chain is called from the real F405 boot sequence or hardware
+acceptance is claimed.
 
 ### 15.5.2 DALI-CMT.BIN commit journal record
 

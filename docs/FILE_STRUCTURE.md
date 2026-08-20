@@ -69,7 +69,8 @@ dali-kernel/
 │       │   ├── memory/          # Manifest-owned slot allocation
 │       │   └── scheduling/      # CPU records, tick budget, and context selection
 │       └── storage/              # Filesystem and durable storage policy
-│           └── filesystem/       # Root package discovery and file streaming
+│           └── filesystem/       # FAT files, repository adapter, and streaming
+│               ├── repository.rs # FAT32/LFN RepositoryStorage adapter
 │               └── multi.rs      # Bounded multi-package enumeration
 ├── apps/
 │   ├── dali-app-hello/
@@ -139,7 +140,7 @@ kernel/src/
 │   storage/{mod.rs,initialization.rs,acceptance.rs},
 │   loading/{mod.rs,package.rs}}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader/{mod.rs,contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
+├── loader/{mod.rs,repository.rs,repository_tests.rs,contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,context_switch.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs},watchdog/mod.rs}
 └── storage/{mod.rs,durable.rs,durable/{journal.rs,coordinator.rs},filesystem/{mod.rs,artifacts.rs,multi.rs,read.rs,tests.rs,write.rs},repository.rs}
