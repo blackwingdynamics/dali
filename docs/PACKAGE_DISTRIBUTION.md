@@ -404,8 +404,11 @@ signed body contains exactly these top-level fields in lexicographic order:
 `targets`, or `timestamp`. Fixed metadata files use their kind as the logical
 identity; delegation files use the delegation identifier; package files use
 the lowercase SHA-256 filename stem. Each kind/id pair MUST be unique, every
-length MUST be non-zero, and every digest MUST be non-zero. The manifest MUST
-be verified before any file is installed.
+length MUST be non-zero, and every digest MUST be non-zero. The canonical file
+order is `root`, `timestamp`, `snapshot`, `targets`, `delegation`, then
+`package`; each repeated kind is ordered by its identifier. A complete bundle
+MUST contain all six kinds, and the manifest MUST be verified before any file
+is installed.
 
 ## 7. Package acceptance flow
 

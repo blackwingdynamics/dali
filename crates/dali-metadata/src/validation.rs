@@ -233,6 +233,18 @@ pub fn validate_bundle_metadata(metadata: &crate::BundleMetadata) -> Result<(), 
     if files.is_empty() {
         return Err(MetadataError::InvalidBundle);
     }
+    for required_kind in [
+        crate::BundleFileKind::Root,
+        crate::BundleFileKind::Timestamp,
+        crate::BundleFileKind::Snapshot,
+        crate::BundleFileKind::Targets,
+        crate::BundleFileKind::Delegation,
+        crate::BundleFileKind::Package,
+    ] {
+        if !files.iter().any(|file| file.kind == required_kind) {
+            return Err(MetadataError::InvalidBundle);
+        }
+    }
     for (index, file) in files.iter().enumerate() {
         let id = file.id.as_str().ok_or(MetadataError::InvalidBundle)?;
         if file.length == 0
@@ -260,12 +272,25 @@ pub fn validate_bundle_metadata(metadata: &crate::BundleMetadata) -> Result<(), 
 }
 
 fn bundle_file_order(left: crate::BundleFile, right: crate::BundleFile) -> core::cmp::Ordering {
-    left.kind.as_str().cmp(right.kind.as_str()).then_with(|| {
-        left.id
-            .as_str()
-            .unwrap_or("")
-            .cmp(right.id.as_str().unwrap_or(""))
-    })
+    bundle_kind_order(left.kind)
+        .cmp(&bundle_kind_order(right.kind))
+        .then_with(|| {
+            left.id
+                .as_str()
+                .unwrap_or("")
+                .cmp(right.id.as_str().unwrap_or(""))
+        })
+}
+
+fn bundle_kind_order(kind: crate::BundleFileKind) -> u8 {
+    match kind {
+        crate::BundleFileKind::Root => 0,
+        crate::BundleFileKind::Timestamp => 1,
+        crate::BundleFileKind::Snapshot => 2,
+        crate::BundleFileKind::Targets => 3,
+        crate::BundleFileKind::Delegation => 4,
+        crate::BundleFileKind::Package => 5,
+    }
 }
 
 fn validate_reference(

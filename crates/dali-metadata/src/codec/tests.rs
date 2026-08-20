@@ -59,10 +59,35 @@ fn delegation_metadata() -> DelegationMetadata {
 fn bundle_metadata() -> BundleMetadata {
     let mut files = [BundleFile::default(); MAX_BUNDLE_FILES];
     files[0] = BundleFile {
-        kind: BundleFileKind::Package,
-        id: BoundedText::new("aaaaaaaa").expect("test package ID fits"),
+        kind: BundleFileKind::Root,
+        id: BoundedText::new("root").expect("test root ID fits"),
         length: 128,
         sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+    };
+    files[1] = BundleFile {
+        kind: BundleFileKind::Timestamp,
+        id: BoundedText::new("timestamp").expect("test timestamp ID fits"),
+        ..files[0]
+    };
+    files[2] = BundleFile {
+        kind: BundleFileKind::Snapshot,
+        id: BoundedText::new("snapshot").expect("test snapshot ID fits"),
+        ..files[0]
+    };
+    files[3] = BundleFile {
+        kind: BundleFileKind::Targets,
+        id: BoundedText::new("targets").expect("test targets ID fits"),
+        ..files[0]
+    };
+    files[4] = BundleFile {
+        kind: BundleFileKind::Delegation,
+        id: BoundedText::new("delegation-1").expect("test delegation ID fits"),
+        ..files[0]
+    };
+    files[5] = BundleFile {
+        kind: BundleFileKind::Package,
+        id: BoundedText::new("aaaaaaaa").expect("test package ID fits"),
+        ..files[0]
     };
     BundleMetadata {
         header: MetadataHeader {
@@ -72,7 +97,7 @@ fn bundle_metadata() -> BundleMetadata {
         },
         target_profile: BoundedText::new("f405").expect("test target fits"),
         files,
-        file_count: 1,
+        file_count: 6,
     }
 }
 
@@ -109,7 +134,7 @@ fn encodes_a_bounded_bundle_manifest() {
     let mut output = [0; crate::MAX_BUNDLE_BYTES];
     let length = encode_bundle_signed(&mut output, bundle_metadata())
         .expect("bundle manifest should encode");
-    assert!(output[..length].starts_with(br#"{"files":[{"id":"aaaaaaaa","kind":"package""#));
+    assert!(output[..length].starts_with(br#"{"files":[{"id":"root","kind":"root""#));
     assert!(output[..length].ends_with(br#""target_profile":"f405","version":1}"#));
 }
 
