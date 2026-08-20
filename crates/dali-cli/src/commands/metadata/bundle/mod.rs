@@ -1,10 +1,7 @@
 //! Repository bundle generation, inspection, and host-side verification.
 
-#[path = "metadata_bundle_common.rs"]
 mod common;
-#[path = "metadata_bundle_generate.rs"]
 mod generate;
-#[path = "metadata_bundle_verify.rs"]
 mod verify;
 
 const GENERATE_COMMAND: &str = "generate";

@@ -1,6 +1,4 @@
-#[path = "metadata_bundle.rs"]
 mod bundle;
-#[path = "metadata_delegation.rs"]
 mod delegation;
 
 const DELEGATION_COMMAND: &str = "delegation";
