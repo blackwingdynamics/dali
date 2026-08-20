@@ -2,11 +2,13 @@
 
 mod cursor;
 mod root;
+mod targets;
 
 #[cfg(test)]
 mod tests;
 
 pub use root::parse_root_signed;
+pub use targets::parse_targets_signed;
 
 /// Errors returned by the canonical metadata parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

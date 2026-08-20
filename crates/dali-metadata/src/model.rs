@@ -35,15 +35,15 @@ impl MetadataRole {
 }
 
 /// Fixed-size opaque key identifier.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct KeyId(pub [u8; KEY_ID_LENGTH]);
 
 /// Fixed-capacity package identity.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PackageId(pub [u8; KEY_ID_LENGTH]);
 
 /// Fixed-capacity SHA-256 digest.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Sha256Digest(pub [u8; SHA256_LENGTH]);
 
 /// Errors returned when constructing bounded text values.
@@ -60,6 +60,15 @@ pub enum TextError {
 pub struct BoundedText<const CAPACITY: usize> {
     bytes: [u8; CAPACITY],
     length: u16,
+}
+
+impl<const CAPACITY: usize> Default for BoundedText<CAPACITY> {
+    fn default() -> Self {
+        Self {
+            bytes: [0; CAPACITY],
+            length: 0,
+        }
+    }
 }
 
 impl<const CAPACITY: usize> BoundedText<CAPACITY> {
@@ -144,7 +153,7 @@ pub struct RootMetadata {
 }
 
 /// One package authorization record from targets metadata.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct TargetPackage {
     /// Exact package identity carried by the AMRN package.
     pub package_id: PackageId,

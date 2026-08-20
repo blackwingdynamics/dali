@@ -1,7 +1,10 @@
 use super::*;
 use crate::{
-    KEY_ID_LENGTH, KeyId, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MetadataHeader, MetadataRole,
-    PUBLIC_KEY_LENGTH, PublicKey, RoleDefinition, RoleKey, encode_root_signed,
+    BoundedText, KEY_ID_LENGTH, KeyId, MAX_DELEGATION_ID_BYTES, MAX_NAMESPACE_BYTES,
+    MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_TARGET_PROFILE_BYTES,
+    MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH, PackageId, PublicKey,
+    RoleDefinition, RoleKey, Sha256Digest, TargetPackage, encode_root_signed,
+    encode_targets_signed, parse_targets_signed,
 };
 
 fn encoded_root() -> ([u8; MAX_ROOT_BYTES], usize) {
@@ -77,5 +80,62 @@ fn rejects_uppercase_hex() {
     assert_eq!(
         parse_root_signed(&modified[..input.len()]),
         Err(DecodeError::InvalidHex)
+    );
+}
+
+fn target_package() -> TargetPackage {
+    TargetPackage {
+        package_id: PackageId([1; KEY_ID_LENGTH]),
+        namespace: BoundedText::<MAX_NAMESPACE_BYTES>::new("developer/app")
+            .expect("test namespace fits"),
+        developer_id: BoundedText::<{ crate::MAX_DEVELOPER_ID_BYTES }>::new("developer")
+            .expect("test developer fits"),
+        delegation_id: BoundedText::<MAX_DELEGATION_ID_BYTES>::new("developer")
+            .expect("test delegation fits"),
+        developer_key_id: KeyId([2; KEY_ID_LENGTH]),
+        target_profile: BoundedText::<MAX_TARGET_PROFILE_BYTES>::new("f405")
+            .expect("test target fits"),
+        amrn_format: 5,
+        abi_version: 3,
+        package_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+            .expect("test version fits"),
+        minimum_kernel_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+            .expect("test minimum version fits"),
+        length: 128,
+        sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+        required_services: 1,
+        slot_id: 0,
+    }
+}
+
+#[test]
+fn parses_a_canonical_targets_body() {
+    let delegation =
+        BoundedText::<MAX_DELEGATION_ID_BYTES>::new("developer").expect("test delegation fits");
+    let mut bytes = [0; MAX_TARGETS_BYTES];
+    let length = encode_targets_signed(
+        &mut bytes,
+        MetadataHeader {
+            role: MetadataRole::Targets,
+            version: 1,
+            expires: 0,
+        },
+        &[delegation],
+        &[target_package()],
+    )
+    .expect("targets body should encode");
+    let parsed = parse_targets_signed(&bytes[..length]).expect("targets body should parse");
+    assert_eq!(parsed.header.role, MetadataRole::Targets);
+    assert_eq!(parsed.package_count, 1);
+    assert_eq!(parsed.packages[0].slot_id, 0);
+    assert_eq!(parsed.packages[0].length, 128);
+}
+
+#[test]
+fn rejects_non_canonical_targets_field_order() {
+    let input = br#"{"expires":0,"delegations":[],"packages":[],"role":"targets","schema":"dali.metadata.v1","version":1}"#;
+    assert_eq!(
+        parse_targets_signed(input),
+        Err(DecodeError::InvalidFieldOrder)
     );
 }

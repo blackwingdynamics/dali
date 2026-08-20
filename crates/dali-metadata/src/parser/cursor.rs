@@ -23,6 +23,10 @@ impl<'a> Cursor<'a> {
         Self { bytes, offset: 0 }
     }
 
+    pub(super) fn peek(&self, expected: u8) -> bool {
+        self.bytes.get(self.offset) == Some(&expected)
+    }
+
     pub(super) fn byte(&mut self, expected: u8) -> Result<(), DecodeError> {
         if self.bytes.get(self.offset) == Some(&expected) {
             self.offset += 1;
@@ -213,7 +217,7 @@ impl<'a> Cursor<'a> {
         Ok((keys, count as u8))
     }
 
-    fn hex<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], DecodeError> {
+    pub(super) fn hex<const LENGTH: usize>(&mut self) -> Result<[u8; LENGTH], DecodeError> {
         let value = self.string()?;
         if value.len() != LENGTH * 2 {
             return Err(DecodeError::InvalidHex);
