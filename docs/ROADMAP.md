@@ -121,8 +121,12 @@ milestone into `main` only after its documented validation evidence exists.
    The watchdog is armed before storage/application loading and is serviced by
    the heartbeat or scheduler tick. F405 hardware logged `Reset cause:
    Watchdog`, entered Safe Mode, skipped application loading, and returned to
-   the kernel heartbeat. Remaining work is feed-failure hardware evidence and
-   the post-termination watchdog scenario.
+   the kernel heartbeat. F405 also remained in kernel recovery for 30 seconds
+   after application termination without a new watchdog reset. Remaining work
+   is platform-specific feed-failure evidence only for watchdog controllers
+   that expose a detectable feed error; the F405 IWDG has no such observable
+   hardware/API result, and its no-feed timeout/reset behavior is already
+   hardware-tested.
 3. **Package authenticity** — [in progress] define a bounded signature
    envelope, trust-anchor identifier, and declarative development/release
    policy. The signed AMRN container contract now uses a new versioned
@@ -632,8 +636,10 @@ Compilation and host tests do not replace hardware evidence.
 
 - [x] Verify valid SVC calls and the initial service authorization policy:
   `Log` is accepted and undeclared or malformed requests are rejected.
-- [ ] Verify watchdog behavior after application termination and recovery;
-  watchdog-reset Safe Mode itself is covered by the recorded F405 evidence.
+- [x] Verify watchdog behavior after application termination and recovery:
+  F405 remained in kernel recovery for 30 seconds after `Terminated` without a
+  watchdog reset. Watchdog-reset Safe Mode is covered by separate F405
+  evidence.
 - [x] Verify fault-status clearing and repeatability across three repeated
   invalid-PSP resets; each run produced a fresh `UsageFault 0x00040000` and
   returned to kernel recovery.
