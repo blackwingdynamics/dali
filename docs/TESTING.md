@@ -199,6 +199,23 @@ multi-application isolation, or watchdog support.
 
 ### Diagnostic evidence
 
+- The F405 write path uses the STM32F4 HAL CPU/FIFO implementation. The custom
+  raw DMA write experiment was removed after release hardware testing showed
+  repeated `SdioTransmitUnderrun` failures while the HAL path passed.
+- A custom SDIO DMA write backend is deliberately deferred, not forgotten. It
+  is not a production claim or a current test requirement; future work must
+  justify it with a measurable large-transfer or realtime CPU-offload need and
+  repeatable F405 hardware evidence before reintroducing it.
+- On 2026-08-20, the release F405 HAL CPU/FIFO write path passed the complete
+  trust-store write/read-back, signed AMRN verification, slot-1 load, and
+  relocation-fixture execution sequence on the same physical card.
+- On 2026-08-20, the write-path data-path reset and HAL-order change produced
+  the expected `DCTRL` transition from `0x00000098` to `0x00000099`, removed
+  the stale `CMDREND` flag, and still ended with `TXUNDERR`. A subsequent
+  experiment using peripheral flow control and peripheral `INCR4` bursts
+  produced `SdioDmaFailure(0x00400000)` (`FEIF3`). Neither result is a
+  successful trust-store write; the DMA configuration remains under hardware
+  investigation.
 - Precise kernel-RAM read decoding preserved `CFSR=0x00000082`,
   `MMFAR=0x20000000`, stacked `PC=0x200080F6`, and stacked `LR=0x200080B9`
   before recovery.

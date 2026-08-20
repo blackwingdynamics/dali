@@ -44,6 +44,7 @@ impl RawSdioReader {
     pub(crate) fn configure(&mut self, capacity: CardCapacity) {
         self.high_capacity = matches!(capacity, CardCapacity::HighCapacity);
     }
+
     /// Reads one complete 512-byte block with bounded hardware status handling.
     pub(crate) fn read_block(
         &mut self,

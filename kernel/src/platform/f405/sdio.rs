@@ -63,11 +63,17 @@ impl SdioTransport for Stm32f405SdioTransport {
     }
 
     #[cfg(feature = "storage-write")]
+    /// Writes through the HAL CPU/FIFO path without programming DMA2.
+    ///
+    /// This is the supported F405 write path. The HAL implementation is
+    /// bounded by the peripheral's transfer and status handling.
     fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
-        self.device
-            .borrow_mut()
-            .write_block(address.value(), block)
-            .map_err(map_sdio_error)
+        cortex_m::interrupt::free(|_| {
+            self.device
+                .borrow_mut()
+                .write_block(address.value(), block)
+                .map_err(map_sdio_error)
+        })
     }
 }
 
@@ -83,8 +89,7 @@ fn map_sdio_error(error: stm32f4xx_hal::sdio::Error) -> StorageError {
         stm32f4xx_hal::sdio::Error::UnsupportedCardVersion
         | stm32f4xx_hal::sdio::Error::UnsupportedCardType
         | stm32f4xx_hal::sdio::Error::UnsupportedVoltage => StorageError::Unsupported,
-        stm32f4xx_hal::sdio::Error::RxOverFlow | stm32f4xx_hal::sdio::Error::TxUnderErr => {
-            StorageError::Transport
-        }
+        stm32f4xx_hal::sdio::Error::RxOverFlow => StorageError::Transport,
+        stm32f4xx_hal::sdio::Error::TxUnderErr => StorageError::SdioTransmitUnderrun(0),
     }
 }

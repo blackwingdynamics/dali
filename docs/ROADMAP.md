@@ -110,7 +110,11 @@ milestone into `main` only after its documented validation evidence exists.
 1. **DMA isolation** — [in progress] the kernel-owned SDIO path now validates
    target-declared ranges before peripheral configuration, and F405 hardware
    confirms block reads after that check. Extend the policy to every
-   DMA-capable backend before claiming general DMA isolation.
+   DMA-capable backend before claiming general DMA isolation. The supported
+   F405 storage-write backend remains the HAL CPU/FIFO path; custom raw DMA
+   writes are not part of the production storage path. Revisit a real DMA
+   write backend only when larger transfer throughput or CPU-offload needs
+   justify its added complexity, with a dedicated hardware acceptance plan.
 2. **Watchdog and reset recovery** — [in progress] target facts,
    reset-cause logging, platform integration, kernel-heartbeat feed ownership,
    and a real F405 IWDG timeout/reset-cause test are complete. Remaining work
