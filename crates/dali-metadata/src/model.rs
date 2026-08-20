@@ -76,3 +76,18 @@ pub struct RoleDefinition {
     /// Number of distinct valid signatures required.
     pub threshold: u8,
 }
+
+/// Decoded root metadata held in fixed-capacity storage.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RootMetadata {
+    /// Common signed metadata fields.
+    pub header: MetadataHeader,
+    /// Root and delegated public keys.
+    pub keys: [RoleKey; crate::MAX_ROOT_KEYS],
+    /// Number of active entries in `keys`.
+    pub key_count: u8,
+    /// Repository role definitions.
+    pub roles: [RoleDefinition; crate::MAX_ROOT_ROLES],
+    /// Number of active entries in `roles`.
+    pub role_count: u8,
+}

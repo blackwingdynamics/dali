@@ -44,14 +44,18 @@ pub fn encode_root_signed(
     if header.role != MetadataRole::Root || header.version == 0 {
         return Err(EncodeError::InvalidValue);
     }
-    validate_order(keys, |left, right| left.key_id.0 <= right.key_id.0)?;
+    if keys.is_empty() || roles.is_empty() || !keys.iter().any(|key| key.role == MetadataRole::Root)
+    {
+        return Err(EncodeError::InvalidValue);
+    }
+    validate_order(keys, |left, right| left.key_id.0 < right.key_id.0)?;
     validate_order(roles, |left, right| {
         left.role.as_str() <= right.role.as_str()
     })?;
     for role in roles {
         validate_role(*role).map_err(|_| EncodeError::InvalidValue)?;
         let active = usize::from(role.key_count);
-        validate_order(&role.keys[..active], |left, right| left.0 <= right.0)?;
+        validate_order(&role.keys[..active], |left, right| left.0 < right.0)?;
     }
 
     let mut writer = Writer::new(output, MAX_ROOT_BYTES);
@@ -278,7 +282,7 @@ mod tests {
     use crate::MAX_ROLE_KEYS;
 
     const KEY: RoleKey = RoleKey {
-        role: MetadataRole::Targets,
+        role: MetadataRole::Root,
         key_id: KeyId([1; crate::KEY_ID_LENGTH]),
         public_key: PublicKey([2; crate::PUBLIC_KEY_LENGTH]),
     };
@@ -310,7 +314,7 @@ mod tests {
         .expect("root body should encode");
         assert_eq!(
             &output[..length],
-            br#"{"expires":0,"keys":[{"key_id":"01010101010101010101010101010101","public_key":"0202020202020202020202020202020202020202020202020202020202020202","role":"targets"}],"role":"root","roles":[{"key_ids":["01010101010101010101010101010101"],"name":"targets","threshold":1}],"schema":"dali.metadata.v1","version":1}"#
+            br#"{"expires":0,"keys":[{"key_id":"01010101010101010101010101010101","public_key":"0202020202020202020202020202020202020202020202020202020202020202","role":"root"}],"role":"root","roles":[{"key_ids":["01010101010101010101010101010101"],"name":"targets","threshold":1}],"schema":"dali.metadata.v1","version":1}"#
         );
     }
 
@@ -331,7 +335,7 @@ mod tests {
                     expires: 0,
                 },
                 &[first, second],
-                &[],
+                &[root_role(KEY.key_id)],
             ),
             Err(EncodeError::NonCanonicalOrder)
         );
