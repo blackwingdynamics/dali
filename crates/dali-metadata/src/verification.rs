@@ -1,8 +1,8 @@
 //! Hardware-neutral signature verification policy.
 
 use crate::{
-    PublicKey, RoleDefinition, RoleKey, Signature, SignatureSet, validate_role,
-    validate_signature_set,
+    DelegationMetadata, MetadataRole, PublicKey, RoleDefinition, RoleKey, RootMetadata, Signature,
+    SignatureSet, validate_delegation, validate_role, validate_signature_set,
 };
 
 /// Errors returned when a signature set cannot satisfy a role policy.
@@ -20,6 +20,10 @@ pub enum VerificationError {
     InvalidSignature,
     /// Fewer valid signatures were provided than the role threshold requires.
     ThresholdNotMet,
+    /// Root metadata does not declare the requested role.
+    MissingRole,
+    /// The delegated record is not valid under the bounded contract.
+    InvalidDelegation,
 }
 
 /// Cryptographic backend required by the metadata policy layer.
@@ -65,6 +69,30 @@ pub fn verify_role_signatures<V: SignatureVerifier>(
     Ok(())
 }
 
+/// Verifies a developer delegation against the root-declared delegation role.
+pub fn verify_delegation_signatures<V: SignatureVerifier>(
+    verifier: &V,
+    message: &[u8],
+    root: RootMetadata,
+    delegation: DelegationMetadata,
+    signatures: SignatureSet,
+) -> Result<(), VerificationError> {
+    validate_delegation(&delegation).map_err(|_| VerificationError::InvalidDelegation)?;
+    let role = root
+        .roles
+        .iter()
+        .take(usize::from(root.role_count))
+        .find(|role| role.role == MetadataRole::Delegation)
+        .ok_or(VerificationError::MissingRole)?;
+    verify_role_signatures(
+        verifier,
+        message,
+        *role,
+        &root.keys[..usize::from(root.key_count)],
+        signatures,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -94,6 +122,33 @@ mod tests {
             role: MetadataRole::Targets,
             key_id: KeyId([1; crate::KEY_ID_LENGTH]),
             public_key: PublicKey([7; crate::PUBLIC_KEY_LENGTH]),
+        }
+    }
+
+    fn delegation() -> DelegationMetadata {
+        let mut namespaces = [crate::BoundedText::default(); crate::MAX_DELEGATION_SCOPES];
+        namespaces[0] = crate::BoundedText::new("developer/app").expect("namespace fits");
+        let mut targets = [crate::BoundedText::default(); crate::MAX_DELEGATION_TARGETS];
+        targets[0] = crate::BoundedText::new("f405").expect("target fits");
+        let mut abis = [0; crate::MAX_DELEGATION_ABIS];
+        abis[0] = 3;
+        DelegationMetadata {
+            header: crate::MetadataHeader {
+                role: MetadataRole::Delegation,
+                version: 1,
+                expires: 0,
+            },
+            developer_id: crate::BoundedText::new("developer").expect("developer fits"),
+            key_id: KeyId([8; crate::KEY_ID_LENGTH]),
+            public_key: PublicKey([9; crate::PUBLIC_KEY_LENGTH]),
+            allowed_namespaces: namespaces,
+            namespace_count: 1,
+            allowed_targets: targets,
+            target_count: 1,
+            allowed_abis: abis,
+            abi_count: 1,
+            not_before: 0,
+            not_after: 0,
         }
     }
 
@@ -136,6 +191,46 @@ mod tests {
                 SignatureSet { records, count: 1 },
             ),
             Err(VerificationError::UnauthorizedSigner)
+        );
+    }
+
+    #[test]
+    fn verifies_a_delegation_against_the_root_role() {
+        let key_id = KeyId([1; crate::KEY_ID_LENGTH]);
+        let root = RootMetadata {
+            header: crate::MetadataHeader {
+                role: MetadataRole::Root,
+                version: 1,
+                expires: 0,
+            },
+            keys: [RoleKey {
+                role: MetadataRole::Delegation,
+                key_id,
+                public_key: PublicKey([7; crate::PUBLIC_KEY_LENGTH]),
+            }; crate::MAX_ROOT_KEYS],
+            key_count: 1,
+            roles: [RoleDefinition {
+                role: MetadataRole::Delegation,
+                keys: [key_id; crate::MAX_ROLE_KEYS],
+                key_count: 1,
+                threshold: 1,
+            }; crate::MAX_ROOT_ROLES],
+            role_count: 1,
+        };
+        let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
+        records[0] = SignatureRecord {
+            key_id,
+            signature: Signature([9; crate::SIGNATURE_LENGTH]),
+        };
+        assert_eq!(
+            verify_delegation_signatures(
+                &DeterministicVerifier,
+                &[7, 9],
+                root,
+                delegation(),
+                SignatureSet { records, count: 1 },
+            ),
+            Ok(())
         );
     }
 }
