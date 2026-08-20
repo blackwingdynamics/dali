@@ -245,6 +245,141 @@ named constants in implementation code and versioned in the contract.
 The same key MUST NOT be reused across root, repository, developer, and
 timestamp roles. Role separation limits the effect of one compromised key.
 
+### 6.3 Initial metadata schemas
+
+The initial profile uses one signed envelope for every metadata role. The
+envelope contains a canonical `signed` object and a `signatures` array:
+
+```json
+{
+  "signed": { "...role-specific fields...": "..." },
+  "signatures": [
+    { "key_id": "32 lowercase hex characters", "signature": "128 lowercase hex characters" }
+  ]
+}
+```
+
+The signature input is the canonical UTF-8 JSON serialization of the `signed`
+object only. The envelope, whitespace, and signature array are not part of
+that input. A verifier MUST reject an envelope with duplicate signature key
+identifiers, an unsupported algorithm, an unknown role, or a signature over a
+different serialization.
+
+The common signed fields are:
+
+```text
+schema        string, exactly "dali.metadata.v1"
+role          string, one of root | timestamp | snapshot | targets | delegation
+version       unsigned 64-bit integer, strictly increasing for the role
+expires       unsigned 64-bit Unix seconds, zero only when the target has no clock
+```
+
+The initial profile encodes all key identifiers, public keys, hashes, and
+signatures as lowercase hexadecimal strings. It encodes versions, lengths,
+limits, slot IDs, and timestamps as JSON integers. Floating-point values,
+negative integers, `null`, and duplicate object keys are invalid.
+
+The root signed body is:
+
+```json
+{
+  "schema": "dali.metadata.v1",
+  "role": "root",
+  "version": 1,
+  "expires": 0,
+  "keys": [
+    { "key_id": "...", "public_key": "...", "role": "root" }
+  ],
+  "roles": [
+    { "name": "targets", "key_ids": ["..."], "threshold": 1 },
+    { "name": "snapshot", "key_ids": ["..."], "threshold": 1 },
+    { "name": "timestamp", "key_ids": ["..."], "threshold": 1 },
+    { "name": "recovery", "key_ids": ["..."], "threshold": 2 }
+  ]
+}
+```
+
+The targets signed body contains bounded package records and developer
+delegations:
+
+```json
+{
+  "schema": "dali.metadata.v1",
+  "role": "targets",
+  "version": 1,
+  "expires": 0,
+  "delegations": ["developer-delegation-id"],
+  "packages": [
+    {
+      "package_id": "32 lowercase hex characters",
+      "namespace": "developer/application",
+      "developer_id": "developer-id",
+      "developer_key_id": "...",
+      "target_profile": "f405",
+      "amrn_format": 5,
+      "abi_version": 3,
+      "package_version": "0.1.0",
+      "minimum_kernel_version": "0.1.0",
+      "length": 1234,
+      "sha256": "64 lowercase hex characters",
+      "required_services": 1,
+      "slot_id": 1
+    }
+  ]
+}
+```
+
+The snapshot signed body contains exactly one hash-and-length reference for
+each metadata file it binds:
+
+```json
+{
+  "schema": "dali.metadata.v1",
+  "role": "snapshot",
+  "version": 1,
+  "expires": 0,
+  "metadata": [
+    { "role": "targets", "version": 1, "length": 1234, "sha256": "..." },
+    { "role": "delegation", "id": "developer-id", "version": 1, "length": 456, "sha256": "..." }
+  ]
+}
+```
+
+The timestamp signed body contains one snapshot reference:
+
+```json
+{
+  "schema": "dali.metadata.v1",
+  "role": "timestamp",
+  "version": 1,
+  "expires": 0,
+  "snapshot": { "version": 1, "length": 1234, "sha256": "..." }
+}
+```
+
+A delegation signed body contains one developer key and its bounded scope:
+
+```json
+{
+  "schema": "dali.metadata.v1",
+  "role": "delegation",
+  "version": 1,
+  "expires": 0,
+  "developer_id": "developer-id",
+  "key_id": "...",
+  "public_key": "...",
+  "allowed_namespaces": ["developer/application"],
+  "allowed_targets": ["f405"],
+  "allowed_abis": [3],
+  "not_before": 0,
+  "not_after": 0
+}
+```
+
+The `targets` record MUST reference the exact delegation and developer key
+that authorize the package. A package is not authorized when its AMRN key ID,
+namespace, target, ABI, or version disagrees with metadata.
+
 ## 7. Package acceptance flow
 
 The target-side acceptance flow is fixed:
