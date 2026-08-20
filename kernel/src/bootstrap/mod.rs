@@ -16,10 +16,20 @@ pub fn run() -> ! {
     }
 
     startup::initialize_logging();
+    let reset_cause = board.reset_cause();
     logging::info(
         logging::BOOT_SUBSYSTEM,
-        format_args!("[BOOT] Reset cause: {:?}", board.reset_cause()),
+        format_args!("[BOOT] Reset cause: {:?}", reset_cause),
     );
+    let boot_mode = lifecycle::status::BootMode::from_reset_cause(reset_cause);
+    if boot_mode == lifecycle::status::BootMode::SafeMode {
+        logging::error(
+            logging::SECURITY_SUBSYSTEM,
+            format_args!(
+                "[RECOVERY] Watchdog reset detected; entering Safe Mode and skipping application launch"
+            ),
+        );
+    }
     #[cfg(feature = "usb-cdc")]
     if let Some(resources) = board.take_usb_resources() {
         logging::initialize_usb(resources);
@@ -56,7 +66,7 @@ pub fn run() -> ! {
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Starting storage initialization"),
     );
-    let storage_status = storage::initialize(&mut board);
+    let storage_status = storage::initialize(&mut board, boot_mode);
 
     logging::info(
         logging::BOOT_SUBSYSTEM,

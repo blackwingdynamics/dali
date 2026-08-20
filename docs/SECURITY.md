@@ -44,7 +44,7 @@ The following remain outside the current guarantee boundary:
 
 - DMA isolation and DMA ownership enforcement;
 - multi-application package loading and application-to-application isolation;
-- hardware watchdog arming, feed ownership, timeout, and safe-mode reset;
+- explicit watchdog-reset Safe Mode and recovery behavior;
 - package authenticity, secure boot, confidentiality, and anti-rollback;
 - production debug-lock and key-storage policy.
 
@@ -91,8 +91,11 @@ This milestone still does not claim a secure kernel, complete sandbox,
 complete fault isolation, DMA isolation, confidentiality, or authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
-after termination, keeps the read-only package boundary rollback-free, and does
-arms a watchdog only through the kernel heartbeat feed owner. The initial valid-service
+after application termination, keeps the read-only package boundary
+rollback-free, and arms a watchdog only through the kernel heartbeat feed
+owner. A watchdog reset now selects Safe Mode before storage/package loading;
+the remaining F405 feed-failure and Safe Mode hardware acceptance evidence is
+tracked separately. The initial valid-service
 authorization policy and repeated invalid-PSP fault-status clearing are
 hardware-tested. MPU protection applies to
 processor accesses; DMA buffer ownership and kernel memory safety require

@@ -2,7 +2,9 @@
 
 #[cfg(feature = "sdio")]
 use super::status::FAST_BLINK_PERIOD_MS;
-use super::status::{HEARTBEAT_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus};
+use super::status::{
+    HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus,
+};
 use crate::platform;
 use crate::runtime::application::policy::{CURRENT, WatchdogFailureAction};
 use crate::runtime::watchdog::FeedOwner;
@@ -41,6 +43,13 @@ pub fn run(
             }
             StorageStatus::NotDetected => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
+                    led_on = !led_on;
+                    board.set_status_led(led_on);
+                    elapsed_ms = 0;
+                }
+            }
+            StorageStatus::SafeMode => {
+                if elapsed_ms >= SAFE_MODE_BLINK_PERIOD_MS {
                     led_on = !led_on;
                     board.set_status_led(led_on);
                     elapsed_ms = 0;

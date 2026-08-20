@@ -10,7 +10,18 @@ use crate::{
 use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]
-pub fn initialize(board: &mut platform::Platform) -> status::StorageStatus {
+pub fn initialize(
+    board: &mut platform::Platform,
+    boot_mode: status::BootMode,
+) -> status::StorageStatus {
+    if boot_mode == status::BootMode::SafeMode {
+        logging::info(
+            logging::SECURITY_SUBSYSTEM,
+            format_args!("[RECOVERY] Safe Mode active; application loading skipped"),
+        );
+        return status::StorageStatus::SafeMode;
+    }
+
     let Some(mut reader) = board.take_sdio_reader() else {
         logging::error(
             logging::BOOT_SUBSYSTEM,
@@ -111,6 +122,9 @@ pub fn initialize(board: &mut platform::Platform) -> status::StorageStatus {
 }
 
 #[cfg(not(feature = "sdio"))]
-pub fn initialize(_board: &mut platform::Platform) -> status::StorageStatus {
+pub fn initialize(
+    _board: &mut platform::Platform,
+    _boot_mode: status::BootMode,
+) -> status::StorageStatus {
     status::StorageStatus::NotDetected
 }

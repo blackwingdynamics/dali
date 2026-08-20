@@ -195,7 +195,11 @@ multi-application isolation, or watchdog support.
 - [x] Feed-failure policy is explicit: after a backend feed error, the kernel
   stops issuing further feeds and allows the armed hardware watchdog to reset
   the target.
-- [ ] F405 hardware feed-failure and explicit safe-mode recovery evidence.
+- [ ] F405 hardware feed-failure evidence confirms the backend failure path
+  stops feeding and the target resets through the armed watchdog.
+- [ ] F405 hardware Safe Mode evidence confirms a watchdog reset logs the
+  recovery transition, skips AMRN application loading, and enters the distinct
+  safe-mode heartbeat LED pattern.
 
 ### Diagnostic evidence
 
