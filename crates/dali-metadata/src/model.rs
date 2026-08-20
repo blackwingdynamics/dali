@@ -3,7 +3,7 @@
 use crate::{
     KEY_ID_LENGTH, MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_DEVELOPER_ID_BYTES,
     MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES, MAX_TARGET_PROFILE_BYTES, PUBLIC_KEY_LENGTH,
-    SIGNATURE_LENGTH,
+    SHA256_LENGTH, SIGNATURE_LENGTH,
 };
 
 /// The role of one signed metadata document.
@@ -44,7 +44,7 @@ pub struct PackageId(pub [u8; KEY_ID_LENGTH]);
 
 /// Fixed-capacity SHA-256 digest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct Sha256Digest(pub [u8; 32]);
+pub struct Sha256Digest(pub [u8; SHA256_LENGTH]);
 
 /// Errors returned when constructing bounded text values.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -152,6 +152,8 @@ pub struct TargetPackage {
     pub namespace: BoundedText<MAX_NAMESPACE_BYTES>,
     /// Delegated developer identifier.
     pub developer_id: BoundedText<MAX_DEVELOPER_ID_BYTES>,
+    /// Delegation record authorizing the developer key and namespace.
+    pub delegation_id: BoundedText<MAX_DELEGATION_ID_BYTES>,
     /// Developer key authorized by the delegation.
     pub developer_key_id: KeyId,
     /// Target profile required by the package.

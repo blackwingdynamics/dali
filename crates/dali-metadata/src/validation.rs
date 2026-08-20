@@ -1,8 +1,9 @@
 //! Validation for bounded metadata contract values.
 
 use crate::{
-    KEY_ID_LENGTH, MAX_DEVELOPER_ID_BYTES, MAX_NAMESPACE_BYTES, MAX_ROLE_KEYS, MetadataHeader,
-    MetadataRole, RoleDefinition, RoleKey,
+    KEY_ID_LENGTH, MAX_DELEGATION_SCOPES, MAX_DEVELOPER_ID_BYTES, MAX_NAMESPACE_BYTES,
+    MAX_ROLE_KEYS, MAX_TARGET_RECORDS, MetadataHeader, MetadataRole, RoleDefinition, RoleKey,
+    TargetsMetadata,
 };
 
 /// Errors returned when contract values violate the initial metadata profile.
@@ -24,6 +25,12 @@ pub enum MetadataError {
     InvalidNamespace,
     /// A developer identifier is empty or too long.
     InvalidDeveloperId,
+    /// A package record violates its bounded identity or compatibility fields.
+    InvalidPackageRecord,
+    /// A package references a delegation absent from targets metadata.
+    UnknownDelegation,
+    /// Two target records claim the same package identity.
+    DuplicatePackage,
 }
 
 /// Validates common signed metadata fields.
@@ -65,6 +72,70 @@ pub fn validate_role_references(
             if !keys.iter().any(|key| key.key_id == *key_id) {
                 return Err(MetadataError::UnknownRoleKey);
             }
+        }
+    }
+    Ok(())
+}
+
+/// Validates bounded package authorization records in targets metadata.
+pub fn validate_targets_metadata(metadata: &TargetsMetadata) -> Result<(), MetadataError> {
+    if metadata.header.role != MetadataRole::Targets
+        || metadata.header.version == 0
+        || usize::from(metadata.delegation_count) > MAX_DELEGATION_SCOPES
+        || usize::from(metadata.package_count) > MAX_TARGET_RECORDS
+    {
+        return Err(MetadataError::InvalidPackageRecord);
+    }
+    let delegations = &metadata.delegations[..usize::from(metadata.delegation_count)];
+    for (index, delegation) in delegations.iter().enumerate() {
+        if delegation.as_str().is_none()
+            || delegations[..index]
+                .iter()
+                .any(|candidate| candidate == delegation)
+        {
+            return Err(MetadataError::InvalidPackageRecord);
+        }
+    }
+    let packages = &metadata.packages[..usize::from(metadata.package_count)];
+    for (index, package) in packages.iter().enumerate() {
+        if package.package_id.0 == [0; KEY_ID_LENGTH]
+            || package.developer_key_id.0 == [0; KEY_ID_LENGTH]
+            || package.sha256.0 == [0; crate::SHA256_LENGTH]
+            || package.length == 0
+            || package.amrn_format == 0
+            || package.abi_version == 0
+            || package.namespace.as_str().is_none()
+            || package.developer_id.as_str().is_none()
+            || package.delegation_id.as_str().is_none()
+            || package.target_profile.as_str().is_none()
+            || package.package_version.as_str().is_none()
+            || package.minimum_kernel_version.as_str().is_none()
+        {
+            return Err(MetadataError::InvalidPackageRecord);
+        }
+        validate_namespace(
+            package
+                .namespace
+                .as_str()
+                .ok_or(MetadataError::InvalidPackageRecord)?,
+        )?;
+        validate_developer_id(
+            package
+                .developer_id
+                .as_str()
+                .ok_or(MetadataError::InvalidPackageRecord)?,
+        )?;
+        if !delegations
+            .iter()
+            .any(|delegation| delegation == &package.delegation_id)
+        {
+            return Err(MetadataError::UnknownDelegation);
+        }
+        if packages[..index]
+            .iter()
+            .any(|candidate| candidate.package_id == package.package_id)
+        {
+            return Err(MetadataError::DuplicatePackage);
         }
     }
     Ok(())
@@ -118,7 +189,11 @@ pub const fn is_repository_role(role: MetadataRole) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{KeyId, MetadataHeader, MetadataRole, RoleDefinition};
+    use crate::{
+        BoundedText, KeyId, MAX_DELEGATION_SCOPES, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
+        MAX_TARGET_PROFILE_BYTES, MetadataHeader, MetadataRole, PackageId, RoleDefinition, RoleKey,
+        Sha256Digest, TargetPackage, TargetsMetadata,
+    };
 
     #[test]
     fn accepts_a_valid_header_without_a_clock() {
@@ -190,6 +265,72 @@ mod tests {
         assert_eq!(
             validate_role_references(&keys, &[role]),
             Err(MetadataError::UnknownRoleKey)
+        );
+    }
+
+    fn target_package(delegation_id: &str) -> TargetPackage {
+        TargetPackage {
+            package_id: PackageId([1; crate::KEY_ID_LENGTH]),
+            namespace: BoundedText::<MAX_NAMESPACE_BYTES>::new("developer/app")
+                .expect("test namespace fits"),
+            developer_id: BoundedText::<{ crate::MAX_DEVELOPER_ID_BYTES }>::new("developer")
+                .expect("test developer fits"),
+            delegation_id: BoundedText::<{ crate::MAX_DELEGATION_ID_BYTES }>::new(delegation_id)
+                .expect("test delegation fits"),
+            developer_key_id: KeyId([2; crate::KEY_ID_LENGTH]),
+            target_profile: BoundedText::<MAX_TARGET_PROFILE_BYTES>::new("f405")
+                .expect("test target fits"),
+            amrn_format: 5,
+            abi_version: 3,
+            package_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+                .expect("test version fits"),
+            minimum_kernel_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+                .expect("test minimum version fits"),
+            length: 128,
+            sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+            required_services: 1,
+            slot_id: 0,
+        }
+    }
+
+    #[test]
+    fn validates_a_target_package_against_its_delegation() {
+        let delegation = BoundedText::<{ crate::MAX_DELEGATION_ID_BYTES }>::new("developer")
+            .expect("test delegation fits");
+        let package = target_package("developer");
+        let metadata = TargetsMetadata {
+            header: MetadataHeader {
+                role: MetadataRole::Targets,
+                version: 1,
+                expires: 0,
+            },
+            delegations: [delegation; MAX_DELEGATION_SCOPES],
+            delegation_count: 1,
+            packages: [package; crate::MAX_TARGET_RECORDS],
+            package_count: 1,
+        };
+        assert_eq!(validate_targets_metadata(&metadata), Ok(()));
+    }
+
+    #[test]
+    fn rejects_a_target_package_with_an_unknown_delegation() {
+        let delegation = BoundedText::<{ crate::MAX_DELEGATION_ID_BYTES }>::new("other")
+            .expect("test delegation fits");
+        let package = target_package("developer");
+        let metadata = TargetsMetadata {
+            header: MetadataHeader {
+                role: MetadataRole::Targets,
+                version: 1,
+                expires: 0,
+            },
+            delegations: [delegation; MAX_DELEGATION_SCOPES],
+            delegation_count: 1,
+            packages: [package; crate::MAX_TARGET_RECORDS],
+            package_count: 1,
+        };
+        assert_eq!(
+            validate_targets_metadata(&metadata),
+            Err(MetadataError::UnknownDelegation)
         );
     }
 

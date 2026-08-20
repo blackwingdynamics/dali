@@ -6,6 +6,8 @@ pub const SCHEMA_ID: &str = "dali.metadata.v1";
 pub const KEY_ID_LENGTH: usize = 16;
 /// Ed25519 public-key length in bytes.
 pub const PUBLIC_KEY_LENGTH: usize = 32;
+/// SHA-256 digest length in bytes.
+pub const SHA256_LENGTH: usize = 32;
 /// Ed25519 signature length in bytes.
 pub const SIGNATURE_LENGTH: usize = 64;
 /// Maximum root metadata size in bytes.
