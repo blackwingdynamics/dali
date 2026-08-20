@@ -141,6 +141,9 @@ milestone into `main` only after its documented validation evidence exists.
    only the public trust-anchor fragment for release provisioning.
    [x] Implement and validate the bounded developer-delegation record before
    adding repository bundle storage or package-install authorization.
+   [x] Implement and host-test the hardware-neutral package authorization
+   boundary against delegation identity, key, namespace, target, ABI, and
+   validity scope.
    [x] Define and host-test the storage-independent atomic trust-store
    transition contract; durable filesystem/block-device adapters and package
    installation authorization remain pending.

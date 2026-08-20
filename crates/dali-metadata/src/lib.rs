@@ -7,6 +7,7 @@
 //! The canonical metadata codec will build on these types after its wire
 //! behavior is implemented and tested.
 
+mod authorization;
 mod codec;
 mod limits;
 mod model;
@@ -15,6 +16,7 @@ mod trust_store;
 mod validation;
 mod verification;
 
+pub use authorization::*;
 pub use codec::*;
 pub use limits::*;
 pub use model::*;
