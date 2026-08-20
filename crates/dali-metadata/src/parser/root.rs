@@ -70,6 +70,7 @@ pub(super) fn parse_role(value: &str) -> Result<MetadataRole, DecodeError> {
         "snapshot" => Ok(MetadataRole::Snapshot),
         "targets" => Ok(MetadataRole::Targets),
         "delegation" => Ok(MetadataRole::Delegation),
+        "bundle" => Ok(MetadataRole::Bundle),
         _ => Err(DecodeError::InvalidValue),
     }
 }

@@ -24,6 +24,10 @@ pub const MAX_TARGETS_BYTES: usize = 64 * 1024;
 pub const MAX_DELEGATION_BYTES: usize = 4 * 1024;
 /// Maximum complete offline trust-store bundle size in bytes.
 pub const MAX_BUNDLE_BYTES: usize = 128 * 1024;
+/// Maximum file references in one offline bundle manifest.
+pub const MAX_BUNDLE_FILES: usize = MAX_TARGET_RECORDS + MAX_SNAPSHOT_REFERENCES + 4;
+/// Maximum logical identifier bytes in one bundle file reference.
+pub const MAX_BUNDLE_ID_BYTES: usize = 128;
 /// Maximum keys declared by one root document.
 pub const MAX_ROOT_KEYS: usize = 16;
 /// Maximum roles declared by one root document.

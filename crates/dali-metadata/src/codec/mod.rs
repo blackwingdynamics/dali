@@ -1,5 +1,6 @@
 //! Canonical, bounded metadata encoders.
 
+mod bundle;
 mod delegation;
 mod envelope;
 mod root;
@@ -12,6 +13,7 @@ mod writer;
 #[cfg(test)]
 mod tests;
 
+pub use bundle::encode_bundle_signed;
 pub use delegation::encode_delegation_signed;
 pub use envelope::encode_signed_envelope;
 pub use root::encode_root_signed;

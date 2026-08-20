@@ -19,6 +19,8 @@ pub enum MetadataRole {
     Targets,
     /// One developer public key and bounded permissions.
     Delegation,
+    /// One signed offline trust-store bundle manifest.
+    Bundle,
 }
 
 impl MetadataRole {
@@ -30,6 +32,7 @@ impl MetadataRole {
             Self::Snapshot => "snapshot",
             Self::Targets => "targets",
             Self::Delegation => "delegation",
+            Self::Bundle => "bundle",
         }
     }
 }
@@ -260,6 +263,74 @@ pub struct DelegationMetadata {
     pub not_before: u64,
     /// Inclusive validity end; zero means no upper bound.
     pub not_after: u64,
+}
+
+/// Kind of file referenced by an offline bundle manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BundleFileKind {
+    /// Root metadata file.
+    Root,
+    /// Timestamp metadata file.
+    Timestamp,
+    /// Snapshot metadata file.
+    Snapshot,
+    /// Targets metadata file.
+    Targets,
+    /// Developer delegation metadata file.
+    Delegation,
+    /// AMRN package artifact.
+    Package,
+}
+
+impl BundleFileKind {
+    /// Returns the canonical wire name for this file kind.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Root => "root",
+            Self::Timestamp => "timestamp",
+            Self::Snapshot => "snapshot",
+            Self::Targets => "targets",
+            Self::Delegation => "delegation",
+            Self::Package => "package",
+        }
+    }
+}
+
+/// One bounded file reference from an offline bundle manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BundleFile {
+    /// Logical file kind.
+    pub kind: BundleFileKind,
+    /// Fixed metadata identity, delegation ID, or package hash stem.
+    pub id: BoundedText<{ crate::MAX_BUNDLE_ID_BYTES }>,
+    /// Exact file length in bytes.
+    pub length: u32,
+    /// Exact SHA-256 digest of the complete file.
+    pub sha256: Sha256Digest,
+}
+
+impl Default for BundleFile {
+    fn default() -> Self {
+        Self {
+            kind: BundleFileKind::Root,
+            id: BoundedText::default(),
+            length: 0,
+            sha256: Sha256Digest::default(),
+        }
+    }
+}
+
+/// Bounded signed offline trust-store bundle manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BundleMetadata {
+    /// Common signed metadata fields; version is the durable bundle version.
+    pub header: MetadataHeader,
+    /// Target profile for every bundle artifact.
+    pub target_profile: BoundedText<MAX_TARGET_PROFILE_BYTES>,
+    /// Referenced files in canonical kind/id order.
+    pub files: [BundleFile; crate::MAX_BUNDLE_FILES],
+    /// Number of active file references.
+    pub file_count: u16,
 }
 
 /// Hash-and-length reference to the targets metadata file.

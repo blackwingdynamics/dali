@@ -1,5 +1,6 @@
 //! Strict, bounded parser for canonical metadata bodies.
 
+mod bundle;
 mod cursor;
 mod delegation;
 mod envelope;
@@ -12,6 +13,7 @@ mod timestamp;
 #[cfg(test)]
 mod tests;
 
+pub use bundle::parse_bundle_signed;
 pub use delegation::parse_delegation_signed;
 pub use envelope::parse_signed_envelope;
 pub use root::parse_root_signed;

@@ -9,6 +9,7 @@ use crate::{
 mod delegation;
 
 pub use delegation::validate_delegation;
+pub(crate) use delegation::validate_target_profile;
 
 /// Errors returned when contract values violate the initial metadata profile.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -43,6 +44,8 @@ pub enum MetadataError {
     InvalidSignatureSet,
     /// A developer delegation violates its bounded authorization contract.
     InvalidDelegation,
+    /// An offline bundle manifest violates its bounded file contract.
+    InvalidBundle,
 }
 
 /// Validates common signed metadata fields.
@@ -213,6 +216,58 @@ pub fn validate_timestamp_metadata(
     )
 }
 
+/// Validates one bounded offline bundle manifest.
+pub fn validate_bundle_metadata(metadata: &crate::BundleMetadata) -> Result<(), MetadataError> {
+    if metadata.header.role != MetadataRole::Bundle
+        || metadata.header.version == 0
+        || usize::from(metadata.file_count) > crate::MAX_BUNDLE_FILES
+    {
+        return Err(MetadataError::InvalidBundle);
+    }
+    let target_profile = metadata
+        .target_profile
+        .as_str()
+        .ok_or(MetadataError::InvalidBundle)?;
+    validate_target_profile(target_profile).map_err(|_| MetadataError::InvalidBundle)?;
+    let files = &metadata.files[..usize::from(metadata.file_count)];
+    if files.is_empty() {
+        return Err(MetadataError::InvalidBundle);
+    }
+    for (index, file) in files.iter().enumerate() {
+        let id = file.id.as_str().ok_or(MetadataError::InvalidBundle)?;
+        if file.length == 0
+            || file.sha256.0 == [0; crate::SHA256_LENGTH]
+            || files[..index]
+                .iter()
+                .any(|candidate| (candidate.kind, candidate.id) == (file.kind, file.id))
+            || (index > 0
+                && bundle_file_order(files[index - 1], *file) != core::cmp::Ordering::Less)
+        {
+            return Err(MetadataError::InvalidBundle);
+        }
+        if matches!(
+            file.kind,
+            crate::BundleFileKind::Root
+                | crate::BundleFileKind::Timestamp
+                | crate::BundleFileKind::Snapshot
+                | crate::BundleFileKind::Targets
+        ) && id != file.kind.as_str()
+        {
+            return Err(MetadataError::InvalidBundle);
+        }
+    }
+    Ok(())
+}
+
+fn bundle_file_order(left: crate::BundleFile, right: crate::BundleFile) -> core::cmp::Ordering {
+    left.kind.as_str().cmp(right.kind.as_str()).then_with(|| {
+        left.id
+            .as_str()
+            .unwrap_or("")
+            .cmp(right.id.as_str().unwrap_or(""))
+    })
+}
+
 fn validate_reference(
     version: u64,
     length: u32,
@@ -286,6 +341,7 @@ pub const fn is_repository_role(role: MetadataRole) -> bool {
             | MetadataRole::Snapshot
             | MetadataRole::Targets
             | MetadataRole::Delegation
+            | MetadataRole::Bundle
     )
 }
 

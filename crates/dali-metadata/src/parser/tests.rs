@@ -6,9 +6,9 @@ use crate::{
     MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH,
     PackageId, PublicKey, RoleDefinition, RoleKey, Sha256Digest, Signature, SignatureRecord,
     SignatureSet, TargetPackage, encode_delegation_signed, encode_root_signed,
-    encode_signature_list, encode_signed_envelope, encode_targets_signed, parse_delegation_signed,
-    parse_signature_list, parse_signed_envelope, parse_snapshot_signed, parse_targets_signed,
-    parse_timestamp_signed,
+    encode_signature_list, encode_signed_envelope, encode_targets_signed, parse_bundle_signed,
+    parse_delegation_signed, parse_signature_list, parse_signed_envelope, parse_snapshot_signed,
+    parse_targets_signed, parse_timestamp_signed,
 };
 
 fn delegation_metadata() -> DelegationMetadata {
@@ -195,6 +195,15 @@ fn parses_a_canonical_delegation_body() {
     assert_eq!(parsed.developer_id.as_str(), Some("developer"));
     assert_eq!(parsed.allowed_abis[0], 3);
     assert_eq!(parsed.allowed_targets[0].as_str(), Some("f405"));
+}
+
+#[test]
+fn parses_a_canonical_bundle_manifest() {
+    let input = br#"{"files":[{"id":"root","kind":"root","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"}],"role":"bundle","schema":"dali.metadata.v1","target_profile":"f405","version":1}"#;
+    let parsed = parse_bundle_signed(input).expect("bundle manifest should parse");
+    assert_eq!(parsed.header.role, MetadataRole::Bundle);
+    assert_eq!(parsed.file_count, 1);
+    assert_eq!(parsed.files[0].kind, crate::BundleFileKind::Root);
 }
 
 #[test]

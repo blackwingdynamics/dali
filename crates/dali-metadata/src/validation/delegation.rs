@@ -64,7 +64,7 @@ fn validate_unique_texts<const CAPACITY: usize>(
     Ok(())
 }
 
-fn validate_target_profile(value: &str) -> Result<(), MetadataError> {
+pub(crate) fn validate_target_profile(value: &str) -> Result<(), MetadataError> {
     if value.is_empty()
         || value.len() > crate::MAX_TARGET_PROFILE_BYTES
         || !value.bytes().all(|byte| {

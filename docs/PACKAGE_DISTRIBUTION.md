@@ -112,7 +112,7 @@ The trust chain is:
 ```text
 Dali root keys
     |
-    +-- sign repository roles and developer delegations
+    +-- sign repository roles, developer delegations, and bundle manifests
             |
             +-- developer public key / certificate
                     |
@@ -269,7 +269,7 @@ The common signed fields are:
 
 ```text
 schema        string, exactly "dali.metadata.v1"
-role          string, one of root | timestamp | snapshot | targets | delegation
+role          string, one of root | timestamp | snapshot | targets | delegation | bundle
 version       unsigned 64-bit integer, strictly increasing for the role
 expires       unsigned 64-bit Unix seconds, zero only when the target has no clock
 ```
@@ -294,6 +294,8 @@ The root signed body is:
     { "name": "targets", "key_ids": ["..."], "threshold": 1 },
     { "name": "snapshot", "key_ids": ["..."], "threshold": 1 },
     { "name": "timestamp", "key_ids": ["..."], "threshold": 1 },
+    { "name": "delegation", "key_ids": ["..."], "threshold": 1 },
+    { "name": "bundle", "key_ids": ["..."], "threshold": 1 },
     { "name": "recovery", "key_ids": ["..."], "threshold": 2 }
   ]
 }
@@ -379,6 +381,31 @@ A delegation signed body contains one developer key and its bounded scope:
 The `targets` record MUST reference the exact delegation and developer key
 that authorize the package. A package is not authorized when its AMRN key ID,
 namespace, target, ABI, or version disagrees with metadata.
+
+### 6.4 Offline bundle manifest
+
+An offline bundle manifest is a signed `bundle` role document. Its canonical
+signed body contains exactly these top-level fields in lexicographic order:
+
+```json
+{
+  "files": [
+    { "id": "developer-id", "kind": "delegation", "length": 456, "sha256": "..." },
+    { "id": "package-sha256", "kind": "package", "length": 1234, "sha256": "..." }
+  ],
+  "role": "bundle",
+  "schema": "dali.metadata.v1",
+  "target_profile": "f405",
+  "version": 1
+}
+```
+
+`kind` MUST be one of `delegation`, `package`, `root`, `snapshot`,
+`targets`, or `timestamp`. Fixed metadata files use their kind as the logical
+identity; delegation files use the delegation identifier; package files use
+the lowercase SHA-256 filename stem. Each kind/id pair MUST be unique, every
+length MUST be non-zero, and every digest MUST be non-zero. The manifest MUST
+be verified before any file is installed.
 
 ## 7. Package acceptance flow
 

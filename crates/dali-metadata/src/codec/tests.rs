@@ -1,12 +1,13 @@
 use super::*;
 use crate::MAX_ROLE_KEYS;
 use crate::{
-    BoundedText, DelegationMetadata, DelegationReference, KeyId, MAX_DELEGATION_ABIS,
-    MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES,
-    MAX_PACKAGE_VERSION_BYTES, MAX_SIGNATURES, MAX_SNAPSHOT_REFERENCES, MAX_TARGET_PROFILE_BYTES,
-    MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PackageId, PublicKey, RoleDefinition, RoleKey,
-    Sha256Digest, Signature, SignatureRecord, SignatureSet, SnapshotMetadata, TargetPackage,
-    TargetsReference, TimestampMetadata,
+    BoundedText, BundleFile, BundleFileKind, BundleMetadata, DelegationMetadata,
+    DelegationReference, KeyId, MAX_BUNDLE_FILES, MAX_DELEGATION_ABIS, MAX_DELEGATION_ID_BYTES,
+    MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
+    MAX_SIGNATURES, MAX_SNAPSHOT_REFERENCES, MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES,
+    MetadataHeader, MetadataRole, PackageId, PublicKey, RoleDefinition, RoleKey, Sha256Digest,
+    Signature, SignatureRecord, SignatureSet, SnapshotMetadata, TargetPackage, TargetsReference,
+    TimestampMetadata,
 };
 
 const KEY: RoleKey = RoleKey {
@@ -55,6 +56,26 @@ fn delegation_metadata() -> DelegationMetadata {
     }
 }
 
+fn bundle_metadata() -> BundleMetadata {
+    let mut files = [BundleFile::default(); MAX_BUNDLE_FILES];
+    files[0] = BundleFile {
+        kind: BundleFileKind::Package,
+        id: BoundedText::new("aaaaaaaa").expect("test package ID fits"),
+        length: 128,
+        sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+    };
+    BundleMetadata {
+        header: MetadataHeader {
+            role: MetadataRole::Bundle,
+            version: 1,
+            expires: 0,
+        },
+        target_profile: BoundedText::new("f405").expect("test target fits"),
+        files,
+        file_count: 1,
+    }
+}
+
 #[test]
 fn encodes_delegation_fields_in_canonical_order() {
     let mut output = [0; crate::MAX_DELEGATION_BYTES];
@@ -81,6 +102,15 @@ fn encodes_delegation_fields_in_canonical_order() {
             .expect("field should be present")
     });
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+}
+
+#[test]
+fn encodes_a_bounded_bundle_manifest() {
+    let mut output = [0; crate::MAX_BUNDLE_BYTES];
+    let length = encode_bundle_signed(&mut output, bundle_metadata())
+        .expect("bundle manifest should encode");
+    assert!(output[..length].starts_with(br#"{"files":[{"id":"aaaaaaaa","kind":"package""#));
+    assert!(output[..length].ends_with(br#""target_profile":"f405","version":1}"#));
 }
 
 fn target_package() -> TargetPackage {
