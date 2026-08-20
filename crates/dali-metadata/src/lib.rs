@@ -11,6 +11,7 @@ mod codec;
 mod limits;
 mod model;
 mod parser;
+mod trust_store;
 mod validation;
 mod verification;
 
@@ -18,5 +19,6 @@ pub use codec::*;
 pub use limits::*;
 pub use model::*;
 pub use parser::*;
+pub use trust_store::*;
 pub use validation::*;
 pub use verification::*;

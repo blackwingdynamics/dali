@@ -489,6 +489,13 @@ dali metadata delegation inspect \
   --signer-public-key <authority-public-key>
 ```
 
+The storage-independent trust-store state machine uses the following durable
+order: stage the candidate, verify it with a final read-back, persist the
+commit marker, then finalize the active-slot swap. Recovery discards a
+candidate before the commit marker and completes the swap after the marker.
+The state machine does not own filesystem or block-device I/O; those adapters
+must persist each boundary using the target's durable-storage contract.
+
 ## 9. Key lifecycle
 
 ### 9.1 Developer key creation
