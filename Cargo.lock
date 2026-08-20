@@ -190,6 +190,7 @@ dependencies = [
  "dali-targets",
  "getrandom",
  "object",
+ "sha2",
 ]
 
 [[package]]

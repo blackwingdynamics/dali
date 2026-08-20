@@ -626,6 +626,44 @@ expired metadata role, or accept an unsigned production package. Commands that
 change trust state MUST require explicit input and display the resulting key
 identifier, version, and target scope.
 
+### 10.1 Host bundle workflow
+
+The host CLI exposes the first repository-bundle workflow:
+
+```text
+dali metadata bundle generate \
+  --input <repository-root> \
+  --output <repository-root>/bundle.manifest \
+  --target-profile <profile> \
+  --version <monotonic-version> \
+  --signing-key <bundle-signing-seed> \
+  --signer-key-id <bundle-signer-key-id>
+
+dali metadata bundle inspect --input <repository-root>
+dali metadata bundle verify \
+  --input <repository-root> \
+  --package-id <package-id-hex>
+```
+
+`generate` hashes the fixed metadata files, delegation documents, and
+content-addressed `.amrn` packages, then writes a canonical signed bundle
+manifest. It refuses to overwrite an existing manifest. `inspect` parses the
+manifest and verifies every recorded length and SHA-256 reference before
+printing the bundle inventory. `verify` performs those checks, verifies the
+bundle role signature using the root trust policy, and then invokes the same
+host-side Ed25519 chain used by the metadata crate:
+
+```text
+Root -> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation
+      -> Package Record -> AMRN hash/signature
+```
+
+The commands are host-side release and pre-install tooling. They do not prove
+durable SD activation or kernel-loader integration; those remain separate
+target and hardware acceptance tasks. Private signing seeds are read only from
+the path supplied by the operator and are never included in the generated
+bundle or command output.
+
 The kernel is responsible for:
 
 - storing the root public-key set;

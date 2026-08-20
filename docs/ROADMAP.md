@@ -173,6 +173,9 @@ milestone into `main` only after its documented validation evidence exists.
    -> Delegation -> Revocation -> Package Record -> AMRN verification chain
    with the real `dali-crypto` Ed25519 facade and tamper/revocation tests;
    durable target installation and kernel wiring remain pending.
+   [x] Add host CLI commands for bundle generation, reference inspection, and
+   verification through the shared Ed25519 chain; kernel-loader integration and
+   durable target acceptance remain pending.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their
