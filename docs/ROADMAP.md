@@ -147,6 +147,9 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Define and host-test the storage-independent atomic trust-store
    transition contract; durable filesystem/block-device adapters and package
    installation authorization remain pending.
+   [x] Add the explicit FAT root-file write boundary; target read-back,
+   candidate/commit-marker sequencing, and durable trust-store activation
+   remain pending hardware acceptance.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

@@ -11,8 +11,10 @@ use embedded_sdmmc::{
 mod multi;
 #[cfg(test)]
 mod tests;
+mod write;
 
 pub use multi::with_amrn_files;
+pub use write::write_root_file;
 
 /// The package extension recognized by the MVP root-directory scan.
 pub const AMRN_EXTENSION: &[u8] = b"AMRN";

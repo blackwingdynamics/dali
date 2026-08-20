@@ -777,6 +777,13 @@ target-declared persistent area. A candidate is never active until it has
 passed full verification and a final read-back check. The active slot is the
 fallback after power loss.
 
+The kernel's FAT write boundary is intentionally separate from package
+verification: `write_root_file` can create or truncate one bounded root-level
+artifact and flush its directory entry, but it does not provide a transaction.
+The trust-store installer must sequence candidate bytes, read-back verification,
+and the commit marker above this primitive. No installer may activate a bundle
+through a single file write.
+
 ### 15.6 Time, freshness, and rollback
 
 - `timestamp` expiry is enforced only when the target has a trustworthy wall
