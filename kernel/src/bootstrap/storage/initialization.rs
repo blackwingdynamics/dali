@@ -1,6 +1,6 @@
 //! Storage initialization and AMRN loading policy.
 
-use super::status;
+use super::super::lifecycle::status;
 use crate::{
     drivers::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError},
     logging, platform,
@@ -10,7 +10,7 @@ use crate::{
 use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]
-pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatus {
+pub fn initialize(board: &mut platform::Platform) -> status::StorageStatus {
     let Some(mut reader) = board.take_sdio_reader() else {
         logging::error(
             logging::BOOT_SUBSYSTEM,
@@ -81,7 +81,7 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
                     logging::BOOT_SUBSYSTEM,
                     format_args!("[STORAGE] Trust-store artifact write/read-back test passed"),
                 );
-                super::package::load(
+                super::super::loading::load(
                     &device,
                     board,
                     #[cfg(feature = "abi-current")]
@@ -91,7 +91,7 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
                 )
             }
             #[cfg(not(feature = "storage-write"))]
-            super::package::load(
+            super::super::loading::load(
                 BlockDeviceAdapter::new(reader),
                 board,
                 #[cfg(feature = "abi-current")]
@@ -111,6 +111,6 @@ pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatu
 }
 
 #[cfg(not(feature = "sdio"))]
-pub(super) fn initialize(_board: &mut platform::Platform) -> status::StorageStatus {
+pub fn initialize(_board: &mut platform::Platform) -> status::StorageStatus {
     status::StorageStatus::NotDetected
 }

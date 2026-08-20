@@ -1,10 +1,10 @@
 //! Package validation, slot activation, and application launch policy.
 
-use super::status;
+use super::super::lifecycle::status;
 use crate::{drivers::StorageError, logging, platform};
 
 #[cfg(feature = "sdio")]
-pub(super) fn load<D>(
+pub fn load<D>(
     device: D,
     board: &mut platform::Platform,
     #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::memory::slots::SlotManager,
