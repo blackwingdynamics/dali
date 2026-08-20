@@ -1,9 +1,10 @@
 use super::*;
 use crate::MAX_ROLE_KEYS;
 use crate::{
-    BoundedText, KeyId, MAX_DELEGATION_ID_BYTES, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
-    MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PackageId,
-    PublicKey, RoleDefinition, RoleKey, Sha256Digest, TargetPackage,
+    BoundedText, DelegationReference, KeyId, MAX_DELEGATION_ID_BYTES, MAX_NAMESPACE_BYTES,
+    MAX_PACKAGE_VERSION_BYTES, MAX_SNAPSHOT_REFERENCES, MAX_TARGET_PROFILE_BYTES,
+    MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PackageId, PublicKey, RoleDefinition, RoleKey,
+    Sha256Digest, SnapshotMetadata, TargetPackage, TargetsReference, TimestampMetadata,
 };
 
 const KEY: RoleKey = RoleKey {
@@ -141,4 +142,60 @@ fn encodes_targets_fields_in_canonical_order() {
     });
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
     assert!(body.windows(13).any(|window| window == br#""package_id":"#));
+}
+
+fn snapshot_metadata() -> SnapshotMetadata {
+    let id =
+        BoundedText::<MAX_DELEGATION_ID_BYTES>::new("developer").expect("test delegation fits");
+    let reference = DelegationReference {
+        id,
+        version: 1,
+        length: 64,
+        sha256: Sha256Digest([4; crate::SHA256_LENGTH]),
+    };
+    SnapshotMetadata {
+        header: MetadataHeader {
+            role: MetadataRole::Snapshot,
+            version: 1,
+            expires: 0,
+        },
+        targets: TargetsReference {
+            version: 1,
+            length: 128,
+            sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+        },
+        delegations: [reference; MAX_SNAPSHOT_REFERENCES],
+        delegation_count: 1,
+    }
+}
+
+#[test]
+fn encodes_snapshot_and_timestamp_bodies() {
+    let mut snapshot = [0; crate::MAX_SNAPSHOT_BYTES];
+    let snapshot_length = encode_snapshot_signed(&mut snapshot, snapshot_metadata())
+        .expect("snapshot body should encode");
+    assert!(
+        snapshot[..snapshot_length]
+            .windows(12)
+            .any(|window| window == b"\"metadata\":[")
+    );
+
+    let mut timestamp = [0; crate::MAX_TIMESTAMP_BYTES];
+    let timestamp_metadata = TimestampMetadata {
+        header: MetadataHeader {
+            role: MetadataRole::Timestamp,
+            version: 1,
+            expires: 0,
+        },
+        snapshot_version: 1,
+        snapshot_length: 128,
+        snapshot_sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+    };
+    let timestamp_length = encode_timestamp_signed(&mut timestamp, timestamp_metadata)
+        .expect("timestamp body should encode");
+    assert!(
+        timestamp[..timestamp_length]
+            .windows(12)
+            .any(|window| window == b"\"snapshot\":{")
+    );
 }
