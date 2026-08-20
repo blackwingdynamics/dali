@@ -13,7 +13,7 @@ pub fn encode_root_signed(
     roles: &[RoleDefinition],
 ) -> Result<usize, EncodeError> {
     validate_root_input(header, keys, roles)?;
-    let mut writer = Writer::new(output);
+    let mut writer = Writer::new(output, crate::MAX_ROOT_BYTES);
     encode_header(&mut writer, header, keys, roles)?;
     Ok(writer.len())
 }

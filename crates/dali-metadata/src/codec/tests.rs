@@ -1,6 +1,10 @@
 use super::*;
 use crate::MAX_ROLE_KEYS;
-use crate::{KeyId, MetadataHeader, MetadataRole, PublicKey, RoleDefinition, RoleKey};
+use crate::{
+    BoundedText, KeyId, MAX_DELEGATION_ID_BYTES, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
+    MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PackageId,
+    PublicKey, RoleDefinition, RoleKey, Sha256Digest, TargetPackage,
+};
 
 const KEY: RoleKey = RoleKey {
     role: MetadataRole::Root,
@@ -16,6 +20,31 @@ fn root_role(key_id: KeyId) -> RoleDefinition {
         keys,
         key_count: 1,
         threshold: 1,
+    }
+}
+
+fn target_package() -> TargetPackage {
+    TargetPackage {
+        package_id: PackageId([1; crate::KEY_ID_LENGTH]),
+        namespace: BoundedText::<MAX_NAMESPACE_BYTES>::new("developer/app")
+            .expect("test namespace fits"),
+        developer_id: BoundedText::<{ crate::MAX_DEVELOPER_ID_BYTES }>::new("developer")
+            .expect("test developer fits"),
+        delegation_id: BoundedText::<MAX_DELEGATION_ID_BYTES>::new("developer")
+            .expect("test delegation fits"),
+        developer_key_id: KeyId([2; crate::KEY_ID_LENGTH]),
+        target_profile: BoundedText::<MAX_TARGET_PROFILE_BYTES>::new("f405")
+            .expect("test target fits"),
+        amrn_format: 5,
+        abi_version: 3,
+        package_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+            .expect("test version fits"),
+        minimum_kernel_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+            .expect("test minimum version fits"),
+        length: 128,
+        sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+        required_services: 1,
+        slot_id: 0,
     }
 }
 
@@ -77,4 +106,39 @@ fn rejects_an_output_buffer_that_is_too_small() {
         ),
         Err(EncodeError::BufferTooSmall)
     );
+}
+
+#[test]
+fn encodes_targets_fields_in_canonical_order() {
+    let delegation =
+        BoundedText::<MAX_DELEGATION_ID_BYTES>::new("developer").expect("test delegation fits");
+    let mut output = [0; MAX_TARGETS_BYTES];
+    let length = encode_targets_signed(
+        &mut output,
+        MetadataHeader {
+            role: MetadataRole::Targets,
+            version: 1,
+            expires: 0,
+        },
+        &[delegation],
+        &[target_package()],
+    )
+    .expect("targets body should encode");
+    let body = &output[..length];
+    let fields: &[&[u8]] = &[
+        b"\"delegations\"",
+        b"\"expires\"",
+        b"\"packages\"",
+        b"\"role\"",
+        b"\"schema\"",
+        b"\"version\"",
+    ];
+    let positions: [usize; 6] = core::array::from_fn(|index| {
+        let field = fields[index];
+        body.windows(field.len())
+            .position(|window| window == field)
+            .expect("field should be present")
+    });
+    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(body.windows(13).any(|window| window == br#""package_id":"#));
 }

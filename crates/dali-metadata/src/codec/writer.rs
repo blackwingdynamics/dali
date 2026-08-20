@@ -1,4 +1,4 @@
-use crate::{KeyId, MAX_ROOT_BYTES, PublicKey};
+use crate::{BoundedText, KeyId, PackageId, PublicKey, Sha256Digest};
 
 const JSON_QUOTE: u8 = b'"';
 const JSON_COMMA: u8 = b',';
@@ -28,11 +28,11 @@ pub(super) struct Writer<'a> {
 }
 
 impl<'a> Writer<'a> {
-    pub(super) const fn new(output: &'a mut [u8]) -> Self {
+    pub(super) const fn new(output: &'a mut [u8], maximum: usize) -> Self {
         Self {
             output,
             length: 0,
-            maximum: MAX_ROOT_BYTES,
+            maximum,
         }
     }
 
@@ -98,6 +98,16 @@ impl<'a> Writer<'a> {
         self.bytes(&buffer[index..])
     }
 
+    pub(super) fn text<const CAPACITY: usize>(
+        &mut self,
+        value: BoundedText<CAPACITY>,
+    ) -> Result<(), EncodeError> {
+        value
+            .as_str()
+            .ok_or(EncodeError::InvalidValue)
+            .and_then(|value| self.string(value))
+    }
+
     pub(super) fn hex<T: HexBytes>(&mut self, value: &T) -> Result<(), EncodeError> {
         self.push(JSON_QUOTE)?;
         for byte in value.as_bytes() {
@@ -139,6 +149,18 @@ impl HexBytes for KeyId {
 }
 
 impl HexBytes for PublicKey {
+    fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl HexBytes for PackageId {
+    fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl HexBytes for Sha256Digest {
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }

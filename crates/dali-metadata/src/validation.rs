@@ -87,6 +87,18 @@ pub fn validate_targets_metadata(metadata: &TargetsMetadata) -> Result<(), Metad
         return Err(MetadataError::InvalidPackageRecord);
     }
     let delegations = &metadata.delegations[..usize::from(metadata.delegation_count)];
+    let packages = &metadata.packages[..usize::from(metadata.package_count)];
+    validate_target_records(delegations, packages)
+}
+
+/// Validates target records supplied by a bounded encoder or parser.
+pub fn validate_target_records(
+    delegations: &[crate::BoundedText<{ crate::MAX_DELEGATION_ID_BYTES }>],
+    packages: &[crate::TargetPackage],
+) -> Result<(), MetadataError> {
+    if delegations.len() > MAX_DELEGATION_SCOPES || packages.len() > MAX_TARGET_RECORDS {
+        return Err(MetadataError::InvalidPackageRecord);
+    }
     for (index, delegation) in delegations.iter().enumerate() {
         if delegation.as_str().is_none()
             || delegations[..index]
@@ -96,7 +108,6 @@ pub fn validate_targets_metadata(metadata: &TargetsMetadata) -> Result<(), Metad
             return Err(MetadataError::InvalidPackageRecord);
         }
     }
-    let packages = &metadata.packages[..usize::from(metadata.package_count)];
     for (index, package) in packages.iter().enumerate() {
         if package.package_id.0 == [0; KEY_ID_LENGTH]
             || package.developer_key_id.0 == [0; KEY_ID_LENGTH]
