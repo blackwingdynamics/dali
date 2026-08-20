@@ -218,3 +218,21 @@ fn encodes_signature_records_in_key_order() {
     assert!(output[..length].ends_with(br#""}]"#));
     assert_eq!(length, 190);
 }
+
+#[test]
+fn encodes_signed_body_and_signatures_as_one_envelope() {
+    let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
+    records[0] = SignatureRecord {
+        key_id: KeyId([1; crate::KEY_ID_LENGTH]),
+        signature: Signature([2; crate::SIGNATURE_LENGTH]),
+    };
+    let mut output = [0; crate::MAX_ENVELOPE_BYTES];
+    let length = encode_signed_envelope(
+        &mut output,
+        br#"{"role":"targets"}"#,
+        SignatureSet { records, count: 1 },
+    )
+    .expect("envelope should encode");
+    assert!(output[..length].starts_with(br#"{"signed":{"role":"targets"},"signatures":["#));
+    assert!(output[..length].ends_with(br#"}]}"#));
+}

@@ -126,6 +126,15 @@ pub struct SignatureSet {
     pub count: u8,
 }
 
+/// Borrowed signed metadata body paired with its bounded signatures.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SignedEnvelope<'a> {
+    /// Canonical signed body bytes; these exact bytes are authenticated.
+    pub signed: &'a [u8],
+    /// Signatures over `signed`.
+    pub signatures: SignatureSet,
+}
+
 /// Common fields shared by every signed metadata role.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MetadataHeader {

@@ -12,6 +12,8 @@ pub const SHA256_LENGTH: usize = 32;
 pub const SIGNATURE_LENGTH: usize = 64;
 /// Maximum root metadata size in bytes.
 pub const MAX_ROOT_BYTES: usize = 16 * 1024;
+/// Maximum signed envelope size for the root metadata profile.
+pub const MAX_ENVELOPE_BYTES: usize = MAX_ROOT_BYTES + 2 * 1024;
 /// Maximum timestamp metadata size in bytes.
 pub const MAX_TIMESTAMP_BYTES: usize = 4 * 1024;
 /// Maximum snapshot metadata size in bytes.
