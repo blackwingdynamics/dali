@@ -1,9 +1,9 @@
 //! Fixed-capacity metadata contract records.
 
 use crate::{
-    KEY_ID_LENGTH, MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_DEVELOPER_ID_BYTES,
-    MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES, MAX_TARGET_PROFILE_BYTES, PUBLIC_KEY_LENGTH,
-    SHA256_LENGTH, SIGNATURE_LENGTH,
+    KEY_ID_LENGTH, MAX_DELEGATION_ABIS, MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES,
+    MAX_DELEGATION_TARGETS, MAX_DEVELOPER_ID_BYTES, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
+    MAX_TARGET_PROFILE_BYTES, PUBLIC_KEY_LENGTH, SHA256_LENGTH, SIGNATURE_LENGTH,
 };
 
 /// The role of one signed metadata document.
@@ -231,6 +231,35 @@ pub struct TargetsMetadata {
     pub packages: [TargetPackage; crate::MAX_TARGET_RECORDS],
     /// Number of active package records.
     pub package_count: u16,
+}
+
+/// One bounded developer delegation signed by a repository authority.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DelegationMetadata {
+    /// Common signed metadata fields.
+    pub header: MetadataHeader,
+    /// Stable developer registry identifier.
+    pub developer_id: BoundedText<MAX_DEVELOPER_ID_BYTES>,
+    /// Developer signing key identifier.
+    pub key_id: KeyId,
+    /// Developer Ed25519 public key.
+    pub public_key: PublicKey,
+    /// Exact namespaces authorized for this developer.
+    pub allowed_namespaces: [BoundedText<MAX_NAMESPACE_BYTES>; MAX_DELEGATION_SCOPES],
+    /// Number of active namespace entries.
+    pub namespace_count: u8,
+    /// Target profiles authorized for this developer.
+    pub allowed_targets: [BoundedText<MAX_TARGET_PROFILE_BYTES>; MAX_DELEGATION_TARGETS],
+    /// Number of active target entries.
+    pub target_count: u8,
+    /// ABI versions authorized for this developer.
+    pub allowed_abis: [u16; MAX_DELEGATION_ABIS],
+    /// Number of active ABI entries.
+    pub abi_count: u8,
+    /// Inclusive validity start; zero means no lower bound.
+    pub not_before: u64,
+    /// Inclusive validity end; zero means no upper bound.
+    pub not_after: u64,
 }
 
 /// Hash-and-length reference to the targets metadata file.

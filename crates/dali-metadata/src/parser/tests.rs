@@ -1,13 +1,44 @@
 use super::*;
 use crate::{
-    BoundedText, KEY_ID_LENGTH, KeyId, MAX_DELEGATION_ID_BYTES, MAX_NAMESPACE_BYTES,
+    BoundedText, DelegationMetadata, KEY_ID_LENGTH, KeyId, MAX_DELEGATION_ABIS,
+    MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES,
     MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_SIGNATURES,
     MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH,
     PackageId, PublicKey, RoleDefinition, RoleKey, Sha256Digest, Signature, SignatureRecord,
-    SignatureSet, TargetPackage, encode_root_signed, encode_signature_list, encode_signed_envelope,
-    encode_targets_signed, parse_signature_list, parse_signed_envelope, parse_snapshot_signed,
-    parse_targets_signed, parse_timestamp_signed,
+    SignatureSet, TargetPackage, encode_delegation_signed, encode_root_signed,
+    encode_signature_list, encode_signed_envelope, encode_targets_signed, parse_delegation_signed,
+    parse_signature_list, parse_signed_envelope, parse_snapshot_signed, parse_targets_signed,
+    parse_timestamp_signed,
 };
+
+fn delegation_metadata() -> DelegationMetadata {
+    let mut namespaces = [BoundedText::default(); MAX_DELEGATION_SCOPES];
+    namespaces[0] = BoundedText::new("developer/app").expect("test namespace fits");
+    let mut targets = [BoundedText::default(); MAX_DELEGATION_TARGETS];
+    targets[0] = BoundedText::new("f405").expect("test target fits");
+    DelegationMetadata {
+        header: MetadataHeader {
+            role: MetadataRole::Delegation,
+            version: 1,
+            expires: 0,
+        },
+        developer_id: BoundedText::new("developer").expect("test developer fits"),
+        key_id: KeyId([1; KEY_ID_LENGTH]),
+        public_key: PublicKey([2; PUBLIC_KEY_LENGTH]),
+        allowed_namespaces: namespaces,
+        namespace_count: 1,
+        allowed_targets: targets,
+        target_count: 1,
+        allowed_abis: {
+            let mut abis = [0; MAX_DELEGATION_ABIS];
+            abis[0] = 3;
+            abis
+        },
+        abi_count: 1,
+        not_before: 0,
+        not_after: 0,
+    }
+}
 
 fn encoded_root() -> ([u8; MAX_ROOT_BYTES], usize) {
     let key = RoleKey {
@@ -153,6 +184,17 @@ fn parses_canonical_snapshot_and_timestamp_bodies() {
     let parsed_timestamp = parse_timestamp_signed(timestamp).expect("timestamp should parse");
     assert_eq!(parsed_timestamp.snapshot_length, 128);
     assert_eq!(parsed_timestamp.snapshot_version, 1);
+}
+
+#[test]
+fn parses_a_canonical_delegation_body() {
+    let mut bytes = [0; crate::MAX_DELEGATION_BYTES];
+    let length = encode_delegation_signed(&mut bytes, delegation_metadata())
+        .expect("delegation body should encode");
+    let parsed = parse_delegation_signed(&bytes[..length]).expect("delegation should parse");
+    assert_eq!(parsed.developer_id.as_str(), Some("developer"));
+    assert_eq!(parsed.allowed_abis[0], 3);
+    assert_eq!(parsed.allowed_targets[0].as_str(), Some("f405"));
 }
 
 #[test]

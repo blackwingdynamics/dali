@@ -6,6 +6,10 @@ use crate::{
     TargetsMetadata,
 };
 
+mod delegation;
+
+pub use delegation::validate_delegation;
+
 /// Errors returned when contract values violate the initial metadata profile.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MetadataError {
@@ -37,6 +41,8 @@ pub enum MetadataError {
     DuplicateDelegationReference,
     /// A signature list contains an invalid, duplicate, or unsorted signer.
     InvalidSignatureSet,
+    /// A developer delegation violates its bounded authorization contract.
+    InvalidDelegation,
 }
 
 /// Validates common signed metadata fields.
@@ -287,9 +293,10 @@ pub const fn is_repository_role(role: MetadataRole) -> bool {
 mod tests {
     use super::*;
     use crate::{
-        BoundedText, KeyId, MAX_DELEGATION_SCOPES, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
-        MAX_TARGET_PROFILE_BYTES, MetadataHeader, MetadataRole, PackageId, RoleDefinition, RoleKey,
-        Sha256Digest, TargetPackage, TargetsMetadata,
+        BoundedText, DelegationMetadata, KeyId, MAX_DELEGATION_ABIS, MAX_DELEGATION_SCOPES,
+        MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
+        MAX_TARGET_PROFILE_BYTES, MetadataHeader, MetadataRole, PackageId, PublicKey,
+        RoleDefinition, RoleKey, Sha256Digest, TargetPackage, TargetsMetadata,
     };
 
     #[test]
@@ -450,6 +457,39 @@ mod tests {
         assert_eq!(
             validate_developer_id("Developer"),
             Err(MetadataError::InvalidDeveloperId)
+        );
+    }
+
+    #[test]
+    fn rejects_an_unordered_developer_delegation_scope() {
+        let mut namespaces = [BoundedText::default(); MAX_DELEGATION_SCOPES];
+        namespaces[0] = BoundedText::new("developer/z").expect("test namespace fits");
+        namespaces[1] = BoundedText::new("developer/a").expect("test namespace fits");
+        let mut targets = [BoundedText::default(); MAX_DELEGATION_TARGETS];
+        targets[0] = BoundedText::new("f405").expect("test target fits");
+        let mut abis = [0; MAX_DELEGATION_ABIS];
+        abis[0] = 3;
+        let delegation = DelegationMetadata {
+            header: MetadataHeader {
+                role: MetadataRole::Delegation,
+                version: 1,
+                expires: 0,
+            },
+            developer_id: BoundedText::new("developer").expect("test developer fits"),
+            key_id: KeyId([1; crate::KEY_ID_LENGTH]),
+            public_key: PublicKey([2; crate::PUBLIC_KEY_LENGTH]),
+            allowed_namespaces: namespaces,
+            namespace_count: 2,
+            allowed_targets: targets,
+            target_count: 1,
+            allowed_abis: abis,
+            abi_count: 1,
+            not_before: 0,
+            not_after: 0,
+        };
+        assert_eq!(
+            validate_delegation(&delegation),
+            Err(MetadataError::InvalidDelegation)
         );
     }
 }

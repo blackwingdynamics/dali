@@ -38,6 +38,10 @@ pub const MAX_TARGET_RECORDS: usize = 256;
 pub const MAX_SNAPSHOT_REFERENCES: usize = 64;
 /// Maximum package scopes in one developer delegation.
 pub const MAX_DELEGATION_SCOPES: usize = 32;
+/// Maximum target profiles in one developer delegation.
+pub const MAX_DELEGATION_TARGETS: usize = 16;
+/// Maximum ABI families in one developer delegation.
+pub const MAX_DELEGATION_ABIS: usize = 16;
 /// Maximum namespace bytes, excluding its separator.
 pub const MAX_NAMESPACE_BYTES: usize = 128;
 /// Maximum opaque developer identifier bytes.

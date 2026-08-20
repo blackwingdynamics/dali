@@ -610,6 +610,12 @@ No application scheduler, board backend, or package loader feature may silently
 implement part of this design under a different name. All changes must point
 back to this document and the corresponding versioned contract.
 
+The bounded root, timestamp, snapshot, targets, and developer-delegation
+models now have canonical host-side encode/parse paths and contract validation
+in `crates/dali-metadata`. This is codec and policy evidence only; it does not
+prove repository bundle installation, durable trust-store updates, or target
+hardware acceptance.
+
 ## 15. Frozen initial-profile decisions
 
 The following decisions are part of the initial profile. Implementation may

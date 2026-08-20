@@ -139,6 +139,8 @@ milestone into `main` only after its documented validation evidence exists.
    Secure Boot and production release acceptance remain separate work.
    The host CLI now generates Ed25519 seeds from OS CSPRNG output and exports
    only the public trust-anchor fragment for release provisioning.
+   [x] Implement and validate the bounded developer-delegation record before
+   adding repository bundle storage or package-install authorization.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their
