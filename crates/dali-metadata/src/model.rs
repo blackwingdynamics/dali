@@ -19,6 +19,10 @@ pub enum MetadataRole {
     Targets,
     /// One developer public key and bounded permissions.
     Delegation,
+    /// Explicit developer-key revocation records.
+    Revocation,
+    /// Root-authorized recovery policy.
+    Recovery,
     /// One signed offline trust-store bundle manifest.
     Bundle,
 }
@@ -32,6 +36,8 @@ impl MetadataRole {
             Self::Snapshot => "snapshot",
             Self::Targets => "targets",
             Self::Delegation => "delegation",
+            Self::Revocation => "revocation",
+            Self::Recovery => "recovery",
             Self::Bundle => "bundle",
         }
     }
@@ -265,6 +271,32 @@ pub struct DelegationMetadata {
     pub not_after: u64,
 }
 
+/// One explicit revocation record issued by repository authority.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct RevocationRecord {
+    /// Stable developer identity whose key is revoked.
+    pub developer_id: BoundedText<MAX_DEVELOPER_ID_BYTES>,
+    /// Repository version from which the revocation applies.
+    pub effective_version: u64,
+    /// Key identifier of the authority that issued this record.
+    pub issuer_key_id: KeyId,
+    /// Revoked developer signing key identifier.
+    pub key_id: KeyId,
+    /// Bounded human-readable revocation reason.
+    pub reason: BoundedText<{ crate::MAX_REVOCATION_REASON_BYTES }>,
+}
+
+/// Explicit revocation metadata bound into the repository snapshot.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RevocationMetadata {
+    /// Common signed metadata fields.
+    pub header: MetadataHeader,
+    /// Revocation records in canonical developer/key order.
+    pub records: [RevocationRecord; crate::MAX_REVOCATIONS],
+    /// Number of active revocation records.
+    pub record_count: u8,
+}
+
 /// Kind of file referenced by an offline bundle manifest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BundleFileKind {
@@ -278,6 +310,8 @@ pub enum BundleFileKind {
     Targets,
     /// Developer delegation metadata file.
     Delegation,
+    /// Explicit revocation metadata file.
+    Revocation,
     /// AMRN package artifact.
     Package,
 }
@@ -291,6 +325,7 @@ impl BundleFileKind {
             Self::Snapshot => "snapshot",
             Self::Targets => "targets",
             Self::Delegation => "delegation",
+            Self::Revocation => "revocation",
             Self::Package => "package",
         }
     }
@@ -364,10 +399,23 @@ pub struct SnapshotMetadata {
     pub header: MetadataHeader,
     /// Exact targets metadata reference.
     pub targets: TargetsReference,
+    /// Exact revocation metadata reference.
+    pub revocations: RevocationReference,
     /// Delegation metadata references.
     pub delegations: [DelegationReference; crate::MAX_SNAPSHOT_REFERENCES],
     /// Number of active delegation references.
     pub delegation_count: u8,
+}
+
+/// Hash-and-length reference to the revocation metadata file.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct RevocationReference {
+    /// Monotonic revocation metadata version.
+    pub version: u64,
+    /// Exact serialized revocation metadata length.
+    pub length: u32,
+    /// Exact serialized revocation metadata digest.
+    pub sha256: Sha256Digest,
 }
 
 /// Timestamp metadata containing one snapshot reference.

@@ -2,8 +2,8 @@
 
 use super::{DecodeError, cursor::Cursor};
 use crate::{
-    DelegationReference, MAX_SNAPSHOT_REFERENCES, MetadataHeader, MetadataRole, SCHEMA_ID,
-    SnapshotMetadata, TargetsReference, validate_snapshot_metadata,
+    DelegationReference, MAX_SNAPSHOT_REFERENCES, MetadataHeader, MetadataRole,
+    RevocationReference, SCHEMA_ID, SnapshotMetadata, TargetsReference, validate_snapshot_metadata,
 };
 
 /// Parses one canonical snapshot signed body into fixed-capacity storage.
@@ -14,7 +14,7 @@ pub fn parse_snapshot_signed(bytes: &[u8]) -> Result<SnapshotMetadata, DecodeErr
     let expires = cursor.number()?;
     cursor.byte(b',')?;
     cursor.field("metadata")?;
-    let (targets, delegations, delegation_count) = parse_references(&mut cursor)?;
+    let (targets, revocations, delegations, delegation_count) = parse_references(&mut cursor)?;
     cursor.byte(b',')?;
     cursor.field("role")?;
     if cursor.string()? != MetadataRole::Snapshot.as_str() {
@@ -39,6 +39,7 @@ pub fn parse_snapshot_signed(bytes: &[u8]) -> Result<SnapshotMetadata, DecodeErr
             expires,
         },
         targets,
+        revocations,
         delegations,
         delegation_count,
     };
@@ -51,6 +52,7 @@ fn parse_references(
 ) -> Result<
     (
         TargetsReference,
+        RevocationReference,
         [DelegationReference; MAX_SNAPSHOT_REFERENCES],
         u8,
     ),
@@ -62,6 +64,7 @@ fn parse_references(
         return Err(DecodeError::InvalidValue);
     }
     let targets = parse_targets_reference(cursor)?;
+    let revocations = parse_revocation_reference(cursor)?;
     let mut count = 0_usize;
     while cursor.peek(b',') {
         cursor.byte(b',')?;
@@ -72,7 +75,31 @@ fn parse_references(
         count += 1;
     }
     cursor.byte(b']')?;
-    Ok((targets, delegations, count as u8))
+    Ok((targets, revocations, delegations, count as u8))
+}
+
+fn parse_revocation_reference(cursor: &mut Cursor<'_>) -> Result<RevocationReference, DecodeError> {
+    cursor.byte(b',')?;
+    cursor.byte(b'{')?;
+    cursor.field("length")?;
+    let length = u32::try_from(cursor.number()?).map_err(|_| DecodeError::InvalidValue)?;
+    cursor.byte(b',')?;
+    cursor.field("role")?;
+    if cursor.string()? != MetadataRole::Revocation.as_str() {
+        return Err(DecodeError::InvalidValue);
+    }
+    cursor.byte(b',')?;
+    cursor.field("sha256")?;
+    let sha256 = crate::Sha256Digest(cursor.hex::<{ crate::SHA256_LENGTH }>()?);
+    cursor.byte(b',')?;
+    cursor.field("version")?;
+    let version = cursor.number()?;
+    cursor.byte(b'}')?;
+    Ok(RevocationReference {
+        version,
+        length,
+        sha256,
+    })
 }
 
 fn parse_targets_reference(cursor: &mut Cursor<'_>) -> Result<TargetsReference, DecodeError> {

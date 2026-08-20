@@ -167,6 +167,8 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Connect the real F405 SDIO write transport to the bounded filesystem
    artifact acceptance path; disposable-card hardware evidence remains
    pending.
+   [x] Freeze the repository metadata v1 role vocabulary, Ed25519 profile rule,
+   single delegation version field, and explicit revocation document contract.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

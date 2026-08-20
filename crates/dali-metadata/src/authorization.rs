@@ -1,6 +1,9 @@
 //! Hardware-neutral package authorization against a developer delegation.
 
-use crate::{DelegationMetadata, TargetPackage, validate_delegation, validate_target_profile};
+use crate::{
+    DelegationMetadata, KeyId, RevocationMetadata, TargetPackage, validate_delegation,
+    validate_revocation_metadata, validate_target_profile,
+};
 
 /// Errors returned when a target package is outside its delegation scope.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -23,6 +26,8 @@ pub enum PackageAuthorizationError {
     NotYetValid,
     /// The package delegation has expired.
     Expired,
+    /// The developer signing key is revoked for this repository generation.
+    RevokedKey,
 }
 
 /// Checks that a target package is authorized by one signed delegation.
@@ -58,6 +63,45 @@ pub fn authorize_target_package(
         return Err(PackageAuthorizationError::AbiDenied);
     }
     validate_validity(delegation, now)
+}
+
+/// Authorizes a package while applying the signed revocation document.
+pub fn authorize_target_package_with_revocations(
+    package: &TargetPackage,
+    delegation_id: &crate::BoundedText<{ crate::MAX_DELEGATION_ID_BYTES }>,
+    delegation: &DelegationMetadata,
+    revocations: &RevocationMetadata,
+    repository_version: u64,
+    now: Option<u64>,
+) -> Result<(), PackageAuthorizationError> {
+    authorize_target_package(package, delegation_id, delegation, now)?;
+    if is_developer_key_revoked(
+        revocations,
+        &package.developer_id,
+        package.developer_key_id,
+        repository_version,
+    )? {
+        return Err(PackageAuthorizationError::RevokedKey);
+    }
+    Ok(())
+}
+
+/// Returns whether a developer key is revoked at a repository generation.
+pub fn is_developer_key_revoked(
+    metadata: &RevocationMetadata,
+    developer_id: &crate::BoundedText<{ crate::MAX_DEVELOPER_ID_BYTES }>,
+    key_id: KeyId,
+    repository_version: u64,
+) -> Result<bool, PackageAuthorizationError> {
+    validate_revocation_metadata(metadata)
+        .map_err(|_| PackageAuthorizationError::InvalidMetadata)?;
+    Ok(metadata.records[..usize::from(metadata.record_count)]
+        .iter()
+        .any(|record| {
+            record.developer_id == *developer_id
+                && record.key_id == key_id
+                && repository_version >= record.effective_version
+        }))
 }
 
 fn validate_package(package: &TargetPackage) -> Result<(), PackageAuthorizationError> {
@@ -111,7 +155,10 @@ fn validate_validity(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{BoundedText, KeyId, MetadataHeader, MetadataRole, PublicKey, Sha256Digest};
+    use crate::{
+        BoundedText, KeyId, MetadataHeader, MetadataRole, PublicKey, RevocationMetadata,
+        RevocationRecord, Sha256Digest,
+    };
 
     fn text<const CAPACITY: usize>(value: &str) -> BoundedText<CAPACITY> {
         BoundedText::new(value).expect("test text fits")
@@ -200,6 +247,38 @@ mod tests {
         assert_eq!(
             authorize_target_package(&package, &text("delegation-1"), &delegation(), Some(150)),
             Err(PackageAuthorizationError::KeyMismatch)
+        );
+    }
+
+    #[test]
+    fn rejects_a_package_after_its_developer_key_is_revoked() {
+        let mut records = [RevocationRecord::default(); crate::MAX_REVOCATIONS];
+        records[0] = RevocationRecord {
+            developer_id: text("developer"),
+            effective_version: 2,
+            issuer_key_id: KeyId([1; crate::KEY_ID_LENGTH]),
+            key_id: KeyId([8; crate::KEY_ID_LENGTH]),
+            reason: text("compromised"),
+        };
+        let revocations = RevocationMetadata {
+            header: MetadataHeader {
+                role: MetadataRole::Revocation,
+                version: 1,
+                expires: 0,
+            },
+            records,
+            record_count: 1,
+        };
+        assert_eq!(
+            authorize_target_package_with_revocations(
+                &package(),
+                &text("delegation-1"),
+                &delegation(),
+                &revocations,
+                2,
+                Some(150),
+            ),
+            Err(PackageAuthorizationError::RevokedKey)
         );
     }
 }

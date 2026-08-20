@@ -1,7 +1,9 @@
 # Dali Package Distribution and Trust Contract
 
-Status: design contract and source of truth for the multi-developer package
-ecosystem.
+Status: frozen initial profile and source of truth for the multi-developer
+package ecosystem.
+
+Contract identifier: `dali.package-distribution.v1`
 
 This document defines how a prebuilt Dali kernel can accept applications from
 multiple independent developers without rebuilding the kernel for every new
@@ -199,6 +201,20 @@ A developer delegation MUST be signed by an authorized targets/delegation key.
 The developer private key signs application artifacts, never delegation
 metadata. A developer MUST NOT be able to authorize another developer.
 
+### 5.6 Revocation role
+
+Revocation is an explicit signed metadata document. It is not inferred from a
+missing delegation, a changed targets file, or a local deny-list. Each record
+identifies a developer key, the developer identity, the repository version from
+which the revocation applies, the issuing authority key, and a bounded reason.
+The revocation document is signed by the root-authorized `revocation` role and
+is referenced by snapshot metadata. A target MUST reject a package signed by a
+revoked developer key when the package is evaluated at or after the record's
+effective version.
+
+The `recovery` role is also root-authorized, but it is reserved for separately
+authorized recovery metadata and is not an ordinary repository bundle file.
+
 ## 6. Metadata format contract
 
 The repository metadata wire format MUST be canonical and deterministic. The
@@ -261,15 +277,17 @@ envelope contains a canonical `signed` object and a `signatures` array:
 
 The signature input is the canonical UTF-8 JSON serialization of the `signed`
 object only. The envelope, whitespace, and signature array are not part of
-that input. A verifier MUST reject an envelope with duplicate signature key
-identifiers, an unsupported algorithm, an unknown role, or a signature over a
-different serialization.
+that input. Profile version `1` fixes Ed25519 as the only signature algorithm;
+the algorithm is selected by the profile and is intentionally not repeated as
+a per-signature wire field. A verifier MUST reject an envelope with duplicate
+signature key identifiers, an unknown role, or a signature over a different
+serialization.
 
 The common signed fields are:
 
 ```text
 schema        string, exactly "dali.metadata.v1"
-role          string, one of root | timestamp | snapshot | targets | delegation | bundle
+role          string, one of root | timestamp | snapshot | targets | delegation | revocation | recovery | bundle
 version       unsigned 64-bit integer, strictly increasing for the role
 expires       unsigned 64-bit Unix seconds, zero only when the target has no clock
 ```
@@ -291,12 +309,13 @@ The root signed body is:
     { "key_id": "...", "public_key": "...", "role": "root" }
   ],
   "roles": [
-    { "name": "targets", "key_ids": ["..."], "threshold": 1 },
-    { "name": "snapshot", "key_ids": ["..."], "threshold": 1 },
-    { "name": "timestamp", "key_ids": ["..."], "threshold": 1 },
-    { "name": "delegation", "key_ids": ["..."], "threshold": 1 },
     { "name": "bundle", "key_ids": ["..."], "threshold": 1 },
-    { "name": "recovery", "key_ids": ["..."], "threshold": 2 }
+    { "name": "delegation", "key_ids": ["..."], "threshold": 1 },
+    { "name": "recovery", "key_ids": ["..."], "threshold": 2 },
+    { "name": "revocation", "key_ids": ["..."], "threshold": 1 },
+    { "name": "snapshot", "key_ids": ["..."], "threshold": 1 },
+    { "name": "targets", "key_ids": ["..."], "threshold": 1 },
+    { "name": "timestamp", "key_ids": ["..."], "threshold": 1 }
   ]
 }
 ```
@@ -342,8 +361,29 @@ each metadata file it binds:
   "expires": 0,
   "metadata": [
     { "role": "targets", "version": 1, "length": 1234, "sha256": "..." },
+    { "role": "revocation", "version": 1, "length": 128, "sha256": "..." },
     { "role": "delegation", "id": "developer-id", "version": 1, "length": 456, "sha256": "..." }
   ]
+}
+```
+
+The revocation signed body contains explicit developer-key revocations:
+
+```json
+{
+  "expires": 0,
+  "revocations": [
+    {
+      "developer_id": "developer-id",
+      "effective_version": 2,
+      "issuer_key_id": "...",
+      "key_id": "...",
+      "reason": "compromised"
+    }
+  ],
+  "role": "revocation",
+  "schema": "dali.metadata.v1",
+  "version": 1
 }
 ```
 
@@ -401,14 +441,15 @@ signed body contains exactly these top-level fields in lexicographic order:
 ```
 
 `kind` MUST be one of `delegation`, `package`, `root`, `snapshot`,
-`targets`, or `timestamp`. Fixed metadata files use their kind as the logical
+`targets`, `revocation`, or `timestamp`. Fixed metadata files use their kind as the logical
 identity; delegation files use the delegation identifier; package files use
 the lowercase SHA-256 filename stem. Each kind/id pair MUST be unique, every
 length MUST be non-zero, and every digest MUST be non-zero. The canonical file
-order is `root`, `timestamp`, `snapshot`, `targets`, `delegation`, then
-`package`; each repeated kind is ordered by its identifier. A complete bundle
-MUST contain all six kinds, and the manifest MUST be verified before any file
-is installed.
+order is `root`, `timestamp`, `snapshot`, `targets`, `revocation`,
+`delegation`, then `package`; each repeated kind is ordered by its identifier.
+A complete ordinary bundle MUST contain all seven kinds, and the manifest MUST
+be verified before any file is installed. Recovery metadata is distributed by a
+separate recovery procedure and is not required in an ordinary bundle.
 
 ## 7. Package acceptance flow
 
@@ -711,15 +752,17 @@ rules without a contract revision.
 - Root keys are offline or hardware-backed and never live in CI variables used
   for ordinary package builds.
 - Targets, snapshot, and timestamp use separate delegated keys.
+- Revocation uses a separate delegated key and explicit signed metadata.
 - Developer keys never sign root, snapshot, or timestamp metadata.
 - Development may use one clearly labelled non-production root key.
 
 ### 15.3 Certificate and namespace rules
 
-A developer delegation contains exactly these security fields:
+A developer delegation contains exactly these security fields. The common
+`version` field is the delegation version; there is no separate certificate
+version field in profile `v1`:
 
 ```text
-certificate_version
 developer_id
 key_id
 public_key
@@ -728,7 +771,7 @@ allowed_targets
 allowed_abis
 not_before
 not_after
-delegation_version
+version
 ```
 
 `developer_id` is an opaque registry identifier. `key_id` is a random fixed
@@ -748,6 +791,7 @@ The first F405 profile uses named, target-owned limits:
 | snapshot | 16 KiB | 64 metadata references |
 | targets | 64 KiB | 256 package records |
 | developer delegation | 4 KiB | 32 package scopes |
+| revocation | 4 KiB | 64 revocation records |
 | trust-store update bundle | 128 KiB | 64 developer delegations |
 
 These values are named constants in the target policy, not raw literals in
@@ -764,6 +808,7 @@ metadata/timestamp.json
 metadata/snapshot.json
 metadata/targets.json
 metadata/delegations/<delegation-id>.json
+metadata/revocations.json
 packages/<package-sha256>.amrn
 bundle.manifest
 ```

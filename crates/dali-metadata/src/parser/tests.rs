@@ -4,11 +4,12 @@ use crate::{
     MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES,
     MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_SIGNATURES,
     MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH,
-    PackageId, PublicKey, RoleDefinition, RoleKey, Sha256Digest, Signature, SignatureRecord,
-    SignatureSet, TargetPackage, encode_delegation_signed, encode_root_signed,
-    encode_signature_list, encode_signed_envelope, encode_targets_signed, parse_bundle_signed,
-    parse_delegation_signed, parse_signature_list, parse_signed_envelope, parse_snapshot_signed,
-    parse_targets_signed, parse_timestamp_signed,
+    PackageId, PublicKey, RevocationMetadata, RevocationRecord, RoleDefinition, RoleKey,
+    Sha256Digest, Signature, SignatureRecord, SignatureSet, TargetPackage,
+    encode_delegation_signed, encode_revocation_signed, encode_root_signed, encode_signature_list,
+    encode_signed_envelope, encode_targets_signed, parse_bundle_signed, parse_delegation_signed,
+    parse_revocation_signed, parse_signature_list, parse_signed_envelope, parse_targets_signed,
+    parse_timestamp_signed,
 };
 
 fn delegation_metadata() -> DelegationMetadata {
@@ -175,7 +176,7 @@ fn rejects_non_canonical_targets_field_order() {
 
 #[test]
 fn parses_canonical_snapshot_and_timestamp_bodies() {
-    let snapshot = br#"{"expires":0,"metadata":[{"length":128,"role":"targets","sha256":"0303030303030303030303030303030303030303030303030303030303030303","version":1}],"role":"snapshot","schema":"dali.metadata.v1","version":1}"#;
+    let snapshot = br#"{"expires":0,"metadata":[{"length":128,"role":"targets","sha256":"0303030303030303030303030303030303030303030303030303030303030303","version":1},{"length":64,"role":"revocation","sha256":"0505050505050505050505050505050505050505050505050505050505050505","version":1}],"role":"snapshot","schema":"dali.metadata.v1","version":1}"#;
     let parsed_snapshot = parse_snapshot_signed(snapshot).expect("snapshot should parse");
     assert_eq!(parsed_snapshot.targets.version, 1);
     assert_eq!(parsed_snapshot.delegation_count, 0);
@@ -198,11 +199,38 @@ fn parses_a_canonical_delegation_body() {
 }
 
 #[test]
+fn parses_a_canonical_revocation_body() {
+    let mut records = [RevocationRecord::default(); crate::MAX_REVOCATIONS];
+    records[0] = RevocationRecord {
+        developer_id: BoundedText::new("developer").expect("developer fits"),
+        effective_version: 2,
+        issuer_key_id: KeyId([3; KEY_ID_LENGTH]),
+        key_id: KeyId([4; KEY_ID_LENGTH]),
+        reason: BoundedText::new("compromised").expect("reason fits"),
+    };
+    let metadata = RevocationMetadata {
+        header: MetadataHeader {
+            role: MetadataRole::Revocation,
+            version: 1,
+            expires: 0,
+        },
+        records,
+        record_count: 1,
+    };
+    let mut bytes = [0; crate::MAX_REVOCATION_BYTES];
+    let length =
+        encode_revocation_signed(&mut bytes, metadata).expect("revocation body should encode");
+    let parsed = parse_revocation_signed(&bytes[..length]).expect("revocation should parse");
+    assert_eq!(parsed.record_count, 1);
+    assert_eq!(parsed.records[0].effective_version, 2);
+}
+
+#[test]
 fn parses_a_canonical_bundle_manifest() {
-    let input = br#"{"files":[{"id":"root","kind":"root","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"timestamp","kind":"timestamp","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"snapshot","kind":"snapshot","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"targets","kind":"targets","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"delegation-1","kind":"delegation","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"aaaaaaaa","kind":"package","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"}],"role":"bundle","schema":"dali.metadata.v1","target_profile":"f405","version":1}"#;
+    let input = br#"{"files":[{"id":"root","kind":"root","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"timestamp","kind":"timestamp","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"snapshot","kind":"snapshot","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"targets","kind":"targets","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"revocation","kind":"revocation","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"delegation-1","kind":"delegation","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"aaaaaaaa","kind":"package","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"}],"role":"bundle","schema":"dali.metadata.v1","target_profile":"f405","version":1}"#;
     let parsed = parse_bundle_signed(input).expect("bundle manifest should parse");
     assert_eq!(parsed.header.role, MetadataRole::Bundle);
-    assert_eq!(parsed.file_count, 6);
+    assert_eq!(parsed.file_count, 7);
     assert_eq!(parsed.files[0].kind, crate::BundleFileKind::Root);
 }
 

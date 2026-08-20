@@ -2,10 +2,9 @@
 
 //! Bounded, hardware-neutral types for Dali repository metadata.
 //!
-//! This crate intentionally contains contract types and validation only. It
-//! does not parse unbounded JSON, access storage, or perform cryptography.
-//! The canonical metadata codec will build on these types after its wire
-//! behavior is implemented and tested.
+//! This crate contains bounded contract types, canonical JSON codecs, and
+//! hardware-neutral policy primitives. It does not access storage or provide
+//! a concrete cryptographic backend.
 
 mod authorization;
 mod codec;

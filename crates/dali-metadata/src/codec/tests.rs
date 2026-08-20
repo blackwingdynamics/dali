@@ -5,9 +5,9 @@ use crate::{
     DelegationReference, KeyId, MAX_BUNDLE_FILES, MAX_DELEGATION_ABIS, MAX_DELEGATION_ID_BYTES,
     MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
     MAX_SIGNATURES, MAX_SNAPSHOT_REFERENCES, MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES,
-    MetadataHeader, MetadataRole, PackageId, PublicKey, RoleDefinition, RoleKey, Sha256Digest,
-    Signature, SignatureRecord, SignatureSet, SnapshotMetadata, TargetPackage, TargetsReference,
-    TimestampMetadata,
+    MetadataHeader, MetadataRole, PackageId, PublicKey, RevocationReference, RoleDefinition,
+    RoleKey, Sha256Digest, Signature, SignatureRecord, SignatureSet, SnapshotMetadata,
+    TargetPackage, TargetsReference, TimestampMetadata,
 };
 
 const KEY: RoleKey = RoleKey {
@@ -80,11 +80,16 @@ fn bundle_metadata() -> BundleMetadata {
         ..files[0]
     };
     files[4] = BundleFile {
+        kind: BundleFileKind::Revocation,
+        id: BoundedText::new("revocation").expect("test revocation ID fits"),
+        ..files[0]
+    };
+    files[5] = BundleFile {
         kind: BundleFileKind::Delegation,
         id: BoundedText::new("delegation-1").expect("test delegation ID fits"),
         ..files[0]
     };
-    files[5] = BundleFile {
+    files[6] = BundleFile {
         kind: BundleFileKind::Package,
         id: BoundedText::new("aaaaaaaa").expect("test package ID fits"),
         ..files[0]
@@ -97,7 +102,7 @@ fn bundle_metadata() -> BundleMetadata {
         },
         target_profile: BoundedText::new("f405").expect("test target fits"),
         files,
-        file_count: 6,
+        file_count: 7,
     }
 }
 
@@ -277,6 +282,11 @@ fn snapshot_metadata() -> SnapshotMetadata {
             version: 1,
             length: 128,
             sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
+        },
+        revocations: RevocationReference {
+            version: 1,
+            length: 64,
+            sha256: Sha256Digest([5; crate::SHA256_LENGTH]),
         },
         delegations: [reference; MAX_SNAPSHOT_REFERENCES],
         delegation_count: 1,

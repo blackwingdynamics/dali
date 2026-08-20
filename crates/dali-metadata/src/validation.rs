@@ -46,6 +46,8 @@ pub enum MetadataError {
     InvalidDelegation,
     /// An offline bundle manifest violates its bounded file contract.
     InvalidBundle,
+    /// A revocation record violates its bounded contract.
+    InvalidRevocation,
 }
 
 /// Validates common signed metadata fields.
@@ -180,6 +182,11 @@ pub fn validate_snapshot_metadata(metadata: &crate::SnapshotMetadata) -> Result<
         metadata.targets.length,
         metadata.targets.sha256,
     )?;
+    validate_reference(
+        metadata.revocations.version,
+        metadata.revocations.length,
+        metadata.revocations.sha256,
+    )?;
     for (index, reference) in metadata
         .delegations
         .iter()
@@ -216,6 +223,48 @@ pub fn validate_timestamp_metadata(
     )
 }
 
+/// Validates explicit developer-key revocation metadata.
+pub fn validate_revocation_metadata(
+    metadata: &crate::RevocationMetadata,
+) -> Result<(), MetadataError> {
+    if metadata.header.role != MetadataRole::Revocation
+        || metadata.header.version == 0
+        || usize::from(metadata.record_count) > crate::MAX_REVOCATIONS
+    {
+        return Err(MetadataError::InvalidRevocation);
+    }
+    let records = &metadata.records[..usize::from(metadata.record_count)];
+    for (index, record) in records.iter().enumerate() {
+        if record.issuer_key_id.0 == [0; KEY_ID_LENGTH]
+            || record.key_id.0 == [0; KEY_ID_LENGTH]
+            || record.effective_version == 0
+            || record.developer_id.as_str().is_none()
+            || record.reason.as_str().is_none()
+            || records[..index].iter().any(|candidate| {
+                candidate.developer_id == record.developer_id && candidate.key_id == record.key_id
+            })
+            || (index > 0 && !revocation_ordered(records[index - 1], *record))
+        {
+            return Err(MetadataError::InvalidRevocation);
+        }
+        validate_developer_id(
+            record
+                .developer_id
+                .as_str()
+                .ok_or(MetadataError::InvalidRevocation)?,
+        )
+        .map_err(|_| MetadataError::InvalidRevocation)?;
+    }
+    Ok(())
+}
+
+fn revocation_ordered(left: crate::RevocationRecord, right: crate::RevocationRecord) -> bool {
+    let left_developer = left.developer_id.as_str().unwrap_or("");
+    let right_developer = right.developer_id.as_str().unwrap_or("");
+    left_developer < right_developer
+        || (left_developer == right_developer && left.key_id.0 < right.key_id.0)
+}
+
 /// Validates one bounded offline bundle manifest.
 pub fn validate_bundle_metadata(metadata: &crate::BundleMetadata) -> Result<(), MetadataError> {
     if metadata.header.role != MetadataRole::Bundle
@@ -238,6 +287,7 @@ pub fn validate_bundle_metadata(metadata: &crate::BundleMetadata) -> Result<(), 
         crate::BundleFileKind::Timestamp,
         crate::BundleFileKind::Snapshot,
         crate::BundleFileKind::Targets,
+        crate::BundleFileKind::Revocation,
         crate::BundleFileKind::Delegation,
         crate::BundleFileKind::Package,
     ] {
@@ -263,6 +313,7 @@ pub fn validate_bundle_metadata(metadata: &crate::BundleMetadata) -> Result<(), 
                 | crate::BundleFileKind::Timestamp
                 | crate::BundleFileKind::Snapshot
                 | crate::BundleFileKind::Targets
+                | crate::BundleFileKind::Revocation
         ) && id != file.kind.as_str()
         {
             return Err(MetadataError::InvalidBundle);
@@ -288,8 +339,9 @@ fn bundle_kind_order(kind: crate::BundleFileKind) -> u8 {
         crate::BundleFileKind::Timestamp => 1,
         crate::BundleFileKind::Snapshot => 2,
         crate::BundleFileKind::Targets => 3,
-        crate::BundleFileKind::Delegation => 4,
-        crate::BundleFileKind::Package => 5,
+        crate::BundleFileKind::Revocation => 4,
+        crate::BundleFileKind::Delegation => 5,
+        crate::BundleFileKind::Package => 6,
     }
 }
 
@@ -366,6 +418,8 @@ pub const fn is_repository_role(role: MetadataRole) -> bool {
             | MetadataRole::Snapshot
             | MetadataRole::Targets
             | MetadataRole::Delegation
+            | MetadataRole::Revocation
+            | MetadataRole::Recovery
             | MetadataRole::Bundle
     )
 }
@@ -407,6 +461,30 @@ mod tests {
                 Some(11),
             ),
             Err(MetadataError::Expired)
+        );
+    }
+
+    #[test]
+    fn accepts_an_explicit_revocation_record() {
+        let mut records = [crate::RevocationRecord::default(); crate::MAX_REVOCATIONS];
+        records[0] = crate::RevocationRecord {
+            developer_id: BoundedText::new("developer").expect("developer fits"),
+            effective_version: 2,
+            issuer_key_id: KeyId([1; crate::KEY_ID_LENGTH]),
+            key_id: KeyId([2; crate::KEY_ID_LENGTH]),
+            reason: BoundedText::new("compromised").expect("reason fits"),
+        };
+        assert_eq!(
+            validate_revocation_metadata(&crate::RevocationMetadata {
+                header: MetadataHeader {
+                    role: MetadataRole::Revocation,
+                    version: 1,
+                    expires: 0,
+                },
+                records,
+                record_count: 1,
+            }),
+            Ok(())
         );
     }
 

@@ -10,6 +10,8 @@ pub const PUBLIC_KEY_LENGTH: usize = 32;
 pub const SHA256_LENGTH: usize = 32;
 /// Ed25519 signature length in bytes.
 pub const SIGNATURE_LENGTH: usize = 64;
+/// Fixed signature algorithm for metadata profile version one.
+pub const SIGNATURE_ALGORITHM: &str = "ed25519";
 /// Maximum root metadata size in bytes.
 pub const MAX_ROOT_BYTES: usize = 16 * 1024;
 /// Maximum signed envelope size for the root metadata profile.
@@ -22,10 +24,12 @@ pub const MAX_SNAPSHOT_BYTES: usize = 16 * 1024;
 pub const MAX_TARGETS_BYTES: usize = 64 * 1024;
 /// Maximum developer delegation size in bytes.
 pub const MAX_DELEGATION_BYTES: usize = 4 * 1024;
+/// Maximum revocation metadata size in bytes.
+pub const MAX_REVOCATION_BYTES: usize = 4 * 1024;
 /// Maximum complete offline trust-store bundle size in bytes.
 pub const MAX_BUNDLE_BYTES: usize = 128 * 1024;
 /// Maximum file references in one offline bundle manifest.
-pub const MAX_BUNDLE_FILES: usize = MAX_TARGET_RECORDS + MAX_SNAPSHOT_REFERENCES + 4;
+pub const MAX_BUNDLE_FILES: usize = MAX_TARGET_RECORDS + MAX_SNAPSHOT_REFERENCES + 5;
 /// Maximum logical identifier bytes in one bundle file reference.
 pub const MAX_BUNDLE_ID_BYTES: usize = 128;
 /// Maximum keys declared by one root document.
@@ -56,3 +60,7 @@ pub const MAX_TARGET_PROFILE_BYTES: usize = 32;
 pub const MAX_PACKAGE_VERSION_BYTES: usize = 32;
 /// Maximum bytes in a delegation identifier.
 pub const MAX_DELEGATION_ID_BYTES: usize = 64;
+/// Maximum revocation records in one revocation metadata document.
+pub const MAX_REVOCATIONS: usize = 64;
+/// Maximum bytes in a revocation reason.
+pub const MAX_REVOCATION_REASON_BYTES: usize = 64;

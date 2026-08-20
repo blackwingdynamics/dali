@@ -26,6 +26,8 @@ pub fn encode_snapshot_signed(
     writer.field_name("metadata")?;
     writer.array_start()?;
     encode_targets_reference(&mut writer, metadata)?;
+    writer.comma()?;
+    encode_revocation_reference(&mut writer, metadata)?;
     for reference in active {
         writer.comma()?;
         encode_delegation_reference(&mut writer, reference)?;
@@ -42,6 +44,25 @@ pub fn encode_snapshot_signed(
     writer.number(metadata.header.version)?;
     writer.object_end()?;
     Ok(writer.len())
+}
+
+fn encode_revocation_reference(
+    writer: &mut Writer<'_>,
+    metadata: SnapshotMetadata,
+) -> Result<(), EncodeError> {
+    writer.object_start()?;
+    writer.field_name("length")?;
+    writer.number(u64::from(metadata.revocations.length))?;
+    writer.comma()?;
+    writer.field_name("role")?;
+    writer.string(MetadataRole::Revocation.as_str())?;
+    writer.comma()?;
+    writer.field_name("sha256")?;
+    writer.hex(&metadata.revocations.sha256)?;
+    writer.comma()?;
+    writer.field_name("version")?;
+    writer.number(metadata.revocations.version)?;
+    writer.object_end()
 }
 
 fn encode_targets_reference(
