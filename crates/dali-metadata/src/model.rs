@@ -56,6 +56,8 @@ pub struct MetadataHeader {
 /// One public key authorized for a repository role.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RoleKey {
+    /// Repository role authorized to use this key.
+    pub role: MetadataRole,
     /// Key identifier selected by a signature.
     pub key_id: KeyId,
     /// Ed25519 public key bytes.
