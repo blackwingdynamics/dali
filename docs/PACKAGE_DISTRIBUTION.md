@@ -777,7 +777,8 @@ target-declared persistent area. A candidate is never active until it has
 passed full verification and a final read-back check. The active slot is the
 fallback after power loss.
 
-The initial FAT adapter uses the following root-level artifact names:
+The initial FAT adapter uses the following root-level artifact names when a
+write-capable block transport is selected:
 
 ```text
 DALI-ACT.BIN   active trust-store bundle
