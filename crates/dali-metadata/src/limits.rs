@@ -36,3 +36,9 @@ pub const MAX_DELEGATION_SCOPES: usize = 32;
 pub const MAX_NAMESPACE_BYTES: usize = 128;
 /// Maximum opaque developer identifier bytes.
 pub const MAX_DEVELOPER_ID_BYTES: usize = 64;
+/// Maximum bytes in a target profile identifier.
+pub const MAX_TARGET_PROFILE_BYTES: usize = 32;
+/// Maximum bytes in a package version string.
+pub const MAX_PACKAGE_VERSION_BYTES: usize = 32;
+/// Maximum bytes in a delegation identifier.
+pub const MAX_DELEGATION_ID_BYTES: usize = 64;
