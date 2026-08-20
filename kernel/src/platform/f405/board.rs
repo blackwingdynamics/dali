@@ -1,5 +1,6 @@
 //! WeAct Studio STM32F405RGT6 Core Board hardware backend.
 
+use crate::runtime::watchdog::WatchdogBackend;
 use dali_targets::TARGET_F405;
 
 #[cfg(feature = "abi-current")]
@@ -111,6 +112,8 @@ pub struct Board {
     sdio: Option<pac::SDIO>,
     /// Frozen clock configuration required to initialize SDIO.
     clocks: Clocks,
+    /// Unarmed F405 independent watchdog backend.
+    watchdog: Option<super::F405Watchdog>,
     /// USB FS resources reserved for the CDC logging backend.
     #[cfg(feature = "usb-cdc")]
     usb: Option<UsbResources>,
@@ -137,6 +140,20 @@ impl Board {
     #[cfg(feature = "usb-cdc")]
     pub fn take_usb_resources(&mut self) -> Option<UsbResources> {
         self.usb.take()
+    }
+
+    /// Returns the reset source captured during early bootstrap.
+    pub fn reset_cause(&self) -> crate::runtime::watchdog::ResetCause {
+        self.watchdog
+            .as_ref()
+            .map_or(crate::runtime::watchdog::ResetCause::Unknown, |watchdog| {
+                watchdog.reset_cause()
+            })
+    }
+
+    /// Transfers the unarmed watchdog backend to the kernel runtime owner.
+    pub fn take_watchdog(&mut self) -> Option<super::F405Watchdog> {
+        self.watchdog.take()
     }
 }
 
@@ -171,6 +188,8 @@ pub fn initialize() -> Board {
     // not depend on the STM32 PAC or the reset-time peripheral topology.
     let device = pac::Peripherals::take().unwrap();
     let core = cortex_m::Peripherals::take().unwrap();
+    let reset_cause = super::F405Watchdog::read_reset_cause(&device.RCC);
+    super::F405Watchdog::clear_reset_cause(&device.RCC);
     let rcc = device.RCC.constrain();
     let clocks = rcc
         .cfgr
@@ -217,6 +236,7 @@ pub fn initialize() -> Board {
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
         clocks,
+        watchdog: Some(super::F405Watchdog::new(device.IWDG, reset_cause)),
         #[cfg(feature = "usb-cdc")]
         usb,
     }

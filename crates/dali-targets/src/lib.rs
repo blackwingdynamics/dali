@@ -45,6 +45,41 @@ pub struct TargetProfile {
     pub storage: Option<StorageProfile>,
     /// Scheduler configuration declared by the target manifest.
     pub scheduler: Option<SchedulerProfile>,
+    /// Watchdog configuration declared by the target manifest.
+    pub watchdog: Option<WatchdogProfile>,
+    /// Package authentication policy for development and release builds.
+    pub authentication: AuthenticationProfile,
+}
+
+/// Package authentication policy selected by a target build profile.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PackageAuthentication {
+    /// Packages may be unsigned in an explicitly non-production build.
+    UnsignedAllowed,
+    /// Packages must carry a valid Ed25519 signature before release.
+    Ed25519Required,
+}
+
+/// Authentication policy for the two supported application build profiles.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct AuthenticationProfile {
+    /// Policy for development packages.
+    pub development: PackageAuthentication,
+    /// Policy for release packages.
+    pub release: PackageAuthentication,
+    /// Public keys provisioned for development/test package verification.
+    pub development_trust_anchors: &'static [TrustAnchorProfile],
+    /// Public keys provisioned for release package verification.
+    pub release_trust_anchors: &'static [TrustAnchorProfile],
+}
+
+/// One manifest-owned Ed25519 trust anchor.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TrustAnchorProfile {
+    /// Opaque identifier carried by a signed package.
+    pub key_id: [u8; 16],
+    /// Ed25519 public key bytes provisioned for verification.
+    pub public_key: [u8; 32],
 }
 
 /// Optional hardware and runtime capabilities declared by a target profile.
@@ -99,6 +134,19 @@ pub struct SchedulerProfile {
     pub quantum_ticks: u32,
     /// Target timer interrupt frequency in hertz.
     pub tick_hz: u32,
+}
+
+/// Hardware watchdog facts declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WatchdogProfile {
+    /// Backend watchdog controller identifier.
+    pub controller: &'static str,
+    /// Configured timeout in milliseconds.
+    pub timeout_ms: u32,
+    /// Maximum interval between kernel feed operations in milliseconds.
+    pub feed_interval_ms: u32,
+    /// Whether reset-cause status can identify this watchdog source.
+    pub reset_cause_supported: bool,
 }
 
 /// SRAM regions declared by a board manifest.

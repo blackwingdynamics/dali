@@ -34,6 +34,30 @@ filesystem adapter's multi-block reads, capacity reporting, and read-only
 write rejection. Embedded target checks remain separate evidence for the F405
 PAC adapter.
 
+The feature-gated `storage-write` target build contains a real storage
+acceptance path. On an initialized F405 SDIO card it writes and reads back the
+three reserved trust-store artifact names (`DALI-ACT.BIN`, `DALI-CAN.BIN`, and
+`DALI-CMT.BIN`) through the FAT filesystem boundary. The path is destructive
+to those reserved files, so it is for a disposable test card only. A successful
+build is not hardware evidence; the console must report:
+
+```text
+[STORAGE] Trust-store artifact write/read-back test passed
+```
+
+Build this mode explicitly; it is not part of the default kernel profile:
+
+```text
+cargo build -p dali-kernel --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-relocation,storage-write \
+  --target thumbv7em-none-eabihf
+```
+
+The DMA contract has hardware-neutral tests for aligned in-range ranges,
+out-of-range rejection, alignment and empty-range rejection, and arithmetic
+overflow. These tests validate the range policy only; they are not evidence
+that a DMA controller, peripheral, or application can access memory safely.
+
 These tests cover FIFO ordering, bounded overflow behavior, partial writes,
 disconnect/reconnect retention, link-state transitions, and deterministic
 interleaving of storage progress with USB service events. They do not prove USB
@@ -145,8 +169,53 @@ multi-application isolation, or watchdog support.
   `Faulted`, `Recovering`, and `Terminated`; recovery entered the kernel
   recovery loop without restarting the application.
 
+### DMA isolation
+
+- [x] Host contract tests validate kernel DMA-buffer range, alignment, empty
+  range, and overflow rejection.
+- [x] The F405 SDIO path validates its manifest-declared DMA buffer before
+  programming DMA2 and retains exclusive mutable ownership for the transfer.
+- [x] F405 hardware evidence that the guarded SDIO path remains operational
+  after the ownership check: firmware reported `SDIO card initialized` and
+  `Read block 0 successfully` before loading two AMRN v4 packages.
+- [ ] Hardware evidence for unauthorized DMA configuration or application-owned
+  DMA. The current ABI exposes no application DMA service, so general DMA
+  isolation is not claimed yet.
+
+### Watchdog and reset recovery
+
+- [x] Host contract tests validate target timing metadata, explicit kernel
+  heartbeat ownership, single-arm behavior, and feed rejection before arming.
+- [x] F405 IWDG backend compiles, captures reset flags during early bootstrap,
+  clears the latch, and exposes the cause through the platform boundary.
+- [x] F405 hardware watchdog timeout and reset-cause evidence: with the kernel
+  heartbeat running, halting the CPU for more than the declared 2000 ms IWDG
+  timeout caused a reset, and the next boot logged `Reset cause: Watchdog`
+  before returning to the kernel heartbeat.
+- [x] Feed-failure policy is explicit: after a backend feed error, the kernel
+  stops issuing further feeds and allows the armed hardware watchdog to reset
+  the target.
+- [ ] F405 hardware feed-failure and explicit safe-mode recovery evidence.
+
 ### Diagnostic evidence
 
+- The F405 write path uses the STM32F4 HAL CPU/FIFO implementation. The custom
+  raw DMA write experiment was removed after release hardware testing showed
+  repeated `SdioTransmitUnderrun` failures while the HAL path passed.
+- A custom SDIO DMA write backend is deliberately deferred, not forgotten. It
+  is not a production claim or a current test requirement; future work must
+  justify it with a measurable large-transfer or realtime CPU-offload need and
+  repeatable F405 hardware evidence before reintroducing it.
+- On 2026-08-20, the release F405 HAL CPU/FIFO write path passed the complete
+  trust-store write/read-back, signed AMRN verification, slot-1 load, and
+  relocation-fixture execution sequence on the same physical card.
+- On 2026-08-20, the write-path data-path reset and HAL-order change produced
+  the expected `DCTRL` transition from `0x00000098` to `0x00000099`, removed
+  the stale `CMDREND` flag, and still ended with `TXUNDERR`. A subsequent
+  experiment using peripheral flow control and peripheral `INCR4` bursts
+  produced `SdioDmaFailure(0x00400000)` (`FEIF3`). Neither result is a
+  successful trust-store write; the DMA configuration remains under hardware
+  investigation.
 - Precise kernel-RAM read decoding preserved `CFSR=0x00000082`,
   `MMFAR=0x20000000`, stacked `PC=0x200080F6`, and stacked `LR=0x200080B9`
   before recovery.
@@ -167,9 +236,11 @@ distinguished from the kernel's fault and recovery records.
 - [x] Application restart and rollback policy is explicit: termination enters
   the kernel recovery heartbeat, automatic restart is rejected, and rollback is
   unavailable while package storage is read-only.
-- [ ] Hardware watchdog arming, feed ownership, timeout, and safe-mode reset;
-  the watchdog remains intentionally disabled until its heartbeat contract is
-  implemented.
+- [x] Kernel-heartbeat watchdog arming and feed ownership are integrated behind
+  the platform facade and target-checked; this is not hardware evidence.
+- [x] Hardware watchdog timeout and reset-cause behavior was observed on F405
+  with a real IWDG reset; feed-failure policy and explicit safe-mode behavior
+  are not yet hardware-triggered.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
@@ -197,8 +268,8 @@ distinguished from the kernel's fault and recovery records.
   readiness, reject a second active context, and allow retirement only after
   terminal recovery. These tests do not prove runtime scheduling or isolation.
 - [x] Host-level lifecycle policy tests require manual reset after termination,
-  reject rollback on the read-only package boundary, and keep the watchdog
-  disabled until a bounded heartbeat/feed owner exists.
+  reject rollback on the read-only package boundary, and require a bounded
+  heartbeat/feed owner before watchdog arming.
 - [x] Host-level context-switch contract tests preserve the PSP, `r4..r11`,
   `CONTROL`, and `EXC_RETURN` record, enforce one running context, bound table
   capacity, exclude terminated contexts, and select ready contexts in order.
@@ -301,7 +372,39 @@ distinguished from the kernel's fault and recovery records.
   rejection and recovery direction, not DMA isolation.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
-  contract; hardware watchdog implementation remains separate and pending.
+  contract; hardware watchdog timeout and recovery evidence remain pending.
+
+## Signed package acceptance
+
+- [x] Host AMRN tests cover v5 header/trailer split parsing and signed-range
+  boundary validation.
+- [x] The feature-gated kernel target build covers v5 streaming signature,
+  CRC32, relocation, and target-profile trust-anchor checks before SRAM copy.
+- [x] The loader service-capability policy accepts the declared Log service and
+  rejects undeclared required-service bits in host/unit coverage.
+- [x] A real v5 relocation package is generated and inspected with the
+  development test key; this is host/package evidence, not hardware evidence.
+- The F405 signed-loader hardware image must be built with Cargo's `release`
+  profile; the feature-complete development link does not fit the board's
+  documented flash region.
+- [x] F405 hardware: provision the documented development test public key and
+  execute a valid signed v5 package; the kernel verified the signature before
+  loading slot 1 and the relocation fixture ran.
+- [x] F405 hardware: provision the generated release public trust anchor and
+  execute a release-profile signed v5 package; the kernel logged
+  `AMRN signature verified`, loaded one package into slot 1, and ran the
+  relocation fixture. This verifies the configured release trust-anchor path
+  on the development board; production key custody, rotation, and Secure Boot
+  remain separate acceptance requirements.
+- [x] F405 hardware: reject an unknown key ID before SRAM copy; the loader
+  returned `UnknownTrustAnchor` and entered the kernel heartbeat.
+- [x] F405 hardware: reject a modified signed payload; the loader returned
+  `V5SignedPackage(CrcMismatch)` and entered the kernel heartbeat.
+- [x] F405 hardware: reject a truncated DSIG trailer; the loader returned
+  `V5SignedPackage(InvalidSignature)` and entered the kernel heartbeat.
+- [ ] Secure Boot and kernel-image authenticity.
+- [ ] F405 hardware: run the feature-gated trust-store artifact write/read-back
+  acceptance path on a disposable FAT32 card and record the console result.
 
 ## MVP acceptance test
 

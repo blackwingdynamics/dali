@@ -1,96 +1,18 @@
-//! Storage initialization and AMRN loading policy.
+//! Package validation, slot activation, and application launch policy.
 
-use super::status;
-use crate::{
-    drivers::{BLOCK_SIZE, Block, BlockAddress, BlockDeviceAdapter, BlockReader, StorageError},
-    logging, platform,
-};
+use super::super::lifecycle::status;
+use crate::{drivers::StorageError, logging, platform};
 
 #[cfg(feature = "sdio")]
-pub(super) fn initialize(board: &mut platform::Platform) -> status::StorageStatus {
-    let Some(mut reader) = board.take_sdio_reader() else {
-        logging::error(
-            logging::BOOT_SUBSYSTEM,
-            format_args!("[STORAGE] Storage interface unavailable"),
-        );
-        return status::StorageStatus::Failure;
-    };
-
-    if let Err(error) = reader.initialize() {
-        return match error {
-            StorageError::NotReady | StorageError::Timeout => {
-                logging::info(
-                    logging::BOOT_SUBSYSTEM,
-                    format_args!("[STORAGE] No storage medium detected; entering kernel heartbeat"),
-                );
-                status::StorageStatus::NotDetected
-            }
-            error => {
-                logging::error(
-                    logging::BOOT_SUBSYSTEM,
-                    format_args!("[STORAGE] Storage initialization failed: {:?}", error),
-                );
-                status::StorageStatus::Failure
-            }
-        };
-    }
-
-    logging::info(
-        logging::BOOT_SUBSYSTEM,
-        format_args!("[STORAGE] SDIO card initialized"),
-    );
-
-    #[cfg(feature = "abi-current")]
-    let mut slot_manager = match crate::runtime::memory::slots::SlotManager::new(
-        platform::MEMORY_PROFILE
-            .isolation
-            .map(|isolation| isolation.slots)
-            .unwrap_or(&[]),
-    ) {
-        Ok(manager) => manager,
-        Err(error) => {
-            logging::error(
-                logging::SECURITY_SUBSYSTEM,
-                format_args!("[SECURITY] Slot manager unavailable: {:?}", error),
-            );
-            return status::StorageStatus::Failure;
-        }
-    };
-    #[cfg(feature = "abi-mpu")]
-    let mut context_owner = crate::runtime::application::owner::ActiveContextOwner::new(
-        &crate::runtime::application::owner::ACTIVE_RUNTIME_STATE,
-    );
-
-    let mut block: Block = [0; BLOCK_SIZE];
-    match reader.read_block(BlockAddress::new(0), &mut block) {
-        Ok(()) => load_package(
-            reader,
-            board,
-            #[cfg(feature = "abi-current")]
-            &mut slot_manager,
-            #[cfg(feature = "abi-mpu")]
-            &mut context_owner,
-        ),
-        Err(error) => {
-            logging::error(
-                logging::BOOT_SUBSYSTEM,
-                format_args!("[STORAGE] Block 0 read failed: {:?}", error),
-            );
-            status::StorageStatus::Failure
-        }
-    }
-}
-
-#[cfg(feature = "sdio")]
-fn load_package<R>(
-    reader: R,
+pub fn load<D>(
+    device: D,
     board: &mut platform::Platform,
     #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     #[cfg(feature = "abi-mpu")]
     context_owner: &mut crate::runtime::application::owner::ActiveContextOwner,
 ) -> status::StorageStatus
 where
-    R: BlockReader,
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     #[cfg(not(feature = "abi-context-switch"))]
     let _ = board;
@@ -100,12 +22,12 @@ where
         format_args!("[STORAGE] Read block 0 successfully"),
     );
     #[cfg(feature = "abi-current")]
-    let package = crate::loader::load_current_abi(BlockDeviceAdapter::new(reader), slot_manager);
+    let package = crate::loader::load_current_abi(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]
     let package = if platform::APPLICATION_EXECUTION_SUPPORTED {
-        crate::loader::load_amrn_file(BlockDeviceAdapter::new(reader))
+        crate::loader::load_amrn_file(device)
     } else {
-        crate::loader::validate_amrn_file(BlockDeviceAdapter::new(reader))
+        crate::loader::validate_amrn_file(device)
     };
 
     match package {
@@ -113,6 +35,11 @@ where
             logging::info(
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[LOADER] AMRN header and payload validated"),
+            );
+            #[cfg(feature = "abi-authentication")]
+            logging::info(
+                logging::SECURITY_SUBSYSTEM,
+                format_args!("[SECURITY] AMRN signature verified"),
             );
             #[cfg(not(feature = "abi-current"))]
             if platform::APPLICATION_EXECUTION_SUPPORTED {
@@ -276,9 +203,4 @@ where
             status::StorageStatus::Failure
         }
     }
-}
-
-#[cfg(not(feature = "sdio"))]
-pub(super) fn initialize(_board: &mut platform::Platform) -> status::StorageStatus {
-    status::StorageStatus::NotDetected
 }

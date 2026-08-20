@@ -16,6 +16,8 @@ struct Manifest {
     usb: Usb,
     storage: Option<Storage>,
     scheduler: Option<Scheduler>,
+    watchdog: Option<Watchdog>,
+    authentication: Authentication,
     capabilities: Capabilities,
 }
 
@@ -62,6 +64,30 @@ struct Clock {
 struct Scheduler {
     quantum_ticks: u32,
     tick_hz: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct Watchdog {
+    controller: String,
+    timeout_ms: u32,
+    feed_interval_ms: u32,
+    reset_cause_supported: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct Authentication {
+    development: String,
+    release: String,
+    #[serde(default)]
+    development_trust_anchors: Vec<TrustAnchor>,
+    #[serde(default)]
+    release_trust_anchors: Vec<TrustAnchor>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TrustAnchor {
+    key_id: String,
+    public_key: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -199,6 +225,7 @@ fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::
         {
             return Err(format!("target manifest {index} has an empty profile field").into());
         }
+        validate_authentication(&manifest.authentication, &manifest.profile.name)?;
         if let Some(artifacts) = &manifest.artifacts
             && (artifacts.kernel_binary.is_empty() || artifacts.kernel_elf.is_empty())
         {
@@ -485,7 +512,7 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage}, scheduler: {scheduler} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage}, scheduler: {scheduler}, watchdog: {watchdog}, authentication: {authentication} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
@@ -534,13 +561,95 @@ fn generate_profile(manifest: &Manifest) -> String {
                 || "None".to_owned(),
                 |scheduler| format!("Some({scheduler})")
             ),
+        watchdog = manifest
+            .watchdog
+            .as_ref()
+            .map(generate_watchdog)
+            .map_or_else(|| "None".to_owned(), |watchdog| format!("Some({watchdog})")),
+        authentication = generate_authentication(&manifest.authentication),
     )
+}
+
+fn validate_authentication(
+    authentication: &Authentication,
+    profile_name: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for policy in [&authentication.development, &authentication.release] {
+        if policy != "unsigned" && policy != "ed25519" {
+            return Err(format!(
+                "target manifest {profile_name} has unsupported authentication policy `{policy}`"
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+fn generate_authentication(authentication: &Authentication) -> String {
+    format!(
+        "AuthenticationProfile {{ development: {}, release: {}, development_trust_anchors: &[{}], release_trust_anchors: &[{}] }}",
+        generate_authentication_policy(&authentication.development),
+        generate_authentication_policy(&authentication.release),
+        authentication
+            .development_trust_anchors
+            .iter()
+            .map(generate_trust_anchor)
+            .collect::<Vec<_>>()
+            .join(", "),
+        authentication
+            .release_trust_anchors
+            .iter()
+            .map(generate_trust_anchor)
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
+}
+
+fn generate_trust_anchor(anchor: &TrustAnchor) -> String {
+    let key_id = parse_hex_array::<16>(&anchor.key_id, "key_id");
+    let public_key = parse_hex_array::<32>(&anchor.public_key, "public_key");
+    format!(
+        "TrustAnchorProfile {{ key_id: {:?}, public_key: {:?} }}",
+        key_id, public_key
+    )
+}
+
+fn parse_hex_array<const N: usize>(value: &str, field: &str) -> [u8; N] {
+    let normalized = value.strip_prefix("0x").unwrap_or(value);
+    if normalized.len() != N * 2 {
+        panic!("authentication trust anchor {field} must contain {N} bytes");
+    }
+    let mut bytes = [0; N];
+    for (index, pair) in normalized.as_bytes().chunks_exact(2).enumerate() {
+        let text = core::str::from_utf8(pair).expect("hex input is ASCII");
+        bytes[index] = u8::from_str_radix(text, 16)
+            .unwrap_or_else(|_| panic!("authentication trust anchor {field} is not hex"));
+    }
+    bytes
+}
+
+fn generate_authentication_policy(policy: &str) -> &'static str {
+    match policy {
+        "unsigned" => "PackageAuthentication::UnsignedAllowed",
+        "ed25519" => "PackageAuthentication::Ed25519Required",
+        _ => panic!("authentication policy was not validated"),
+    }
 }
 
 fn generate_scheduler(scheduler: &Scheduler) -> String {
     format!(
         "SchedulerProfile {{ quantum_ticks: {}, tick_hz: {} }}",
         scheduler.quantum_ticks, scheduler.tick_hz
+    )
+}
+
+fn generate_watchdog(watchdog: &Watchdog) -> String {
+    format!(
+        "WatchdogProfile {{ controller: {}, timeout_ms: {}, feed_interval_ms: {}, reset_cause_supported: {} }}",
+        string_literal(&watchdog.controller),
+        watchdog.timeout_ms,
+        watchdog.feed_interval_ms,
+        watchdog.reset_cause_supported
     )
 }
 

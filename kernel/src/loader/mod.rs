@@ -38,6 +38,18 @@ pub enum LoaderError {
     /// The identity-aware ABI v3 package failed format validation or patching.
     #[cfg(feature = "abi-relocation")]
     V4IdentityPackage(dali_amrn::v4::Error),
+    /// The signed v5 package failed format validation or authentication.
+    #[cfg(feature = "abi-authentication")]
+    V5SignedPackage(dali_amrn::v5::Error),
+    /// The signed package selected no provisioned target trust anchor.
+    #[cfg(feature = "abi-authentication")]
+    UnknownTrustAnchor,
+    /// The signed package failed cryptographic verification.
+    #[cfg(feature = "abi-authentication")]
+    SignatureVerification(dali_crypto::VerificationError),
+    /// The package requested a service not exposed by the current kernel.
+    #[cfg(feature = "abi-relocation")]
+    UnsupportedServices(u32),
 }
 
 #[cfg(feature = "abi-current")]
@@ -87,6 +99,9 @@ where
                 }
                 #[cfg(feature = "abi-relocation")]
                 dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager)
+                    .map(pipeline::execution::LoadedApplications::single),
+                #[cfg(feature = "abi-authentication")]
+                dali_amrn::v5::FORMAT_VERSION => pipeline::signed::load_file(file, slot_manager)
                     .map(pipeline::execution::LoadedApplications::single),
                 _ => Err(LoaderError::CurrentAbiPackage(
                     dali_amrn::v2::Error::InvalidHeader,

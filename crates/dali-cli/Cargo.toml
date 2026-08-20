@@ -9,8 +9,11 @@ workspace = true
 
 [dependencies]
 dali-amrn = { path = "../dali-amrn" }
+dali-crypto = { path = "../dali-crypto" }
 dali-device = { path = "../dali-device" }
+dali-metadata = { path = "../dali-metadata" }
 dali-targets = { path = "../dali-targets" }
+getrandom = "=0.3.4"
 object = { version = "0.40", default-features = false, features = ["read", "elf"] }
 
 [[bin]]

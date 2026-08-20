@@ -1,6 +1,7 @@
 //! Bounded SDIO block reads for the STM32F4 data path.
 
 use crate::drivers::{Block, BlockAddress, StorageError};
+use crate::runtime::memory::DmaBuffer;
 use stm32f4xx_hal::pac;
 use stm32f4xx_hal::sdio::CardCapacity;
 
@@ -43,6 +44,7 @@ impl RawSdioReader {
     pub(crate) fn configure(&mut self, capacity: CardCapacity) {
         self.high_capacity = matches!(capacity, CardCapacity::HighCapacity);
     }
+
     /// Reads one complete 512-byte block with bounded hardware status handling.
     pub(crate) fn read_block(
         &mut self,
@@ -58,6 +60,9 @@ impl RawSdioReader {
             // critical section, so this single DMA scratch buffer has one
             // active owner for the complete transfer and copy.
             let words = &mut *core::ptr::addr_of_mut!(DMA_WORDS.0);
+            let mut dma_words = DmaBuffer::new(words, crate::platform::DMA_REGION)
+                .map_err(|_| StorageError::Transport)?;
+            let words = dma_words.as_mut_slice();
             Self::configure_dma(registers, words);
             Self::start_receive(registers);
             Self::start_read_command(registers, argument);
@@ -147,10 +152,7 @@ impl RawSdioReader {
                 .enabled()
         });
     }
-    fn configure_dma(
-        registers: &pac::sdio::RegisterBlock,
-        words: &mut [u32; DATA_WORD_COUNT as usize],
-    ) {
+    fn configure_dma(registers: &pac::sdio::RegisterBlock, words: &mut [u32]) {
         let rcc = Self::rcc();
         rcc.ahb1enr.modify(|_, writer| writer.dma2en().enabled());
         rcc.ahb1rstr.modify(|_, writer| writer.dma2rst().set_bit());
@@ -211,7 +213,7 @@ impl RawSdioReader {
 
     fn receive_block(
         registers: &pac::sdio::RegisterBlock,
-        words: &mut [u32; DATA_WORD_COUNT as usize],
+        words: &mut [u32],
     ) -> Result<(), StorageError> {
         loop {
             let status = registers.sta.read();
@@ -240,7 +242,7 @@ impl RawSdioReader {
 
     fn finish_dma_tail(
         registers: &pac::sdio::RegisterBlock,
-        words: &mut [u32; DATA_WORD_COUNT as usize],
+        words: &mut [u32],
     ) -> Result<(), StorageError> {
         let remaining = Self::dma2().st[DMA_STREAM_INDEX].ndtr.read().ndt().bits() as usize;
         if remaining == 0 {

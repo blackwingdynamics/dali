@@ -1,7 +1,8 @@
 //! Kernel startup orchestration.
 
-mod heartbeat;
-mod status;
+mod lifecycle;
+mod loading;
+mod startup;
 mod storage;
 
 use crate::{logging, platform};
@@ -14,7 +15,11 @@ pub fn run() -> ! {
         platform::mpu::configure_hardware(layout);
     }
 
-    initialize_logging();
+    startup::initialize_logging();
+    logging::info(
+        logging::BOOT_SUBSYSTEM,
+        format_args!("[BOOT] Reset cause: {:?}", board.reset_cause()),
+    );
     #[cfg(feature = "usb-cdc")]
     if let Some(resources) = board.take_usb_resources() {
         logging::initialize_usb(resources);
@@ -25,7 +30,7 @@ pub fn run() -> ! {
         );
     }
 
-    emit_boot_banner();
+    startup::emit_boot_banner();
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[BOOT] System clock: {} MHz", platform::SYSTEM_CLOCK_MHZ),
@@ -34,6 +39,8 @@ pub fn run() -> ! {
         logging::BOOT_SUBSYSTEM,
         format_args!("Hardware bootstrap complete"),
     );
+
+    let watchdog = startup::initialize_watchdog(&mut board);
 
     #[cfg(feature = "abi-context-switch")]
     if let Err(error) = crate::security::scheduling::initialize() {
@@ -56,24 +63,5 @@ pub fn run() -> ! {
         format_args!("Entering kernel heartbeat"),
     );
 
-    heartbeat::run(board, storage_status);
-}
-
-fn initialize_logging() {
-    logging::initialize();
-}
-
-fn emit_boot_banner() {
-    logging::info(
-        logging::BOOT_SUBSYSTEM,
-        format_args!("===================================="),
-    );
-    logging::info(
-        logging::BOOT_SUBSYSTEM,
-        format_args!("   Dali OS Kernel Booting...       "),
-    );
-    logging::info(
-        logging::BOOT_SUBSYSTEM,
-        format_args!("===================================="),
-    );
+    lifecycle::heartbeat::run(board, storage_status, watchdog);
 }

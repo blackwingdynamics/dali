@@ -6,6 +6,7 @@ mod board;
 mod sdio;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
 mod sdio_raw;
+mod watchdog;
 
 #[cfg(all(feature = "board-stm32f405-sd", not(feature = "abi-current")))]
 pub(crate) use board::APPLICATION_EXECUTION_SUPPORTED;
@@ -17,6 +18,7 @@ pub(crate) use board::MEMORY_PROFILE;
 pub(crate) use board::{ISOLATION_LAYOUT, activate_application_regions};
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
 pub(crate) use sdio::Stm32f405SdioTransport;
+pub(crate) use watchdog::F405Watchdog;
 
 #[cfg(feature = "board-stm32f405-sd")]
 impl crate::platform::Backend for board::Board {
@@ -73,6 +75,10 @@ use dali_targets::TargetProfile;
 
 #[cfg(feature = "abi-current")]
 pub(crate) const TARGET_PROFILE: &TargetProfile = &dali_targets::TARGET_F405;
+
+/// DMA-visible region reserved by the target manifest for kernel transport buffers.
+pub(crate) const DMA_REGION: dali_targets::TargetMemoryRegion =
+    dali_targets::TARGET_F405.memory.dma;
 
 #[cfg(all(feature = "abi-context-switch", feature = "abi-current"))]
 pub(crate) const CONTEXT_CAPACITY: usize = dali_targets::TARGET_F405_CONTEXT_CAPACITY;

@@ -95,12 +95,93 @@ this order:
 
 **Current priority — Harden the post-MVP platform and security contracts.**
 
-The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.1
+The USB implementation phase, formal F405 MVP acceptance, and 0.1.0-alpha.2
 release boundary are complete. RP2350/Pico kernel support remains deferred;
 the Pico is currently used only as an external SWD probe. ABI v3, relocation,
 and the single-application isolation evidence are complete for the current
 F405 scope. The scalable platform/backend extraction is complete; remaining
 work is contract hardening, security evidence, and post-MVP lifecycle design.
+
+### Post-alpha2 implementation order
+
+Work on this sequence from a dedicated feature branch, merging each coherent
+milestone into `main` only after its documented validation evidence exists.
+
+1. **DMA isolation** — [in progress] the kernel-owned SDIO path now validates
+   target-declared ranges before peripheral configuration, and F405 hardware
+   confirms block reads after that check. Extend the policy to every
+   DMA-capable backend before claiming general DMA isolation. The supported
+   F405 storage-write backend remains the HAL CPU/FIFO path; custom raw DMA
+   writes are not part of the production storage path. Revisit a real DMA
+   write backend only when larger transfer throughput or CPU-offload needs
+   justify its added complexity, with a dedicated hardware acceptance plan.
+2. **Watchdog and reset recovery** — [in progress] target facts,
+   reset-cause logging, platform integration, kernel-heartbeat feed ownership,
+   and a real F405 IWDG timeout/reset-cause test are complete. Remaining work
+   is feed-failure policy implementation and explicit safe-mode recovery
+   evidence.
+3. **Package authenticity** — [in progress] define a bounded signature
+   envelope, trust-anchor identifier, and declarative development/release
+   policy. The signed AMRN container contract now uses a new versioned
+   extension without changing v4; CLI signing, hardware-neutral key-id
+   lookup, and target-manifest development/release trust-anchor provisioning
+   are implemented and tested. The `ed25519-dalek 3.0.0`
+   backend passed the no_std thumb-target check and chunked standard-Ed25519
+   verification tests through the `dali-crypto` facade. Kernel loader
+   verification now has a feature-gated v5 streaming path with target-profile
+   trust-anchor lookup, bounded CRC/relocation checks, and authentication
+   before SRAM copy. The F405 development profile provisions only the RFC8032
+   test anchor behind `abi-test-fixtures`; the release profile now contains a
+   locally generated public anchor, while production key custody and release
+   acceptance remain pending.
+   v4/v5 identity metadata now rejects undeclared required-service bits before
+   any SRAM copy.
+   Valid signed-package hardware evidence now exists for the documented F405
+   development profile, and the loader rejects an unknown trust anchor before
+   SRAM copy. Modified-content rejection now has F405 evidence through the
+   package CRC path, and a truncated DSIG trailer is rejected before loading.
+   Secure Boot and production release acceptance remain separate work.
+   The host CLI now generates Ed25519 seeds from OS CSPRNG output and exports
+   only the public trust-anchor fragment for release provisioning.
+   [x] Implement and validate the bounded developer-delegation record before
+   adding repository bundle storage or package-install authorization.
+   [x] Implement and host-test the hardware-neutral package authorization
+   boundary against delegation identity, key, namespace, target, ABI, and
+   validity scope.
+   [x] Define and host-test the storage-independent atomic trust-store
+   transition contract; durable filesystem/block-device adapters and package
+   installation authorization remain pending.
+   [x] Add the explicit FAT root-file write boundary; target read-back,
+   candidate/commit-marker sequencing, and durable trust-store activation
+   remain pending hardware acceptance.
+   [x] Define named active, candidate, and commit-marker FAT artifacts and
+   add bounded read-back accessors; their durable transition sequence remains
+   pending hardware acceptance.
+   [x] Connect the real F405 SDIO write transport to the bounded filesystem
+   artifact acceptance path; disposable-card hardware evidence remains
+   pending.
+4. **Multi-developer package trust and distribution** — design and implement a
+   kernel-independent developer identity contract. The shipped kernel must
+   contain a Dali root public key, while developers generate and retain their
+   own private keys locally. A signed developer certificate or trust-store
+   update must authorize developer public keys without requiring an end user
+   or application developer to rebuild the kernel. Define package key
+   ownership, certificate fields, enrollment authority, offline trust-store
+   updates, revocation, expiry, rotation, roles, and recovery before exposing
+   a public application ecosystem. Never distribute the Dali root private key
+   or a shared developer signing key. The normative contract is
+   `docs/PACKAGE_DISTRIBUTION.md`; implementation must follow its frozen
+   initial-profile decisions and acceptance gates.
+5. **Secure Boot** — verify kernel and package authenticity, compatibility
+   metadata, and anti-rollback policy.
+6. **Application lifecycle** — implement and test restart, rollback, package
+   replacement, and slot recovery semantics.
+7. **Storage hardening** — add retry policy, media health states,
+   insertion/removal handling, and tests across SD cards and filesystems.
+8. **CI and release hardening** — require reproducible builds, artifact hashes,
+   target builds, host tests, Clippy, and release validation.
+9. **Additional board families** — add family backends and generated target
+   profiles only when a second MCU family is introduced.
 
 ### Platform scalability foundation
 
@@ -659,9 +740,11 @@ Compilation and host tests do not replace hardware evidence.
 
 - [ ] Test package installation, selection, replacement, and removal semantics
   after writable filesystem support exists.
-- [ ] Define a versioned package-signature extension for Secure Boot and
-  authenticity verification; do not overload the AMRN v4 reserved bytes, which
-  are too small for a digital signature.
+- [x] Define a versioned package-signature extension for Secure Boot and
+  authenticity verification without modifying the AMRN v4 bytes; the host
+  codec uses the DSIG trailer and has boundary/CRC coverage.
+- [x] Implement the feature-gated v5 kernel streaming verifier with
+  target-profile trust-anchor lookup before SRAM copy and relocation.
 - [ ] Test signed package verification and rejected signatures.
 - [ ] Test secure boot and kernel image authenticity.
 - [ ] Test version compatibility, anti-rollback, update, and rollback flows.

@@ -13,3 +13,10 @@ pub(crate) mod execution;
 pub(crate) mod identity;
 #[cfg(feature = "abi-relocation")]
 pub(crate) mod relocation;
+#[cfg(feature = "abi-authentication")]
+pub(crate) mod signed;
+#[cfg(feature = "abi-relocation")]
+pub(super) use services::supports_required_services;
+
+#[cfg(feature = "abi-relocation")]
+mod services;

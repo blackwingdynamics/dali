@@ -94,6 +94,9 @@ const RELEASE_PROFILE: &str = "release";
 const AMRN_EXTENSION: &str = "amrn";
 
 fn inspect_bytes(package: &[u8]) -> Result<String, String> {
+    if package.get(dali_amrn::v5::FORMAT_VERSION_OFFSET) == Some(&dali_amrn::v5::FORMAT_VERSION) {
+        return inspect_signed_package(package);
+    }
     if package.get(4) == Some(&dali_amrn::v4::FORMAT_VERSION) {
         return inspect_identity_package(package);
     }
@@ -127,6 +130,59 @@ fn inspect_bytes(package: &[u8]) -> Result<String, String> {
         parsed.entry_address,
         header.abi_version,
         header.crc32
+    ))
+}
+
+fn inspect_signed_package(package: &[u8]) -> Result<String, String> {
+    let target_id = *package
+        .get(dali_amrn::v5::TARGET_ID_OFFSET)
+        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+    let target = dali_targets::find_by_amrn_target_id(target_id)
+        .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
+    let isolation = target
+        .memory
+        .isolation
+        .ok_or_else(|| format!("target {} has no ABI v3 memory contract", target.name))?;
+    let mut parsed = None;
+    let mut last_error = dali_amrn::v5::Error::InvalidHeader;
+    for slot in isolation.slots.iter().copied() {
+        let contract = dali_amrn::v3::Contract {
+            target_id,
+            code_load_address: slot.code_origin,
+            code_capacity: slot.code_length,
+            data_load_address: slot.data_origin,
+            data_capacity: slot.data_length,
+        };
+        match dali_amrn::v5::parse(package, contract) {
+            Ok(value) => {
+                parsed = Some(value);
+                break;
+            }
+            Err(error) => last_error = error,
+        }
+    }
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
+    let metadata = parsed.header.metadata;
+    Ok(format!(
+        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\npackage_id: {:02X?}\npackage_version: {}.{}.{}\nminimum_kernel_version: {}.{}.{}\nrequired_services: 0x{:08X}\nslot_id: {}\ncode_size: {}\ndata_init_size: {}\nrelocation_count: {}\nabi_version: {}\npackage_crc32: 0x{:08X}\nsigning_key_id: {:02X?}",
+        dali_amrn::v5::FORMAT_VERSION,
+        parsed.header.image.target_id,
+        dali_amrn::v5::HEADER_SIZE,
+        metadata.package_id,
+        metadata.package_version.major,
+        metadata.package_version.minor,
+        metadata.package_version.patch,
+        metadata.minimum_kernel_version.major,
+        metadata.minimum_kernel_version.minor,
+        metadata.minimum_kernel_version.patch,
+        metadata.required_services,
+        metadata.slot_id,
+        parsed.header.image.code_size,
+        parsed.header.image.data_init_size,
+        parsed.header.image.relocation_count,
+        dali_amrn::v3::ABI_VERSION,
+        parsed.header.package_crc32,
+        parsed.header.signature.key_id,
     ))
 }
 
@@ -362,6 +418,64 @@ mod tests {
         assert!(report.contains("format_version: 4"));
         assert!(report.contains("package_version: 1.2.3"));
         assert!(report.contains("slot_id: 1"));
+    }
+
+    #[test]
+    fn inspect_reports_signed_fields() {
+        let contract = dali_amrn::v3::Contract {
+            target_id: 2,
+            code_load_address: 0x2001_0000,
+            code_capacity: 16 * 1024,
+            data_load_address: 0x2001_4000,
+            data_capacity: 16 * 1024,
+        };
+        let image = dali_amrn::v5::Image {
+            image: dali_amrn::v3::Image {
+                code: &[0, 0, 0, 0],
+                initialized_data: &[],
+                data_zero_size: 0,
+                stack_size: 4096,
+                linked_code_base: 0x2000_8000,
+                linked_data_base: 0x2000_C000,
+                execution_offset: 0,
+                relocations: &[],
+            },
+            metadata: dali_amrn::v4::Metadata {
+                package_id: [2; 16],
+                package_version: dali_amrn::v4::Version {
+                    major: 1,
+                    minor: 0,
+                    patch: 0,
+                },
+                minimum_kernel_version: dali_amrn::v4::Version {
+                    major: 0,
+                    minor: 1,
+                    patch: 0,
+                },
+                required_services: 1,
+                slot_id: 1,
+            },
+        };
+        let key_id = [7; dali_amrn::signature::KEY_ID_LENGTH];
+        let private_key = [
+            0x9d, 0x61, 0xb1, 0x9d, 0xef, 0xfd, 0x5a, 0x60, 0xba, 0x84, 0x4f, 0xa4, 0x92, 0xec,
+            0x2c, 0xc4, 0x44, 0x49, 0xc5, 0x69, 0x7b, 0x32, 0x69, 0x19, 0x70, 0x3b, 0xac, 0x03,
+            0x1d, 0xe7, 0x5f, 0x60,
+        ];
+        let mut signed = vec![0; dali_amrn::v5::HEADER_SIZE + 4];
+        let signed_size = dali_amrn::v5::encode_unsigned(image, contract, &mut signed)
+            .expect("signed range should encode");
+        signed.truncate(signed_size);
+        let signature = dali_crypto::sign(&private_key, &signed);
+        let mut package = vec![0; signed_size + dali_amrn::v5::SIGNATURE_SIZE];
+        let package_size =
+            dali_amrn::v5::append_signature(&signed, &key_id, &signature, &mut package)
+                .expect("signature envelope should append");
+        package.truncate(package_size);
+
+        let report = inspect_bytes(&package).expect("v5 package should inspect");
+        assert!(report.contains("format_version: 5"));
+        assert!(report.contains("signing_key_id: [07"));
     }
 
     #[test]

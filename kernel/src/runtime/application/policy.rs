@@ -21,11 +21,18 @@ pub enum RollbackPolicy {
     UnavailableOnReadOnlyStorage,
 }
 
-/// Watchdog behavior before a bounded feed owner exists.
+/// Watchdog arming behavior for the current kernel heartbeat owner.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WatchdogPolicy {
-    /// Do not arm hardware watchdogs without an explicit feed contract.
-    DisabledUntilHeartbeatContract,
+    /// Arm and feed the watchdog only from the kernel heartbeat.
+    KernelHeartbeat,
+}
+
+/// Action after the kernel loses the watchdog feed path.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WatchdogFailureAction {
+    /// Stop issuing feeds and let the armed hardware watchdog reset the target.
+    AllowHardwareReset,
 }
 
 /// Kernel-owned decisions for the current single-context boot contract.
@@ -35,6 +42,7 @@ pub struct LifecyclePolicy {
     restart: RestartPolicy,
     rollback: RollbackPolicy,
     watchdog: WatchdogPolicy,
+    watchdog_failure: WatchdogFailureAction,
 }
 
 impl LifecyclePolicy {
@@ -44,7 +52,8 @@ impl LifecyclePolicy {
             fault_recovery: FaultRecoveryAction::EnterKernelHeartbeat,
             restart: RestartPolicy::ManualResetOnly,
             rollback: RollbackPolicy::UnavailableOnReadOnlyStorage,
-            watchdog: WatchdogPolicy::DisabledUntilHeartbeatContract,
+            watchdog: WatchdogPolicy::KernelHeartbeat,
+            watchdog_failure: WatchdogFailureAction::AllowHardwareReset,
         }
     }
 
@@ -66,6 +75,11 @@ impl LifecyclePolicy {
     /// Returns the watchdog rule.
     pub const fn watchdog(self) -> WatchdogPolicy {
         self.watchdog
+    }
+
+    /// Returns the action used after a watchdog feed failure.
+    pub const fn watchdog_failure(self) -> WatchdogFailureAction {
+        self.watchdog_failure
     }
 }
 
@@ -95,10 +109,14 @@ mod tests {
     }
 
     #[test]
-    fn does_not_arm_a_watchdog_without_a_feed_owner() {
+    fn arms_the_watchdog_only_from_the_kernel_heartbeat() {
         assert_eq!(
             super::CURRENT.watchdog(),
-            super::WatchdogPolicy::DisabledUntilHeartbeatContract
+            super::WatchdogPolicy::KernelHeartbeat
+        );
+        assert_eq!(
+            super::CURRENT.watchdog_failure(),
+            super::WatchdogFailureAction::AllowHardwareReset
         );
     }
 }

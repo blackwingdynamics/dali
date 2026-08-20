@@ -5,6 +5,8 @@ use core::cell::RefCell;
 pub mod block;
 pub mod sdio;
 
+#[cfg(feature = "storage-write")]
+pub use block::BlockWriter;
 pub use block::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
 use embedded_sdmmc::{Block as FilesystemBlock, BlockCount, BlockDevice, BlockIdx};
 pub use sdio::{SdioBlockReader, SdioTransport};
@@ -14,8 +16,15 @@ pub use sdio::{SdioBlockReader, SdioTransport};
 /// The adapter owns the reader and borrows it for one bounded block operation
 /// at a time. Hardware drivers therefore implement only the Dali storage
 /// contract and never need to depend on filesystem policy.
+#[cfg(not(feature = "storage-write"))]
 pub struct BlockDeviceAdapter<R> {
     reader: RefCell<R>,
+}
+
+#[cfg(feature = "storage-write")]
+/// Adapts an explicitly read/write block transport to the filesystem API.
+pub struct WritableBlockDeviceAdapter<R> {
+    transport: RefCell<R>,
 }
 
 /// Borrows an existing block device for repeated read-only filesystem passes.
@@ -70,6 +79,7 @@ where
     }
 }
 
+#[cfg(not(feature = "storage-write"))]
 impl<R> BlockDeviceAdapter<R> {
     /// Wraps an initialized block reader for read-only filesystem use.
     pub const fn new(reader: R) -> Self {
@@ -79,6 +89,7 @@ impl<R> BlockDeviceAdapter<R> {
     }
 }
 
+#[cfg(not(feature = "storage-write"))]
 impl<R> BlockDevice for BlockDeviceAdapter<R>
 where
     R: BlockReader,
@@ -114,6 +125,90 @@ where
 
     fn num_blocks(&self) -> Result<BlockCount, Self::Error> {
         self.reader.borrow().block_count().map(BlockCount)
+    }
+}
+
+#[cfg(feature = "storage-write")]
+impl<R> WritableBlockDeviceAdapter<R> {
+    /// Wraps an initialized transport that explicitly supports block writes.
+    pub const fn new(transport: R) -> Self {
+        Self {
+            transport: RefCell::new(transport),
+        }
+    }
+}
+
+#[cfg(feature = "storage-write")]
+impl<R> BlockDevice for WritableBlockDeviceAdapter<R>
+where
+    R: BlockReader + BlockWriter,
+{
+    type Error = StorageError;
+
+    fn read(
+        &self,
+        blocks: &mut [FilesystemBlock],
+        start_block_idx: BlockIdx,
+    ) -> Result<(), Self::Error> {
+        let mut transport = self.transport.borrow_mut();
+        for (offset, block) in blocks.iter_mut().enumerate() {
+            let offset = u32::try_from(offset).map_err(|_| StorageError::InvalidBlockAddress)?;
+            let address = start_block_idx
+                .0
+                .checked_add(offset)
+                .ok_or(StorageError::InvalidBlockAddress)?;
+            transport.read_block(BlockAddress::new(address), &mut block.contents)?;
+        }
+        Ok(())
+    }
+
+    fn write(
+        &self,
+        blocks: &[FilesystemBlock],
+        start_block_idx: BlockIdx,
+    ) -> Result<(), Self::Error> {
+        let mut transport = self.transport.borrow_mut();
+        for (offset, block) in blocks.iter().enumerate() {
+            let offset = u32::try_from(offset).map_err(|_| StorageError::InvalidBlockAddress)?;
+            let address = start_block_idx
+                .0
+                .checked_add(offset)
+                .ok_or(StorageError::InvalidBlockAddress)?;
+            transport.write_block(BlockAddress::new(address), &block.contents)?;
+        }
+        Ok(())
+    }
+
+    fn num_blocks(&self) -> Result<BlockCount, Self::Error> {
+        self.transport.borrow().block_count().map(BlockCount)
+    }
+}
+
+#[cfg(feature = "storage-write")]
+impl<R> BlockDevice for &WritableBlockDeviceAdapter<R>
+where
+    R: BlockReader + BlockWriter,
+{
+    type Error = StorageError;
+
+    fn read(
+        &self,
+        blocks: &mut [FilesystemBlock],
+        start_block_idx: BlockIdx,
+    ) -> Result<(), Self::Error> {
+        (**self).read(blocks, start_block_idx)
+    }
+
+    fn write(
+        &self,
+        blocks: &[FilesystemBlock],
+        start_block_idx: BlockIdx,
+    ) -> Result<(), Self::Error> {
+        (**self).write(blocks, start_block_idx)
+    }
+
+    fn num_blocks(&self) -> Result<BlockCount, Self::Error> {
+        (**self).num_blocks()
     }
 }
 

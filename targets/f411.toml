@@ -8,6 +8,12 @@ application_supported = false
 amrn_target_id = 0
 abi_version = 0
 
+[authentication]
+development = "unsigned"
+release = "ed25519"
+development_trust_anchors = []
+release_trust_anchors = []
+
 [capabilities]
 storage = false
 usb_console = false

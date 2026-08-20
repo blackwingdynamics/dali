@@ -62,6 +62,13 @@ The following remain outside the current guarantee boundary:
 
 Security claims must be added only after the corresponding mechanism and test evidence exist.
 
+The future multi-developer package ecosystem is defined in
+`docs/PACKAGE_DISTRIBUTION.md`. That document is the source of truth for the
+Dali root, repository metadata roles, developer delegations, signed trust-store
+updates, revocation, rotation, rollback, and offline installation. The current
+F405 static release trust-anchor path is a precursor to that design and must
+not be described as a completed multi-developer registry.
+
 ## F405 isolation foundation (feature-gated, single-application hardware evidence)
 
 The first isolation milestone is limited to one F405 application. It uses
@@ -85,8 +92,12 @@ complete fault isolation, DMA isolation, confidentiality, or authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
 after termination, keeps the read-only package boundary rollback-free, and does
-not arm a watchdog without a feed owner. The initial valid-service
+arms a watchdog only through the kernel heartbeat feed owner. The initial valid-service
 authorization policy and repeated invalid-PSP fault-status clearing are
 hardware-tested. MPU protection applies to
 processor accesses; DMA buffer ownership and kernel memory safety require
-separate controls.
+separate controls. The DMA contract now validates every F405 SDIO transfer
+buffer against the target-declared DMA region and keeps the mutable borrow
+exclusive for the active transfer. This is a kernel transport boundary, not
+yet proof that arbitrary future DMA-capable peripherals or application-owned
+DMA are isolated.

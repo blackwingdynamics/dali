@@ -15,6 +15,7 @@ pub(super) struct ApplicationManifest {
     pub(super) name: String,
     pub(super) package_version: Option<String>,
     pub(super) package_id: Option<String>,
+    pub(super) signing_key_id: Option<String>,
     pub(super) minimum_kernel_version: Option<String>,
     pub(super) required_services: Option<u32>,
     pub(super) target_profile: String,
@@ -37,6 +38,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let abi_version = manifest.abi_version.unwrap_or(target_profile.abi_version);
     validate_target_capabilities(target_profile, abi_version, manifest.format_version)?;
     let release = cargo_profile_is_release(&manifest.profile)?;
+    validate_package_authentication(target_profile, release, manifest.format_version)?;
     let cargo_manifest = project_directory.join(CARGO_MANIFEST_FILE);
     run_cargo_build(
         &project_directory,
@@ -96,6 +98,7 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
     let name = required_value(contents, "name")?;
     let package_version = optional_value(contents, "version");
     let package_id = optional_value(contents, "package_id");
+    let signing_key_id = optional_value(contents, "signing_key_id");
     let minimum_kernel_version = optional_value(contents, "minimum_kernel_version");
     let required_services = optional_value(contents, "required_services")
         .map(|value| parse_u32(&value, "required_services"))
@@ -128,6 +131,7 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
         name,
         package_version,
         package_id,
+        signing_key_id,
         minimum_kernel_version,
         required_services,
         target_profile,
@@ -234,6 +238,29 @@ pub(super) fn cargo_profile_is_release(profile: &str) -> Result<bool, String> {
     }
 }
 
+/// Rejects unsigned release packaging until a configured signer exists.
+pub(super) fn validate_package_authentication(
+    target: &dali_targets::TargetProfile,
+    release: bool,
+    format_version: Option<u8>,
+) -> Result<(), String> {
+    let policy = if release {
+        target.authentication.release
+    } else {
+        target.authentication.development
+    };
+    if policy == dali_targets::PackageAuthentication::Ed25519Required
+        && format_version != Some(dali_amrn::v5::FORMAT_VERSION)
+    {
+        return Err(format!(
+            "target `{}` release packages must use AMRN format version {} with an Ed25519 signature",
+            target.name,
+            dali_amrn::v5::FORMAT_VERSION
+        ));
+    }
+    Ok(())
+}
+
 fn run_cargo_build(
     project_directory: &Path,
     manifest: &Path,
@@ -283,7 +310,8 @@ pub(super) fn validate_target_capabilities(
         ));
     }
     if (format_version == dali_amrn::v3::FORMAT_VERSION
-        || format_version == dali_amrn::v4::FORMAT_VERSION)
+        || format_version == dali_amrn::v4::FORMAT_VERSION
+        || format_version == dali_amrn::v5::FORMAT_VERSION)
         && !target.capabilities.relocation
     {
         return Err(format!(
@@ -391,6 +419,21 @@ mod tests {
     #[test]
     fn rejects_unknown_profiles() {
         assert!(cargo_profile_is_release("custom").is_err());
+    }
+
+    #[test]
+    fn requires_signatures_for_f405_release_packages() {
+        let target = super::target_profile("f405").expect("F405 target is declared");
+        assert!(super::validate_package_authentication(target, true, Some(4)).is_err());
+        assert!(
+            super::validate_package_authentication(
+                target,
+                true,
+                Some(dali_amrn::v5::FORMAT_VERSION)
+            )
+            .is_ok()
+        );
+        assert!(super::validate_package_authentication(target, false, Some(4)).is_ok());
     }
 
     #[test]

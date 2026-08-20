@@ -37,6 +37,12 @@ pub enum StorageError {
     Unsupported,
     /// The underlying hardware transport reported an unspecified failure.
     Transport,
+    /// The SDIO transmit FIFO underflowed during a block transfer.
+    SdioTransmitUnderrun(u32),
+    /// The SDIO status register reported an unclassified transfer failure.
+    SdioStatusFailure(u32),
+    /// The SDIO DMA stream reported a transfer error.
+    SdioDmaFailure(u32),
 }
 
 impl core::fmt::Display for StorageError {
@@ -48,6 +54,18 @@ impl core::fmt::Display for StorageError {
             Self::DataCorruption => "storage data is corrupted",
             Self::Unsupported => "storage operation is unsupported",
             Self::Transport => "storage transport failure",
+            Self::SdioTransmitUnderrun(status) => {
+                let _ = status;
+                "SDIO transmit FIFO underrun"
+            }
+            Self::SdioStatusFailure(status) => {
+                let _ = status;
+                "SDIO status transfer failure"
+            }
+            Self::SdioDmaFailure(flags) => {
+                let _ = flags;
+                "SDIO DMA transfer failure"
+            }
         })
     }
 }
@@ -65,4 +83,11 @@ pub trait BlockReader {
 
     /// Returns the number of addressable blocks after initialization.
     fn block_count(&self) -> Result<u32, StorageError>;
+}
+
+/// Writes complete fixed-size blocks to a storage medium.
+#[cfg(feature = "storage-write")]
+pub trait BlockWriter {
+    /// Writes one complete block to the selected sector.
+    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError>;
 }

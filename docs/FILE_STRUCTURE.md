@@ -39,27 +39,36 @@ dali-kernel/
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
 │       │   ├── board.rs            # F405 hardware resources and board API
 │       │   ├── sdio.rs             # F405 SDIO transport implementation
-│       │   └── sdio_raw/           # F405 SDIO register transport
+│       │   ├── sdio_raw/           # F405 SDIO register transport
 │       │       ├── mod.rs          # DMA-backed raw block reader
 │       │       └── status.rs       # SDIO status and interrupt helpers
-│       ├── bootstrap/             # Startup, storage policy, status, heartbeat
+│       │   └── watchdog/           # F405 watchdog register adapter
+│       │       └── mod.rs          # IWDG and reset-cause implementation
+│       ├── bootstrap/             # Categorized kernel startup orchestration
+│       │   ├── startup/           # Logging, boot banner, and watchdog setup
+│       │   ├── lifecycle/         # Storage status and heartbeat behavior
+│       │   ├── storage/           # Storage initialization and durable-artifact acceptance
+│       │   └── loading/           # Package validation and application launch handoff
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader/mod.rs          # AMRN dispatch and ABI services
 │       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
+│       │   ├── catalog.rs          # Package catalog policy
 │       │   └── tests.rs            # Hardware-neutral contract tests
 │       ├── loader/pipeline/       # Responsibility-specific loading paths
 │       │   ├── mod.rs             # Pipeline ownership and shared loader imports
 │       │   ├── execution.rs       # Fixed-origin ABI execution path
 │       │   ├── relocation.rs      # Relocation application path
 │       │   ├── identity.rs        # Identity-aware package loading
-│       │   └── discovery.rs       # Real root-package catalog and selection
+│       │   ├── discovery.rs       # Real root-package catalog and selection
+│       │   ├── services.rs        # Required-service validation
+│       │   └── signed.rs          # Signed-package loading path
 │       ├── logging/              # Facade, RTT, USB CDC backend
 │       ├── runtime/              # Hardware-neutral runtime contracts
 │       │   ├── application/     # Lifecycle, active ownership, recovery policy
 │       │   ├── memory/          # Manifest-owned slot allocation
 │       │   └── scheduling/      # CPU records, tick budget, and context selection
-│       └── storage/              # Read-only filesystem and storage policy
+│       └── storage/              # Filesystem and durable storage policy
 │           └── filesystem/       # Root package discovery and file streaming
 │               └── multi.rs      # Bounded multi-package enumeration
 ├── apps/
@@ -81,6 +90,7 @@ dali-kernel/
 │   └── dali-app-fault-usage/
 ├── crates/
 │   ├── dali-amrn/                 # AMRN format contracts and validation
+│   ├── dali-crypto/               # no_std Ed25519 signing/verification primitives
 │   ├── dali-cli/                  # Installed `dali` CLI
 │   │   ├── src/main.rs
 │   │   ├── src/commands/           # One focused module per command
@@ -95,7 +105,7 @@ dali-kernel/
 │   ├── CODING_STANDARDS.md, DEVELOPMENT.md, VERSIONING.md
 │   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
-│   ├── RELOCATION.md, FILE_STRUCTURE.md
+│   ├── PACKAGE_DISTRIBUTION.md, RELOCATION.md, FILE_STRUCTURE.md
 │   ├── cli/                        # CLI guides and command references
 │   └── changelog/                  # Archived generated release changelogs
 ├── scripts/
@@ -118,15 +128,21 @@ kernel/src/
 ├── lib.rs
 ├── main.rs
 ├── abi.rs
-├── security/{mod.rs,fault.rs,launch.rs,scb.rs,svc.rs}
-├── security/mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs}
+├── security/{mod.rs,
+│   fault/{mod.rs,scb.rs},launch/{mod.rs},
+│   mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs},
+│   privilege/{mod.rs,svc.rs},scheduling/{mod.rs}}
 ├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,status.rs}}}
-├── bootstrap/{mod.rs,storage.rs,heartbeat.rs,status.rs}
+├── bootstrap/{mod.rs,
+│   startup/{mod.rs,logging.rs,watchdog.rs},
+│   lifecycle/{mod.rs,heartbeat.rs,status.rs},
+│   storage/{mod.rs,initialization.rs,acceptance.rs},
+│   loading/{mod.rs,package.rs}}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader/{mod.rs,contract/{mod.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs}}
+├── loader/{mod.rs,contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
-├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,slots.rs},scheduling/{mod.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs}}
-└── storage/{mod.rs,filesystem/{mod.rs,tests.rs}}
+├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,context_switch.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs},watchdog/mod.rs}
+└── storage/{mod.rs,filesystem/{mod.rs,artifacts.rs,multi.rs,read.rs,tests.rs,write.rs}}
 
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports
@@ -137,8 +153,10 @@ crates/dali-amrn/src/
 │   ├── mod.rs, tests.rs
 ├── v3/                            # Relocatable ABI v3 package contract
 │   ├── mod.rs, apply.rs, codec.rs, wire.rs, tests.rs
-└── v4/                            # Identity and selection metadata extension
-    ├── mod.rs, tests.rs
+├── v4/                            # Identity and selection metadata extension
+│   ├── mod.rs, tests.rs
+└── v5/                            # Signed container extension; kernel-gated
+    ├── mod.rs, codec.rs, tests.rs
 
 crates/dali-cli/src/
 ├── main.rs
@@ -188,16 +206,28 @@ target-scaffold.md
 - `kernel/src/platform/f405/sdio.rs` and `kernel/src/platform/f405/sdio_raw/`
   own the F405 PAC/HAL SDIO transport;
   bootstrap consumes it only through the platform facade.
+- `kernel/src/platform/f405/watchdog/` owns the F405 IWDG and RCC reset-cause
+  register adapter; watchdog policy remains in `kernel/src/runtime/watchdog/`.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
 - `kernel/src/drivers/sdio.rs` owns the generic SDIO transport contract and
   block-reader adapter; platform code supplies the concrete transport.
+- `kernel/src/runtime/memory/dma.rs` owns the target-independent DMA buffer
+  ownership and range-validation contract; SDIO, USB, SPI, ADC, and future
+  peripheral backends may consume it without changing the contract.
 - `targets/*.toml` owns declarative target facts; hardware implementations must
   consume those facts through generated target metadata instead of copying
   board constants into kernel policy.
 - `kernel/src/storage/` owns SD/filesystem policy; generic block contracts live
   in `kernel/src/drivers/`; package parsing remains in
-  `crates/dali-amrn/` and loading policy remains in `kernel/src/loader/`.
+  `crates/dali-amrn/` and bootstrap loading policy remains in
+  `kernel/src/bootstrap/loading/` while AMRN execution contracts remain in
+  `kernel/src/loader/`.
+- `kernel/src/bootstrap/startup/` owns logging/banner and watchdog startup;
+  `kernel/src/bootstrap/lifecycle/` owns heartbeat/status behavior;
+  `kernel/src/bootstrap/storage/` owns storage initialization and the
+  feature-gated durable-artifact acceptance path; and
+  `kernel/src/bootstrap/loading/` owns package-to-runtime handoff.
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, fault
   recovery, and MPU protection. The hardware-neutral MPU descriptors and
   layout builder are separated from privileged register programming.
@@ -205,6 +235,9 @@ target-scaffold.md
   context ownership, and restart/rollback/watchdog policy decisions.
 - `kernel/src/runtime/memory/` owns manifest-declared slot allocation and range
   containment.
+- `kernel/src/runtime/watchdog/` owns the hardware-neutral watchdog feed-owner,
+  timing, and reset-cause contracts; target backends implement the hardware
+  adapter separately.
 - `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state,
   manifest-slot-bound scheduler records, and bounded context selection;
   PendSV/SysTick handlers and MPU switching remain separate hardware work.
