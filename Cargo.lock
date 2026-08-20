@@ -186,6 +186,7 @@ dependencies = [
  "dali-amrn",
  "dali-crypto",
  "dali-device",
+ "dali-metadata",
  "dali-targets",
  "getrandom",
  "object",

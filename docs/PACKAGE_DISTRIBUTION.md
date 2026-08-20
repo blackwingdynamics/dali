@@ -428,6 +428,31 @@ The current Dali implementation does not yet provide this flow. The existing
 `release_trust_anchors` target manifest is the single-image development
 precursor and must not be presented as a multi-developer trust store.
 
+## 8.1 Authority-side delegation artifact generation
+
+The CLI now provides a bounded authority-side constructor for one signed
+developer delegation:
+
+```text
+dali metadata delegation create \
+  --output <delegation-envelope.json> \
+  --signing-key <authority-seed-file> \
+  --signer-key-id <root-authority-key-id> \
+  --developer-id <developer-id> \
+  --developer-key-id <developer-key-id> \
+  --developer-public-key <developer-public-key> \
+  --namespace <exact-namespace> \
+  --target <target-profile> \
+  --abi <abi-version> \
+  --version <delegation-version>
+```
+
+The command reads the authority seed locally, signs only the canonical
+delegation body, and writes a canonical signed envelope with create-new
+semantics. It never prints or embeds the seed. The authority seed MUST remain
+offline or hardware-backed; this command is not a trust-store installer and
+does not authorize a delegation on a target by itself.
+
 ## 9. Key lifecycle
 
 ### 9.1 Developer key creation
