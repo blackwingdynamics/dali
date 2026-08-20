@@ -20,7 +20,7 @@ pub enum ResetCause {
 /// Kernel-owned source allowed to feed the watchdog.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum FeedOwner {
-    /// The bounded kernel heartbeat loop owns the feed operation.
+    /// Kernel-owned heartbeat or scheduler execution owns the feed operation.
     KernelHeartbeat,
 }
 

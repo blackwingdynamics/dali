@@ -168,6 +168,12 @@ multi-application isolation, or watchdog support.
   console reported `Ready`, `Running`, `UsageFault 0x00040000`, then
   `Faulted`, `Recovering`, and `Terminated`; recovery entered the kernel
   recovery loop without restarting the application.
+- [x] On 2026-08-20, F405 hardware repeated the slot0 invalid-PSP fixture with
+  the explicit `abi-test-fixtures` kernel feature. The release image logged
+  `UsageFault 0x00040000`, `Faulted`, `Recovering`, and `Terminated` after the
+  signed AMRN package launched; no application restart was observed before the
+  test ended. This records application lifecycle recovery, not the separate
+  watchdog-duration proof after termination.
 
 ### DMA isolation
 
@@ -185,7 +191,7 @@ multi-application isolation, or watchdog support.
 ### Watchdog and reset recovery
 
 - [x] Host contract tests validate target timing metadata, explicit kernel
-  heartbeat ownership, single-arm behavior, and feed rejection before arming.
+  ownership, single-arm behavior, and feed rejection before arming.
 - [x] F405 IWDG backend compiles, captures reset flags during early bootstrap,
   clears the latch, and exposes the cause through the platform boundary.
 - [x] F405 hardware watchdog timeout and reset-cause evidence: with the kernel
@@ -195,7 +201,21 @@ multi-application isolation, or watchdog support.
 - [x] Feed-failure policy is explicit: after a backend feed error, the kernel
   stops issuing further feeds and allows the armed hardware watchdog to reset
   the target.
-- [ ] F405 hardware feed-failure and explicit safe-mode recovery evidence.
+- F405 backend feed-failure injection is not an observable hardware contract:
+  the STM32F4 HAL IWDG `feed()` operation has no failure result or status bit
+  that can distinguish a rejected reload. The real F405 safety evidence is the
+  stronger failure mode already recorded above: when kernel servicing stops,
+  the armed IWDG resets the target and the next boot reports `Watchdog`.
+  A backend-error acceptance item remains applicable only to a future target
+  whose watchdog controller exposes a detectable feed failure.
+- [x] F405 hardware Safe Mode evidence confirms a watchdog reset logged
+  `Reset cause: Watchdog`, reported the recovery transition, skipped AMRN
+  application loading, and returned to the kernel heartbeat without an
+  application log. The distinct safe-mode heartbeat LED pattern remains a
+  separate visual observation.
+- [x] F405 hardware held the kernel after the invalid-PSP application reached
+  `Terminated` for 30 seconds without a new watchdog reset or boot sequence.
+  This confirms watchdog servicing remains active after application recovery.
 
 ### Diagnostic evidence
 
@@ -236,11 +256,12 @@ distinguished from the kernel's fault and recovery records.
 - [x] Application restart and rollback policy is explicit: termination enters
   the kernel recovery heartbeat, automatic restart is rejected, and rollback is
   unavailable while package storage is read-only.
-- [x] Kernel-heartbeat watchdog arming and feed ownership are integrated behind
-  the platform facade and target-checked; this is not hardware evidence.
+- [x] Watchdog arming and feed ownership are integrated behind the platform
+  facade, with heartbeat and scheduler-tick feed paths target-checked; this is
+  not hardware evidence.
 - [x] Hardware watchdog timeout and reset-cause behavior was observed on F405
-  with a real IWDG reset; feed-failure policy and explicit safe-mode behavior
-  are not yet hardware-triggered.
+  with a real IWDG reset; F405 also logged the Safe Mode transition and skipped
+  application loading. Feed-failure hardware evidence remains pending.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot

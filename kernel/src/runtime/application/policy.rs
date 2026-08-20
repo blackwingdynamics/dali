@@ -24,7 +24,7 @@ pub enum RollbackPolicy {
 /// Watchdog arming behavior for the current kernel heartbeat owner.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WatchdogPolicy {
-    /// Arm and feed the watchdog only from the kernel heartbeat.
+    /// Arm and feed the watchdog only from kernel-owned execution boundaries.
     KernelHeartbeat,
 }
 
