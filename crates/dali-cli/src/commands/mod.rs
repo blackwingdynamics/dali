@@ -1,18 +1,11 @@
 mod app;
 mod device;
-mod device_attach;
-mod device_cdc;
-mod device_console;
-mod device_flash;
-mod device_flash_transport;
-mod device_info;
 mod doctor;
 mod inspect;
 mod key;
 mod metadata;
 mod package;
 mod target;
-mod target_info;
 
 const APP_COMMAND: &str = "app";
 const DOCTOR_COMMAND: &str = "doctor";

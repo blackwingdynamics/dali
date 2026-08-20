@@ -29,7 +29,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         .ok_or_else(|| {
             "cannot determine the default firmware path; use --input <firmware>.".to_owned()
         })?;
-    crate::commands::device_flash_transport::flash(target, transport, &input)
+    super::flash_transport::flash(target, transport, &input)
 }
 
 struct FlashRequest {

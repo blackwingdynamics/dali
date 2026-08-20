@@ -1,3 +1,10 @@
+mod attach;
+mod cdc;
+mod console;
+mod flash;
+mod flash_transport;
+mod info;
+
 use std::process::Command;
 
 use dali_device::{Capability, DeviceRecord, State, Transport, normalize};
@@ -16,18 +23,10 @@ const HEX_RADIX: u32 = 16;
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     match arguments.get(1).map(String::as_str) {
         Some(LIST_COMMAND) if arguments.len() == 2 => run_list(),
-        Some(crate::commands::device_info::INFO_COMMAND) => {
-            crate::commands::device_info::run(arguments)
-        }
-        Some(crate::commands::device_attach::ATTACH_COMMAND) => {
-            crate::commands::device_attach::run(arguments)
-        }
-        Some(crate::commands::device_console::CONSOLE_COMMAND) => {
-            crate::commands::device_console::run(arguments)
-        }
-        Some(crate::commands::device_flash::FLASH_COMMAND) => {
-            crate::commands::device_flash::run(arguments)
-        }
+        Some(info::INFO_COMMAND) => info::run(arguments),
+        Some(attach::ATTACH_COMMAND) => attach::run(arguments),
+        Some(console::CONSOLE_COMMAND) => console::run(arguments),
+        Some(flash::FLASH_COMMAND) => flash::run(arguments),
         _ => Err(usage()),
     }
 }
@@ -50,7 +49,7 @@ fn run_list() -> Result<(), String> {
 
 pub(super) fn discover_records() -> (Vec<DeviceRecord>, Vec<String>) {
     let (mut records, mut failures) = discover_all();
-    match crate::commands::device_cdc::discover() {
+    match cdc::discover() {
         Ok(found) => records.extend(found),
         Err(error) => failures.push(error),
     }

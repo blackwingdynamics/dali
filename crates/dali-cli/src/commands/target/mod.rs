@@ -1,7 +1,11 @@
+mod info;
+
 use std::{
     env, fs,
     path::{Path, PathBuf},
 };
+
+pub(super) use info::render_profile;
 
 const LIST_COMMAND: &str = "list";
 const SCAFFOLD_COMMAND: &str = "scaffold";
@@ -14,7 +18,7 @@ const DOCUMENTATION_SUFFIX: &str = ".md";
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     match arguments.get(1).map(String::as_str) {
         Some(LIST_COMMAND) if arguments.len() == 2 => print_targets(),
-        Some("info") => crate::commands::target_info::run(arguments),
+        Some("info") => info::run(arguments),
         Some(SCAFFOLD_COMMAND) => scaffold(arguments),
         _ => Err(usage()),
     }

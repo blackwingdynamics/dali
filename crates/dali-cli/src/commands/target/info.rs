@@ -21,7 +21,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     Err(usage())
 }
 
-pub(super) fn render_profile(profile: &dali_targets::TargetProfile) -> String {
+pub(crate) fn render_profile(profile: &dali_targets::TargetProfile) -> String {
     let storage = profile.storage.map_or_else(
         || "storage: not declared".to_owned(),
         |storage| {

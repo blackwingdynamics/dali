@@ -3,7 +3,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-#[path = "app_linker.rs"]
+#[path = "linker.rs"]
 mod app_linker;
 
 const SDK_CRATE_RELATIVE_PATH: &str = "crates/dali-sdk";
@@ -13,14 +13,14 @@ const SDK_PATH_TOKEN: &str = "{{ sdk_path }}";
 const TARGET_PROFILE_TOKEN: &str = "{{ target_profile }}";
 const ABI_VERSION_TOKEN: &str = "{{ abi_version }}";
 
-const CARGO_TEMPLATE: &str = include_str!("../../templates/app/Cargo.toml.template");
-const MANIFEST_TEMPLATE: &str = include_str!("../../templates/app/dali.toml.template");
-const BUILD_TEMPLATE: &str = include_str!("../../templates/app/build.rs.template");
-const MEMORY_TEMPLATE: &str = include_str!("../../templates/app/memory.x.template");
-const V3_MEMORY_TEMPLATE: &str = include_str!("../../templates/app/memory.v3.x.template");
-const LIB_TEMPLATE: &str = include_str!("../../templates/app/lib.rs.template");
-const MAIN_TEMPLATE: &str = include_str!("../../templates/app/main.rs.template");
-const CARGO_CONFIG_TEMPLATE: &str = include_str!("../../templates/app/config.toml.template");
+const CARGO_TEMPLATE: &str = include_str!("../../../templates/app/Cargo.toml.template");
+const MANIFEST_TEMPLATE: &str = include_str!("../../../templates/app/dali.toml.template");
+const BUILD_TEMPLATE: &str = include_str!("../../../templates/app/build.rs.template");
+const MEMORY_TEMPLATE: &str = include_str!("../../../templates/app/memory.x.template");
+const V3_MEMORY_TEMPLATE: &str = include_str!("../../../templates/app/memory.v3.x.template");
+const LIB_TEMPLATE: &str = include_str!("../../../templates/app/lib.rs.template");
+const MAIN_TEMPLATE: &str = include_str!("../../../templates/app/main.rs.template");
+const CARGO_CONFIG_TEMPLATE: &str = include_str!("../../../templates/app/config.toml.template");
 
 struct Template {
     relative_path: &'static str,

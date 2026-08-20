@@ -19,7 +19,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         Some(target) => {
             let profile = dali_targets::find_board(target)
                 .ok_or_else(|| format!("target profile '{target}' is not declared"))?;
-            println!("{}", crate::commands::target_info::render_profile(profile));
+            println!("{}", crate::commands::target::render_profile(profile));
         }
         None => println!("target: {UNDECLARED_VALUE}"),
     }

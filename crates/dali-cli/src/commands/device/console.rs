@@ -29,7 +29,7 @@ fn requested_port(arguments: &[String]) -> Result<Option<String>, String> {
 }
 
 fn select_console_port() -> Result<String, String> {
-    let records = crate::commands::device_cdc::discover()?;
+    let records = super::cdc::discover()?;
     let ports = records
         .iter()
         .filter(|record| record.transport == Transport::Cdc)
