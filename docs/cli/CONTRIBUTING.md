@@ -4,7 +4,10 @@
 
 - src/main.rs owns process startup and top-level error reporting.
 - src/commands/mod.rs owns command dispatch and shared argument helpers.
-- Each command owns one file under src/commands/.
+- Commands are grouped by domain under `src/commands/`. The `app/`, `device/`,
+  `metadata/`, and `target/` directories own their dispatchers and focused
+  implementation modules; standalone commands may remain directly under
+  `src/commands/`.
 - Each command's documentation lives under docs/cli/commands/.
 
 ## Adding a command

@@ -93,7 +93,7 @@ dali-kernel/
 │   ├── dali-crypto/               # no_std Ed25519 signing/verification primitives
 │   ├── dali-cli/                  # Installed `dali` CLI
 │   │   ├── src/main.rs
-│   │   ├── src/commands/           # One focused module per command
+│   │   ├── src/commands/           # Top-level dispatch and command domains
 │   │   └── templates/app/          # Generated application project files
 │   ├── dali-device/               # Hardware-neutral device records
 │   ├── dali-sdk/                  # Application ABI and SVC API
@@ -161,12 +161,18 @@ crates/dali-amrn/src/
 crates/dali-cli/src/
 ├── main.rs
 └── commands/
-    ├── mod.rs, app.rs, build.rs, init.rs, new.rs, new_tests.rs
-    ├── app_artifacts.rs, app_linker.rs, app_package.rs, app_relocations.rs
-    ├── package.rs, inspect.rs, inspect_v3_tests.rs
-    ├── device.rs, device_attach.rs, device_cdc.rs, device_console.rs
-    ├── device_flash.rs, device_flash_transport.rs, device_info.rs
-    ├── doctor.rs, target.rs, target_info.rs
+    ├── mod.rs, doctor.rs, inspect.rs, key.rs, package.rs
+    ├── app/
+    │   ├── mod.rs, artifacts.rs, build.rs, init.rs, linker.rs
+    │   ├── new.rs, new_tests.rs, package.rs, relocations.rs
+    ├── device/
+    │   ├── mod.rs, attach.rs, cdc.rs, console.rs, flash.rs
+    │   ├── flash_transport.rs, info.rs
+    ├── metadata/
+    │   ├── mod.rs
+    │   ├── delegation/mod.rs
+    │   └── bundle/{mod.rs,common.rs,generate.rs,verify.rs}
+    └── target/{mod.rs,info.rs}
 
 crates/dali-cli/templates/app/
 ├── Cargo.toml.template, build.rs.template, config.toml.template
@@ -243,8 +249,11 @@ target-scaffold.md
   PendSV/SysTick handlers and MPU switching remain separate hardware work.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
-- `crates/dali-cli/src/commands/` contains command-specific implementation;
-  command documentation lives in `docs/cli/commands/`.
+- `crates/dali-cli/src/commands/` owns top-level dispatch and groups related
+  commands by domain. `app/`, `device/`, `metadata/`, and `target/` each expose
+  a `mod.rs` dispatcher; complex commands may contain focused helper modules.
+  Standalone commands remain directly under `commands/`. Command
+  documentation lives in `docs/cli/commands/`.
 - `apps/` contains independently built validation applications and fixtures;
   these are not kernel modules.
 
