@@ -25,7 +25,10 @@ where
         Ok(length) => length,
         Err(error) => return close_root(&manager, root, Some(file), Err(error)),
     };
-    let length = usize::try_from(length).map_err(|_| Error::InvalidOffset)?;
+    let length = match usize::try_from(length) {
+        Ok(length) => length,
+        Err(_) => return close_root(&manager, root, Some(file), Err(Error::InvalidOffset)),
+    };
     if length > output.len() {
         return close_root(&manager, root, Some(file), Err(Error::InvalidOffset));
     }

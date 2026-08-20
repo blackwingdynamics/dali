@@ -1,4 +1,4 @@
-//! Read-only FAT filesystem operations owned by the storage subsystem.
+//! Bounded FAT filesystem operations owned by the storage subsystem.
 
 use core::ops::ControlFlow;
 
