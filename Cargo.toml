@@ -4,6 +4,7 @@ members = [
     "apps/dali-app-hello",
     "crates/dali-usb",
     "crates/dali-amrn",
+    "crates/dali-metadata",
     "crates/dali-crypto",
     "crates/dali-device",
     "crates/dali-sdk",
