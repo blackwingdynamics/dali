@@ -98,13 +98,7 @@ mod tests {
     use super::*;
     use crate::{KeyId, MAX_ROLE_KEYS, MAX_SIGNATURES, MetadataRole, SignatureRecord};
 
-    struct DeterministicVerifier;
-
-    impl SignatureVerifier for DeterministicVerifier {
-        fn verify(&self, public_key: PublicKey, message: &[u8], signature: Signature) -> bool {
-            public_key.0[0] == message[0] && signature.0[0] == message[1]
-        }
-    }
+    const SEED: [u8; 32] = [7; 32];
 
     fn role() -> RoleDefinition {
         let mut keys = [KeyId([0; crate::KEY_ID_LENGTH]); MAX_ROLE_KEYS];
@@ -121,7 +115,7 @@ mod tests {
         RoleKey {
             role: MetadataRole::Targets,
             key_id: KeyId([1; crate::KEY_ID_LENGTH]),
-            public_key: PublicKey([7; crate::PUBLIC_KEY_LENGTH]),
+            public_key: PublicKey(dali_crypto::public_key_from_seed(&SEED)),
         }
     }
 
@@ -157,11 +151,11 @@ mod tests {
         let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
         records[0] = SignatureRecord {
             key_id: key().key_id,
-            signature: Signature([9; crate::SIGNATURE_LENGTH]),
+            signature: Signature(dali_crypto::sign(&SEED, &[7, 9, 0])),
         };
         assert_eq!(
             verify_role_signatures(
-                &DeterministicVerifier,
+                &crate::Ed25519Verifier,
                 &[7, 9, 0],
                 role(),
                 &[key()],
@@ -176,7 +170,7 @@ mod tests {
         let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
         records[0] = SignatureRecord {
             key_id: key().key_id,
-            signature: Signature([9; crate::SIGNATURE_LENGTH]),
+            signature: Signature(dali_crypto::sign(&SEED, &[7, 9])),
         };
         let wrong_role_key = RoleKey {
             role: MetadataRole::Root,
@@ -184,7 +178,7 @@ mod tests {
         };
         assert_eq!(
             verify_role_signatures(
-                &DeterministicVerifier,
+                &crate::Ed25519Verifier,
                 &[7, 9],
                 role(),
                 &[wrong_role_key],
@@ -206,7 +200,7 @@ mod tests {
             keys: [RoleKey {
                 role: MetadataRole::Delegation,
                 key_id,
-                public_key: PublicKey([7; crate::PUBLIC_KEY_LENGTH]),
+                public_key: PublicKey(dali_crypto::public_key_from_seed(&SEED)),
             }; crate::MAX_ROOT_KEYS],
             key_count: 1,
             roles: [RoleDefinition {
@@ -220,11 +214,11 @@ mod tests {
         let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
         records[0] = SignatureRecord {
             key_id,
-            signature: Signature([9; crate::SIGNATURE_LENGTH]),
+            signature: Signature(dali_crypto::sign(&SEED, &[7, 9])),
         };
         assert_eq!(
             verify_delegation_signatures(
-                &DeterministicVerifier,
+                &crate::Ed25519Verifier,
                 &[7, 9],
                 root,
                 delegation(),

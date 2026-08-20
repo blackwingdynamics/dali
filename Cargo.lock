@@ -226,6 +226,11 @@ dependencies = [
 [[package]]
 name = "dali-metadata"
 version = "0.1.0-alpha.1"
+dependencies = [
+ "dali-amrn",
+ "dali-crypto",
+ "sha2",
+]
 
 [[package]]
 name = "dali-targets"

@@ -474,6 +474,31 @@ Any failure before step 11 MUST leave the previous valid application and trust
 store unchanged. The loader MUST report a typed reason without exposing keys
 or sensitive metadata.
 
+### 7.1 Implemented verification-chain boundary
+
+The hardware-neutral `dali-metadata` crate now exposes the bounded
+`verify_repository_package` entry point. Its sequence is deliberately linear:
+
+```text
+Root
+  -> Timestamp (snapshot length/version/SHA-256)
+  -> Snapshot (targets, revocation, delegation references)
+  -> Targets (package record)
+  -> Delegation (developer identity/key/scope)
+  -> Revocation (effective repository generation)
+  -> Package record (complete-file length/SHA-256 and AMRN fields)
+  -> AMRN v5 (CRC32 and developer Ed25519 signature)
+```
+
+Every metadata document is parsed from its canonical signed body and verified
+with the root-declared role threshold before its references are consumed.
+`Ed25519Verifier` delegates to the workspace `dali-crypto` facade; there is no
+deterministic or test-only verifier in the production path. The chain is
+bounded and borrows caller-owned bytes, so it is suitable for host tooling and
+later target integration without introducing storage ownership or heap policy
+into the metadata contract. Durable trust-store installation, rollback state,
+and kernel loader wiring remain separate acceptance work.
+
 ## 8. Trust-store update flow
 
 Trust-store updates are separate from application packages. An application

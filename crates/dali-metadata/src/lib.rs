@@ -7,7 +7,9 @@
 //! a concrete cryptographic backend.
 
 mod authorization;
+mod chain;
 mod codec;
+mod crypto;
 mod limits;
 mod model;
 mod parser;
@@ -16,7 +18,9 @@ mod validation;
 mod verification;
 
 pub use authorization::*;
+pub use chain::*;
 pub use codec::*;
+pub use crypto::*;
 pub use limits::*;
 pub use model::*;
 pub use parser::*;
