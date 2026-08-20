@@ -200,6 +200,56 @@ pub struct TargetsMetadata {
     pub package_count: u16,
 }
 
+/// Hash-and-length reference to the targets metadata file.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct TargetsReference {
+    /// Monotonic targets metadata version.
+    pub version: u64,
+    /// Exact serialized targets metadata length.
+    pub length: u32,
+    /// Exact serialized targets metadata digest.
+    pub sha256: Sha256Digest,
+}
+
+/// Hash-and-length reference to one delegated metadata file.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct DelegationReference {
+    /// Delegation identifier.
+    pub id: BoundedText<MAX_DELEGATION_ID_BYTES>,
+    /// Monotonic delegation metadata version.
+    pub version: u64,
+    /// Exact serialized delegation metadata length.
+    pub length: u32,
+    /// Exact serialized delegation metadata digest.
+    pub sha256: Sha256Digest,
+}
+
+/// Snapshot metadata references held in fixed-capacity storage.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SnapshotMetadata {
+    /// Common signed metadata fields.
+    pub header: MetadataHeader,
+    /// Exact targets metadata reference.
+    pub targets: TargetsReference,
+    /// Delegation metadata references.
+    pub delegations: [DelegationReference; crate::MAX_SNAPSHOT_REFERENCES],
+    /// Number of active delegation references.
+    pub delegation_count: u8,
+}
+
+/// Timestamp metadata containing one snapshot reference.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TimestampMetadata {
+    /// Common signed metadata fields.
+    pub header: MetadataHeader,
+    /// Exact snapshot metadata version.
+    pub snapshot_version: u64,
+    /// Exact serialized snapshot metadata length.
+    pub snapshot_length: u32,
+    /// Exact serialized snapshot metadata digest.
+    pub snapshot_sha256: Sha256Digest,
+}
+
 #[cfg(test)]
 mod tests {
     use super::{BoundedText, TextError};

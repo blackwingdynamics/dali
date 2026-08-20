@@ -31,6 +31,10 @@ pub enum MetadataError {
     UnknownDelegation,
     /// Two target records claim the same package identity.
     DuplicatePackage,
+    /// A metadata reference is empty or has an invalid version, length, or hash.
+    InvalidMetadataReference,
+    /// Two snapshot references claim the same delegation identifier.
+    DuplicateDelegationReference,
 }
 
 /// Validates common signed metadata fields.
@@ -150,6 +154,67 @@ pub fn validate_target_records(
         }
     }
     Ok(())
+}
+
+/// Validates snapshot references before encoding or accepting them.
+pub fn validate_snapshot_metadata(metadata: &crate::SnapshotMetadata) -> Result<(), MetadataError> {
+    if metadata.header.role != MetadataRole::Snapshot
+        || metadata.header.version == 0
+        || usize::from(metadata.delegation_count) > crate::MAX_SNAPSHOT_REFERENCES
+    {
+        return Err(MetadataError::InvalidMetadataReference);
+    }
+    validate_reference(
+        metadata.targets.version,
+        metadata.targets.length,
+        metadata.targets.sha256,
+    )?;
+    for (index, reference) in metadata
+        .delegations
+        .iter()
+        .take(usize::from(metadata.delegation_count))
+        .enumerate()
+    {
+        if reference.id.as_str().is_none()
+            || metadata.delegations[..index]
+                .iter()
+                .any(|candidate| candidate.id == reference.id)
+        {
+            return Err(if reference.id.as_str().is_none() {
+                MetadataError::InvalidMetadataReference
+            } else {
+                MetadataError::DuplicateDelegationReference
+            });
+        }
+        validate_reference(reference.version, reference.length, reference.sha256)?;
+    }
+    Ok(())
+}
+
+/// Validates the single snapshot reference in timestamp metadata.
+pub fn validate_timestamp_metadata(
+    metadata: &crate::TimestampMetadata,
+) -> Result<(), MetadataError> {
+    if metadata.header.role != MetadataRole::Timestamp || metadata.header.version == 0 {
+        return Err(MetadataError::InvalidMetadataReference);
+    }
+    validate_reference(
+        metadata.snapshot_version,
+        metadata.snapshot_length,
+        metadata.snapshot_sha256,
+    )
+}
+
+fn validate_reference(
+    version: u64,
+    length: u32,
+    sha256: crate::Sha256Digest,
+) -> Result<(), MetadataError> {
+    if version == 0 || length == 0 || sha256.0 == [0; crate::SHA256_LENGTH] {
+        Err(MetadataError::InvalidMetadataReference)
+    } else {
+        Ok(())
+    }
 }
 
 /// Validates a developer identifier under the bounded ASCII-compatible rule.
