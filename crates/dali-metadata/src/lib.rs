@@ -12,9 +12,11 @@ mod limits;
 mod model;
 mod parser;
 mod validation;
+mod verification;
 
 pub use codec::*;
 pub use limits::*;
 pub use model::*;
 pub use parser::*;
 pub use validation::*;
+pub use verification::*;
