@@ -4,7 +4,7 @@ use crate::{
     MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_TARGET_PROFILE_BYTES,
     MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH, PackageId, PublicKey,
     RoleDefinition, RoleKey, Sha256Digest, TargetPackage, encode_root_signed,
-    encode_targets_signed, parse_targets_signed,
+    encode_targets_signed, parse_snapshot_signed, parse_targets_signed, parse_timestamp_signed,
 };
 
 fn encoded_root() -> ([u8; MAX_ROOT_BYTES], usize) {
@@ -138,4 +138,17 @@ fn rejects_non_canonical_targets_field_order() {
         parse_targets_signed(input),
         Err(DecodeError::InvalidFieldOrder)
     );
+}
+
+#[test]
+fn parses_canonical_snapshot_and_timestamp_bodies() {
+    let snapshot = br#"{"expires":0,"metadata":[{"length":128,"role":"targets","sha256":"0303030303030303030303030303030303030303030303030303030303030303","version":1}],"role":"snapshot","schema":"dali.metadata.v1","version":1}"#;
+    let parsed_snapshot = parse_snapshot_signed(snapshot).expect("snapshot should parse");
+    assert_eq!(parsed_snapshot.targets.version, 1);
+    assert_eq!(parsed_snapshot.delegation_count, 0);
+
+    let timestamp = br#"{"expires":0,"role":"timestamp","schema":"dali.metadata.v1","snapshot":{"length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303","version":1},"version":1}"#;
+    let parsed_timestamp = parse_timestamp_signed(timestamp).expect("timestamp should parse");
+    assert_eq!(parsed_timestamp.snapshot_length, 128);
+    assert_eq!(parsed_timestamp.snapshot_version, 1);
 }

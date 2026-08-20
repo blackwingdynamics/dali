@@ -2,13 +2,17 @@
 
 mod cursor;
 mod root;
+mod snapshot;
 mod targets;
+mod timestamp;
 
 #[cfg(test)]
 mod tests;
 
 pub use root::parse_root_signed;
+pub use snapshot::parse_snapshot_signed;
 pub use targets::parse_targets_signed;
+pub use timestamp::parse_timestamp_signed;
 
 /// Errors returned by the canonical metadata parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
