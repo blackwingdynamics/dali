@@ -50,7 +50,14 @@ pub fn run() -> ! {
         format_args!("Hardware bootstrap complete"),
     );
 
-    let watchdog = startup::initialize_watchdog(&mut board);
+    if let Some(watchdog) = startup::initialize_watchdog(&mut board)
+        && let Err(error) = platform::install_watchdog(watchdog)
+    {
+        logging::error(
+            logging::BOOT_SUBSYSTEM,
+            format_args!("[WATCHDOG] Failed to install runtime: {:?}", error),
+        );
+    }
 
     #[cfg(feature = "abi-context-switch")]
     if let Err(error) = crate::security::scheduling::initialize() {
@@ -73,5 +80,5 @@ pub fn run() -> ! {
         format_args!("Entering kernel heartbeat"),
     );
 
-    lifecycle::heartbeat::run(board, storage_status, watchdog);
+    lifecycle::heartbeat::run(board, storage_status);
 }

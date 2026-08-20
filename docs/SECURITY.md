@@ -93,9 +93,11 @@ The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
 after application termination, keeps the read-only package boundary
 rollback-free, and arms a watchdog only through the kernel heartbeat feed
-owner. A watchdog reset now selects Safe Mode before storage/package loading;
-the remaining F405 feed-failure and Safe Mode hardware acceptance evidence is
-tracked separately. The initial valid-service
+owner or scheduler tick. A watchdog reset now selects Safe Mode before
+storage/package loading, and F405 hardware evidence confirms the watchdog
+reset log, recovery transition, skipped application loading, and return to the
+kernel heartbeat. F405 feed-failure evidence remains tracked separately. The
+initial valid-service
 authorization policy and repeated invalid-PSP fault-status clearing are
 hardware-tested. MPU protection applies to
 processor accesses; DMA buffer ownership and kernel memory safety require

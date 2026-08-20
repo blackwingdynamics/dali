@@ -1,5 +1,7 @@
 //! Platform selection boundary for hardware-specific kernel entry points.
 
+use core::cell::UnsafeCell;
+
 #[cfg(feature = "board-stm32f405-sd")]
 mod f405;
 
@@ -52,6 +54,26 @@ pub(crate) struct Platform(f405::Board);
 /// Watchdog runtime selected by the active platform backend.
 pub(crate) type WatchdogRuntime = crate::runtime::watchdog::WatchdogRuntime<f405::F405Watchdog>;
 
+/// Failure returned by the kernel-owned watchdog service boundary.
+#[derive(Debug)]
+pub(crate) enum WatchdogServiceError {
+    /// The watchdog could not be armed before runtime ownership was installed.
+    Arm,
+    /// The watchdog runtime was already installed.
+    AlreadyInstalled,
+    /// Feeding the watchdog failed and feeding was disabled.
+    Feed,
+}
+
+struct WatchdogStorage(UnsafeCell<Option<WatchdogRuntime>>);
+
+// SAFETY: The storage is accessed only inside a critical section. The
+// watchdog service is called from bootstrap, heartbeat, or SysTick, so no two
+// callers can create mutable access concurrently.
+unsafe impl Sync for WatchdogStorage {}
+
+static WATCHDOG_STORAGE: WatchdogStorage = WatchdogStorage(UnsafeCell::new(None));
+
 /// Watchdog profile supplied by the selected target manifest.
 pub(crate) const WATCHDOG_PROFILE: Option<dali_targets::WatchdogProfile> =
     dali_targets::TARGET_F405.watchdog;
@@ -72,6 +94,38 @@ pub(crate) const SYSTEM_CLOCK_MHZ: u32 = <f405::Board as Backend>::SYSTEM_CLOCK_
 #[cfg(feature = "board-stm32f405-sd")]
 pub(crate) fn initialize() -> Platform {
     Platform(<f405::Board as Backend>::initialize())
+}
+
+/// Arms and installs the single kernel-owned watchdog before storage loading.
+pub(crate) fn install_watchdog(mut runtime: WatchdogRuntime) -> Result<(), WatchdogServiceError> {
+    runtime
+        .arm(crate::runtime::watchdog::FeedOwner::KernelHeartbeat)
+        .map_err(|_| WatchdogServiceError::Arm)?;
+    cortex_m::interrupt::free(|_| unsafe {
+        let storage = &mut *WATCHDOG_STORAGE.0.get();
+        if storage.is_some() {
+            return Err(WatchdogServiceError::AlreadyInstalled);
+        }
+        *storage = Some(runtime);
+        Ok(())
+    })
+}
+
+/// Feeds the installed watchdog from a kernel-owned execution boundary.
+pub(crate) fn service_watchdog() -> Result<(), WatchdogServiceError> {
+    cortex_m::interrupt::free(|_| unsafe {
+        let storage = &mut *WATCHDOG_STORAGE.0.get();
+        let Some(runtime) = storage.as_mut() else {
+            return Ok(());
+        };
+        match runtime.feed(crate::runtime::watchdog::FeedOwner::KernelHeartbeat) {
+            Ok(()) => Ok(()),
+            Err(_) => {
+                *storage = None;
+                Err(WatchdogServiceError::Feed)
+            }
+        }
+    })
 }
 
 #[cfg(feature = "board-stm32f405-sd")]

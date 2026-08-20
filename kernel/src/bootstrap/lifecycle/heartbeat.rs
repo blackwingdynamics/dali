@@ -6,27 +6,11 @@ use super::status::{
     HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus,
 };
 use crate::platform;
-use crate::runtime::application::policy::{CURRENT, WatchdogFailureAction};
-use crate::runtime::watchdog::FeedOwner;
 
 /// Displays the storage status through the board's single status LED forever.
-pub fn run(
-    mut board: platform::Platform,
-    storage_status: StorageStatus,
-    mut watchdog: Option<platform::WatchdogRuntime>,
-) -> ! {
+pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
     let mut led_on = false;
     let mut elapsed_ms = 0;
-
-    if let Some(runtime) = watchdog.as_mut()
-        && let Err(error) = runtime.arm(FeedOwner::KernelHeartbeat)
-    {
-        crate::logging::error(
-            crate::logging::BOOT_SUBSYSTEM,
-            format_args!("[WATCHDOG] Failed to arm: {:?}", error),
-        );
-        watchdog = None;
-    }
 
     loop {
         match storage_status {
@@ -66,9 +50,7 @@ pub fn run(
         }
         board.delay_ms(HEARTBEAT_PERIOD_MS);
         elapsed_ms = elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
-        if let Some(runtime) = watchdog.as_mut()
-            && let Err(error) = runtime.feed(FeedOwner::KernelHeartbeat)
-        {
+        if let Err(error) = platform::service_watchdog() {
             crate::logging::error(
                 crate::logging::BOOT_SUBSYSTEM,
                 format_args!(
@@ -76,9 +58,6 @@ pub fn run(
                     error
                 ),
             );
-            if CURRENT.watchdog_failure() == WatchdogFailureAction::AllowHardwareReset {
-                watchdog = None;
-            }
         }
     }
 }
