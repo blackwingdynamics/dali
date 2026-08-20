@@ -172,15 +172,24 @@ milestone into `main` only after its documented validation evidence exists.
    or a shared developer signing key. The normative contract is
    `docs/PACKAGE_DISTRIBUTION.md`; implementation must follow its frozen
    initial-profile decisions and acceptance gates.
-5. **Secure Boot** — verify kernel and package authenticity, compatibility
+5. **Ustari Protocol** — [design documented; implementation deferred until
+   after 0.1.0] the normative contract is `docs/USTARI_PROTOCOL.md`.
+   Implement the bounded `no_std` codec and host validation first, then
+   authenticated sessions, replay protection, authorization, USB CDC command
+   integration, bounded package transfer, and transport-specific fragmentation
+   in separate acceptance-gated milestones. Ustari must not be treated as an
+   existing implementation, an OTA guarantee, or a remote safety-stop
+   guarantee. Keep package signatures and Trust Store policy separate from
+   live-session authentication.
+6. **Secure Boot** — verify kernel and package authenticity, compatibility
    metadata, and anti-rollback policy.
-6. **Application lifecycle** — implement and test restart, rollback, package
+7. **Application lifecycle** — implement and test restart, rollback, package
    replacement, and slot recovery semantics.
-7. **Storage hardening** — add retry policy, media health states,
+8. **Storage hardening** — add retry policy, media health states,
    insertion/removal handling, and tests across SD cards and filesystems.
-8. **CI and release hardening** — require reproducible builds, artifact hashes,
+9. **CI and release hardening** — require reproducible builds, artifact hashes,
    target builds, host tests, Clippy, and release validation.
-9. **Additional board families** — add family backends and generated target
+10. **Additional board families** — add family backends and generated target
    profiles only when a second MCU family is introduced.
 
 ### Platform scalability foundation
