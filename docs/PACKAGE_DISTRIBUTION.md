@@ -453,6 +453,15 @@ semantics. It never prints or embeds the seed. The authority seed MUST remain
 offline or hardware-backed; this command is not a trust-store installer and
 does not authorize a delegation on a target by itself.
 
+The corresponding inspection command verifies the canonical body and
+signature without requiring private material:
+
+```text
+dali metadata delegation inspect \
+  --input <delegation-envelope.json> \
+  --signer-public-key <authority-public-key>
+```
+
 ## 9. Key lifecycle
 
 ### 9.1 Developer key creation

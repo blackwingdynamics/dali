@@ -10,9 +10,12 @@ use dali_metadata::{
 };
 
 const CREATE_COMMAND: &str = "create";
+const INSPECT_COMMAND: &str = "inspect";
+const INPUT_FLAG: &str = "--input";
 const OUTPUT_FLAG: &str = "--output";
 const SIGNING_KEY_FLAG: &str = "--signing-key";
 const SIGNER_KEY_ID_FLAG: &str = "--signer-key-id";
+const SIGNER_PUBLIC_KEY_FLAG: &str = "--signer-public-key";
 const DEVELOPER_ID_FLAG: &str = "--developer-id";
 const DEVELOPER_KEY_ID_FLAG: &str = "--developer-key-id";
 const DEVELOPER_PUBLIC_KEY_FLAG: &str = "--developer-public-key";
@@ -25,9 +28,14 @@ const NOT_BEFORE_FLAG: &str = "--not-before";
 const NOT_AFTER_FLAG: &str = "--not-after";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
-    if arguments.get(2).map(String::as_str) != Some(CREATE_COMMAND) {
-        return Err(usage());
+    match arguments.get(2).map(String::as_str) {
+        Some(CREATE_COMMAND) => create(arguments),
+        Some(INSPECT_COMMAND) => inspect(arguments),
+        _ => Err(usage()),
     }
+}
+
+fn create(arguments: &[String]) -> Result<(), String> {
     let output = required(arguments, OUTPUT_FLAG)?;
     let signing_key_path = required(arguments, SIGNING_KEY_FLAG)?;
     let signer_key_id = KeyId(parse_hex::<{ dali_metadata::KEY_ID_LENGTH }>(
@@ -106,6 +114,38 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+fn inspect(arguments: &[String]) -> Result<(), String> {
+    let input = required(arguments, INPUT_FLAG)?;
+    let signer_public_key = PublicKey(parse_hex::<{ dali_metadata::PUBLIC_KEY_LENGTH }>(
+        &required(arguments, SIGNER_PUBLIC_KEY_FLAG)?,
+        SIGNER_PUBLIC_KEY_FLAG,
+    )?);
+    let bytes = fs::read(&input).map_err(|error| format!("cannot read {input}: {error}"))?;
+    if bytes.len() > MAX_ENVELOPE_BYTES {
+        return Err("delegation envelope exceeds the bounded metadata limit".to_owned());
+    }
+    let envelope = dali_metadata::parse_signed_envelope(&bytes)
+        .map_err(|error| format!("invalid delegation envelope: {error:?}"))?;
+    if envelope.signatures.count != 1 {
+        return Err("delegation inspection requires exactly one signature".to_owned());
+    }
+    let delegation = dali_metadata::parse_delegation_signed(envelope.signed)
+        .map_err(|error| format!("invalid delegation body: {error:?}"))?;
+    let record = envelope.signatures.records[0];
+    dali_crypto::verify(&signer_public_key.0, envelope.signed, &record.signature.0)
+        .map_err(|error| format!("delegation signature verification failed: {error:?}"))?;
+    println!("Delegation metadata valid");
+    println!(
+        "developer_id: {}",
+        delegation.developer_id.as_str().unwrap_or("<invalid>")
+    );
+    println!("developer_key_id: {}", hex_encode(&delegation.key_id.0));
+    println!("signer_key_id: {}", hex_encode(&record.key_id.0));
+    println!("version: {}", delegation.header.version);
+    println!("signature: verified");
+    Ok(())
+}
+
 fn required(arguments: &[String], flag: &str) -> Result<String, String> {
     let position = arguments
         .iter()
@@ -177,8 +217,18 @@ fn write_new(path: &Path, contents: &[u8]) -> Result<(), String> {
         .map_err(|error| format!("cannot write {}: {error}", path.display()))
 }
 
+fn hex_encode(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut output = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        output.push(HEX[(byte >> 4) as usize] as char);
+        output.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    output
+}
+
 fn usage() -> String {
-    "usage: dali metadata delegation create --output <file> --signing-key <seed-file> --signer-key-id <hex> --developer-id <id> --developer-key-id <hex> --developer-public-key <hex> --namespace <namespace> --target <profile> --abi <number> --version <number> [--expires <seconds>] [--not-before <seconds>] [--not-after <seconds>]".to_owned()
+    "usage: dali metadata delegation {create|inspect} ...".to_owned()
 }
 
 #[cfg(test)]
