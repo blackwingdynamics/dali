@@ -35,6 +35,8 @@ pub enum MetadataError {
     InvalidMetadataReference,
     /// Two snapshot references claim the same delegation identifier.
     DuplicateDelegationReference,
+    /// A signature list contains an invalid, duplicate, or unsorted signer.
+    InvalidSignatureSet,
 }
 
 /// Validates common signed metadata fields.
@@ -215,6 +217,25 @@ fn validate_reference(
     } else {
         Ok(())
     }
+}
+
+/// Validates a bounded signature set before encoding or verification.
+pub fn validate_signature_set(set: &crate::SignatureSet) -> Result<(), MetadataError> {
+    let count = usize::from(set.count);
+    if count > crate::MAX_SIGNATURES {
+        return Err(MetadataError::InvalidSignatureSet);
+    }
+    let records = &set.records[..count];
+    if records.iter().any(|record| {
+        record.key_id.0 == [0; crate::KEY_ID_LENGTH]
+            || record.signature.0 == [0; crate::SIGNATURE_LENGTH]
+    }) || !records
+        .windows(2)
+        .all(|pair| pair[0].key_id.0 < pair[1].key_id.0)
+    {
+        return Err(MetadataError::InvalidSignatureSet);
+    }
+    Ok(())
 }
 
 /// Validates a developer identifier under the bounded ASCII-compatible rule.

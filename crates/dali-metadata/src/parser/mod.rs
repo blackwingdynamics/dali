@@ -2,6 +2,7 @@
 
 mod cursor;
 mod root;
+mod signatures;
 mod snapshot;
 mod targets;
 mod timestamp;
@@ -10,6 +11,7 @@ mod timestamp;
 mod tests;
 
 pub use root::parse_root_signed;
+pub use signatures::parse_signature_list;
 pub use snapshot::parse_snapshot_signed;
 pub use targets::parse_targets_signed;
 pub use timestamp::parse_timestamp_signed;

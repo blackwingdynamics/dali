@@ -1,4 +1,4 @@
-use crate::{BoundedText, KeyId, PackageId, PublicKey, Sha256Digest};
+use crate::{BoundedText, KeyId, PackageId, PublicKey, Sha256Digest, Signature};
 
 const JSON_QUOTE: u8 = b'"';
 const JSON_COMMA: u8 = b',';
@@ -161,6 +161,12 @@ impl HexBytes for PackageId {
 }
 
 impl HexBytes for Sha256Digest {
+    fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl HexBytes for Signature {
     fn as_bytes(&self) -> &[u8] {
         &self.0
     }

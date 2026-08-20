@@ -2,9 +2,10 @@ use super::*;
 use crate::MAX_ROLE_KEYS;
 use crate::{
     BoundedText, DelegationReference, KeyId, MAX_DELEGATION_ID_BYTES, MAX_NAMESPACE_BYTES,
-    MAX_PACKAGE_VERSION_BYTES, MAX_SNAPSHOT_REFERENCES, MAX_TARGET_PROFILE_BYTES,
+    MAX_PACKAGE_VERSION_BYTES, MAX_SIGNATURES, MAX_SNAPSHOT_REFERENCES, MAX_TARGET_PROFILE_BYTES,
     MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PackageId, PublicKey, RoleDefinition, RoleKey,
-    Sha256Digest, SnapshotMetadata, TargetPackage, TargetsReference, TimestampMetadata,
+    Sha256Digest, Signature, SignatureRecord, SignatureSet, SnapshotMetadata, TargetPackage,
+    TargetsReference, TimestampMetadata,
 };
 
 const KEY: RoleKey = RoleKey {
@@ -198,4 +199,22 @@ fn encodes_snapshot_and_timestamp_bodies() {
             .windows(12)
             .any(|window| window == b"\"snapshot\":{")
     );
+}
+
+#[test]
+fn encodes_signature_records_in_key_order() {
+    let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
+    records[0] = SignatureRecord {
+        key_id: KeyId([1; crate::KEY_ID_LENGTH]),
+        signature: Signature([2; crate::SIGNATURE_LENGTH]),
+    };
+    let mut output = [0; crate::MAX_ROOT_BYTES];
+    let length = encode_signature_list(&mut output, SignatureSet { records, count: 1 })
+        .expect("signature list should encode");
+    assert!(
+        output[..length]
+            .starts_with(br#"[{"key_id":"01010101010101010101010101010101","signature":""#)
+    );
+    assert!(output[..length].ends_with(br#""}]"#));
+    assert_eq!(length, 190);
 }

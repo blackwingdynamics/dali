@@ -102,6 +102,30 @@ pub struct PublicKey(pub [u8; PUBLIC_KEY_LENGTH]);
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Signature(pub [u8; SIGNATURE_LENGTH]);
 
+impl Default for Signature {
+    fn default() -> Self {
+        Self([0; SIGNATURE_LENGTH])
+    }
+}
+
+/// One signature and the key identifier that produced it.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct SignatureRecord {
+    /// Authorized signer key identifier.
+    pub key_id: KeyId,
+    /// Ed25519 signature bytes over the canonical signed body.
+    pub signature: Signature,
+}
+
+/// Fixed-capacity signature list carried by one metadata envelope.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SignatureSet {
+    /// Signature records in canonical key ID order.
+    pub records: [SignatureRecord; crate::MAX_SIGNATURES],
+    /// Number of active records.
+    pub count: u8,
+}
+
 /// Common fields shared by every signed metadata role.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MetadataHeader {

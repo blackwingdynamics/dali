@@ -1,10 +1,11 @@
 use super::*;
 use crate::{
     BoundedText, KEY_ID_LENGTH, KeyId, MAX_DELEGATION_ID_BYTES, MAX_NAMESPACE_BYTES,
-    MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_TARGET_PROFILE_BYTES,
-    MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH, PackageId, PublicKey,
-    RoleDefinition, RoleKey, Sha256Digest, TargetPackage, encode_root_signed,
-    encode_targets_signed, parse_snapshot_signed, parse_targets_signed, parse_timestamp_signed,
+    MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_SIGNATURES,
+    MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH,
+    PackageId, PublicKey, RoleDefinition, RoleKey, Sha256Digest, Signature, SignatureRecord,
+    SignatureSet, TargetPackage, encode_root_signed, encode_signature_list, encode_targets_signed,
+    parse_signature_list, parse_snapshot_signed, parse_targets_signed, parse_timestamp_signed,
 };
 
 fn encoded_root() -> ([u8; MAX_ROOT_BYTES], usize) {
@@ -151,4 +152,19 @@ fn parses_canonical_snapshot_and_timestamp_bodies() {
     let parsed_timestamp = parse_timestamp_signed(timestamp).expect("timestamp should parse");
     assert_eq!(parsed_timestamp.snapshot_length, 128);
     assert_eq!(parsed_timestamp.snapshot_version, 1);
+}
+
+#[test]
+fn parses_a_canonical_signature_list() {
+    let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
+    records[0] = SignatureRecord {
+        key_id: KeyId([1; KEY_ID_LENGTH]),
+        signature: Signature([2; crate::SIGNATURE_LENGTH]),
+    };
+    let mut input = [0; crate::MAX_ROOT_BYTES];
+    let length = encode_signature_list(&mut input, SignatureSet { records, count: 1 })
+        .expect("signature list should encode");
+    let set = parse_signature_list(&input[..length]).expect("signature list should parse");
+    assert_eq!(set.count, 1);
+    assert_eq!(set.records[0].key_id, KeyId([1; KEY_ID_LENGTH]));
 }

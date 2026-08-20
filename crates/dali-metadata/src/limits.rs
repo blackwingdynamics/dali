@@ -28,6 +28,8 @@ pub const MAX_ROOT_KEYS: usize = 16;
 pub const MAX_ROOT_ROLES: usize = 16;
 /// Maximum key identifiers authorized by one role.
 pub const MAX_ROLE_KEYS: usize = 16;
+/// Maximum signatures carried by one metadata envelope.
+pub const MAX_SIGNATURES: usize = 8;
 /// Maximum package records in one targets document.
 pub const MAX_TARGET_RECORDS: usize = 256;
 /// Maximum metadata references in one snapshot document.
