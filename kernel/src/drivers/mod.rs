@@ -8,7 +8,9 @@ pub mod sdio;
 #[cfg(feature = "storage-write")]
 pub use block::BlockWriter;
 pub use block::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
-use embedded_sdmmc::{Block as FilesystemBlock, BlockCount, BlockDevice, BlockIdx};
+use embedded_sdmmc::{
+    Block as FilesystemBlock, BlockCount, BlockDevice as FilesystemBlockDevice, BlockIdx,
+};
 pub use sdio::{SdioBlockReader, SdioTransport};
 
 /// Adapts a bounded mutable block reader to the filesystem block-device API.
@@ -52,9 +54,9 @@ impl<'a, D> BlockDeviceRef<'a, D> {
 }
 
 #[cfg(feature = "abi-current")]
-impl<D> BlockDevice for BlockDeviceRef<'_, D>
+impl<D> FilesystemBlockDevice for BlockDeviceRef<'_, D>
 where
-    D: BlockDevice,
+    D: FilesystemBlockDevice,
 {
     type Error = D::Error;
 
@@ -90,7 +92,7 @@ impl<R> BlockDeviceAdapter<R> {
 }
 
 #[cfg(not(feature = "storage-write"))]
-impl<R> BlockDevice for BlockDeviceAdapter<R>
+impl<R> FilesystemBlockDevice for BlockDeviceAdapter<R>
 where
     R: BlockReader,
 {
@@ -139,7 +141,7 @@ impl<R> WritableBlockDeviceAdapter<R> {
 }
 
 #[cfg(feature = "storage-write")]
-impl<R> BlockDevice for WritableBlockDeviceAdapter<R>
+impl<R> FilesystemBlockDevice for WritableBlockDeviceAdapter<R>
 where
     R: BlockReader + BlockWriter,
 {
@@ -185,7 +187,7 @@ where
 }
 
 #[cfg(feature = "storage-write")]
-impl<R> BlockDevice for &WritableBlockDeviceAdapter<R>
+impl<R> FilesystemBlockDevice for &WritableBlockDeviceAdapter<R>
 where
     R: BlockReader + BlockWriter,
 {

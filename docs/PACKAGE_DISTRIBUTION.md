@@ -905,6 +905,95 @@ The trust-store installer must sequence candidate bytes, read-back verification,
 and the commit marker above this primitive. No installer may activate a bundle
 through a single file write.
 
+### 15.5.1 Board-agnostic kernel storage contracts
+
+The durable installer and repository loader MUST depend on logical storage
+traits, never on SDIO, FAT, STM32, or board-specific types:
+
+```rust
+pub trait DurableStorageAdapter {
+    type Error;
+
+    fn read_artifact(
+        &mut self,
+        artifact: DurableArtifact,
+        output: &mut [u8],
+    ) -> Result<usize, Self::Error>;
+
+    fn write_artifact(
+        &mut self,
+        artifact: DurableArtifact,
+        contents: &[u8],
+    ) -> Result<(), Self::Error>;
+
+    fn flush(&mut self) -> Result<(), Self::Error>;
+}
+
+pub trait RepositoryStorage {
+    type Error;
+
+    fn read_metadata(
+        &mut self,
+        document: RepositoryDocument<'_>,
+        output: &mut [u8],
+    ) -> Result<usize, Self::Error>;
+
+    fn read_package(
+        &mut self,
+        digest: RepositoryPackageDigest,
+        output: &mut [u8],
+    ) -> Result<usize, Self::Error>;
+}
+```
+
+`BlockDevice` is the lower-level fixed-block boundary. A board support package
+implements it using its native controller. A filesystem adapter then
+implements `DurableStorageAdapter` and `RepositoryStorage` without exposing
+the block controller to the installer or loader. The F405 path is therefore:
+
+```text
+STM32F405 SDIO -> F405 block adapter -> FAT adapter
+             -> DurableStorageAdapter / RepositoryStorage
+             -> persistence coordinator / kernel loader
+```
+
+The loader performs the complete metadata and AMRN verification chain after
+reading through `RepositoryStorage`; it MUST NOT open files, interpret FAT
+paths, or select packages by directory order.
+
+The current phase defines these traits and their ownership boundary only. It
+does not yet implement the FAT adapters, persistence coordinator, journal
+encoder, or kernel loader integration.
+
+### 15.5.2 DALI-CMT.BIN commit journal record
+
+`DALI-CMT.BIN` is a kernel-owned binary journal. One record is exactly 104
+bytes; the file reserves two records (208 bytes total) so a torn write leaves
+at least one recoverable record. Multi-byte integers are little-endian.
+
+| Offset | Size | Field | Rule |
+| ---: | ---: | --- | --- |
+| `0x00` | 4 | Magic | ASCII `DLCT` |
+| `0x04` | 1 | Format version | `1` |
+| `0x05` | 1 | State | `1=Prepared`, `2=Committed` |
+| `0x06` | 1 | Active slot | `0=SlotA`, `1=SlotB` |
+| `0x07` | 1 | Reserved | Must be zero |
+| `0x08` | 8 | Journal sequence | Strictly increasing valid record sequence |
+| `0x10` | 8 | Bundle version | Monotonic trust-store version |
+| `0x18` | 4 | Bundle length | Exact candidate bundle byte length |
+| `0x1C` | 4 | Reserved | Must be zero |
+| `0x20` | 32 | Bundle SHA-256 | Digest of the complete bundle |
+| `0x40` | 4 | CRC32 | CRC32 over bytes `0x00..0x3F` |
+| `0x44` | 28 | Reserved/padding | Must be zero |
+
+The journal is a storage-integrity and activation record, not an authenticity
+mechanism. The bundle's signed metadata and AMRN signature remain mandatory.
+On recovery, the kernel selects the highest-sequence record with valid magic,
+version, reserved bytes, CRC32, slot, length, and digest fields. A `Prepared`
+record leaves the previous active generation authoritative. A `Committed`
+record selects the referenced fully verified slot, after which the coordinator
+may write the next journal record and retire the older slot.
+
 ### 15.6 Time, freshness, and rollback
 
 - `timestamp` expiry is enforced only when the target has a trustworthy wall

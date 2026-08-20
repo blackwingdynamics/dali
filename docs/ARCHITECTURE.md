@@ -331,6 +331,36 @@ features enable capabilities and select pins/clocks separately.
 
 The MVP does not need package installation, deletion, hot swap, or write support. SD-card replacement requires a reboot. The first acceptance application proves execution through a deterministic LED pattern and bounded application logging.
 
+### Board-agnostic repository and durable-storage boundary
+
+Repository loading and trust-store installation are defined above the board
+storage implementation. The kernel exposes three logical boundaries:
+
+```text
+BlockDevice
+    -> filesystem / durable-artifact adapter
+    -> DurableStorageAdapter and RepositoryStorage
+    -> persistence coordinator and repository loader
+```
+
+`BlockDevice` owns fixed-block transfer only. `DurableStorageAdapter` owns the
+kernel's bounded Slot A, Slot B, and commit-journal artifacts. `RepositoryStorage`
+owns logical metadata-document and content-addressed AMRN reads. Neither
+trait mentions SDIO, FAT, STM32, pins, clocks, DMA, or a physical filename.
+
+The F405 implementation is one adapter chain below these contracts:
+
+```text
+STM32F405 SDIO -> F405 block adapter -> FAT32 adapter -> logical storage traits
+```
+
+The repository loader consumes `RepositoryStorage` and passes the borrowed
+document bytes through the complete Root -> Timestamp -> Snapshot -> Targets
+-> Delegation -> Revocation -> Package -> AMRN verification chain. The loader
+does not enumerate directories or choose packages from filenames. This keeps
+future board adapters replaceable without changing trust policy or loader
+logic.
+
 ### Future multi-application package selection
 
 The current read-only filesystem contract intentionally accepts exactly one

@@ -176,6 +176,10 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Add host CLI commands for bundle generation, reference inspection, and
    verification through the shared Ed25519 chain; kernel-loader integration and
    durable target acceptance remain pending.
+   [x] Freeze the board-agnostic `BlockDevice`, `DurableStorageAdapter`, and
+   `RepositoryStorage` contracts plus the 104-byte `DALI-CMT.BIN` journal
+   record; adapters, persistence coordination, loader wiring, and F405
+   acceptance remain pending.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their
