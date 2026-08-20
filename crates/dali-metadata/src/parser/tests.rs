@@ -4,8 +4,9 @@ use crate::{
     MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_SIGNATURES,
     MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH,
     PackageId, PublicKey, RoleDefinition, RoleKey, Sha256Digest, Signature, SignatureRecord,
-    SignatureSet, TargetPackage, encode_root_signed, encode_signature_list, encode_targets_signed,
-    parse_signature_list, parse_snapshot_signed, parse_targets_signed, parse_timestamp_signed,
+    SignatureSet, TargetPackage, encode_root_signed, encode_signature_list, encode_signed_envelope,
+    encode_targets_signed, parse_signature_list, parse_signed_envelope, parse_snapshot_signed,
+    parse_targets_signed, parse_timestamp_signed,
 };
 
 fn encoded_root() -> ([u8; MAX_ROOT_BYTES], usize) {
@@ -167,4 +168,23 @@ fn parses_a_canonical_signature_list() {
     let set = parse_signature_list(&input[..length]).expect("signature list should parse");
     assert_eq!(set.count, 1);
     assert_eq!(set.records[0].key_id, KeyId([1; KEY_ID_LENGTH]));
+}
+
+#[test]
+fn parses_a_signed_envelope_without_copying_the_body() {
+    let mut records = [SignatureRecord::default(); MAX_SIGNATURES];
+    records[0] = SignatureRecord {
+        key_id: KeyId([1; KEY_ID_LENGTH]),
+        signature: Signature([2; crate::SIGNATURE_LENGTH]),
+    };
+    let mut bytes = [0; crate::MAX_ENVELOPE_BYTES];
+    let length = encode_signed_envelope(
+        &mut bytes,
+        br#"{"role":"targets"}"#,
+        SignatureSet { records, count: 1 },
+    )
+    .expect("envelope should encode");
+    let envelope = parse_signed_envelope(&bytes[..length]).expect("envelope should parse");
+    assert_eq!(envelope.signed, br#"{"role":"targets"}"#);
+    assert_eq!(envelope.signatures.count, 1);
 }
