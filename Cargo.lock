@@ -198,6 +198,7 @@ name = "dali-crypto"
 version = "0.1.0-alpha.1"
 dependencies = [
  "ed25519-dalek",
+ "sha2",
 ]
 
 [[package]]
@@ -213,6 +214,7 @@ dependencies = [
  "dali",
  "dali-amrn",
  "dali-crypto",
+ "dali-metadata",
  "dali-targets",
  "dali-usb",
  "embedded-sdmmc",

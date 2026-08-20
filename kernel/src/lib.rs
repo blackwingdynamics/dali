@@ -7,5 +7,8 @@ pub mod drivers;
 pub mod loader_contract;
 #[path = "security/mpu/mod.rs"]
 pub mod mpu;
+#[cfg(feature = "repository-loader")]
+#[path = "loader/repository.rs"]
+pub mod repository_loader;
 pub mod runtime;
 pub mod storage;

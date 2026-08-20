@@ -11,6 +11,7 @@ use embedded_sdmmc::{
 mod artifacts;
 mod multi;
 mod read;
+mod repository;
 #[cfg(test)]
 mod tests;
 mod write;
@@ -20,7 +21,8 @@ pub use artifacts::{
     TrustStoreArtifact, read_trust_store_artifact, write_trust_store_artifact,
 };
 pub use multi::with_amrn_files;
-pub use read::read_root_file;
+pub use read::{read_repository_file, read_root_file, stream_repository_file};
+pub use repository::FatRepositoryStorage;
 pub use write::write_root_file;
 
 /// The package extension recognized by the MVP root-directory scan.

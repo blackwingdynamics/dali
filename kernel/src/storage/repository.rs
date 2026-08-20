@@ -43,3 +43,27 @@ pub trait RepositoryStorage {
         output: &mut [u8],
     ) -> Result<usize, Self::Error>;
 }
+
+/// Chunk-streaming extension for repository sources that cannot retain a
+/// complete metadata document in RAM.
+pub trait RepositoryStreamStorage: RepositoryStorage {
+    /// Reads one metadata document in caller-selected bounded chunks.
+    fn stream_metadata<F>(
+        &mut self,
+        document: RepositoryDocument<'_>,
+        chunk: &mut [u8],
+        consumer: F,
+    ) -> Result<u32, Self::Error>
+    where
+        F: FnMut(&[u8]) -> Result<(), Self::Error>;
+
+    /// Reads one package in caller-selected bounded chunks.
+    fn stream_package<F>(
+        &mut self,
+        digest: RepositoryPackageDigest,
+        chunk: &mut [u8],
+        consumer: F,
+    ) -> Result<u32, Self::Error>
+    where
+        F: FnMut(&[u8]) -> Result<(), Self::Error>;
+}

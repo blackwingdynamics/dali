@@ -10,6 +10,9 @@ use crate::{
 
 mod pipeline;
 
+#[cfg(feature = "repository-loader")]
+pub mod repository;
+
 /// Errors reported while validating a root AMRN package.
 #[derive(Debug)]
 pub enum LoaderError {

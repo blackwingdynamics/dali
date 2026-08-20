@@ -20,6 +20,7 @@ abi-context-switch = ["abi-mpu"]
 abi-relocation = ["abi-mpu"]
 abi-test-fixtures = ["abi-mpu"]
 abi-authentication = ["abi-relocation", "dep:dali-crypto"]
+repository-loader = ["abi-authentication", "dep:dali-metadata"]
 storage-write = []
 
 [lints]
@@ -28,6 +29,7 @@ workspace = true
 [dependencies]
 dali-amrn = { path = "../crates/dali-amrn" }
 dali-crypto = { path = "../crates/dali-crypto", optional = true }
+dali-metadata = { path = "../crates/dali-metadata", optional = true }
 dali = { path = "../crates/dali-sdk" }
 dali-usb = { path = "../crates/dali-usb" }
 dali-targets = { path = "../crates/dali-targets" }

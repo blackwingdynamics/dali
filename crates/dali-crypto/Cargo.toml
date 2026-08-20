@@ -9,3 +9,4 @@ workspace = true
 
 [dependencies]
 ed25519-dalek = { version = "3.0.0", default-features = false, features = ["hazmat", "zeroize"] }
+sha2 = { version = "0.11.0", default-features = false }

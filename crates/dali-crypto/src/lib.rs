@@ -3,6 +3,7 @@
 //! Hardware-neutral Ed25519 signing and verification primitives.
 
 use ed25519_dalek::{Signature, Signer, SigningKey, StreamVerifier, Verifier, VerifyingKey};
+use sha2::{Digest, Sha256};
 
 /// Ed25519 public-key length in bytes.
 pub const PUBLIC_KEY_LENGTH: usize = 32;
@@ -13,6 +14,38 @@ pub const SIGNATURE_LENGTH: usize = 64;
 
 /// Stable key identifier length shared by the AMRN signature envelope.
 pub const KEY_ID_LENGTH: usize = 16;
+/// SHA-256 digest length in bytes.
+pub const SHA256_LENGTH: usize = 32;
+
+/// Incremental SHA-256 accumulator for bounded storage streams.
+pub struct Sha256Accumulator {
+    backend: Sha256,
+}
+
+impl Sha256Accumulator {
+    /// Creates an empty digest accumulator.
+    pub fn new() -> Self {
+        Self {
+            backend: Sha256::new(),
+        }
+    }
+
+    /// Adds one caller-owned chunk without retaining the chunk.
+    pub fn update(&mut self, chunk: &[u8]) {
+        self.backend.update(chunk);
+    }
+
+    /// Finalizes the digest into fixed-capacity storage.
+    pub fn finalize(self) -> [u8; SHA256_LENGTH] {
+        self.backend.finalize().into()
+    }
+}
+
+impl Default for Sha256Accumulator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// One public key registered in a target trust store.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
