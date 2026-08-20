@@ -142,7 +142,7 @@ kernel/src/
 ├── loader/{mod.rs,contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,context_switch.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs},watchdog/mod.rs}
-└── storage/{mod.rs,filesystem/{mod.rs,artifacts.rs,multi.rs,read.rs,tests.rs,write.rs}}
+└── storage/{mod.rs,durable.rs,durable/{journal.rs,coordinator.rs},filesystem/{mod.rs,artifacts.rs,multi.rs,read.rs,tests.rs,write.rs},repository.rs}
 
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports
@@ -224,8 +224,11 @@ target-scaffold.md
 - `targets/*.toml` owns declarative target facts; hardware implementations must
   consume those facts through generated target metadata instead of copying
   board constants into kernel policy.
-- `kernel/src/storage/` owns SD/filesystem policy; generic block contracts live
-  in `kernel/src/drivers/`; package parsing remains in
+- `kernel/src/storage/` owns SD/filesystem policy and durable repository
+  coordination. `storage/durable.rs` defines the board-agnostic block and
+  durable-adapter contracts; `storage/durable/journal.rs` owns the 104-byte
+  DALI-CMT codec; and `storage/durable/coordinator.rs` owns the bounded
+  persistence state machine. Package parsing remains in
   `crates/dali-amrn/` and bootstrap loading policy remains in
   `kernel/src/bootstrap/loading/` while AMRN execution contracts remain in
   `kernel/src/loader/`.

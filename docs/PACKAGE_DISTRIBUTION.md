@@ -565,6 +565,25 @@ candidate before the commit marker and completes the swap after the marker.
 The state machine does not own filesystem or block-device I/O; those adapters
 must persist each boundary using the target's durable-storage contract.
 
+The kernel implementation keeps this boundary board-agnostic:
+
+```text
+storage/durable.rs
+  BlockDevice + DurableStorageAdapter contracts
+storage/durable/journal.rs
+  104-byte DALI-CMT.BIN encoder/decoder and CRC32 validation
+storage/durable/coordinator.rs
+  bounded persistence transitions and adapter calls
+platform/f405/sdio*.rs
+  F405 SDIO mechanics and mapping to generic StorageError
+```
+
+The coordinator does not interpret FAT, SDIO registers, or board addresses.
+It writes the inactive logical slot, flushes it, records a prepared journal
+state, flushes again, and records the committed state. The journal CRC is an
+integrity check only; repository authenticity remains the Ed25519 verification
+chain defined above.
+
 ## 9. Key lifecycle
 
 ### 9.1 Developer key creation

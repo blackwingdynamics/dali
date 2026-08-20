@@ -37,12 +37,6 @@ pub enum StorageError {
     Unsupported,
     /// The underlying hardware transport reported an unspecified failure.
     Transport,
-    /// The SDIO transmit FIFO underflowed during a block transfer.
-    SdioTransmitUnderrun(u32),
-    /// The SDIO status register reported an unclassified transfer failure.
-    SdioStatusFailure(u32),
-    /// The SDIO DMA stream reported a transfer error.
-    SdioDmaFailure(u32),
 }
 
 impl core::fmt::Display for StorageError {
@@ -54,18 +48,6 @@ impl core::fmt::Display for StorageError {
             Self::DataCorruption => "storage data is corrupted",
             Self::Unsupported => "storage operation is unsupported",
             Self::Transport => "storage transport failure",
-            Self::SdioTransmitUnderrun(status) => {
-                let _ = status;
-                "SDIO transmit FIFO underrun"
-            }
-            Self::SdioStatusFailure(status) => {
-                let _ = status;
-                "SDIO status transfer failure"
-            }
-            Self::SdioDmaFailure(flags) => {
-                let _ = flags;
-                "SDIO DMA transfer failure"
-            }
         })
     }
 }

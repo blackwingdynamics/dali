@@ -8,10 +8,8 @@ pub(super) fn status_error(status: &pac::sdio::sta::R) -> Result<(), StorageErro
         Err(StorageError::Timeout)
     } else if status.ccrcfail().bit_is_set() || status.dcrcfail().bit_is_set() {
         Err(StorageError::DataCorruption)
-    } else if status.rxoverr().bit_is_set() {
-        Err(StorageError::SdioStatusFailure(status.bits()))
-    } else if status.txunderr().bit_is_set() {
-        Err(StorageError::SdioTransmitUnderrun(status.bits()))
+    } else if status.rxoverr().bit_is_set() || status.txunderr().bit_is_set() {
+        Err(StorageError::Transport)
     } else {
         Ok(())
     }

@@ -2,6 +2,9 @@
 
 use crate::drivers::{Block, BlockAddress};
 
+pub mod coordinator;
+pub mod journal;
+
 /// Hardware-neutral fixed-block boundary below filesystem adapters.
 ///
 /// Board support packages implement this boundary. The trait deliberately

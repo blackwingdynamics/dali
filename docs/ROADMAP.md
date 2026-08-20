@@ -180,6 +180,10 @@ milestone into `main` only after its documented validation evidence exists.
    `RepositoryStorage` contracts plus the 104-byte `DALI-CMT.BIN` journal
    record; adapters, persistence coordination, loader wiring, and F405
    acceptance remain pending.
+   [x] Add the generic block-device adapter, validated DALI-CMT encoder and
+   decoder, and bounded `Active -> CandidateWritten -> CandidateVerified ->
+   CommitPending -> Active` persistence coordinator; F405 acceptance and
+   kernel-loader wiring remain pending.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

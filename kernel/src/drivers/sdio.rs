@@ -1,6 +1,7 @@
 //! Hardware-neutral SDIO block-reader contract.
 
 use super::{Block, BlockAddress, BlockReader, StorageError};
+use crate::storage::durable::BlockDevice;
 
 /// Hardware-facing SDIO transport implemented by a platform backend.
 pub trait SdioTransport {
@@ -56,6 +57,58 @@ where
 
     fn block_count(&self) -> Result<u32, StorageError> {
         self.block_count.ok_or(StorageError::NotReady)
+    }
+}
+
+impl<T> BlockDevice for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    type Error = StorageError;
+
+    fn read_blocks(
+        &mut self,
+        start: BlockAddress,
+        blocks: &mut [Block],
+    ) -> Result<(), Self::Error> {
+        for (offset, block) in blocks.iter_mut().enumerate() {
+            let offset = u32::try_from(offset).map_err(|_| StorageError::InvalidBlockAddress)?;
+            let address = start
+                .value()
+                .checked_add(offset)
+                .ok_or(StorageError::InvalidBlockAddress)?;
+            self.read_block(BlockAddress::new(address), block)?;
+        }
+        Ok(())
+    }
+
+    fn write_blocks(&mut self, start: BlockAddress, blocks: &[Block]) -> Result<(), Self::Error> {
+        #[cfg(feature = "storage-write")]
+        {
+            for (offset, block) in blocks.iter().enumerate() {
+                let offset =
+                    u32::try_from(offset).map_err(|_| StorageError::InvalidBlockAddress)?;
+                let address = start
+                    .value()
+                    .checked_add(offset)
+                    .ok_or(StorageError::InvalidBlockAddress)?;
+                <Self as super::BlockWriter>::write_block(self, BlockAddress::new(address), block)?;
+            }
+            Ok(())
+        }
+        #[cfg(not(feature = "storage-write"))]
+        {
+            let _ = (start, blocks);
+            Err(StorageError::Unsupported)
+        }
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn block_count(&self) -> Result<u32, Self::Error> {
+        <Self as BlockReader>::block_count(self)
     }
 }
 

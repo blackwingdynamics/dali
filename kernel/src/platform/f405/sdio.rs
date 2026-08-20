@@ -89,7 +89,8 @@ fn map_sdio_error(error: stm32f4xx_hal::sdio::Error) -> StorageError {
         stm32f4xx_hal::sdio::Error::UnsupportedCardVersion
         | stm32f4xx_hal::sdio::Error::UnsupportedCardType
         | stm32f4xx_hal::sdio::Error::UnsupportedVoltage => StorageError::Unsupported,
-        stm32f4xx_hal::sdio::Error::RxOverFlow => StorageError::Transport,
-        stm32f4xx_hal::sdio::Error::TxUnderErr => StorageError::SdioTransmitUnderrun(0),
+        stm32f4xx_hal::sdio::Error::RxOverFlow | stm32f4xx_hal::sdio::Error::TxUnderErr => {
+            StorageError::Transport
+        }
     }
 }
