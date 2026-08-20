@@ -142,11 +142,16 @@ and include scratch storage, parser state, and callback state.
 
 ## 6. Migration and compatibility
 
-1. CLI emits binary v2 when `--metadata-format binary-v2` is selected.
+1. CLI emits a Binary v2 bundle manifest and resolves referenced metadata
+   files with the `.dmb` extension when `--metadata-format binary-v2` is
+   selected. The role-file generators are still a separate CLI milestone.
 2. JSON v1 remains available for host inspection and migration tooling.
-3. `bundle.manifest` declares `metadata_format = 2` and rejects mixed files.
-4. The kernel accepts binary v2 only after the streaming verifier is wired and
-   hardware-tested; it continues to reject JSON v1 repository bundles.
+3. The current `bundle.manifest` body has no standalone format field; the
+   selected CLI format controls the referenced file suffix and parser. Adding
+   an explicit manifest format field requires a versioned contract change.
+4. The kernel currently has a bounded selective targets parser, but the full
+   Binary v2 verification chain is not yet wired into `load_repository()` or
+   hardware-tested. JSON v1 remains the active repository-loader path.
 5. Rollback protection compares the binary bundle version and digest through
    the existing durable coordinator.
 6. JSON generation may be removed only after host workflows have migrated and

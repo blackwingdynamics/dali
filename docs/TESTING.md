@@ -399,6 +399,36 @@ distinguished from the kernel's fault and recovery records.
 
 ### Repository loader hardware acceptance status (2026-08-21)
 
+#### Binary v2 host and linker evidence
+
+The Binary v2 CLI dispatch and metadata codec were checked with:
+
+```text
+cargo test -p dali-cli -p dali-metadata
+51 dali-cli tests passed
+54 dali-metadata tests passed
+cargo check -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-relocation,repository-loader,storage-write --target thumbv7em-none-eabihf
+passed
+```
+
+The release linker map was generated with the same feature set using
+`-C link-arg=-Map=/tmp/dali-kernel-repository-release.map`. The observed
+static sections were:
+
+```text
+.dma_buffer 0x1400 = 5120 bytes
+.data        0x080c = 2060 bytes
+.bss         0x1688 = 5768 bytes
+```
+
+The linked image therefore reserves 7,828 bytes in the 64 KiB CCM RAM region
+for static `.data` and `.bss`, plus 5,120 bytes in the separate 32 KiB DMA
+region. This does not measure a runtime stack peak, and it does not claim the
+current `RepositoryBuffers` implementation fits F405: those buffers retain
+complete documents and are the reason full Binary v2 boot wiring remains
+pending. The selective parser itself retains a 512-byte caller chunk and one
+bounded target record only.
+
 The feature-gated board-agnostic repository loader compiles for
 `thumbv7em-none-eabihf`, and its host-visible boundary tests pass. The F405
 acceptance scenarios were not executed in this run because the target was not

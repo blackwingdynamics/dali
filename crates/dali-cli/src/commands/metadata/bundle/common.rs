@@ -18,10 +18,41 @@ pub(super) const SIGNER_KEY_ID_FLAG: &str = "--signer-key-id";
 pub(super) const TARGET_PROFILE_FLAG: &str = "--target-profile";
 pub(super) const VERSION_FLAG: &str = "--version";
 pub(super) const PACKAGE_ID_FLAG: &str = "--package-id";
+pub(super) const METADATA_FORMAT_FLAG: &str = "--metadata-format";
 pub(super) const MANIFEST_NAME: &str = "bundle.manifest";
 pub(super) const METADATA_DIRECTORY: &str = "metadata";
 pub(super) const DELEGATIONS_DIRECTORY: &str = "delegations";
 pub(super) const PACKAGES_DIRECTORY: &str = "packages";
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum MetadataFormat {
+    JsonV1,
+    BinaryV2,
+}
+
+impl MetadataFormat {
+    pub(super) fn parse(arguments: &[String]) -> Result<Self, String> {
+        match arguments
+            .iter()
+            .position(|argument| argument == METADATA_FORMAT_FLAG)
+            .and_then(|index| arguments.get(index + 1))
+            .map(String::as_str)
+        {
+            None | Some("json-v1") => Ok(Self::JsonV1),
+            Some("binary-v2") => Ok(Self::BinaryV2),
+            Some(value) => Err(format!(
+                "unsupported metadata format '{value}'; expected json-v1 or binary-v2"
+            )),
+        }
+    }
+
+    pub(super) const fn extension(self) -> &'static str {
+        match self {
+            Self::JsonV1 => "json",
+            Self::BinaryV2 => "dmb",
+        }
+    }
+}
 
 pub(super) fn required(arguments: &[String], flag: &str) -> Result<String, String> {
     let position = arguments
@@ -87,21 +118,35 @@ pub(super) fn write_new(path: &Path, bytes: &[u8]) -> Result<(), String> {
         .map_err(|error| format!("cannot write {}: {error}", path.display()))
 }
 
-pub(super) fn bundle_file_path(root: &Path, file: BundleFile) -> Result<PathBuf, String> {
+pub(super) fn bundle_file_path(
+    root: &Path,
+    file: BundleFile,
+    format: MetadataFormat,
+) -> Result<PathBuf, String> {
     let id = file
         .id
         .as_str()
         .ok_or_else(|| "bundle file ID is invalid".to_owned())?;
     Ok(match file.kind {
-        BundleFileKind::Root => root.join(METADATA_DIRECTORY).join("root.json"),
-        BundleFileKind::Timestamp => root.join(METADATA_DIRECTORY).join("timestamp.json"),
-        BundleFileKind::Snapshot => root.join(METADATA_DIRECTORY).join("snapshot.json"),
-        BundleFileKind::Targets => root.join(METADATA_DIRECTORY).join("targets.json"),
-        BundleFileKind::Revocation => root.join(METADATA_DIRECTORY).join("revocations.json"),
+        BundleFileKind::Root => root
+            .join(METADATA_DIRECTORY)
+            .join(format!("root.{}", format.extension())),
+        BundleFileKind::Timestamp => root
+            .join(METADATA_DIRECTORY)
+            .join(format!("timestamp.{}", format.extension())),
+        BundleFileKind::Snapshot => root
+            .join(METADATA_DIRECTORY)
+            .join(format!("snapshot.{}", format.extension())),
+        BundleFileKind::Targets => root
+            .join(METADATA_DIRECTORY)
+            .join(format!("targets.{}", format.extension())),
+        BundleFileKind::Revocation => root
+            .join(METADATA_DIRECTORY)
+            .join(format!("revocations.{}", format.extension())),
         BundleFileKind::Delegation => root
             .join(METADATA_DIRECTORY)
             .join(DELEGATIONS_DIRECTORY)
-            .join(format!("{id}.json")),
+            .join(format!("{id}.{}", format.extension())),
         BundleFileKind::Package => root.join(PACKAGES_DIRECTORY).join(format!("{id}.amrn")),
     })
 }
@@ -126,12 +171,33 @@ pub(super) fn verify_bundle_signature(
     .map_err(|error| format!("bundle manifest signature verification failed: {error:?}"))
 }
 
+pub(super) fn verify_bundle_signature_binary(
+    root: &RootMetadata,
+    manifest: SignedEnvelope<'_>,
+) -> Result<(), String> {
+    let role = root
+        .roles
+        .iter()
+        .take(usize::from(root.role_count))
+        .find(|role| role.role == MetadataRole::Bundle)
+        .ok_or_else(|| "binary-v2 root metadata does not declare bundle role".to_owned())?;
+    verify_role_signatures(
+        &Ed25519Verifier,
+        manifest.signed,
+        *role,
+        &root.keys[..usize::from(root.key_count)],
+        manifest.signatures,
+    )
+    .map_err(|error| format!("binary-v2 bundle manifest signature verification failed: {error:?}"))
+}
+
 pub(super) fn verify_bundle_files(
     root: &Path,
     bundle: &dali_metadata::BundleMetadata,
+    format: MetadataFormat,
 ) -> Result<(), String> {
     for file in bundle.files.iter().take(usize::from(bundle.file_count)) {
-        let path = bundle_file_path(root, *file)?;
+        let path = bundle_file_path(root, *file, format)?;
         let bytes =
             fs::read(&path).map_err(|error| format!("cannot read {}: {error}", path.display()))?;
         let digest = Sha256::digest(&bytes);
@@ -202,7 +268,8 @@ pub(super) fn hex_encode(bytes: &[u8]) -> String {
 }
 
 fn usage() -> String {
-    "usage: dali metadata bundle {generate|inspect|verify} ...".to_owned()
+    "usage: dali metadata bundle {generate|inspect|verify} ... [--metadata-format json-v1|binary-v2]"
+        .to_owned()
 }
 
 #[cfg(test)]
@@ -233,10 +300,12 @@ mod tests {
             files,
             file_count: 1,
         };
-        verify_bundle_files(&root, &bundle).expect("reference should initially match");
+        verify_bundle_files(&root, &bundle, MetadataFormat::JsonV1)
+            .expect("reference should initially match");
 
         fs::write(&path, b"tampered metadata").expect("tamper test metadata");
-        let error = verify_bundle_files(&root, &bundle).expect_err("tampering must fail");
+        let error = verify_bundle_files(&root, &bundle, MetadataFormat::JsonV1)
+            .expect_err("tampering must fail");
         assert!(error.contains("bundle reference mismatch for root:root"));
         fs::remove_dir_all(root).expect("remove test directory");
     }

@@ -457,6 +457,19 @@ fn parse_target_record(reader: &mut BodyReader<'_>) -> Result<TargetPackage, Dec
     })
 }
 
+/// Parses one length-delimited Binary Metadata v2 target record.
+///
+/// The caller is responsible for reading the preceding `record_length:u16`
+/// field and passing exactly that record body.
+pub fn parse_binary_target_record(bytes: &[u8]) -> Result<TargetPackage, DecodeError> {
+    let mut reader = BodyReader::new(bytes);
+    let target = parse_target_record(&mut reader)?;
+    if !reader.complete() {
+        return Err(DecodeError::TrailingBytes);
+    }
+    Ok(target)
+}
+
 const fn bundle_kind_number(value: BundleFileKind) -> u8 {
     match value {
         BundleFileKind::Root => 1,

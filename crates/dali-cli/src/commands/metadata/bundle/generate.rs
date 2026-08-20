@@ -5,7 +5,8 @@ use std::{
 
 use dali_metadata::{
     BoundedText, BundleMetadata, KeyId, MetadataHeader, MetadataRole, SignatureRecord,
-    SignatureSet, encode_bundle_signed, encode_signed_envelope,
+    SignatureSet, encode_binary_bundle_body, encode_binary_envelope, encode_bundle_signed,
+    encode_signed_envelope,
 };
 
 use super::common;
@@ -13,6 +14,7 @@ use super::common;
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let root = PathBuf::from(common::required(arguments, common::INPUT_FLAG)?);
     let output = PathBuf::from(common::required(arguments, common::OUTPUT_FLAG)?);
+    let format = common::MetadataFormat::parse(arguments)?;
     let target_profile =
         BoundedText::new(&common::required(arguments, common::TARGET_PROFILE_FLAG)?)
             .map_err(|error| format!("{} is invalid: {error:?}", common::TARGET_PROFILE_FLAG))?;
@@ -28,7 +30,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         arguments,
         common::SIGNING_KEY_FLAG,
     )?))?;
-    let files = collect_files(&root)?;
+    let files = collect_files(&root, format)?;
     let count = common::file_count(&files);
     let metadata = BundleMetadata {
         header: MetadataHeader {
@@ -40,22 +42,44 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         files,
         file_count: count,
     };
-    let mut signed = vec![0; dali_metadata::MAX_BUNDLE_BYTES];
-    let signed_length = encode_bundle_signed(&mut signed, metadata)
-        .map_err(|error| format!("cannot encode bundle manifest: {error:?}"))?;
-    let signature = dali_crypto::sign(&seed, &signed[..signed_length]);
     let mut records = [SignatureRecord::default(); dali_metadata::MAX_SIGNATURES];
     records[0] = SignatureRecord {
         key_id: signer_key_id,
-        signature: dali_metadata::Signature(signature),
+        signature: dali_metadata::Signature([0; dali_crypto::SIGNATURE_LENGTH]),
     };
-    let mut envelope = vec![0; dali_metadata::MAX_ENVELOPE_BYTES];
-    let envelope_length = encode_signed_envelope(
-        &mut envelope,
-        &signed[..signed_length],
-        SignatureSet { records, count: 1 },
-    )
-    .map_err(|error| format!("cannot encode bundle envelope: {error:?}"))?;
+    let (envelope, envelope_length) = match format {
+        common::MetadataFormat::JsonV1 => {
+            let mut signed = vec![0; dali_metadata::MAX_BUNDLE_BYTES];
+            let signed_length = encode_bundle_signed(&mut signed, metadata)
+                .map_err(|error| format!("cannot encode bundle manifest: {error:?}"))?;
+            let signature = dali_crypto::sign(&seed, &signed[..signed_length]);
+            records[0].signature = dali_metadata::Signature(signature);
+            let mut envelope = vec![0; dali_metadata::MAX_ENVELOPE_BYTES];
+            let length = encode_signed_envelope(
+                &mut envelope,
+                &signed[..signed_length],
+                SignatureSet { records, count: 1 },
+            )
+            .map_err(|error| format!("cannot encode bundle envelope: {error:?}"))?;
+            (envelope, length)
+        }
+        common::MetadataFormat::BinaryV2 => {
+            let mut body = vec![0; dali_metadata::MAX_BUNDLE_BYTES];
+            let body_length = encode_binary_bundle_body(metadata, &mut body)
+                .map_err(|error| format!("cannot encode binary-v2 bundle body: {error:?}"))?;
+            let signature = dali_crypto::sign(&seed, &body[..body_length]);
+            records[0].signature = dali_metadata::Signature(signature);
+            let mut envelope = vec![0; dali_metadata::MAX_ENVELOPE_BYTES];
+            let length = encode_binary_envelope(
+                MetadataRole::Bundle,
+                &body[..body_length],
+                SignatureSet { records, count: 1 },
+                &mut envelope,
+            )
+            .map_err(|error| format!("cannot encode binary-v2 bundle envelope: {error:?}"))?;
+            (envelope, length)
+        }
+    };
     common::write_new(&output, &envelope[..envelope_length])?;
     println!(
         "Created signed repository bundle manifest: {}",
@@ -67,9 +91,10 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
 
 fn collect_files(
     root: &Path,
+    format: common::MetadataFormat,
 ) -> Result<[dali_metadata::BundleFile; dali_metadata::MAX_BUNDLE_FILES], String> {
     let mut collected = Vec::new();
-    for (kind, id, path) in fixed_files(root) {
+    for (kind, id, path) in fixed_files(root, format) {
         collected.push(common::file_record(kind, id, &path)?);
     }
     let delegation_dir = root
@@ -81,7 +106,7 @@ fn collect_files(
         let path = entry
             .map_err(|error| format!("cannot read delegation entry: {error}"))?
             .path();
-        if path.extension().and_then(|extension| extension.to_str()) == Some("json") {
+        if path.extension().and_then(|extension| extension.to_str()) == Some(format.extension()) {
             let id = path
                 .file_stem()
                 .and_then(|stem| stem.to_str())
@@ -121,33 +146,41 @@ fn collect_files(
     Ok(files)
 }
 
-fn fixed_files(root: &Path) -> [(dali_metadata::BundleFileKind, &str, PathBuf); 5] {
+fn fixed_files(
+    root: &Path,
+    format: common::MetadataFormat,
+) -> [(dali_metadata::BundleFileKind, &str, PathBuf); 5] {
+    let extension = format.extension();
     [
         (
             dali_metadata::BundleFileKind::Root,
             "root",
-            root.join(common::METADATA_DIRECTORY).join("root.json"),
+            root.join(common::METADATA_DIRECTORY)
+                .join(format!("root.{extension}")),
         ),
         (
             dali_metadata::BundleFileKind::Timestamp,
             "timestamp",
-            root.join(common::METADATA_DIRECTORY).join("timestamp.json"),
+            root.join(common::METADATA_DIRECTORY)
+                .join(format!("timestamp.{extension}")),
         ),
         (
             dali_metadata::BundleFileKind::Snapshot,
             "snapshot",
-            root.join(common::METADATA_DIRECTORY).join("snapshot.json"),
+            root.join(common::METADATA_DIRECTORY)
+                .join(format!("snapshot.{extension}")),
         ),
         (
             dali_metadata::BundleFileKind::Targets,
             "targets",
-            root.join(common::METADATA_DIRECTORY).join("targets.json"),
+            root.join(common::METADATA_DIRECTORY)
+                .join(format!("targets.{extension}")),
         ),
         (
             dali_metadata::BundleFileKind::Revocation,
             "revocation",
             root.join(common::METADATA_DIRECTORY)
-                .join("revocations.json"),
+                .join(format!("revocations.{extension}")),
         ),
     ]
 }

@@ -10,5 +10,8 @@ pub mod mpu;
 #[cfg(feature = "repository-loader")]
 #[path = "loader/repository.rs"]
 pub mod repository_loader;
+#[cfg(feature = "repository-loader")]
+#[path = "loader/repository_streaming.rs"]
+pub mod repository_streaming;
 pub mod runtime;
 pub mod storage;
