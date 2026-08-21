@@ -18,6 +18,12 @@ const PACKAGE_NAME_BYTES: usize = 64 + 5;
 const DELEGATION_NAME_BYTES: usize = 64 + 5;
 const METADATA_NAME_BYTES: usize = 16;
 
+type RepositoryChunkPet = fn() -> Result<(), crate::drivers::StorageError>;
+
+fn no_repository_chunk_pet() -> Result<(), crate::drivers::StorageError> {
+    Ok(())
+}
+
 /// Repository metadata encoding selected by the caller.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RepositoryMetadataFormat {
@@ -45,6 +51,7 @@ impl RepositoryMetadataFormat {
 pub struct FatRepositoryStorage<D> {
     device: D,
     metadata_format: RepositoryMetadataFormat,
+    chunk_pet: RepositoryChunkPet,
 }
 
 impl<D> FatRepositoryStorage<D> {
@@ -58,6 +65,20 @@ impl<D> FatRepositoryStorage<D> {
         Self {
             device,
             metadata_format,
+            chunk_pet: no_repository_chunk_pet,
+        }
+    }
+
+    /// Creates an adapter with an injected bounded chunk-progress hook.
+    pub const fn new_with_format_and_pet(
+        device: D,
+        metadata_format: RepositoryMetadataFormat,
+        chunk_pet: RepositoryChunkPet,
+    ) -> Self {
+        Self {
+            device,
+            metadata_format,
+            chunk_pet,
         }
     }
 
@@ -73,7 +94,15 @@ impl<D> FatRepositoryStorage<D> {
     {
         let mut name = [0u8; METADATA_NAME_BYTES];
         let name = append_metadata_suffix(stem, self.metadata_format, &mut name)?;
-        stream_file(self.device, "metadata", None, name, chunk, consumer)
+        stream_file(
+            self.device,
+            "metadata",
+            None,
+            name,
+            chunk,
+            consumer,
+            self.chunk_pet,
+        )
     }
 }
 
@@ -214,6 +243,7 @@ where
                     name,
                     chunk,
                     consumer,
+                    self.chunk_pet,
                 )
             }
         }
@@ -230,7 +260,15 @@ where
     {
         let mut name = [0u8; PACKAGE_NAME_BYTES];
         let name = append_package_suffix(&digest.0, &mut name)?;
-        stream_file(self.device, "packages", None, name, chunk, consumer)
+        stream_file(
+            self.device,
+            "packages",
+            None,
+            name,
+            chunk,
+            consumer,
+            self.chunk_pet,
+        )
     }
 }
 
@@ -249,6 +287,7 @@ fn stream_file<D, F>(
     file_name: &str,
     chunk: &mut [u8],
     consumer: F,
+    chunk_pet: RepositoryChunkPet,
 ) -> Result<u32, embedded_sdmmc::Error<crate::drivers::StorageError>>
 where
     D: Copy + embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
@@ -261,6 +300,7 @@ where
         file_name,
         chunk,
         consumer,
+        chunk_pet,
     )
 }
 

@@ -138,9 +138,10 @@ where
         contract: None,
         now: None,
     };
-    let mut storage = crate::storage::filesystem::FatRepositoryStorage::new_with_format(
+    let mut storage = crate::storage::filesystem::FatRepositoryStorage::new_with_format_and_pet(
         device,
         crate::storage::filesystem::RepositoryMetadataFormat::BinaryV2,
+        crate::platform::pet_repository_chunk,
     );
     let authorizations = with_binary_repository_buffers(|buffers| {
         repository::load_binary_repository_with_contract(

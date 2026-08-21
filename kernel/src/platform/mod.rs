@@ -128,6 +128,12 @@ pub(crate) fn service_watchdog() -> Result<(), WatchdogServiceError> {
     })
 }
 
+/// Adapts the kernel watchdog boundary to repository chunk progress.
+#[cfg(feature = "repository-loader")]
+pub(crate) fn pet_repository_chunk() -> Result<(), crate::drivers::StorageError> {
+    service_watchdog().map_err(|_| crate::drivers::StorageError::Transport)
+}
+
 #[cfg(feature = "board-stm32f405-sd")]
 impl Platform {
     pub(crate) fn set_status_led(&mut self, on: bool) {

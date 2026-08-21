@@ -399,6 +399,14 @@ distinguished from the kernel's fault and recovery records.
 
 ### Repository loader hardware acceptance status (2026-08-21)
 
+Repository streaming watchdog progress is injected through the target
+platform boundary. The FAT repository adapter invokes the bounded progress
+hook only after a non-empty chunk has been accepted by the parser, hash, or
+signature consumer. Storage or verification failures therefore do not feed
+the watchdog. The repository loader remains board-agnostic; the platform
+supplies the hook that maps valid chunk progress to the hardware watchdog
+service operation.
+
 #### Binary v2 host and linker evidence
 
 The Binary v2 CLI dispatch and metadata codec were checked with:

@@ -76,6 +76,7 @@ pub fn stream_repository_file<D, F>(
     file_name: &str,
     chunk: &mut [u8],
     consumer: F,
+    chunk_pet: fn() -> Result<(), StorageError>,
 ) -> Result<u32, Error<StorageError>>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -98,7 +99,7 @@ where
         },
         None => (first, 2),
     };
-    let result = stream_named_file(&manager, directory, file_name, chunk, consumer);
+    let result = stream_named_file(&manager, directory, file_name, chunk, consumer, chunk_pet);
     close_directories(&manager, [root, first, directory], directory_count, result)
 }
 
@@ -133,6 +134,7 @@ fn stream_named_file<D, F>(
     file_name: &str,
     chunk: &mut [u8],
     mut consumer: F,
+    chunk_pet: fn() -> Result<(), StorageError>,
 ) -> Result<u32, Error<StorageError>>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -154,6 +156,7 @@ where
                 return Ok(total);
             }
             consumer(&chunk[..read])?;
+            chunk_pet().map_err(Error::DeviceError)?;
             total = total
                 .checked_add(u32::try_from(read).map_err(|_| Error::InvalidOffset)?)
                 .ok_or(Error::InvalidOffset)?;
