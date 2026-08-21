@@ -10,7 +10,9 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The STM32F411 BlackPill backend has been removed; its board facts now live in
   a generator-only `targets/f411.toml` profile.
 - The WeAct STM32F405RGT6 Core Board backend exists with its 8 MHz HSE, 168 MHz system clock, PB2 LED, and SDIO pin mapping.
-- The F405 kernel builds, checks, and passes strict target Clippy.
+- The default F405 kernel profile builds, checks, and passes strict target
+  Clippy; the full `abi-context-switch` plus `repository-loader` feature
+  combination still has legacy-path dead-code warnings tracked below.
 - DFU flashing of the F405 firmware completes successfully.
 - The F405 USB CDC device has enumerated as `1209:da11` and created `/dev/ttyACM0` during hardware testing.
 - Read-only FAT filesystem integration, root-directory enumeration, AMRN extension filtering, and package discovery logging are implemented.
@@ -101,6 +103,45 @@ the Pico is currently used only as an external SWD probe. ABI v3, relocation,
 and the single-application isolation evidence are complete for the current
 F405 scope. The scalable platform/backend extraction is complete; remaining
 work is contract hardening, security evidence, and post-MVP lifecycle design.
+
+### Next execution sequence — close the Binary v2 32 KiB milestone
+
+The following order is the immediate project priority. Do not start
+production-security or broader lifecycle work until steps 1–4 have fresh,
+reproducible evidence recorded in one timestamped acceptance record.
+
+1. **Finish embedded Clippy.** Feature-gate legacy v1/v3/v4 loader paths and
+   unused contract/catalog modules so the strict
+   `abi-context-switch,repository-loader` target Clippy run is warning-free.
+   Do not use `#[allow(dead_code)]` as a workaround.
+2. **Rerun final F405 acceptance.** Perform a fresh build, generate a new
+   Binary v2 repository, verify the SD card, flash F405, and capture console
+   output proving signed-package verification, slot loading, relocation, and
+   `Ready -> Running`. Run watchdog reset/Safe Mode as a separate scenario.
+   Store the complete result with one timestamp and the package digest.
+3. **Publish the real memory report.** Record `llvm-size` sections,
+   `llvm-nm` linker symbols, the linker map, largest stack frames, repository
+   workspace/retained sections, total 32 KiB kernel-runtime usage, and
+   remaining headroom. The report must identify its exact build configuration.
+4. **Commit the milestone evidence and documentation.** Update the roadmap,
+   testing/hardware evidence, and generated acceptance references only after
+   steps 1–3 pass. Keep the milestone claim limited to what the evidence proves;
+   signed verification is not a Secure Boot claim.
+5. **Harden production trust storage.** Define release root-key custody,
+   rotation, developer revocation, expiry, anti-rollback, candidate/
+   commit-marker transitions, durable trust-store updates, and a separate
+   Secure Boot contract and acceptance plan.
+6. **Complete DMA isolation.** Add unauthorized-DMA rejection, define the
+   application-owned DMA policy, inspect every DMA-capable backend, and obtain
+   hardware evidence. Do not reintroduce raw SDIO DMA writes without a measured
+   throughput or CPU-offload requirement.
+7. **Implement storage lifecycle.** Add bounded card
+   `Unavailable -> Present -> Ready -> Removed/Fault` transitions,
+   removal/reinsert handling, bounded SDIO reinitialization, safe recovery-loop
+   return, and the corresponding physical hardware tests.
+8. **Harden release and CI.** Add the strict feature-matrix checks, reproducible
+   memory/evidence artifacts, and release gates after the preceding milestone
+   is closed.
 
 ### Post-alpha2 implementation order
 
