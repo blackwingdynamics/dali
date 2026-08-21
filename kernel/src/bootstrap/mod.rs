@@ -21,6 +21,8 @@ pub fn run() -> ! {
         logging::BOOT_SUBSYSTEM,
         format_args!("[BOOT] Reset cause: {:?}", reset_cause),
     );
+    #[cfg(feature = "abi-current")]
+    crate::security::fault::report_persistent();
     let boot_mode = lifecycle::status::BootMode::from_reset_cause(reset_cause);
     if boot_mode == lifecycle::status::BootMode::SafeMode {
         logging::error(
@@ -49,15 +51,6 @@ pub fn run() -> ! {
         logging::BOOT_SUBSYSTEM,
         format_args!("Hardware bootstrap complete"),
     );
-
-    if let Some(watchdog) = startup::initialize_watchdog(&mut board)
-        && let Err(error) = platform::install_watchdog(watchdog)
-    {
-        logging::error(
-            logging::BOOT_SUBSYSTEM,
-            format_args!("[WATCHDOG] Failed to install runtime: {:?}", error),
-        );
-    }
 
     #[cfg(feature = "abi-context-switch")]
     if let Err(error) = crate::security::scheduling::initialize() {

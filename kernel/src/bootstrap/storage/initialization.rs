@@ -30,7 +30,13 @@ pub fn initialize(
         return status::StorageStatus::Failure;
     };
 
-    if let Err(error) = reader.initialize() {
+    // The selected transport may call an external HAL whose internal polling
+    // loop cannot receive a kernel callback. Arm the watchdog before that
+    // opaque phase so a non-responsive medium becomes a bounded Safe Mode
+    // recovery instead of an unobservable boot hang.
+    super::super::startup::install_watchdog(board);
+    let initialization = reader.initialize();
+    if let Err(error) = initialization {
         return match error {
             StorageError::NotReady | StorageError::Timeout => {
                 logging::info(

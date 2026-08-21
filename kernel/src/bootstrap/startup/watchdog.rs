@@ -29,3 +29,17 @@ pub fn initialize(board: &mut platform::Platform) -> Option<platform::WatchdogRu
         }
     }
 }
+
+/// Installs the watchdog after the selected storage transport has completed
+/// its opaque hardware initialization phase.
+pub fn install(board: &mut platform::Platform) {
+    let Some(watchdog) = initialize(board) else {
+        return;
+    };
+    if let Err(error) = platform::install_watchdog(watchdog) {
+        logging::error(
+            logging::BOOT_SUBSYSTEM,
+            format_args!("[WATCHDOG] Failed to install runtime: {:?}", error),
+        );
+    }
+}
