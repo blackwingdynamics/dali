@@ -253,5 +253,8 @@ fn find_target<E>(
 }
 
 #[cfg(test)]
-#[path = "repository_tests.rs"]
+#[path = "tests.rs"]
 mod tests;
+
+#[path = "streaming.rs"]
+pub mod streaming;
