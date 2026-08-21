@@ -17,6 +17,7 @@ use super::{
 const PACKAGE_NAME_BYTES: usize = 64 + 5;
 const DELEGATION_NAME_BYTES: usize = 64 + 5;
 const METADATA_NAME_BYTES: usize = 16;
+const DELEGATIONS_DIRECTORY: &str = "delegat";
 
 type RepositoryChunkPet = fn() -> Result<(), crate::drivers::StorageError>;
 
@@ -239,7 +240,7 @@ where
                 stream_file(
                     self.device,
                     "metadata",
-                    Some("delegations"),
+                    Some(DELEGATIONS_DIRECTORY),
                     name,
                     chunk,
                     consumer,
@@ -347,7 +348,26 @@ fn append_suffix_at<'a>(
 const fn hex_digit(value: u8) -> u8 {
     match value {
         0..=9 => b'0' + value,
-        _ => b'A' + (value - 10),
+        _ => b'a' + (value - 10),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PACKAGE_NAME_BYTES, append_package_suffix};
+
+    #[test]
+    fn content_addressed_package_names_use_lowercase_digest_hex() {
+        let digest = [0xC6; 32];
+        let mut output = [0; PACKAGE_NAME_BYTES];
+        let mut expected = [0u8; 64];
+        for pair in expected.chunks_exact_mut(2) {
+            pair.copy_from_slice(b"c6");
+        }
+
+        let name = append_package_suffix(&digest, &mut output).unwrap();
+        assert_eq!(&name.as_bytes()[..64], &expected);
+        assert_eq!(&name.as_bytes()[64..], b".amrn");
     }
 }
 
