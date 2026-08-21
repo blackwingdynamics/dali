@@ -4,6 +4,7 @@ use crate::{
     BoundedText, KeyId, MetadataHeader, MetadataRole, RevocationMetadata, RevocationRecord,
     StreamingBodyError, validate_revocation_metadata,
 };
+use core::mem::MaybeUninit;
 
 const QUEUE_BYTES: usize = 512;
 const TEXT_BYTES: usize = crate::MAX_REVOCATION_REASON_BYTES;
@@ -24,19 +25,19 @@ enum Phase {
 }
 
 /// Incrementally parses explicit revocation records without retaining the body.
-pub struct BinaryRevocationBodyStreamParser {
+pub struct BinaryRevocationBodyStreamParser<const CAPACITY: usize = { crate::MAX_REVOCATIONS }> {
     queue: ByteQueue,
     phase: Phase,
     version: u64,
     expires: u64,
-    records: [RevocationRecord; crate::MAX_REVOCATIONS],
+    records: [RevocationRecord; CAPACITY],
     record_count: u8,
     record_index: usize,
     text_length: usize,
     text: [u8; TEXT_BYTES],
 }
 
-impl BinaryRevocationBodyStreamParser {
+impl<const CAPACITY: usize> BinaryRevocationBodyStreamParser<CAPACITY> {
     /// Creates an empty revocation body parser.
     pub fn new() -> Self {
         Self {
@@ -44,7 +45,7 @@ impl BinaryRevocationBodyStreamParser {
             phase: Phase::Version,
             version: 0,
             expires: 0,
-            records: [RevocationRecord::default(); crate::MAX_REVOCATIONS],
+            records: [RevocationRecord::default(); CAPACITY],
             record_count: 0,
             record_index: 0,
             text_length: 0,
@@ -62,22 +63,37 @@ impl BinaryRevocationBodyStreamParser {
     }
 
     /// Completes parsing and validates all revocation records.
-    pub fn finish(mut self) -> Result<RevocationMetadata, StreamingBodyError> {
+    pub fn finish(&mut self) -> Result<RevocationMetadata, StreamingBodyError> {
+        let mut output = MaybeUninit::uninit();
+        self.finish_into(&mut output)?;
+        // SAFETY: finish_into initializes output before returning Ok.
+        Ok(unsafe { output.assume_init() })
+    }
+
+    /// Completes parsing directly into caller-owned output storage.
+    pub fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<RevocationMetadata>,
+    ) -> Result<(), StreamingBodyError> {
         self.drive().map_err(map_error)?;
         if self.phase != Phase::Complete || !self.queue.is_empty() {
             return Err(StreamingBodyError::UnexpectedEnd);
         }
+        let mut records = [RevocationRecord::default(); crate::MAX_REVOCATIONS];
+        records[..usize::from(self.record_count)]
+            .copy_from_slice(&self.records[..usize::from(self.record_count)]);
         let metadata = RevocationMetadata {
             header: MetadataHeader {
                 role: MetadataRole::Revocation,
                 version: self.version,
                 expires: self.expires,
             },
-            records: self.records,
+            records,
             record_count: self.record_count,
         };
         validate_revocation_metadata(&metadata).map_err(|_| StreamingBodyError::InvalidBody)?;
-        Ok(metadata)
+        output.write(metadata);
+        Ok(())
     }
 
     fn drive(&mut self) -> Result<(), Error> {
@@ -120,7 +136,7 @@ impl BinaryRevocationBodyStreamParser {
         let Some(value) = self.queue.take::<2>() else {
             return Ok(false);
         };
-        if usize::from(u16::from_le_bytes(value)) > crate::MAX_REVOCATIONS {
+        if usize::from(u16::from_le_bytes(value)) > CAPACITY {
             return Err(Error::Invalid);
         }
         self.record_count = u8::try_from(u16::from_le_bytes(value)).map_err(|_| Error::Invalid)?;
@@ -193,7 +209,7 @@ impl BinaryRevocationBodyStreamParser {
     }
 }
 
-impl Default for BinaryRevocationBodyStreamParser {
+impl<const CAPACITY: usize> Default for BinaryRevocationBodyStreamParser<CAPACITY> {
     fn default() -> Self {
         Self::new()
     }
@@ -280,7 +296,7 @@ mod tests {
         let mut body = [0; crate::MAX_REVOCATION_BYTES];
         let length =
             crate::encode_binary_revocation_body(metadata, &mut body).expect("revocation encodes");
-        let mut parser = BinaryRevocationBodyStreamParser::new();
+        let mut parser = BinaryRevocationBodyStreamParser::<{ crate::MAX_REVOCATIONS }>::new();
         for chunk in body[..length].chunks(4) {
             parser.feed(chunk).expect("fragment parses")
         }

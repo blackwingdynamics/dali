@@ -1,5 +1,8 @@
 //! Bounded cryptographic verification for Binary Metadata v2 streams.
 
+use core::mem::MaybeUninit;
+use core::ptr::addr_of_mut;
+
 use crate::{
     KeyId, MetadataRole, RoleDefinition, RoleKey, SignatureSet, validate_role,
     validate_signature_set,
@@ -51,7 +54,7 @@ pub struct StreamVerificationResult {
 /// record. Body chunks are borrowed for the duration of [`update`].
 pub struct StreamingRoleVerifier {
     digest: dali_crypto::Sha256Accumulator,
-    verifiers: [Option<dali_crypto::StreamingVerifier>; MAX_STREAMING_SIGNERS],
+    verifiers: [MaybeUninit<dali_crypto::StreamingVerifier>; MAX_STREAMING_SIGNERS],
     signature_count: usize,
     threshold: u8,
 }
@@ -83,17 +86,65 @@ impl StreamingRoleVerifier {
         }
         Ok(Self {
             digest: dali_crypto::Sha256Accumulator::new(),
-            verifiers,
+            verifiers: verifiers.map(|verifier| {
+                let mut slot = MaybeUninit::uninit();
+                if let Some(verifier) = verifier {
+                    slot.write(verifier);
+                }
+                slot
+            }),
             signature_count: active.len(),
             threshold: role.threshold,
         })
     }
 
+    /// Initializes a verifier directly in caller-owned storage.
+    ///
+    /// This form is intended for embedded callers whose stack cannot hold the
+    /// Ed25519 backend state. The destination must not be read unless this
+    /// function returns `Ok(())`.
+    #[inline(never)]
+    pub fn initialize(
+        destination: &mut MaybeUninit<Self>,
+        role: RoleDefinition,
+        keys: &[RoleKey],
+        signatures: SignatureSet,
+    ) -> Result<(), StreamingVerificationError> {
+        validate_role(role).map_err(|_| StreamingVerificationError::InvalidRole)?;
+        validate_signature_set(&signatures)
+            .map_err(|_| StreamingVerificationError::InvalidSignatureSet)?;
+        let active = &signatures.records[..usize::from(signatures.count)];
+        let destination = destination.as_mut_ptr();
+        unsafe {
+            addr_of_mut!((*destination).digest).write(dali_crypto::Sha256Accumulator::new());
+            addr_of_mut!((*destination).verifiers)
+                .write(core::array::from_fn(|_| MaybeUninit::uninit()));
+            addr_of_mut!((*destination).signature_count).write(active.len());
+            addr_of_mut!((*destination).threshold).write(role.threshold);
+        }
+        for (index, record) in active.iter().enumerate() {
+            let key =
+                find_key(keys, record.key_id).ok_or(StreamingVerificationError::UnknownSigner)?;
+            if key.role != role.role
+                || !role.keys[..usize::from(role.key_count)].contains(&record.key_id)
+            {
+                return Err(StreamingVerificationError::UnauthorizedSigner);
+            }
+            let verifier = dali_crypto::begin_verify(&key.public_key.0, &record.signature.0)
+                .map_err(|_| StreamingVerificationError::InvalidKey)?;
+            unsafe {
+                (*destination).verifiers[index].write(verifier);
+            }
+        }
+        Ok(())
+    }
+
     /// Adds one body chunk to both the digest and every authorized signature verifier.
     pub fn update(&mut self, chunk: &[u8]) {
         self.digest.update(chunk);
-        for verifier in self.verifiers[..self.signature_count].iter_mut().flatten() {
-            verifier.update(chunk);
+        for verifier in &mut self.verifiers[..self.signature_count] {
+            // SAFETY: initialize() and new() initialize every active slot.
+            unsafe { verifier.assume_init_mut() }.update(chunk);
         }
     }
 
@@ -112,8 +163,9 @@ impl StreamingRoleVerifier {
     {
         for part in chunk.chunks(STREAMING_CRYPTO_PROGRESS_BYTES) {
             self.digest.update(part);
-            for verifier in self.verifiers[..self.signature_count].iter_mut().flatten() {
-                verifier.update(part);
+            for verifier in &mut self.verifiers[..self.signature_count] {
+                // SAFETY: initialize() and new() initialize every active slot.
+                unsafe { verifier.assume_init_mut() }.update(part);
             }
             if !progress() {
                 return Err(StreamingProgressError::Aborted);
@@ -123,14 +175,22 @@ impl StreamingRoleVerifier {
     }
 
     /// Finalizes all cryptographic states and returns the authenticated body digest.
-    pub fn finish(self) -> Result<StreamVerificationResult, StreamingVerificationError> {
+    pub fn finish(mut self) -> Result<StreamVerificationResult, StreamingVerificationError> {
+        self.finish_in_place()
+    }
+
+    /// Finalizes the verifier without moving its large cryptographic state.
+    ///
+    /// Embedded callers should prefer this method when the verifier lives in
+    /// caller-owned BSS storage.
+    pub fn finish_in_place(
+        &mut self,
+    ) -> Result<StreamVerificationResult, StreamingVerificationError> {
         let mut valid_signatures = 0_u8;
-        for verifier in self
-            .verifiers
-            .into_iter()
-            .take(self.signature_count)
-            .flatten()
-        {
+        for index in 0..self.signature_count {
+            // SAFETY: every active slot was initialized by initialize() or new(),
+            // and is consumed exactly once here.
+            let verifier = unsafe { self.verifiers[index].assume_init_read() };
             if verifier.finalize().is_ok() {
                 valid_signatures = valid_signatures.saturating_add(1);
             } else {
@@ -141,7 +201,10 @@ impl StreamingRoleVerifier {
             return Err(StreamingVerificationError::ThresholdNotMet);
         }
         Ok(StreamVerificationResult {
-            sha256: crate::Sha256Digest(self.digest.finalize()),
+            sha256: crate::Sha256Digest(
+                core::mem::replace(&mut self.digest, dali_crypto::Sha256Accumulator::new())
+                    .finalize(),
+            ),
             valid_signatures,
         })
     }

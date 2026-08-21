@@ -68,7 +68,7 @@ impl BinaryTimestampBodyStreamParser {
     }
 
     /// Completes parsing and returns the typed timestamp metadata.
-    pub fn finish(self) -> Result<TimestampMetadata, StreamingBodyError> {
+    pub fn finish(&mut self) -> Result<TimestampMetadata, StreamingBodyError> {
         if self.length != self.body.len() {
             return Err(StreamingBodyError::UnexpectedEnd);
         }

@@ -37,7 +37,7 @@ pub(crate) enum AmrnStreamError<E> {
     /// The adapter length did not match the delivered bytes.
     LengthMismatch,
     /// The package header or trailer was malformed.
-    InvalidHeader,
+    InvalidHeader(dali_amrn::v5::Error),
     /// The package digest did not match the target record.
     DigestMismatch,
     /// The package signature did not match the delegated developer key.
@@ -61,13 +61,13 @@ where
 {
     let total = capture_package_shape(storage, digest, chunk, buffers)?;
     let header = v5::parse_header_parts(&buffers.header, &buffers.signature, contract)
-        .map_err(|_| AmrnStreamError::InvalidHeader)?;
+        .map_err(AmrnStreamError::InvalidHeader)?;
     let signed_size = usize::try_from(read_u32(
         &buffers.header[v5::SIGNED_SIZE_OFFSET..v5::SIGNED_SIZE_OFFSET + 4],
     ))
-    .map_err(|_| AmrnStreamError::InvalidHeader)?;
+    .map_err(|_| AmrnStreamError::InvalidHeader(v5::Error::InvalidHeader))?;
     if signed_size + v5::SIGNATURE_SIZE != total {
-        return Err(AmrnStreamError::InvalidHeader);
+        return Err(AmrnStreamError::InvalidHeader(v5::Error::InvalidSignature));
     }
     if header.signature.key_id != delegation.key_id.0 {
         return Err(AmrnStreamError::InvalidSignature);

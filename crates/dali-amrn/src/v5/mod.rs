@@ -103,8 +103,16 @@ pub enum Error {
     TruncatedHeader,
     /// A fixed header or extension field is invalid.
     InvalidHeader,
+    /// The fixed magic, format revision, or header length is invalid.
+    InvalidHeaderPrefix,
+    /// Reserved header bytes or flags are non-zero.
+    InvalidHeaderReserved,
+    /// The encoded relocation or ABI fields are invalid.
+    InvalidHeaderEncoding,
     /// The v3 image or relocation payload is malformed.
     InvalidPayload,
+    /// The package does not fit the selected target memory contract.
+    InvalidContract,
     /// The relocation table is malformed.
     InvalidRelocation,
     /// The package identity is empty.

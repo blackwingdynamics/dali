@@ -173,7 +173,14 @@ where
         let applications = storage::filesystem::with_content_addressed_package(
             device,
             crate::storage::repository::RepositoryPackageDigest(authorization.target.sha256.0),
-            |file| load_current_abi_file(file, slot_manager),
+            |file| {
+                pipeline::signed::load_file_with_public_key(
+                    file,
+                    slot_manager,
+                    &authorization.developer_public_key,
+                )
+                .map(LoadedPackages::single)
+            },
         )
         .map_err(LoaderError::Filesystem)??;
         for application in applications.iter().copied() {
@@ -191,14 +198,40 @@ where
 fn map_repository_error(
     error: repository::BinaryRepositoryError<embedded_sdmmc::Error<StorageError>>,
 ) -> LoaderError {
+    crate::logging::error(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!(
+            "[LOADER] Binary v2 repository verification failed: {}\r\n",
+            repository_error_label(&error)
+        ),
+    );
     match error {
         repository::BinaryRepositoryError::Storage(error)
-        | repository::BinaryRepositoryError::RoleStorage(error) => LoaderError::Filesystem(error),
-        repository::BinaryRepositoryError::Revoked | repository::BinaryRepositoryError::Package => {
+        | repository::BinaryRepositoryError::RoleStorage(error)
+        | repository::BinaryRepositoryError::PackageStorage(error) => {
+            LoaderError::Filesystem(error)
+        }
+        repository::BinaryRepositoryError::Revoked
+        | repository::BinaryRepositoryError::PackageSignature => {
             LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidSignature)
         }
+        repository::BinaryRepositoryError::PackageCrc => {
+            LoaderError::V5SignedPackage(dali_amrn::v5::Error::CrcMismatch)
+        }
+        repository::BinaryRepositoryError::PackageLengthMismatch
+        | repository::BinaryRepositoryError::PackageContract
+        | repository::BinaryRepositoryError::PackageDigestMismatch => {
+            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidHeader)
+        }
+        repository::BinaryRepositoryError::PackageInvalidHeader(error) => {
+            LoaderError::V5SignedPackage(error)
+        }
         repository::BinaryRepositoryError::MissingRecord
-        | repository::BinaryRepositoryError::ReferenceMismatch
+        | repository::BinaryRepositoryError::TargetsParse(_)
+        | repository::BinaryRepositoryError::TargetsReferenceMismatch
+        | repository::BinaryRepositoryError::SnapshotReferenceMismatch
+        | repository::BinaryRepositoryError::RevocationReferenceMismatch
+        | repository::BinaryRepositoryError::DelegationReferenceMismatch
         | repository::BinaryRepositoryError::DelegationMismatch
         | repository::BinaryRepositoryError::UnknownTrustAnchor
         | repository::BinaryRepositoryError::RoleDecode
@@ -208,7 +241,66 @@ fn map_repository_error(
     }
 }
 
-#[cfg(feature = "abi-current")]
+#[cfg(all(feature = "abi-current", feature = "repository-loader"))]
+fn repository_error_label<E>(error: &repository::BinaryRepositoryError<E>) -> &'static str {
+    match error {
+        repository::BinaryRepositoryError::Storage(_) => "storage",
+        repository::BinaryRepositoryError::RoleStorage(_) => "role-storage",
+        repository::BinaryRepositoryError::MissingRecord => "missing-record",
+        repository::BinaryRepositoryError::TargetsParse(error) => match error {
+            repository::streaming::StreamingTargetsError::InvalidEnvelope => "targets-envelope",
+            repository::streaming::StreamingTargetsError::UnexpectedEnd => "targets-unexpected-end",
+            repository::streaming::StreamingTargetsError::RecordTooLarge => {
+                "targets-record-too-large"
+            }
+            repository::streaming::StreamingTargetsError::InvalidRecord => "targets-invalid-record",
+            repository::streaming::StreamingTargetsError::TrailingBytes => "targets-trailing-bytes",
+            repository::streaming::StreamingTargetsError::TooManyMatchingRecords => {
+                "targets-too-many-records"
+            }
+            repository::streaming::StreamingTargetsError::MultipleMatchingRecords => {
+                "targets-multiple-records"
+            }
+        },
+        repository::BinaryRepositoryError::TargetsReferenceMismatch => "targets-reference-mismatch",
+        repository::BinaryRepositoryError::SnapshotReferenceMismatch => {
+            "snapshot-reference-mismatch"
+        }
+        repository::BinaryRepositoryError::RevocationReferenceMismatch => {
+            "revocation-reference-mismatch"
+        }
+        repository::BinaryRepositoryError::DelegationReferenceMismatch => {
+            "delegation-reference-mismatch"
+        }
+        repository::BinaryRepositoryError::DelegationMismatch => "delegation-mismatch",
+        repository::BinaryRepositoryError::UnknownTrustAnchor => "unknown-trust-anchor",
+        repository::BinaryRepositoryError::RoleDecode => "role-decode",
+        repository::BinaryRepositoryError::RoleSignature => "role-signature",
+        repository::BinaryRepositoryError::Revoked => "revoked",
+        repository::BinaryRepositoryError::PackageStorage(_) => "package-storage",
+        repository::BinaryRepositoryError::PackageLengthMismatch => "package-length-mismatch",
+        repository::BinaryRepositoryError::PackageContract => "package-contract",
+        repository::BinaryRepositoryError::PackageInvalidHeader(error) => match error {
+            dali_amrn::v5::Error::InvalidSignature => "package-signature-envelope",
+            dali_amrn::v5::Error::InvalidContract => "package-contract",
+            dali_amrn::v5::Error::InvalidHeader => "package-static-header",
+            dali_amrn::v5::Error::InvalidHeaderPrefix => "package-header-prefix",
+            dali_amrn::v5::Error::InvalidHeaderReserved => "package-header-reserved",
+            dali_amrn::v5::Error::InvalidHeaderEncoding => "package-header-encoding",
+            dali_amrn::v5::Error::InvalidPayload => "package-payload-layout",
+            dali_amrn::v5::Error::InvalidRelocation => "package-relocation",
+            dali_amrn::v5::Error::InvalidIdentity => "package-identity",
+            dali_amrn::v5::Error::CrcMismatch => "package-crc",
+            dali_amrn::v5::Error::TruncatedHeader => "package-truncated-header",
+            dali_amrn::v5::Error::OutputTooSmall => "package-output-size",
+        },
+        repository::BinaryRepositoryError::PackageDigestMismatch => "package-digest-mismatch",
+        repository::BinaryRepositoryError::PackageSignature => "package-signature",
+        repository::BinaryRepositoryError::PackageCrc => "package-crc",
+    }
+}
+
+#[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
 fn load_current_abi_file<D>(
     file: storage::filesystem::AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,

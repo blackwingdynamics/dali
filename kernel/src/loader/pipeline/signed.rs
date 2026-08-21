@@ -16,9 +16,33 @@ use super::{execution::LoadedApplication, identity};
 
 const SIGNATURE_BYTES: usize = v5::SIGNATURE_SIZE;
 
+#[cfg(not(feature = "repository-loader"))]
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+) -> Result<LoadedApplication, super::LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    load_file_with_key(file, slot_manager, None)
+}
+
+/// Loads a package whose signing key was authorized by the repository chain.
+pub(crate) fn load_file_with_public_key<D>(
+    file: AmrnFile<'_, D>,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    public_key: &[u8; dali_crypto::PUBLIC_KEY_LENGTH],
+) -> Result<LoadedApplication, super::LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    load_file_with_key(file, slot_manager, Some(public_key))
+}
+
+fn load_file_with_key<D>(
+    file: AmrnFile<'_, D>,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    repository_key: Option<&[u8; dali_crypto::PUBLIC_KEY_LENGTH]>,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -32,7 +56,16 @@ where
             header.metadata.required_services,
         ));
     }
-    validate_package(&file, header, contract, signed_size)?;
+    let public_key = repository_key
+        .copied()
+        .or_else(|| {
+            crate::platform::TRUST_ANCHORS
+                .iter()
+                .find(|anchor| header.signature.key_id == anchor.key_id)
+                .map(|anchor| anchor.public_key)
+        })
+        .ok_or(super::LoaderError::UnknownTrustAnchor)?;
+    validate_package(&file, header, contract, signed_size, &public_key)?;
     file.rewind().map_err(super::LoaderError::Filesystem)?;
     let _header = read_header(&file)?;
     identity::copy_segments_and_relocate(&file, header.image, contract)?;
@@ -143,6 +176,7 @@ fn validate_package<D>(
     header: v5::Header<'_>,
     contract: v3::Contract,
     signed_size: u32,
+    public_key: &[u8; dali_crypto::PUBLIC_KEY_LENGTH],
 ) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -155,16 +189,12 @@ where
     {
         return Err(v5_error(v5::Error::InvalidPayload));
     }
-    let anchor = crate::platform::TRUST_ANCHORS
-        .iter()
-        .find(|anchor| header.signature.key_id == anchor.key_id)
-        .ok_or(super::LoaderError::UnknownTrustAnchor)?;
     let signature: [u8; 64] = header
         .signature
         .signature
         .try_into()
         .map_err(|_| v5_error(v5::Error::InvalidSignature))?;
-    let mut verifier = dali_crypto::begin_verify(&anchor.public_key, &signature)
+    let mut verifier = dali_crypto::begin_verify(public_key, &signature)
         .map_err(super::LoaderError::SignatureVerification)?;
     file.rewind().map_err(super::LoaderError::Filesystem)?;
     let mut header_bytes = [0; v5::HEADER_SIZE];

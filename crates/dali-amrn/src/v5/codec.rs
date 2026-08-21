@@ -141,7 +141,10 @@ pub fn parse_header_parts<'a>(
     if header[MAGIC_OFFSET..MAGIC_OFFSET + MAGIC.len()] != MAGIC
         || header[FORMAT_VERSION_OFFSET] != FORMAT_VERSION
         || read_u16(header, HEADER_SIZE_OFFSET) != HEADER_SIZE as u16
-        || read_u16(header, SIGNATURE_SIZE_FIELD) != SIGNATURE_SIZE as u16
+    {
+        return Err(Error::InvalidHeaderPrefix);
+    }
+    if read_u16(header, SIGNATURE_SIZE_FIELD) != SIGNATURE_SIZE as u16
         || read_u16(header, SIGNATURE_SIZE_FIELD + 2) != 0
         || header[V4_RESERVED_START..PACKAGE_ID_OFFSET]
             .iter()
@@ -152,7 +155,7 @@ pub fn parse_header_parts<'a>(
             .iter()
             .any(|byte| *byte != 0)
     {
-        return Err(Error::InvalidHeader);
+        return Err(Error::InvalidHeaderReserved);
     }
     let package_id = read_array::<{ v4::PACKAGE_ID_LENGTH }>(header, PACKAGE_ID_OFFSET);
     if package_id.iter().all(|byte| *byte == 0) {
@@ -180,9 +183,9 @@ pub fn parse_header_parts<'a>(
         || header[ABI_VERSION_OFFSET + 1] != 0
         || read_u16(header, ABI_VERSION_OFFSET + 2) != 0
     {
-        return Err(Error::InvalidHeader);
+        return Err(Error::InvalidHeaderEncoding);
     }
-    v3::validate_header(image, contract).map_err(|_| Error::InvalidHeader)?;
+    v3::validate_header(image, contract).map_err(|_| Error::InvalidContract)?;
     let signature_offset = read_u32(header, SIGNATURE_OFFSET_FIELD) as usize;
     if signature_offset < HEADER_SIZE
         || signature_offset != read_u32(header, SIGNED_SIZE_FIELD) as usize

@@ -4,6 +4,7 @@ use crate::{
     BoundedText, DelegationReference, MetadataHeader, MetadataRole, RevocationReference,
     Sha256Digest, SnapshotMetadata, TargetsReference, validate_snapshot_metadata,
 };
+use core::mem::MaybeUninit;
 
 const QUEUE_BYTES: usize = 512;
 const TEXT_BYTES: usize = crate::MAX_DELEGATION_ID_BYTES;
@@ -34,21 +35,23 @@ enum Error {
 }
 
 /// Incrementally parses a Binary v2 snapshot body without retaining the body.
-pub struct BinarySnapshotBodyStreamParser {
+pub struct BinarySnapshotBodyStreamParser<
+    const CAPACITY: usize = { crate::MAX_SNAPSHOT_REFERENCES },
+> {
     queue: ByteQueue,
     phase: Phase,
     version: u64,
     expires: u64,
     targets: TargetsReference,
     revocations: RevocationReference,
-    delegations: [DelegationReference; crate::MAX_SNAPSHOT_REFERENCES],
+    delegations: [DelegationReference; CAPACITY],
     delegation_count: u8,
     delegation_index: usize,
     text_length: usize,
     text: [u8; TEXT_BYTES],
 }
 
-impl BinarySnapshotBodyStreamParser {
+impl<const CAPACITY: usize> BinarySnapshotBodyStreamParser<CAPACITY> {
     /// Creates an empty snapshot body parser.
     pub fn new() -> Self {
         Self {
@@ -66,7 +69,7 @@ impl BinarySnapshotBodyStreamParser {
                 length: 0,
                 sha256: Sha256Digest([0; crate::SHA256_LENGTH]),
             },
-            delegations: [DelegationReference::default(); crate::MAX_SNAPSHOT_REFERENCES],
+            delegations: [DelegationReference::default(); CAPACITY],
             delegation_count: 0,
             delegation_index: 0,
             text_length: 0,
@@ -84,11 +87,25 @@ impl BinarySnapshotBodyStreamParser {
     }
 
     /// Completes parsing and validates the typed snapshot contract.
-    pub fn finish(mut self) -> Result<SnapshotMetadata, crate::StreamingBodyError> {
+    pub fn finish(&mut self) -> Result<SnapshotMetadata, crate::StreamingBodyError> {
+        let mut output = MaybeUninit::uninit();
+        self.finish_into(&mut output)?;
+        // SAFETY: finish_into initializes output before returning Ok.
+        Ok(unsafe { output.assume_init() })
+    }
+
+    /// Completes parsing directly into caller-owned output storage.
+    pub fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<SnapshotMetadata>,
+    ) -> Result<(), crate::StreamingBodyError> {
         self.drive().map_err(map_error)?;
         if self.phase != Phase::Complete || !self.queue.is_empty() {
             return Err(crate::StreamingBodyError::UnexpectedEnd);
         }
+        let mut delegations = [DelegationReference::default(); crate::MAX_SNAPSHOT_REFERENCES];
+        delegations[..usize::from(self.delegation_count)]
+            .copy_from_slice(&self.delegations[..usize::from(self.delegation_count)]);
         let metadata = SnapshotMetadata {
             header: MetadataHeader {
                 role: MetadataRole::Snapshot,
@@ -97,12 +114,13 @@ impl BinarySnapshotBodyStreamParser {
             },
             targets: self.targets,
             revocations: self.revocations,
-            delegations: self.delegations,
+            delegations,
             delegation_count: self.delegation_count,
         };
         validate_snapshot_metadata(&metadata)
             .map_err(|_| crate::StreamingBodyError::InvalidBody)?;
-        Ok(metadata)
+        output.write(metadata);
+        Ok(())
     }
 
     fn drive(&mut self) -> Result<(), Error> {
@@ -120,7 +138,7 @@ impl BinarySnapshotBodyStreamParser {
                     None => Ok(false),
                     Some(value) => {
                         let value = value[0];
-                        if usize::from(value) > crate::MAX_SNAPSHOT_REFERENCES {
+                        if usize::from(value) > CAPACITY {
                             return Err(Error::InvalidBody);
                         }
                         self.delegation_count = value;
@@ -239,7 +257,7 @@ impl BinarySnapshotBodyStreamParser {
     }
 }
 
-impl Default for BinarySnapshotBodyStreamParser {
+impl<const CAPACITY: usize> Default for BinarySnapshotBodyStreamParser<CAPACITY> {
     fn default() -> Self {
         Self::new()
     }
@@ -337,7 +355,8 @@ mod tests {
         let mut body = [0; crate::MAX_SNAPSHOT_BYTES];
         let length = crate::encode_binary_snapshot_body(snapshot, &mut body)
             .expect("snapshot body should encode");
-        let mut parser = BinarySnapshotBodyStreamParser::new();
+        let mut parser =
+            BinarySnapshotBodyStreamParser::<{ crate::MAX_SNAPSHOT_REFERENCES }>::new();
         for chunk in body[..length].chunks(3) {
             parser.feed(chunk).expect("fragment should parse");
         }

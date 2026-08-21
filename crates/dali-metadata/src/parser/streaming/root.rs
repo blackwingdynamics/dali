@@ -4,6 +4,7 @@ use crate::{
     KeyId, MetadataHeader, MetadataRole, PublicKey, RoleDefinition, RoleKey, RootMetadata,
     StreamingBodyError, validate_role_references,
 };
+use core::mem::MaybeUninit;
 
 const QUEUE_BYTES: usize = 512;
 
@@ -77,7 +78,18 @@ impl BinaryRootBodyStreamParser {
     }
 
     /// Completes parsing and validates key references.
-    pub fn finish(mut self) -> Result<RootMetadata, StreamingBodyError> {
+    pub fn finish(&mut self) -> Result<RootMetadata, StreamingBodyError> {
+        let mut output = MaybeUninit::uninit();
+        self.finish_into(&mut output)?;
+        // SAFETY: finish_into initializes output before returning Ok.
+        Ok(unsafe { output.assume_init() })
+    }
+
+    /// Completes parsing directly into caller-owned output storage.
+    pub fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<RootMetadata>,
+    ) -> Result<(), StreamingBodyError> {
         self.drive().map_err(map_error)?;
         if self.phase != Phase::Complete || !self.queue.is_empty() {
             return Err(StreamingBodyError::UnexpectedEnd);
@@ -87,7 +99,7 @@ impl BinaryRootBodyStreamParser {
             &self.roles[..usize::from(self.role_count)],
         )
         .map_err(|_| StreamingBodyError::InvalidBody)?;
-        Ok(RootMetadata {
+        output.write(RootMetadata {
             header: MetadataHeader {
                 role: MetadataRole::Root,
                 version: self.version,
@@ -97,7 +109,8 @@ impl BinaryRootBodyStreamParser {
             key_count: self.key_count,
             roles: self.roles,
             role_count: self.role_count,
-        })
+        });
+        Ok(())
     }
 
     fn drive(&mut self) -> Result<(), RootError> {

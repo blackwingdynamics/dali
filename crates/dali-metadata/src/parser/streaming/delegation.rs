@@ -4,6 +4,7 @@ use crate::{
     BoundedText, DelegationMetadata, KeyId, MetadataHeader, MetadataRole, PublicKey,
     StreamingBodyError, validate_delegation,
 };
+use core::mem::MaybeUninit;
 
 const QUEUE_BYTES: usize = 512;
 const TEXT_BYTES: usize = crate::MAX_TARGET_PROFILE_BYTES;
@@ -30,7 +31,11 @@ enum Phase {
 }
 
 /// Incrementally parses a developer delegation without retaining its body.
-pub struct BinaryDelegationBodyStreamParser {
+pub struct BinaryDelegationBodyStreamParser<
+    const NAMESPACE_CAPACITY: usize = { crate::MAX_DELEGATION_SCOPES },
+    const TARGET_CAPACITY: usize = { crate::MAX_DELEGATION_TARGETS },
+    const ABI_CAPACITY: usize = { crate::MAX_DELEGATION_ABIS },
+> {
     queue: ByteQueue,
     phase: Phase,
     version: u64,
@@ -38,13 +43,13 @@ pub struct BinaryDelegationBodyStreamParser {
     developer_id: BoundedText<{ crate::MAX_DEVELOPER_ID_BYTES }>,
     key_id: KeyId,
     public_key: PublicKey,
-    namespaces: [BoundedText<{ crate::MAX_NAMESPACE_BYTES }>; crate::MAX_DELEGATION_SCOPES],
+    namespaces: [BoundedText<{ crate::MAX_NAMESPACE_BYTES }>; NAMESPACE_CAPACITY],
     namespace_count: u8,
     namespace_index: usize,
-    targets: [BoundedText<{ crate::MAX_TARGET_PROFILE_BYTES }>; crate::MAX_DELEGATION_TARGETS],
+    targets: [BoundedText<{ crate::MAX_TARGET_PROFILE_BYTES }>; TARGET_CAPACITY],
     target_count: u8,
     target_index: usize,
-    abis: [u16; crate::MAX_DELEGATION_ABIS],
+    abis: [u16; ABI_CAPACITY],
     abi_count: u8,
     abi_index: usize,
     text_length: usize,
@@ -53,7 +58,9 @@ pub struct BinaryDelegationBodyStreamParser {
     not_after: u64,
 }
 
-impl BinaryDelegationBodyStreamParser {
+impl<const NAMESPACE_CAPACITY: usize, const TARGET_CAPACITY: usize, const ABI_CAPACITY: usize>
+    BinaryDelegationBodyStreamParser<NAMESPACE_CAPACITY, TARGET_CAPACITY, ABI_CAPACITY>
+{
     /// Creates an empty delegation body parser.
     pub fn new() -> Self {
         Self {
@@ -64,13 +71,13 @@ impl BinaryDelegationBodyStreamParser {
             developer_id: BoundedText::default(),
             key_id: KeyId([0; crate::KEY_ID_LENGTH]),
             public_key: PublicKey([0; crate::PUBLIC_KEY_LENGTH]),
-            namespaces: [BoundedText::default(); crate::MAX_DELEGATION_SCOPES],
+            namespaces: [BoundedText::default(); NAMESPACE_CAPACITY],
             namespace_count: 0,
             namespace_index: 0,
-            targets: [BoundedText::default(); crate::MAX_DELEGATION_TARGETS],
+            targets: [BoundedText::default(); TARGET_CAPACITY],
             target_count: 0,
             target_index: 0,
-            abis: [0; crate::MAX_DELEGATION_ABIS],
+            abis: [0; ABI_CAPACITY],
             abi_count: 0,
             abi_index: 0,
             text_length: 0,
@@ -90,11 +97,31 @@ impl BinaryDelegationBodyStreamParser {
     }
 
     /// Completes parsing and validates the typed delegation contract.
-    pub fn finish(mut self) -> Result<DelegationMetadata, StreamingBodyError> {
+    pub fn finish(&mut self) -> Result<DelegationMetadata, StreamingBodyError> {
+        let mut output = MaybeUninit::uninit();
+        self.finish_into(&mut output)?;
+        // SAFETY: finish_into initializes output before returning Ok.
+        Ok(unsafe { output.assume_init() })
+    }
+
+    /// Completes parsing directly into caller-owned output storage.
+    pub fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<DelegationMetadata>,
+    ) -> Result<(), StreamingBodyError> {
         self.drive().map_err(map_error)?;
         if self.phase != Phase::Complete || !self.queue.is_empty() {
             return Err(StreamingBodyError::UnexpectedEnd);
         }
+        let mut namespaces = [BoundedText::default(); crate::MAX_DELEGATION_SCOPES];
+        namespaces[..usize::from(self.namespace_count)]
+            .copy_from_slice(&self.namespaces[..usize::from(self.namespace_count)]);
+        let mut targets = [BoundedText::default(); crate::MAX_DELEGATION_TARGETS];
+        targets[..usize::from(self.target_count)]
+            .copy_from_slice(&self.targets[..usize::from(self.target_count)]);
+        let mut abis = [0; crate::MAX_DELEGATION_ABIS];
+        abis[..usize::from(self.abi_count)]
+            .copy_from_slice(&self.abis[..usize::from(self.abi_count)]);
         let metadata = DelegationMetadata {
             header: MetadataHeader {
                 role: MetadataRole::Delegation,
@@ -104,17 +131,18 @@ impl BinaryDelegationBodyStreamParser {
             developer_id: self.developer_id,
             key_id: self.key_id,
             public_key: self.public_key,
-            allowed_namespaces: self.namespaces,
+            allowed_namespaces: namespaces,
             namespace_count: self.namespace_count,
-            allowed_targets: self.targets,
+            allowed_targets: targets,
             target_count: self.target_count,
-            allowed_abis: self.abis,
+            allowed_abis: abis,
             abi_count: self.abi_count,
             not_before: self.not_before,
             not_after: self.not_after,
         };
         validate_delegation(&metadata).map_err(|_| StreamingBodyError::InvalidBody)?;
-        Ok(metadata)
+        output.write(metadata);
+        Ok(())
     }
 
     fn drive(&mut self) -> Result<(), Error> {
@@ -208,9 +236,9 @@ impl BinaryDelegationBodyStreamParser {
             return Ok(false);
         };
         let limit = match kind {
-            0 => crate::MAX_DELEGATION_SCOPES,
-            1 => crate::MAX_DELEGATION_TARGETS,
-            _ => crate::MAX_DELEGATION_ABIS,
+            0 => NAMESPACE_CAPACITY,
+            1 => TARGET_CAPACITY,
+            _ => ABI_CAPACITY,
         };
         if usize::from(value[0]) > limit {
             return Err(Error::Invalid);
@@ -295,7 +323,10 @@ impl BinaryDelegationBodyStreamParser {
     }
 }
 
-impl Default for BinaryDelegationBodyStreamParser {
+impl<const NAMESPACE_CAPACITY: usize, const TARGET_CAPACITY: usize, const ABI_CAPACITY: usize>
+    Default
+    for BinaryDelegationBodyStreamParser<NAMESPACE_CAPACITY, TARGET_CAPACITY, ABI_CAPACITY>
+{
     fn default() -> Self {
         Self::new()
     }
@@ -385,7 +416,11 @@ mod tests {
         let mut body = [0; crate::MAX_DELEGATION_BYTES];
         let length =
             crate::encode_binary_delegation_body(metadata, &mut body).expect("delegation encodes");
-        let mut parser = BinaryDelegationBodyStreamParser::new();
+        let mut parser = BinaryDelegationBodyStreamParser::<
+            { crate::MAX_DELEGATION_SCOPES },
+            { crate::MAX_DELEGATION_TARGETS },
+            { crate::MAX_DELEGATION_ABIS },
+        >::new();
         for chunk in body[..length].chunks(7) {
             parser.feed(chunk).expect("fragment parses")
         }

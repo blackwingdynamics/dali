@@ -6,6 +6,7 @@ use crate::{
     DecodeError, MetadataRole, RoleDefinition, RoleKey, Sha256Digest, StreamVerificationResult,
     StreamingBodyError, StreamingRoleVerifier,
 };
+use core::mem::MaybeUninit;
 
 /// Typed role-body parser used by the Binary v2 second pass.
 pub trait BinaryRoleBodyParser: Sized {
@@ -16,7 +17,16 @@ pub trait BinaryRoleBodyParser: Sized {
     fn feed(&mut self, bytes: &[u8]) -> Result<(), StreamingBodyError>;
 
     /// Finishes the state machine and validates the typed body.
-    fn finish(self) -> Result<Self::Output, StreamingBodyError>;
+    fn finish(&mut self) -> Result<Self::Output, StreamingBodyError>;
+
+    /// Finishes directly into caller-owned output storage.
+    fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<Self::Output>,
+    ) -> Result<(), StreamingBodyError> {
+        output.write(self.finish()?);
+        Ok(())
+    }
 }
 
 macro_rules! role_parser {
@@ -26,7 +36,7 @@ macro_rules! role_parser {
             fn feed(&mut self, bytes: &[u8]) -> Result<(), StreamingBodyError> {
                 Self::feed(self, bytes)
             }
-            fn finish(self) -> Result<Self::Output, StreamingBodyError> {
+            fn finish(&mut self) -> Result<Self::Output, StreamingBodyError> {
                 Self::finish(self)
             }
         }
@@ -35,9 +45,63 @@ macro_rules! role_parser {
 
 role_parser!(BinaryRootBodyStreamParser, crate::RootMetadata);
 role_parser!(BinaryTimestampBodyStreamParser, crate::TimestampMetadata);
-role_parser!(BinarySnapshotBodyStreamParser, crate::SnapshotMetadata);
-role_parser!(BinaryDelegationBodyStreamParser, crate::DelegationMetadata);
-role_parser!(BinaryRevocationBodyStreamParser, crate::RevocationMetadata);
+impl<const CAPACITY: usize> BinaryRoleBodyParser for BinarySnapshotBodyStreamParser<CAPACITY> {
+    type Output = crate::SnapshotMetadata;
+
+    fn feed(&mut self, bytes: &[u8]) -> Result<(), StreamingBodyError> {
+        Self::feed(self, bytes)
+    }
+
+    fn finish(&mut self) -> Result<Self::Output, StreamingBodyError> {
+        Self::finish(self)
+    }
+
+    fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<Self::Output>,
+    ) -> Result<(), StreamingBodyError> {
+        Self::finish_into(self, output)
+    }
+}
+impl<const NAMESPACE_CAPACITY: usize, const TARGET_CAPACITY: usize, const ABI_CAPACITY: usize>
+    BinaryRoleBodyParser
+    for BinaryDelegationBodyStreamParser<NAMESPACE_CAPACITY, TARGET_CAPACITY, ABI_CAPACITY>
+{
+    type Output = crate::DelegationMetadata;
+
+    fn feed(&mut self, bytes: &[u8]) -> Result<(), StreamingBodyError> {
+        Self::feed(self, bytes)
+    }
+
+    fn finish(&mut self) -> Result<Self::Output, StreamingBodyError> {
+        Self::finish(self)
+    }
+
+    fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<Self::Output>,
+    ) -> Result<(), StreamingBodyError> {
+        Self::finish_into(self, output)
+    }
+}
+impl<const CAPACITY: usize> BinaryRoleBodyParser for BinaryRevocationBodyStreamParser<CAPACITY> {
+    type Output = crate::RevocationMetadata;
+
+    fn feed(&mut self, bytes: &[u8]) -> Result<(), StreamingBodyError> {
+        Self::feed(self, bytes)
+    }
+
+    fn finish(&mut self) -> Result<Self::Output, StreamingBodyError> {
+        Self::finish(self)
+    }
+
+    fn finish_into(
+        &mut self,
+        output: &mut MaybeUninit<Self::Output>,
+    ) -> Result<(), StreamingBodyError> {
+        Self::finish_into(self, output)
+    }
+}
 
 /// Errors returned by one bounded Binary v2 parse-and-replay verification.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
