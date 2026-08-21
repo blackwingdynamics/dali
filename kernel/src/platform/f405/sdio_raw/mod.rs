@@ -5,7 +5,10 @@ use crate::runtime::memory::DmaBuffer;
 use stm32f4xx_hal::pac;
 use stm32f4xx_hal::sdio::CardCapacity;
 
+mod init;
 mod status;
+#[cfg(feature = "storage-write")]
+mod write;
 use status::{clear_interrupts, status_error};
 
 const BLOCK_BYTES: usize = 512;
@@ -18,6 +21,8 @@ const DMA_CHANNEL: u8 = 4;
 const DMA_WORD_SIZE: u8 = 2;
 const CMD_SET_BLOCK_LENGTH: u8 = 16;
 const CMD_READ_SINGLE_BLOCK: u8 = 17;
+#[cfg(feature = "storage-write")]
+const CMD_WRITE_SINGLE_BLOCK: u8 = 24;
 
 #[repr(C, align(4))]
 struct AlignedDmaWords([u32; DATA_WORD_COUNT as usize]);
@@ -31,6 +36,7 @@ static mut DMA_WORDS: AlignedDmaWords = AlignedDmaWords([0; DATA_WORD_COUNT as u
 /// Reads SDIO blocks without the HAL half-full FIFO tail deadlock.
 pub(crate) struct RawSdioReader {
     high_capacity: bool,
+    relative_address: u32,
 }
 
 impl RawSdioReader {
@@ -38,11 +44,20 @@ impl RawSdioReader {
     pub(crate) const fn new() -> Self {
         Self {
             high_capacity: false,
+            relative_address: 0,
         }
     }
     /// Records card addressing metadata obtained from the HAL initializer.
-    pub(crate) fn configure(&mut self, capacity: CardCapacity) {
+    pub(crate) fn configure(&mut self, capacity: CardCapacity, relative_address: u32) {
         self.high_capacity = matches!(capacity, CardCapacity::HighCapacity);
+        self.relative_address = relative_address;
+    }
+
+    /// Initializes an SD card through bounded F405 SDIO command polling.
+    pub(crate) fn initialize(&mut self) -> Result<u32, StorageError> {
+        let (capacity, block_count, relative_address) = init::initialize()?;
+        self.configure(capacity, relative_address);
+        Ok(block_count)
     }
 
     /// Reads one complete 512-byte block with bounded hardware status handling.
@@ -76,6 +91,16 @@ impl RawSdioReader {
             }
         }
         Ok(())
+    }
+
+    /// Writes one block through the bounded CPU/FIFO SDIO path.
+    #[cfg(feature = "storage-write")]
+    pub(crate) fn write_block(
+        &mut self,
+        address: BlockAddress,
+        block: &Block,
+    ) -> Result<(), StorageError> {
+        write::write_block(self, address, block)
     }
     fn command_argument(&self, address: BlockAddress) -> Result<u32, StorageError> {
         if self.high_capacity {
