@@ -1,6 +1,7 @@
 //! Board-agnostic repository loading and durable publication.
 
 mod amrn;
+mod chain;
 pub mod discovery;
 mod io;
 mod trust;

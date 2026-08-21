@@ -384,10 +384,12 @@ envelope parser validates fragmented envelopes without retaining their body;
 typed Root, Timestamp, Snapshot, Delegation, and Revocation parsers are
 organized under `dali-metadata/src/parser/streaming/`, and
 `verify_binary_role_envelope` provides the parse-and-replay second pass. The
-the kernel repository loader now also contains a bounded two-pass AMRN v5
-validator under `loader/repository/amrn.rs`. The storage-backed role chain and
-its boot-sequence integration are still pending, so the loader MUST NOT be
-wired to this partial stream yet.
+kernel repository loader now also contains a bounded two-pass AMRN v5 validator
+under `loader/repository/amrn.rs`, a generic role-stream capture/replay helper
+under `loader/repository/chain.rs`, and Root anchor membership wiring through
+the target manifest. The complete storage-backed reference chain and its
+boot-sequence integration are still pending, so the loader MUST NOT be wired
+to this partial stream yet.
 
 ### Future multi-application package selection
 
