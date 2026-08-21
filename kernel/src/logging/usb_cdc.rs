@@ -62,6 +62,10 @@ pub(super) fn initialize(resources: crate::platform::UsbResources) {
         // SAFETY: USB resources and shared state are initialized before the
         // platform backend unmasks the sole USB owner.
         crate::platform::unmask_usb_irq();
+        // Boot messages may have been queued before USB resources existed, so
+        // the pre-initialization pend cannot wake the newly installed owner.
+        // Request one bounded service pass after ownership is transferred.
+        crate::platform::pend_usb_irq();
     }
 }
 
