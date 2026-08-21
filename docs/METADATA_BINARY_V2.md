@@ -139,11 +139,24 @@ targets. The F405 profile uses a 512-byte I/O chunk and bounded verifier state:
 
 The shared `BinaryEnvelopeStreamParser` in `dali-metadata` implements the
 envelope portion of this profile for root, timestamp, snapshot, targets,
-delegation, and revocation. It accepts fragmented input, forwards body chunks
-to a role parser, and retains only the fixed envelope header plus bounded
-signature records. Typed role-body streaming parsers are the next milestone;
-the existing complete-body parsers and the kernel's selective targets parser
-remain separate APIs.
+delegation, and revocation. It accepts fragmented input, hashes the exact
+body bytes, forwards body chunks to a role parser, and retains only the fixed
+envelope header plus bounded signature records. `StreamingRoleVerifier`
+consumes those chunks through a real SHA-256 accumulator and one Ed25519
+stream verifier per signature; it does not retain the body or use a fake
+verifier.
+
+The cryptographic verifier is a second-pass primitive: Binary Metadata v2
+places signatures after the body, so a storage adapter must first parse the
+envelope and obtain its signature records, then replay the same body stream
+into `StreamingRoleVerifier`. Root remains a trust-anchor bootstrap case and
+requires a provisioned root anchor or an explicitly documented two-pass
+policy; it must not be silently treated as self-trusted.
+
+Typed role-body streaming parsers for Root, Timestamp, Snapshot, Targets,
+Delegation, and Revocation, plus the complete repository chain and package
+discovery wiring, remain in progress. The existing complete-body parsers and
+the kernel's selective targets parser remain separate APIs.
 
 The `<4 KiB` figure is a measured F405 verifier-state budget, not a property
 of binary encoding alone. It must be reported from the linked target image

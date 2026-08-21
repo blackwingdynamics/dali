@@ -193,10 +193,12 @@ milestone into `main` only after its documented validation evidence exists.
    [in progress] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
    kernel/runtime RAM region. The repository contract now uses
-   `RepositoryStreamStorage`, and Binary v2 has an incremental envelope parser
-   for all repository roles. Typed role-body parsers and a streamed AMRN
-   header/payload verifier remain; only after that work may the chain be called
-   from the real boot sequence.
+   `RepositoryStreamStorage`, Binary v2 has an incremental envelope parser for
+   all repository roles, and `StreamingRoleVerifier` provides real
+   Ed25519/SHA-256 state for a replay pass. Typed role-body parsers, the root
+   trust-anchor/two-pass policy, and a streamed AMRN header/payload verifier
+   remain; only after that work may the chain be called from the real boot
+   sequence.
    [ ] Replace metadata JSON v1 repository files with the frozen custom binary
    v2 envelope and length-prefixed streaming records. Keep JSON v1 as a
    host-only migration format until binary v2 has CLI and F405 acceptance.

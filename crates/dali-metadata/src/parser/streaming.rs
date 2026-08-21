@@ -32,6 +32,8 @@ pub struct StreamedEnvelope {
     pub body_length: u32,
     /// Bounded signature set collected after the body.
     pub signatures: SignatureSet,
+    /// SHA-256 digest of the exact streamed body bytes.
+    pub body_sha256: crate::Sha256Digest,
 }
 
 /// Incrementally validates one Binary Metadata v2 envelope.
@@ -52,11 +54,12 @@ pub struct BinaryEnvelopeStreamParser {
     signature_buffer: [u8; crate::BINARY_SIGNATURE_RECORD_BYTES],
     signature_buffered: usize,
     signatures: [SignatureRecord; crate::MAX_SIGNATURES],
+    body_digest: dali_crypto::Sha256Accumulator,
 }
 
 impl BinaryEnvelopeStreamParser {
     /// Creates a parser that accepts only `expected_role`.
-    pub const fn new(expected_role: MetadataRole) -> Self {
+    pub fn new(expected_role: MetadataRole) -> Self {
         Self {
             expected_role,
             header: [0; BINARY_ENVELOPE_HEADER_BYTES],
@@ -73,6 +76,7 @@ impl BinaryEnvelopeStreamParser {
                 key_id: KeyId([0; crate::KEY_ID_LENGTH]),
                 signature: Signature([0; crate::SIGNATURE_LENGTH]),
             }; crate::MAX_SIGNATURES],
+            body_digest: dali_crypto::Sha256Accumulator::new(),
         }
     }
 
@@ -101,6 +105,7 @@ impl BinaryEnvelopeStreamParser {
                     .map_err(|_| StreamingDecodeError::InvalidEnvelope)?;
                 let count = remaining.min(bytes.len() - offset);
                 consumer(&bytes[offset..offset + count]).map_err(StreamingDecodeError::Body)?;
+                self.body_digest.update(&bytes[offset..offset + count]);
                 self.body_seen += count as u32;
                 self.total_seen += count as u64;
                 offset += count;
@@ -139,6 +144,7 @@ impl BinaryEnvelopeStreamParser {
             role: self.expected_role,
             body_length: self.body_length,
             signatures,
+            body_sha256: crate::Sha256Digest(self.body_digest.finalize()),
         })
     }
 
@@ -264,6 +270,9 @@ mod tests {
             let result = parser.finish().expect("stream should finish");
             assert_eq!(result.role, role);
             assert_eq!(&body[..body_length], b"streamed-body");
+            let mut digest = dali_crypto::Sha256Accumulator::new();
+            digest.update(b"streamed-body");
+            assert_eq!(result.body_sha256.0, digest.finalize());
         }
     }
 

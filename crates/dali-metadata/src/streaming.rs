@@ -1,0 +1,196 @@
+//! Bounded cryptographic verification for Binary Metadata v2 streams.
+
+use crate::{
+    KeyId, MetadataRole, RoleDefinition, RoleKey, SignatureSet, validate_role,
+    validate_signature_set,
+};
+
+/// Maximum number of Ed25519 signatures authenticated by one role envelope.
+pub const MAX_STREAMING_SIGNERS: usize = crate::MAX_SIGNATURES;
+
+/// Errors returned while preparing or completing one signed role stream.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StreamingVerificationError {
+    /// The role definition is malformed.
+    InvalidRole,
+    /// The envelope signature set is malformed.
+    InvalidSignatureSet,
+    /// A signature references no declared key.
+    UnknownSigner,
+    /// A key exists but is not authorized for this role.
+    UnauthorizedSigner,
+    /// A key or signature cannot initialize the Ed25519 verifier.
+    InvalidKey,
+    /// A signer did not authenticate the complete streamed body.
+    InvalidSignature,
+    /// The role threshold was not met.
+    ThresholdNotMet,
+}
+
+/// Result of one verified role body stream.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StreamVerificationResult {
+    /// SHA-256 digest of the exact body bytes supplied to [`StreamingRoleVerifier::update`].
+    pub sha256: crate::Sha256Digest,
+    /// Number of distinct valid signatures satisfying the role threshold.
+    pub valid_signatures: u8,
+}
+
+/// Incrementally authenticates one canonical role body.
+///
+/// The verifier owns only SHA-256 state and one Ed25519 state per signature
+/// record. Body chunks are borrowed for the duration of [`update`].
+pub struct StreamingRoleVerifier {
+    digest: dali_crypto::Sha256Accumulator,
+    verifiers: [Option<dali_crypto::StreamingVerifier>; MAX_STREAMING_SIGNERS],
+    signature_count: usize,
+    threshold: u8,
+}
+
+impl StreamingRoleVerifier {
+    /// Prepares verification for a role using its already trusted key set.
+    pub fn new(
+        role: RoleDefinition,
+        keys: &[RoleKey],
+        signatures: SignatureSet,
+    ) -> Result<Self, StreamingVerificationError> {
+        validate_role(role).map_err(|_| StreamingVerificationError::InvalidRole)?;
+        validate_signature_set(&signatures)
+            .map_err(|_| StreamingVerificationError::InvalidSignatureSet)?;
+        let mut verifiers = core::array::from_fn(|_| None);
+        let active = &signatures.records[..usize::from(signatures.count)];
+        for (index, record) in active.iter().enumerate() {
+            let key =
+                find_key(keys, record.key_id).ok_or(StreamingVerificationError::UnknownSigner)?;
+            if key.role != role.role
+                || !role.keys[..usize::from(role.key_count)].contains(&record.key_id)
+            {
+                return Err(StreamingVerificationError::UnauthorizedSigner);
+            }
+            verifiers[index] = Some(
+                dali_crypto::begin_verify(&key.public_key.0, &record.signature.0)
+                    .map_err(|_| StreamingVerificationError::InvalidKey)?,
+            );
+        }
+        Ok(Self {
+            digest: dali_crypto::Sha256Accumulator::new(),
+            verifiers,
+            signature_count: active.len(),
+            threshold: role.threshold,
+        })
+    }
+
+    /// Adds one body chunk to both the digest and every authorized signature verifier.
+    pub fn update(&mut self, chunk: &[u8]) {
+        self.digest.update(chunk);
+        for verifier in self.verifiers[..self.signature_count].iter_mut().flatten() {
+            verifier.update(chunk);
+        }
+    }
+
+    /// Finalizes all cryptographic states and returns the authenticated body digest.
+    pub fn finish(self) -> Result<StreamVerificationResult, StreamingVerificationError> {
+        let mut valid_signatures = 0_u8;
+        for verifier in self
+            .verifiers
+            .into_iter()
+            .take(self.signature_count)
+            .flatten()
+        {
+            if verifier.finalize().is_ok() {
+                valid_signatures = valid_signatures.saturating_add(1);
+            } else {
+                return Err(StreamingVerificationError::InvalidSignature);
+            }
+        }
+        if valid_signatures < self.threshold {
+            return Err(StreamingVerificationError::ThresholdNotMet);
+        }
+        Ok(StreamVerificationResult {
+            sha256: crate::Sha256Digest(self.digest.finalize()),
+            valid_signatures,
+        })
+    }
+}
+
+fn find_key(keys: &[RoleKey], key_id: KeyId) -> Option<RoleKey> {
+    keys.iter().find(|key| key.key_id == key_id).copied()
+}
+
+/// Keeps the role binding explicit when a parser is fed from a generic envelope stream.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct StreamingRoleBinding {
+    /// Role expected in the Binary Metadata v2 envelope.
+    pub role: MetadataRole,
+}
+
+impl StreamingRoleBinding {
+    /// Creates a binding for one metadata role.
+    pub const fn new(role: MetadataRole) -> Self {
+        Self { role }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{KeyId, RoleKey, Signature, SignatureRecord};
+
+    const SEED: [u8; 32] = [19; 32];
+
+    fn role_and_key() -> (RoleDefinition, RoleKey) {
+        let key_id = KeyId([3; crate::KEY_ID_LENGTH]);
+        let mut allowed = [KeyId([0; crate::KEY_ID_LENGTH]); crate::MAX_ROLE_KEYS];
+        allowed[0] = key_id;
+        (
+            RoleDefinition {
+                role: MetadataRole::Targets,
+                keys: allowed,
+                key_count: 1,
+                threshold: 1,
+            },
+            RoleKey {
+                role: MetadataRole::Targets,
+                key_id,
+                public_key: crate::PublicKey(dali_crypto::public_key_from_seed(&SEED)),
+            },
+        )
+    }
+
+    fn signatures(body: &[u8], key_id: KeyId) -> SignatureSet {
+        let mut records = [SignatureRecord::default(); crate::MAX_SIGNATURES];
+        records[0] = SignatureRecord {
+            key_id,
+            signature: Signature(dali_crypto::sign(&SEED, body)),
+        };
+        SignatureSet { records, count: 1 }
+    }
+
+    #[test]
+    fn authenticates_fragmented_body_and_returns_digest() {
+        let (role, key) = role_and_key();
+        let body = b"binary role body";
+        let mut verifier = StreamingRoleVerifier::new(role, &[key], signatures(body, key.key_id))
+            .expect("stream verifier should initialize");
+        verifier.update(&body[..5]);
+        verifier.update(&body[5..]);
+        let result = verifier.finish().expect("signature should verify");
+        assert_eq!(result.valid_signatures, 1);
+        let mut expected = dali_crypto::Sha256Accumulator::new();
+        expected.update(body);
+        assert_eq!(result.sha256.0, expected.finalize());
+    }
+
+    #[test]
+    fn rejects_a_tampered_fragment() {
+        let (role, key) = role_and_key();
+        let mut verifier =
+            StreamingRoleVerifier::new(role, &[key], signatures(b"binary role body", key.key_id))
+                .expect("stream verifier should initialize");
+        verifier.update(b"binary role tampered");
+        assert_eq!(
+            verifier.finish(),
+            Err(StreamingVerificationError::InvalidSignature)
+        );
+    }
+}
