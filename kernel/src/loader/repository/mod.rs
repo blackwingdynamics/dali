@@ -2,6 +2,7 @@
 
 pub mod discovery;
 mod io;
+mod trust;
 
 use dali_amrn::v3::Contract;
 use dali_metadata::{

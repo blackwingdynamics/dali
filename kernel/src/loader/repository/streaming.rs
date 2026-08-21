@@ -1,7 +1,8 @@
 //! Bounded Binary Metadata v2 target selection for repository streams.
 
 use dali_metadata::{
-    BINARY_ENVELOPE_HEADER_BYTES, BINARY_FORMAT_VERSION, BINARY_MAGIC, MetadataRole, PackageId,
+    BINARY_ENVELOPE_HEADER_BYTES, BINARY_FORMAT_VERSION, BINARY_MAGIC, BinaryEnvelopeStreamParser,
+    DecodeError, MetadataRole, PackageId, RoleDefinition, RoleKey, StreamingRoleVerifier,
     TargetPackage, parse_binary_target_record,
 };
 
@@ -46,6 +47,76 @@ pub enum StreamingTargetSelectionError<E> {
     Storage(E),
     /// The Binary Metadata v2 stream was malformed.
     Parse(StreamingTargetsError),
+    /// The targets envelope failed its second-pass signature verification.
+    Verification,
+}
+
+/// Selects one target and authenticates the complete Binary v2 targets envelope.
+///
+/// The first pass parses only the selected record. The second pass replays the
+/// exact envelope body through the bounded Ed25519/SHA-256 verifier.
+pub fn select_verified_binary_target<S>(
+    storage: &mut S,
+    package_id: PackageId,
+    role: RoleDefinition,
+    keys: &[RoleKey],
+    chunk: &mut [u8],
+) -> Result<Option<TargetPackage>, StreamingTargetSelectionError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+{
+    let mut selector = BinaryTargetsStreamParser::new(package_id);
+    let mut envelope = BinaryEnvelopeStreamParser::new(MetadataRole::Targets);
+    let mut parse_error = None;
+    storage
+        .stream_metadata(RepositoryDocument::Targets, chunk, |bytes| {
+            if parse_error.is_some() {
+                return Ok(());
+            }
+            if let Err(error) = envelope.feed(bytes, |body| {
+                selector.feed(body).map_err(|_| DecodeError::InvalidValue)
+            }) {
+                parse_error = Some(error);
+            }
+            Ok(())
+        })
+        .map_err(StreamingTargetSelectionError::Storage)?;
+    if parse_error.is_some() {
+        return Err(StreamingTargetSelectionError::Parse(
+            StreamingTargetsError::InvalidEnvelope,
+        ));
+    }
+    let envelope = envelope.finish().map_err(|_| {
+        StreamingTargetSelectionError::Parse(StreamingTargetsError::InvalidEnvelope)
+    })?;
+    let target = selector
+        .finish()
+        .map_err(StreamingTargetSelectionError::Parse)?;
+    let mut verifier = StreamingRoleVerifier::new(role, keys, envelope.signatures)
+        .map_err(|_| StreamingTargetSelectionError::Verification)?;
+    let mut replay = BinaryEnvelopeStreamParser::new(MetadataRole::Targets);
+    let mut replay_error = false;
+    storage
+        .stream_metadata(RepositoryDocument::Targets, chunk, |bytes| {
+            if replay_error {
+                return Ok(());
+            }
+            if replay
+                .feed(bytes, |body| {
+                    verifier.update(body);
+                    Ok::<(), DecodeError>(())
+                })
+                .is_err()
+            {
+                replay_error = true;
+            }
+            Ok(())
+        })
+        .map_err(StreamingTargetSelectionError::Storage)?;
+    if replay_error || replay.finish().is_err() || verifier.finish().is_err() {
+        return Err(StreamingTargetSelectionError::Verification);
+    }
+    Ok(target)
 }
 
 /// Selects one target record without retaining the complete targets document.
