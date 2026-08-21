@@ -25,8 +25,8 @@ use crate::storage::{
 use io::{read_metadata, read_package};
 
 pub use chain::{
-    BinaryRepositoryAuthorization, BinaryRepositoryBuffers, BinaryRepositoryError,
-    load_binary_repository, load_binary_repository_with_contract,
+    BinaryRepositoryAuthorization, BinaryRepositoryAuthorizations, BinaryRepositoryBuffers,
+    BinaryRepositoryError, load_binary_repository, load_binary_repository_with_contract,
 };
 
 /// Caller-owned bounded buffers for one repository verification pass.
@@ -79,7 +79,7 @@ impl Default for RepositoryBuffers {
 pub struct RepositoryLoadRequest {
     /// Optional package identity for an explicit host-side selection.
     pub package_id: Option<PackageId>,
-    /// Target profile used by boot-time unique executable discovery.
+    /// Target profile used by boot-time bounded executable discovery.
     pub target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
     /// Optional fixed AMRN v5 contract for explicit host-side verification.
     pub contract: Option<Contract>,

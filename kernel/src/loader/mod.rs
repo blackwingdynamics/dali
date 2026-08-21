@@ -129,7 +129,7 @@ where
         crate::storage::filesystem::RepositoryMetadataFormat::BinaryV2,
     );
     let mut buffers = repository::BinaryRepositoryBuffers::new();
-    let authorization = repository::load_binary_repository_with_contract(
+    let authorizations = repository::load_binary_repository_with_contract(
         &mut storage,
         request,
         crate::platform::TRUST_ANCHORS,
@@ -151,12 +151,23 @@ where
         },
     )
     .map_err(map_repository_error)?;
-    storage::filesystem::with_content_addressed_package(
-        device,
-        crate::storage::repository::RepositoryPackageDigest(authorization.target.sha256.0),
-        |file| load_current_abi_file(file, slot_manager),
-    )
-    .map_err(LoaderError::Filesystem)?
+    let mut loaded = LoadedPackages::new();
+    for authorization in authorizations.iter() {
+        let applications = storage::filesystem::with_content_addressed_package(
+            device,
+            crate::storage::repository::RepositoryPackageDigest(authorization.target.sha256.0),
+            |file| load_current_abi_file(file, slot_manager),
+        )
+        .map_err(LoaderError::Filesystem)??;
+        for application in applications.iter().copied() {
+            if !loaded.push(application) {
+                return Err(LoaderError::CurrentAbiPackage(
+                    dali_amrn::v2::Error::InvalidHeader,
+                ));
+            }
+        }
+    }
+    Ok(loaded)
 }
 
 #[cfg(all(feature = "abi-current", feature = "repository-loader"))]

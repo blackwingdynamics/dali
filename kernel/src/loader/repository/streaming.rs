@@ -8,7 +8,7 @@ use dali_metadata::{
 
 use crate::storage::repository::{RepositoryDocument, RepositoryStreamStorage};
 
-/// Maximum target record retained while selecting one package.
+/// Maximum target record retained while selecting executable packages.
 pub const MAX_STREAMING_TARGET_RECORD_BYTES: usize = 512;
 /// Minimum caller-owned chunk size recommended for F405 repository reads.
 pub const STREAMING_METADATA_CHUNK_BYTES: usize = 512;
@@ -38,7 +38,9 @@ pub enum StreamingTargetsError {
     InvalidRecord,
     /// The stream contained bytes outside its declared envelope.
     TrailingBytes,
-    /// The selected target profile resolved to more than one package.
+    /// The selected target profile resolved to more packages than the caller can retain.
+    TooManyMatchingRecords,
+    /// A single-package selection resolved to more than one package.
     MultipleMatchingRecords,
 }
 
@@ -82,7 +84,51 @@ pub fn select_verified_binary_target<S>(
 where
     S: RepositoryStreamStorage,
 {
-    select_verified_target(
+    let targets = select_verified_targets::<S, 1>(
+        storage,
+        BinaryTargetsStreamParser::for_package(package_id),
+        role,
+        keys,
+        chunk,
+    )?;
+    match targets.first() {
+        Some(target) => Ok(Some(target)),
+        None => Ok(None),
+    }
+}
+
+/// Selects every executable target for a declared target profile within `CAPACITY`.
+pub fn select_verified_binary_targets<S, const CAPACITY: usize>(
+    storage: &mut S,
+    target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
+    role: RoleDefinition,
+    keys: &[RoleKey],
+    chunk: &mut [u8],
+) -> Result<VerifiedBinaryTargets<CAPACITY>, StreamingTargetSelectionError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+{
+    select_verified_targets::<S, CAPACITY>(
+        storage,
+        BinaryTargetsStreamParser::for_profile(target_profile),
+        role,
+        keys,
+        chunk,
+    )
+}
+
+/// Selects and authenticates all records matching one explicit package ID.
+pub fn select_verified_binary_targets_for_package<S, const CAPACITY: usize>(
+    storage: &mut S,
+    package_id: PackageId,
+    role: RoleDefinition,
+    keys: &[RoleKey],
+    chunk: &mut [u8],
+) -> Result<VerifiedBinaryTargets<CAPACITY>, StreamingTargetSelectionError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+{
+    select_verified_targets::<S, CAPACITY>(
         storage,
         BinaryTargetsStreamParser::for_package(package_id),
         role,
@@ -102,25 +148,61 @@ pub fn select_unique_verified_binary_target<S>(
 where
     S: RepositoryStreamStorage,
 {
-    select_verified_target(
-        storage,
-        BinaryTargetsStreamParser::for_profile(target_profile),
-        role,
-        keys,
-        chunk,
-    )?
-    .ok_or(StreamingTargetSelectionError::Parse(
+    let targets =
+        select_verified_binary_targets::<S, 1>(storage, target_profile, role, keys, chunk)?;
+    targets.first().ok_or(StreamingTargetSelectionError::Parse(
         StreamingTargetsError::UnexpectedEnd,
     ))
 }
 
-fn select_verified_target<S>(
+/// Bounded set of authenticated Targets records sharing one serialized document.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct VerifiedBinaryTargets<const CAPACITY: usize> {
+    targets: [Option<TargetPackage>; CAPACITY],
+    selected_count: usize,
+    document_length: u32,
+    digest: dali_metadata::Sha256Digest,
+    envelope: dali_metadata::StreamedEnvelope,
+    version: u64,
+}
+
+impl<const CAPACITY: usize> VerifiedBinaryTargets<CAPACITY> {
+    /// Returns the number of selected target records.
+    pub const fn len(&self) -> usize {
+        self.selected_count
+    }
+
+    /// Returns whether no target record was selected.
+    pub const fn is_empty(&self) -> bool {
+        self.selected_count == 0
+    }
+
+    /// Returns the selected target records in Targets document order.
+    pub fn iter(&self) -> impl Iterator<Item = VerifiedBinaryTarget> + '_ {
+        self.targets[..self.len()].iter().filter_map(|target| {
+            target.map(|target| VerifiedBinaryTarget {
+                target,
+                length: self.document_length,
+                digest: self.digest,
+                envelope: self.envelope,
+                version: self.version,
+            })
+        })
+    }
+
+    fn first(&self) -> Option<VerifiedBinaryTarget> {
+        self.iter().next()
+    }
+}
+
+/// Selects and authenticates a bounded set of Binary v2 target records.
+fn select_verified_targets<S, const CAPACITY: usize>(
     storage: &mut S,
-    mut selector: BinaryTargetsStreamParser,
+    mut selector: BinaryTargetsStreamParser<CAPACITY>,
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
-) -> Result<Option<VerifiedBinaryTarget>, StreamingTargetSelectionError<S::Error>>
+) -> Result<VerifiedBinaryTargets<CAPACITY>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
@@ -150,7 +232,7 @@ where
         StreamingTargetSelectionError::Parse(StreamingTargetsError::InvalidEnvelope)
     })?;
     let version = selector.version;
-    let target = selector
+    let targets = selector
         .finish()
         .map_err(StreamingTargetSelectionError::Parse)?;
     let document_digest = dali_metadata::Sha256Digest(digest.finalize());
@@ -187,13 +269,15 @@ where
     {
         return Err(StreamingTargetSelectionError::Verification);
     }
-    Ok(target.map(|target| VerifiedBinaryTarget {
-        target,
-        length,
+    let selected_count = targets.iter().flatten().count();
+    Ok(VerifiedBinaryTargets {
+        targets,
+        selected_count,
+        document_length: length,
         digest: document_digest,
         envelope,
         version,
-    }))
+    })
 }
 
 /// Selects one target record without retaining the complete targets document.
@@ -205,7 +289,7 @@ pub fn select_binary_target<S>(
 where
     S: RepositoryStreamStorage,
 {
-    let mut parser = BinaryTargetsStreamParser::for_package(package_id);
+    let mut parser = BinaryTargetsStreamParser::<1>::for_package(package_id);
     let mut parse_error = None;
     storage
         .stream_metadata(RepositoryDocument::Targets, chunk, |bytes| {
@@ -222,10 +306,11 @@ where
     }
     parser
         .finish()
+        .map(|targets| targets[0])
         .map_err(StreamingTargetSelectionError::Parse)
 }
 
-struct BinaryTargetsStreamParser {
+struct BinaryTargetsStreamParser<const CAPACITY: usize> {
     wanted: Option<PackageId>,
     target_profile: Option<dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>>,
     envelope: [u8; BINARY_ENVELOPE_HEADER_BYTES],
@@ -249,11 +334,11 @@ struct BinaryTargetsStreamParser {
     selected: bool,
     record: [u8; MAX_STREAMING_TARGET_RECORD_BYTES],
     record_buffered: usize,
-    selected_target: Option<TargetPackage>,
-    duplicate: bool,
+    selected_targets: [Option<TargetPackage>; CAPACITY],
+    selected_count: usize,
 }
 
-impl BinaryTargetsStreamParser {
+impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
     fn for_package(wanted: PackageId) -> Self {
         Self::new(Some(wanted), None)
     }
@@ -294,8 +379,8 @@ impl BinaryTargetsStreamParser {
             selected: false,
             record: [0; MAX_STREAMING_TARGET_RECORD_BYTES],
             record_buffered: 0,
-            selected_target: None,
-            duplicate: false,
+            selected_targets: [None; CAPACITY],
+            selected_count: 0,
         }
     }
 
@@ -488,11 +573,14 @@ impl BinaryTargetsStreamParser {
                 .map(|profile| target.target_profile == profile)
                 .unwrap_or(true);
             if profile_matches {
-                if self.selected_target.is_some() {
-                    self.duplicate = true;
-                } else {
-                    self.selected_target = Some(target);
+                if self.wanted.is_some() && self.selected_count != 0 {
+                    return Err(StreamingTargetsError::MultipleMatchingRecords);
                 }
+                if self.selected_count == CAPACITY {
+                    return Err(StreamingTargetsError::TooManyMatchingRecords);
+                }
+                self.selected_targets[self.selected_count] = Some(target);
+                self.selected_count += 1;
             }
         }
         self.packages_left -= 1;
@@ -504,7 +592,7 @@ impl BinaryTargetsStreamParser {
         Ok(())
     }
 
-    fn finish(self) -> Result<Option<TargetPackage>, StreamingTargetsError> {
+    fn finish(self) -> Result<[Option<TargetPackage>; CAPACITY], StreamingTargetsError> {
         if self.envelope_length != BINARY_ENVELOPE_HEADER_BYTES
             || self.body_seen != self.body_length
             || self.total_seen != self.total_length
@@ -512,10 +600,7 @@ impl BinaryTargetsStreamParser {
         {
             return Err(StreamingTargetsError::UnexpectedEnd);
         }
-        if self.duplicate {
-            return Err(StreamingTargetsError::MultipleMatchingRecords);
-        }
-        Ok(self.selected_target)
+        Ok(self.selected_targets)
     }
 }
 

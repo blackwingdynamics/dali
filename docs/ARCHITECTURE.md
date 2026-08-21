@@ -363,12 +363,13 @@ directories or choose packages from filenames. This keeps future board adapters
 replaceable without changing trust policy or loader logic.
 
 When the `repository-loader` feature is enabled, the F405 boot path constructs
-the concrete FAT adapter, requests the board target profile, requires exactly
-one executable Binary v2 Targets record, opens its lowercase content-addressed
-`packages/<sha256>.amrn` object, and passes that verified stream to the existing
-slot/relocation loader. The target memory contract is resolved from the
-manifest-owned slot at the dependency-injection boundary; the generic
-repository loader contains no F405 or SDIO types. The default MVP build keeps
+the concrete FAT adapter, requests the board target profile, selects every
+matching executable Binary v2 Targets record within the bounded execution
+capacity, opens each lowercase content-addressed `packages/<sha256>.amrn`
+object, and passes the verified streams to the existing slot/relocation loader.
+The target memory contract is resolved from each manifest-owned slot at the
+dependency-injection boundary; the generic repository loader contains no F405
+or SDIO types. The default MVP build keeps
 the legacy root-package path because repository boot remains feature-gated until
 hardware acceptance.
 

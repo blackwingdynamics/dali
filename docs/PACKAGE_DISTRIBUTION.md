@@ -460,8 +460,9 @@ The target-side acceptance flow is fixed:
 3. validate metadata structure, size, version, role, and expiration policy;
 4. verify the root-to-role metadata chain;
 5. verify snapshot references and every referenced metadata hash;
-6. resolve exactly one executable target record for the boot profile; zero or
-   multiple executable records MUST be rejected;
+6. resolve every executable target record for the boot profile within the
+   bounded execution capacity; zero records, duplicate identities, or records
+   beyond the capacity MUST be rejected;
 7. open `packages/<lowercase-sha256>.amrn` from the content-addressed package
    directory, never by directory order or an untrusted display name;
 8. verify package length and complete-file hash;
@@ -992,11 +993,11 @@ consumer, and the caller owns the chunk lifetime.
 
 The kernel provides a feature-gated repository loader over these traits.
 `load_binary_repository<S>` consumes the streaming contract through bounded
-caller-owned buffers. It reads the five fixed roles, requires exactly one
-executable Targets record for the configured target profile, selects the
-delegation, reads the content-addressed AMRN package, and calls the shared Root
--> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation -> Package
-Record -> AMRN verification chain. After successful verification,
+caller-owned buffers. It reads the five fixed roles, selects every executable
+Targets record for the configured target profile within the execution capacity,
+and verifies each selected delegation, revocation state, content-addressed
+AMRN package, and shared Root -> Timestamp -> Snapshot -> Targets -> Delegation
+-> Revocation -> Package Record -> AMRN chain. After successful verification,
 `load_repository_package()` opens the same lowercase SHA-256 package path and
 passes it to the existing slot/relocation execution loader. The F405 target has
 a concrete `FatRepositoryStorage<D>` adapter injected at this boundary. The

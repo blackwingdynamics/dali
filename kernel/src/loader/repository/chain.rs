@@ -12,6 +12,9 @@ use crate::storage::repository::{
     RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage,
 };
 
+/// Maximum number of repository packages handed to the bounded execution pipeline.
+pub const MAX_BINARY_REPOSITORY_PACKAGES: usize = 4;
+
 /// Result retained for one streamed metadata document.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct StreamedRole<M> {
@@ -73,6 +76,56 @@ pub struct BinaryRepositoryAuthorization {
     pub delegation: dali_metadata::DelegationMetadata,
 }
 
+/// Bounded authorization set for one repository verification pass.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BinaryRepositoryAuthorizations {
+    entries: [Option<BinaryRepositoryAuthorization>; MAX_BINARY_REPOSITORY_PACKAGES],
+    length: usize,
+}
+
+impl BinaryRepositoryAuthorizations {
+    /// Creates an empty authorization set.
+    pub const fn new() -> Self {
+        Self {
+            entries: [None; MAX_BINARY_REPOSITORY_PACKAGES],
+            length: 0,
+        }
+    }
+
+    /// Returns the number of authorized packages.
+    pub const fn len(&self) -> usize {
+        self.length
+    }
+
+    /// Returns whether no package was authorized.
+    pub const fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+
+    /// Iterates over authorized packages in Targets document order.
+    pub fn iter(&self) -> impl Iterator<Item = BinaryRepositoryAuthorization> + '_ {
+        self.entries[..self.length]
+            .iter()
+            .filter_map(Option::as_ref)
+            .copied()
+    }
+
+    fn push(&mut self, authorization: BinaryRepositoryAuthorization) -> Result<(), ()> {
+        let Some(entry) = self.entries.get_mut(self.length) else {
+            return Err(());
+        };
+        *entry = Some(authorization);
+        self.length += 1;
+        Ok(())
+    }
+}
+
+impl Default for BinaryRepositoryAuthorizations {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Errors returned by the complete streamed repository chain.
 #[derive(Debug)]
 pub enum BinaryRepositoryError<E> {
@@ -99,13 +152,13 @@ pub enum BinaryRepositoryError<E> {
 }
 
 /// Verifies Root -> Timestamp -> Snapshot -> Targets -> Delegation ->
-/// Revocation -> AMRN through the board-agnostic streaming contract.
+/// Revocation -> AMRN for all bounded matching packages.
 pub fn load_binary_repository<S>(
     storage: &mut S,
     request: RepositoryLoadRequest,
     anchors: &[dali_targets::TrustAnchorProfile],
     buffers: &mut BinaryRepositoryBuffers,
-) -> Result<BinaryRepositoryAuthorization, BinaryRepositoryError<S::Error>>
+) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
@@ -121,11 +174,11 @@ pub fn load_binary_repository_with_contract<S, F>(
     request: RepositoryLoadRequest,
     anchors: &[dali_targets::TrustAnchorProfile],
     buffers: &mut BinaryRepositoryBuffers,
-    contract_for: F,
-) -> Result<BinaryRepositoryAuthorization, BinaryRepositoryError<S::Error>>
+    mut contract_for: F,
+) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
-    F: FnOnce(dali_metadata::TargetPackage) -> Option<dali_amrn::v3::Contract>,
+    F: FnMut(dali_metadata::TargetPackage) -> Option<dali_amrn::v3::Contract>,
 {
     let root =
         stream_verified_root(storage, anchors, &mut buffers.chunk).map_err(map_root_error)?;
@@ -159,21 +212,35 @@ where
         return Err(BinaryRepositoryError::ReferenceMismatch);
     }
     let targets_role = role(root.metadata, MetadataRole::Targets)?;
-    let targets = streaming::select_unique_verified_binary_target(
-        storage,
-        request.target_profile,
-        targets_role,
-        &keys[..usize::from(root.metadata.key_count)],
-        &mut buffers.chunk,
-    )
+    let targets = if let Some(package_id) = request.package_id {
+        streaming::select_verified_binary_targets_for_package::<S, MAX_BINARY_REPOSITORY_PACKAGES>(
+            storage,
+            package_id,
+            targets_role,
+            &keys[..usize::from(root.metadata.key_count)],
+            &mut buffers.chunk,
+        )
+    } else {
+        streaming::select_verified_binary_targets::<S, MAX_BINARY_REPOSITORY_PACKAGES>(
+            storage,
+            request.target_profile,
+            targets_role,
+            &keys[..usize::from(root.metadata.key_count)],
+            &mut buffers.chunk,
+        )
+    }
     .map_err(|_| BinaryRepositoryError::Package)?;
+    let first_target = targets
+        .iter()
+        .next()
+        .ok_or(BinaryRepositoryError::MissingRecord)?;
     if !same_reference(
         snapshot.metadata.targets.version,
         snapshot.metadata.targets.length,
         snapshot.metadata.targets.sha256,
-        targets.version,
-        targets.length,
-        targets.digest,
+        first_target.version,
+        first_target.length,
+        first_target.digest,
     ) {
         return Err(BinaryRepositoryError::ReferenceMismatch);
     }
@@ -196,56 +263,62 @@ where
     ) {
         return Err(BinaryRepositoryError::ReferenceMismatch);
     }
-    let delegation_id = targets
-        .target
-        .delegation_id
-        .as_str()
-        .ok_or(BinaryRepositoryError::MissingRecord)?;
-    let delegation_reference = snapshot
-        .metadata
-        .delegations
-        .iter()
-        .take(usize::from(snapshot.metadata.delegation_count))
-        .find(|reference| reference.id.as_str() == Some(delegation_id))
-        .copied()
-        .ok_or(BinaryRepositoryError::MissingRecord)?;
-    let delegation = verify_role_from_root(
-        storage,
-        RepositoryDocument::Delegation(delegation_id),
-        MetadataRole::Delegation,
-        BinaryDelegationBodyStreamParser::new(),
-        root.metadata,
-        &keys,
-        &mut buffers.chunk,
-    )?;
-    if !same_reference(
-        delegation_reference.version,
-        delegation_reference.length,
-        delegation_reference.sha256,
-        delegation.metadata.header.version,
-        delegation.length,
-        delegation.digest,
-    ) {
-        return Err(BinaryRepositoryError::ReferenceMismatch);
+    let mut authorizations = BinaryRepositoryAuthorizations::new();
+    for selected in targets.iter() {
+        let delegation_id = selected
+            .target
+            .delegation_id
+            .as_str()
+            .ok_or(BinaryRepositoryError::MissingRecord)?;
+        let delegation_reference = snapshot
+            .metadata
+            .delegations
+            .iter()
+            .take(usize::from(snapshot.metadata.delegation_count))
+            .find(|reference| reference.id.as_str() == Some(delegation_id))
+            .copied()
+            .ok_or(BinaryRepositoryError::MissingRecord)?;
+        let delegation = verify_role_from_root(
+            storage,
+            RepositoryDocument::Delegation(delegation_id),
+            MetadataRole::Delegation,
+            BinaryDelegationBodyStreamParser::new(),
+            root.metadata,
+            &keys,
+            &mut buffers.chunk,
+        )?;
+        if !same_reference(
+            delegation_reference.version,
+            delegation_reference.length,
+            delegation_reference.sha256,
+            delegation.metadata.header.version,
+            delegation.length,
+            delegation.digest,
+        ) {
+            return Err(BinaryRepositoryError::ReferenceMismatch);
+        }
+        validate_target_delegation(selected.target, delegation.metadata)?;
+        if is_revoked(&revocations.metadata, delegation.metadata, selected.version) {
+            return Err(BinaryRepositoryError::Revoked);
+        }
+        let contract = contract_for(selected.target).ok_or(BinaryRepositoryError::Package)?;
+        amrn::verify_streamed_amrn(
+            storage,
+            RepositoryPackageDigest(selected.target.sha256.0),
+            delegation.metadata,
+            contract,
+            &mut buffers.chunk,
+            &mut buffers.amrn,
+        )
+        .map_err(|_| BinaryRepositoryError::Package)?;
+        authorizations
+            .push(BinaryRepositoryAuthorization {
+                target: selected.target,
+                delegation: delegation.metadata,
+            })
+            .map_err(|_| BinaryRepositoryError::Package)?;
     }
-    validate_target_delegation(targets.target, delegation.metadata)?;
-    if is_revoked(&revocations.metadata, delegation.metadata, targets.version) {
-        return Err(BinaryRepositoryError::Revoked);
-    }
-    let contract = contract_for(targets.target).ok_or(BinaryRepositoryError::Package)?;
-    amrn::verify_streamed_amrn(
-        storage,
-        RepositoryPackageDigest(targets.target.sha256.0),
-        delegation.metadata,
-        contract,
-        &mut buffers.chunk,
-        &mut buffers.amrn,
-    )
-    .map_err(|_| BinaryRepositoryError::Package)?;
-    Ok(BinaryRepositoryAuthorization {
-        target: targets.target,
-        delegation: delegation.metadata,
-    })
+    Ok(authorizations)
 }
 
 fn verify_role_from_root<S, P>(

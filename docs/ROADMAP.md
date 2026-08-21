@@ -205,10 +205,12 @@ milestone into `main` only after its documented validation evidence exists.
    AMRN with bounded passes. `load_repository_package()` now connects the
    verified package result to the existing slot/load execution contract behind
    the `repository-loader` feature; F405 hardware acceptance remains pending.
-   The boot handoff contract is fixed: Binary v2 Targets must resolve to exactly one executable package;
-   the package is opened by its lowercase SHA-256 filename under
-   `packages/`, and only then is the existing slot/relocation loader allowed
-   to execute it. Zero or multiple executable records are rejected.
+   The boot handoff contract is fixed: Binary v2 Targets must resolve every
+   executable package matching the target profile within bounded execution
+   capacity; each package is opened by its lowercase SHA-256 filename under
+   `packages/`, and only after individual verification is it handed to the
+   existing slot/relocation loader. Zero, duplicate, or over-capacity records
+   are rejected.
    [ ] Replace metadata JSON v1 repository files with the frozen custom binary
    v2 envelope and length-prefixed streaming records. Keep JSON v1 as a
    host-only migration format until binary v2 has CLI and F405 acceptance.
