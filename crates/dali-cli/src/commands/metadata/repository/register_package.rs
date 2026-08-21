@@ -43,11 +43,11 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
         common::read_binary(&common::targets_path(&repository), MetadataRole::Targets)?;
     let targets = parse_binary_targets_body(targets_envelope.body)
         .map_err(|error| format!("invalid targets body: {error:?}"))?;
-    let (_, revocations_envelope) = common::read_binary(
+    let (revocations_bytes, revocations_envelope) = common::read_binary(
         &common::revocations_path(&repository),
         MetadataRole::Revocation,
     )?;
-    let revocations = parse_binary_revocation_body(revocations_envelope.body)
+    let _revocations = parse_binary_revocation_body(revocations_envelope.body)
         .map_err(|error| format!("invalid revocations body: {error:?}"))?;
     let (_, snapshot_envelope) =
         common::read_binary(&common::snapshot_path(&repository), MetadataRole::Snapshot)?;
@@ -90,7 +90,7 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
         &signing_key,
         targets_signer,
     )?;
-    let updated_snapshot = update_snapshot(snapshot, &targets_body, &revocations)?;
+    let updated_snapshot = update_snapshot(snapshot, &targets_envelope, &revocations_bytes)?;
     let snapshot_body = encode_snapshot(updated_snapshot)?;
     let snapshot_signer = common::role_key(&root, MetadataRole::Snapshot)?;
     let snapshot_envelope = common::sign_binary(
@@ -106,8 +106,8 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
             expires: 0,
         },
         snapshot_version: updated_snapshot.header.version,
-        snapshot_length: snapshot_body.len() as u32,
-        snapshot_sha256: digest_bytes(&snapshot_body),
+        snapshot_length: snapshot_envelope.len() as u32,
+        snapshot_sha256: digest_bytes(&snapshot_envelope),
     };
     let timestamp_body = encode_timestamp(timestamp)?;
     let timestamp_signer = common::role_key(&root, MetadataRole::Timestamp)?;
@@ -234,18 +234,20 @@ fn append_package(
 
 fn update_snapshot(
     mut snapshot: SnapshotMetadata,
-    targets_body: &[u8],
-    revocations: &dali_metadata::RevocationMetadata,
+    targets_envelope: &[u8],
+    revocations_envelope: &[u8],
 ) -> Result<SnapshotMetadata, String> {
     snapshot.header.version += 1;
     snapshot.targets = TargetsReference {
         version: snapshot.targets.version + 1,
-        length: targets_body.len() as u32,
-        sha256: digest_bytes(targets_body),
+        length: targets_envelope.len() as u32,
+        sha256: digest_bytes(targets_envelope),
     };
-    if revocations.header.version != snapshot.revocations.version {
-        return Err("revocation metadata changed; restart package registration".to_owned());
+    if revocations_envelope.is_empty() {
+        return Err("revocation metadata envelope is empty".to_owned());
     }
+    snapshot.revocations.length = revocations_envelope.len() as u32;
+    snapshot.revocations.sha256 = digest_bytes(revocations_envelope);
     Ok(snapshot)
 }
 

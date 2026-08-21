@@ -21,7 +21,7 @@ pub(super) const PACKAGE_ID_FLAG: &str = "--package-id";
 pub(super) const METADATA_FORMAT_FLAG: &str = "--metadata-format";
 pub(super) const MANIFEST_NAME: &str = "bundle.manifest";
 pub(super) const METADATA_DIRECTORY: &str = "metadata";
-pub(super) const DELEGATIONS_DIRECTORY: &str = "delegations";
+pub(super) const DELEGATIONS_DIRECTORY: &str = "delegat";
 pub(super) const PACKAGES_DIRECTORY: &str = "packages";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

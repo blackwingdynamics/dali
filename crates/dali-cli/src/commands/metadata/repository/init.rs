@@ -57,30 +57,54 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     };
     let targets_body = encode_targets(targets)?;
     let revocations_body = encode_revocations(revocations)?;
+    let targets_envelope = common::sign_binary(
+        MetadataRole::Targets,
+        &targets_body,
+        &root_seed,
+        role_ids[3],
+    )?;
+    let revocations_envelope = common::sign_binary(
+        MetadataRole::Revocation,
+        &revocations_body,
+        &root_seed,
+        role_ids[5],
+    )?;
     let snapshot = SnapshotMetadata {
         header: header(MetadataRole::Snapshot),
         targets: TargetsReference {
             version: targets.header.version,
-            length: targets_body.len() as u32,
-            sha256: digest(&targets_body),
+            length: targets_envelope.len() as u32,
+            sha256: digest(&targets_envelope),
         },
         revocations: RevocationReference {
             version: revocations.header.version,
-            length: revocations_body.len() as u32,
-            sha256: digest(&revocations_body),
+            length: revocations_envelope.len() as u32,
+            sha256: digest(&revocations_envelope),
         },
         delegations: [dali_metadata::DelegationReference::default();
             dali_metadata::MAX_SNAPSHOT_REFERENCES],
         delegation_count: 0,
     };
     let snapshot_body = encode_snapshot(snapshot)?;
+    let snapshot_envelope = common::sign_binary(
+        MetadataRole::Snapshot,
+        &snapshot_body,
+        &root_seed,
+        role_ids[2],
+    )?;
     let timestamp = TimestampMetadata {
         header: header(MetadataRole::Timestamp),
         snapshot_version: snapshot.header.version,
-        snapshot_length: snapshot_body.len() as u32,
-        snapshot_sha256: digest(&snapshot_body),
+        snapshot_length: snapshot_envelope.len() as u32,
+        snapshot_sha256: digest(&snapshot_envelope),
     };
     let timestamp_body = encode_timestamp(timestamp)?;
+    let timestamp_envelope = common::sign_binary(
+        MetadataRole::Timestamp,
+        &timestamp_body,
+        &root_seed,
+        role_ids[1],
+    )?;
     let root_body = encode_root(root)?;
 
     let metadata = output.join(common::METADATA_DIRECTORY);
@@ -93,42 +117,10 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
         &common::root_path(&output),
         &common::sign_binary(MetadataRole::Root, &root_body, &root_seed, role_ids[0])?,
     )?;
-    common::write_new(
-        &common::targets_path(&output),
-        &common::sign_binary(
-            MetadataRole::Targets,
-            &targets_body,
-            &root_seed,
-            role_ids[3],
-        )?,
-    )?;
-    common::write_new(
-        &common::revocations_path(&output),
-        &common::sign_binary(
-            MetadataRole::Revocation,
-            &revocations_body,
-            &root_seed,
-            role_ids[5],
-        )?,
-    )?;
-    common::write_new(
-        &common::snapshot_path(&output),
-        &common::sign_binary(
-            MetadataRole::Snapshot,
-            &snapshot_body,
-            &root_seed,
-            role_ids[2],
-        )?,
-    )?;
-    common::write_new(
-        &common::timestamp_path(&output),
-        &common::sign_binary(
-            MetadataRole::Timestamp,
-            &timestamp_body,
-            &root_seed,
-            role_ids[1],
-        )?,
-    )?;
+    common::write_new(&common::targets_path(&output), &targets_envelope)?;
+    common::write_new(&common::revocations_path(&output), &revocations_envelope)?;
+    common::write_new(&common::snapshot_path(&output), &snapshot_envelope)?;
+    common::write_new(&common::timestamp_path(&output), &timestamp_envelope)?;
     println!(
         "Created Binary v2 repository metadata: {}",
         output.display()

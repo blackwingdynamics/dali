@@ -67,7 +67,7 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     if targets.delegations[..usize::from(targets.delegation_count)].contains(&delegation_id) {
         return Err("targets already references this delegation".to_owned());
     }
-    let (_, revocations_envelope) =
+    let (revocations_bytes, revocations_envelope) =
         common::read_binary(&common::revocations_path(&root), MetadataRole::Revocation)?;
     let revocations = parse_binary_revocation_body(revocations_envelope.body)
         .map_err(|error| format!("invalid revocations body: {error:?}"))?;
@@ -108,11 +108,11 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     let updated_snapshot = update_snapshot(
         snapshot,
         updated_targets.header.version,
-        &targets_body,
+        &targets_envelope,
         &revocations,
-        revocations_envelope.body,
+        &revocations_bytes,
         delegation_id,
-        &delegation_body,
+        &delegation_envelope,
     )?;
     let snapshot_body = encode_snapshot(updated_snapshot)?;
     let snapshot_signer = common::role_key(&root_metadata, MetadataRole::Snapshot)?;
@@ -129,8 +129,8 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
             expires: 0,
         },
         snapshot_version: updated_snapshot.header.version,
-        snapshot_length: snapshot_body.len() as u32,
-        snapshot_sha256: digest(&snapshot_body),
+        snapshot_length: snapshot_envelope.len() as u32,
+        snapshot_sha256: digest(&snapshot_envelope),
     };
     let timestamp_body = encode_timestamp(timestamp)?;
     let timestamp_signer = common::role_key(&root_metadata, MetadataRole::Timestamp)?;
@@ -213,11 +213,11 @@ fn append_delegation(
 fn update_snapshot(
     mut snapshot: SnapshotMetadata,
     targets_version: u64,
-    targets_body: &[u8],
+    targets_envelope: &[u8],
     revocations: &RevocationMetadata,
-    revocation_body: &[u8],
+    revocations_envelope: &[u8],
     delegation_id: BoundedText<{ dali_metadata::MAX_DELEGATION_ID_BYTES }>,
-    delegation_body: &[u8],
+    delegation_envelope: &[u8],
 ) -> Result<SnapshotMetadata, String> {
     let count = usize::from(snapshot.delegation_count);
     if count >= dali_metadata::MAX_SNAPSHOT_REFERENCES {
@@ -226,19 +226,19 @@ fn update_snapshot(
     snapshot.header.version += 1;
     snapshot.targets = TargetsReference {
         version: targets_version,
-        length: targets_body.len() as u32,
-        sha256: digest(targets_body),
+        length: targets_envelope.len() as u32,
+        sha256: digest(targets_envelope),
     };
     snapshot.revocations = RevocationReference {
         version: revocations.header.version,
-        length: revocation_body.len() as u32,
-        sha256: digest(revocation_body),
+        length: revocations_envelope.len() as u32,
+        sha256: digest(revocations_envelope),
     };
     snapshot.delegations[count] = DelegationReference {
         id: delegation_id,
         version: 1,
-        length: delegation_body.len() as u32,
-        sha256: digest(delegation_body),
+        length: delegation_envelope.len() as u32,
+        sha256: digest(delegation_envelope),
     };
     snapshot.delegation_count += 1;
     let active = &mut snapshot.delegations[..usize::from(snapshot.delegation_count)];
