@@ -378,6 +378,9 @@ an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
 board-agnostic logical documents through `metadata/`,
 `metadata/delegations/`, and `packages/`, including FAT long filenames, while durable artifacts remain
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
+The adapter also exposes `with_content_addressed_package()`, which opens only
+the lowercase SHA-256 package filename under `packages/` and hands the file to
+the existing bounded AMRN execution loaders.
 
 The adapter now exposes the streaming contract directly. The shared Binary v2
 envelope parser validates fragmented envelopes without retaining their body;

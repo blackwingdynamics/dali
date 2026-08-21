@@ -162,7 +162,7 @@ where
     close_file_with_error(manager, file, result)
 }
 
-fn close_file_with_error<D, R>(
+pub(crate) fn close_file_with_error<D, R>(
     manager: &FilesystemManager<D>,
     file: RawFile,
     result: Result<R, Error<StorageError>>,
@@ -183,7 +183,7 @@ where
     }
 }
 
-fn close_directories<D, R>(
+pub(crate) fn close_directories<D, R>(
     manager: &FilesystemManager<D>,
     directories: [embedded_sdmmc::RawDirectory; 3],
     count: usize,

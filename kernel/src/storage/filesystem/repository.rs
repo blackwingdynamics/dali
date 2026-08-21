@@ -2,14 +2,16 @@
 
 use core::str;
 
+use embedded_sdmmc::{Error, Mode, VolumeIdx, VolumeManager};
+
 use crate::storage::{
     durable::{DurableArtifact, DurableStorageAdapter},
     repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage},
 };
 
 use super::{
-    TrustStoreArtifact, read_trust_store_artifact, stream_repository_file,
-    write_trust_store_artifact,
+    AmrnFile, FilesystemManager, KernelTimeSource, TrustStoreArtifact, read_trust_store_artifact,
+    stream_repository_file, write_trust_store_artifact,
 };
 
 const PACKAGE_NAME_BYTES: usize = 64 + 5;
@@ -72,6 +74,78 @@ impl<D> FatRepositoryStorage<D> {
         let mut name = [0u8; METADATA_NAME_BYTES];
         let name = append_metadata_suffix(stem, self.metadata_format, &mut name)?;
         stream_file(self.device, "metadata", None, name, chunk, consumer)
+    }
+}
+
+/// Opens one content-addressed AMRN package for the existing execution loader.
+pub fn with_content_addressed_package<D, F, R, E>(
+    device: D,
+    digest: RepositoryPackageDigest,
+    callback: F,
+) -> Result<Result<R, E>, Error<crate::drivers::StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
+    F: for<'a> FnOnce(AmrnFile<'a, D>) -> Result<R, E>,
+{
+    let manager = VolumeManager::new(device, KernelTimeSource);
+    let volume = manager.open_volume(VolumeIdx(0))?;
+    let root = manager.open_root_dir(volume.to_raw_volume())?;
+    let packages = match manager.open_dir(root, "packages") {
+        Ok(directory) => directory,
+        Err(error) => return super::close_directories(&manager, [root, root, root], 1, Err(error)),
+    };
+    let mut name = [0u8; PACKAGE_NAME_BYTES];
+    let name = match append_package_suffix(&digest.0, &mut name) {
+        Ok(name) => name,
+        Err(error) => {
+            return super::close_directories(&manager, [root, packages, packages], 2, Err(error));
+        }
+    };
+    let raw_file = match manager.open_long_name_file_in_dir(packages, name, Mode::ReadOnly) {
+        Ok(file) => file,
+        Err(error) => {
+            return super::close_directories(&manager, [root, packages, packages], 2, Err(error));
+        }
+    };
+    let length = match manager.file_length(raw_file) {
+        Ok(length) => length,
+        Err(error) => {
+            return super::close_file_with_error(
+                &manager,
+                raw_file,
+                super::close_directories(&manager, [root, packages, packages], 2, Err(error)),
+            );
+        }
+    };
+    let file = match AmrnFile::from_content_addressed(&manager, raw_file, length) {
+        Ok(file) => file,
+        Err(error) => {
+            return super::close_file_with_error(
+                &manager,
+                raw_file,
+                super::close_directories(&manager, [root, packages, packages], 2, Err(error)),
+            );
+        }
+    };
+    let result = callback(file);
+    finish_content_addressed(&manager, [root, packages, packages], raw_file, result)
+}
+
+fn finish_content_addressed<D, R, E>(
+    manager: &FilesystemManager<D>,
+    directories: [embedded_sdmmc::RawDirectory; 3],
+    file: embedded_sdmmc::RawFile,
+    result: Result<R, E>,
+) -> Result<Result<R, E>, Error<crate::drivers::StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
+{
+    let file_result = manager.close_file(file);
+    let directory_result = super::close_directories(manager, directories, 2, Ok(()));
+    match (result, file_result, directory_result) {
+        (Ok(value), Ok(()), Ok(())) => Ok(Ok(value)),
+        (Err(error), Ok(()), Ok(())) => Ok(Err(error)),
+        (_, Err(error), _) | (_, _, Err(error)) => Err(error),
     }
 }
 

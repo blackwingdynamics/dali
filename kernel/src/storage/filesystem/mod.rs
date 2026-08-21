@@ -21,8 +21,11 @@ pub use artifacts::{
     TrustStoreArtifact, read_trust_store_artifact, write_trust_store_artifact,
 };
 pub use multi::with_amrn_files;
+pub(crate) use read::{close_directories, close_file_with_error};
 pub use read::{read_repository_file, read_root_file, stream_repository_file};
-pub use repository::{FatRepositoryStorage, RepositoryMetadataFormat};
+pub use repository::{
+    FatRepositoryStorage, RepositoryMetadataFormat, with_content_addressed_package,
+};
 pub use write::write_root_file;
 
 /// The package extension recognized by the MVP root-directory scan.
@@ -113,6 +116,25 @@ where
     /// Rewinds the stream to the beginning of the package.
     pub fn rewind(&self) -> Result<(), Error<StorageError>> {
         self.manager.file_seek_from_start(self.raw_file, 0)
+    }
+}
+
+impl<'a, D> AmrnFile<'a, D>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    pub(crate) fn from_content_addressed(
+        manager: &'a FilesystemManager<D>,
+        raw_file: RawFile,
+        length: u32,
+    ) -> Result<Self, Error<StorageError>> {
+        let name = ShortFileName::create_from_str("PKG.AMR").map_err(|_| Error::InvalidOffset)?;
+        Ok(Self {
+            manager,
+            raw_file,
+            length,
+            name,
+        })
     }
 }
 
