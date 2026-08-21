@@ -14,6 +14,25 @@ use super::{
 
 const PACKAGE_NAME_BYTES: usize = 64 + 5;
 const DELEGATION_NAME_BYTES: usize = 64 + 5;
+const METADATA_NAME_BYTES: usize = 16;
+
+/// Repository metadata encoding selected by the caller.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RepositoryMetadataFormat {
+    /// Legacy canonical JSON repository files.
+    JsonV1,
+    /// Frozen Binary Metadata v2 repository files.
+    BinaryV2,
+}
+
+impl RepositoryMetadataFormat {
+    const fn extension(self) -> &'static [u8] {
+        match self {
+            Self::JsonV1 => b".json",
+            Self::BinaryV2 => b".dmb",
+        }
+    }
+}
 
 /// FAT32-backed logical repository storage.
 ///
@@ -23,12 +42,36 @@ const DELEGATION_NAME_BYTES: usize = 64 + 5;
 #[derive(Clone, Copy)]
 pub struct FatRepositoryStorage<D> {
     device: D,
+    metadata_format: RepositoryMetadataFormat,
 }
 
 impl<D> FatRepositoryStorage<D> {
     /// Creates a repository adapter over an initialized FAT block device.
     pub const fn new(device: D) -> Self {
-        Self { device }
+        Self::new_with_format(device, RepositoryMetadataFormat::JsonV1)
+    }
+
+    /// Creates an adapter with an explicit repository metadata encoding.
+    pub const fn new_with_format(device: D, metadata_format: RepositoryMetadataFormat) -> Self {
+        Self {
+            device,
+            metadata_format,
+        }
+    }
+
+    fn stream_fixed_metadata<F>(
+        &self,
+        stem: &[u8],
+        chunk: &mut [u8],
+        consumer: F,
+    ) -> Result<u32, embedded_sdmmc::Error<crate::drivers::StorageError>>
+    where
+        D: Copy + embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
+        F: FnMut(&[u8]) -> Result<(), embedded_sdmmc::Error<crate::drivers::StorageError>>,
+    {
+        let mut name = [0u8; METADATA_NAME_BYTES];
+        let name = append_metadata_suffix(stem, self.metadata_format, &mut name)?;
+        stream_file(self.device, "metadata", None, name, chunk, consumer)
     }
 }
 
@@ -75,44 +118,21 @@ where
         F: FnMut(&[u8]) -> Result<(), Self::Error>,
     {
         match document {
-            RepositoryDocument::Root => {
-                stream_file(self.device, "metadata", None, "root.json", chunk, consumer)
+            RepositoryDocument::Root => self.stream_fixed_metadata(b"root", chunk, consumer),
+            RepositoryDocument::Timestamp => {
+                self.stream_fixed_metadata(b"timestamp", chunk, consumer)
             }
-            RepositoryDocument::Timestamp => stream_file(
-                self.device,
-                "metadata",
-                None,
-                "timestamp.json",
-                chunk,
-                consumer,
-            ),
-            RepositoryDocument::Snapshot => stream_file(
-                self.device,
-                "metadata",
-                None,
-                "snapshot.json",
-                chunk,
-                consumer,
-            ),
-            RepositoryDocument::Targets => stream_file(
-                self.device,
-                "metadata",
-                None,
-                "targets.json",
-                chunk,
-                consumer,
-            ),
-            RepositoryDocument::Revocations => stream_file(
-                self.device,
-                "metadata",
-                None,
-                "revocations.json",
-                chunk,
-                consumer,
-            ),
+            RepositoryDocument::Snapshot => {
+                self.stream_fixed_metadata(b"snapshot", chunk, consumer)
+            }
+            RepositoryDocument::Targets => self.stream_fixed_metadata(b"targets", chunk, consumer),
+            RepositoryDocument::Revocations => {
+                self.stream_fixed_metadata(b"revocations", chunk, consumer)
+            }
             RepositoryDocument::Delegation(identifier) => {
                 let mut name = [0u8; DELEGATION_NAME_BYTES];
-                let name = append_json(identifier, &mut name)?;
+                let name =
+                    append_metadata_suffix(identifier.as_bytes(), self.metadata_format, &mut name)?;
                 stream_file(
                     self.device,
                     "metadata",
@@ -140,11 +160,12 @@ where
     }
 }
 
-fn append_json<'a>(
-    identifier: &str,
-    output: &'a mut [u8; DELEGATION_NAME_BYTES],
+fn append_metadata_suffix<'a>(
+    stem: &[u8],
+    format: RepositoryMetadataFormat,
+    output: &'a mut [u8],
 ) -> Result<&'a str, embedded_sdmmc::Error<crate::drivers::StorageError>> {
-    append_suffix(identifier.as_bytes(), b".json", output)
+    append_suffix(stem, format.extension(), output)
 }
 
 fn stream_file<D, F>(

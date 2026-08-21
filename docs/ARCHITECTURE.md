@@ -373,9 +373,10 @@ until a storage-backed or streaming verification API is implemented. Wiring
 the current buffer type into boot would be an invalid memory-layout change,
 not hardware acceptance.
 
-The concrete F405 adapter is `FatRepositoryStorage<D>`. It resolves the
-board-agnostic logical documents through `metadata/`, `metadata/delegations/`,
-and `packages/`, including FAT long filenames, while durable artifacts remain
+The concrete F405 adapter is `FatRepositoryStorage<D>`. Its constructor accepts
+an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
+board-agnostic logical documents through `metadata/`,
+`metadata/delegations/`, and `packages/`, including FAT long filenames, while durable artifacts remain
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
 
 The adapter now exposes the streaming contract directly. The shared Binary v2

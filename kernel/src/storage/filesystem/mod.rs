@@ -22,7 +22,7 @@ pub use artifacts::{
 };
 pub use multi::with_amrn_files;
 pub use read::{read_repository_file, read_root_file, stream_repository_file};
-pub use repository::FatRepositoryStorage;
+pub use repository::{FatRepositoryStorage, RepositoryMetadataFormat};
 pub use write::write_root_file;
 
 /// The package extension recognized by the MVP root-directory scan.
