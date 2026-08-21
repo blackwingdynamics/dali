@@ -1,5 +1,6 @@
 //! Board-agnostic repository loading and durable publication.
 
+pub mod discovery;
 mod io;
 
 use dali_amrn::v3::Contract;

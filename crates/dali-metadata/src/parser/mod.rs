@@ -10,6 +10,11 @@ mod root;
 mod signatures;
 mod snapshot;
 mod streaming;
+mod streaming_chain;
+mod streaming_delegation;
+mod streaming_revocation;
+mod streaming_root;
+mod streaming_snapshot;
 mod targets;
 mod timestamp;
 
@@ -25,6 +30,14 @@ pub use root::parse_root_signed;
 pub use signatures::parse_signature_list;
 pub use snapshot::parse_snapshot_signed;
 pub use streaming::*;
+pub use streaming_chain::{
+    BinaryRoleBodyParser, StreamingChainError, matches_reference, role_definition, root_keys,
+    verify_binary_role_envelope,
+};
+pub use streaming_delegation::BinaryDelegationBodyStreamParser;
+pub use streaming_revocation::BinaryRevocationBodyStreamParser;
+pub use streaming_root::BinaryRootBodyStreamParser;
+pub use streaming_snapshot::BinarySnapshotBodyStreamParser;
 pub use targets::parse_targets_signed;
 pub use timestamp::parse_timestamp_signed;
 

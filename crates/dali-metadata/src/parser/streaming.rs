@@ -5,8 +5,67 @@
 
 use crate::{
     BINARY_ENVELOPE_HEADER_BYTES, BINARY_FORMAT_VERSION, BINARY_MAGIC, DecodeError, KeyId,
-    MetadataRole, Signature, SignatureRecord, SignatureSet, validate_signature_set,
+    MetadataRole, Signature, SignatureRecord, SignatureSet, TimestampMetadata,
+    parse_binary_timestamp_body, validate_signature_set,
 };
+
+/// Fixed Binary v2 timestamp body size.
+pub const BINARY_TIMESTAMP_BODY_BYTES: usize = 60;
+
+/// Errors returned by typed role-body stream parsers.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StreamingBodyError {
+    /// The body exceeded its role-specific bounded representation.
+    BodyTooLarge,
+    /// The body ended before its fixed or declared fields were complete.
+    UnexpectedEnd,
+    /// The completed body violated the canonical Binary v2 schema.
+    InvalidBody,
+}
+
+/// Incrementally parses the fixed-size Binary v2 timestamp body.
+pub struct BinaryTimestampBodyStreamParser {
+    body: [u8; BINARY_TIMESTAMP_BODY_BYTES],
+    length: usize,
+}
+
+impl BinaryTimestampBodyStreamParser {
+    /// Creates an empty timestamp body parser.
+    pub const fn new() -> Self {
+        Self {
+            body: [0; BINARY_TIMESTAMP_BODY_BYTES],
+            length: 0,
+        }
+    }
+
+    /// Feeds a caller-owned body chunk without allocating or retaining excess bytes.
+    pub fn feed(&mut self, chunk: &[u8]) -> Result<(), StreamingBodyError> {
+        let end = self
+            .length
+            .checked_add(chunk.len())
+            .ok_or(StreamingBodyError::BodyTooLarge)?;
+        if end > self.body.len() {
+            return Err(StreamingBodyError::BodyTooLarge);
+        }
+        self.body[self.length..end].copy_from_slice(chunk);
+        self.length = end;
+        Ok(())
+    }
+
+    /// Completes parsing and returns the typed timestamp metadata.
+    pub fn finish(self) -> Result<TimestampMetadata, StreamingBodyError> {
+        if self.length != self.body.len() {
+            return Err(StreamingBodyError::UnexpectedEnd);
+        }
+        parse_binary_timestamp_body(&self.body).map_err(|_| StreamingBodyError::InvalidBody)
+    }
+}
+
+impl Default for BinaryTimestampBodyStreamParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Errors returned by the incremental Binary Metadata v2 envelope parser.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -284,5 +343,27 @@ mod tests {
             parser.feed(&bytes[..length], |_| Ok(())),
             Err(StreamingDecodeError::InvalidEnvelope)
         );
+    }
+
+    #[test]
+    fn parses_a_fragmented_typed_timestamp_body() {
+        let metadata = crate::TimestampMetadata {
+            header: crate::MetadataHeader {
+                role: MetadataRole::Timestamp,
+                version: 3,
+                expires: 99,
+            },
+            snapshot_version: 4,
+            snapshot_length: 128,
+            snapshot_sha256: crate::Sha256Digest([7; crate::SHA256_LENGTH]),
+        };
+        let mut body = [0; BINARY_TIMESTAMP_BODY_BYTES];
+        let length = crate::encode_binary_timestamp_body(metadata, &mut body)
+            .expect("timestamp body should encode");
+        let mut parser = BinaryTimestampBodyStreamParser::new();
+        for chunk in body[..length].chunks(7) {
+            parser.feed(chunk).expect("fragment should fit");
+        }
+        assert_eq!(parser.finish(), Ok(metadata));
     }
 }
