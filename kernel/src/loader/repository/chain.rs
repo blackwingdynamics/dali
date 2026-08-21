@@ -1,11 +1,16 @@
 //! Bounded Binary Metadata v2 role-chain primitives.
 
 use dali_metadata::{
-    BinaryEnvelopeStreamParser, BinaryRoleBodyParser, DecodeError, MetadataRole, RoleDefinition,
-    RoleKey, RootMetadata, Sha256Digest, StreamedEnvelope, StreamingRoleVerifier,
+    BinaryDelegationBodyStreamParser, BinaryEnvelopeStreamParser, BinaryRevocationBodyStreamParser,
+    BinaryRoleBodyParser, BinarySnapshotBodyStreamParser, BinaryTimestampBodyStreamParser,
+    DecodeError, MetadataRole, RoleDefinition, RoleKey, RootMetadata, Sha256Digest,
+    StreamedEnvelope, StreamingRoleVerifier,
 };
 
-use crate::storage::repository::{RepositoryDocument, RepositoryStreamStorage};
+use super::{RepositoryLoadRequest, amrn, streaming};
+use crate::storage::repository::{
+    RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage,
+};
 
 /// Result retained for one streamed metadata document.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -33,6 +38,303 @@ pub(crate) enum StreamedRoleError<E> {
     Signature,
     /// No target-provisioned anchor was declared by Root metadata.
     UnknownTrustAnchor,
+}
+
+/// Caller-owned buffers for one Binary v2 repository chain pass.
+pub struct BinaryRepositoryBuffers {
+    /// Shared bounded metadata and package transport chunk.
+    chunk: [u8; streaming::STREAMING_METADATA_CHUNK_BYTES],
+    /// Fixed AMRN header and signature trailer retained between passes.
+    amrn: amrn::AmrnStreamBuffers,
+}
+
+impl BinaryRepositoryBuffers {
+    /// Creates zeroed storage for the streaming chain.
+    pub const fn new() -> Self {
+        Self {
+            chunk: [0; streaming::STREAMING_METADATA_CHUNK_BYTES],
+            amrn: amrn::AmrnStreamBuffers::new(),
+        }
+    }
+}
+
+impl Default for BinaryRepositoryBuffers {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Result of a complete metadata-to-AMRN streamed authorization pass.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct BinaryRepositoryAuthorization {
+    /// Target package record accepted by Targets metadata.
+    pub target: dali_metadata::TargetPackage,
+    /// Developer delegation accepted by the delegated role.
+    pub delegation: dali_metadata::DelegationMetadata,
+}
+
+/// Errors returned by the complete streamed repository chain.
+#[derive(Debug)]
+pub enum BinaryRepositoryError<E> {
+    /// Storage failed while producing one document or package.
+    Storage(E),
+    /// A role document failed bounded parsing or signature verification.
+    RoleDecode,
+    /// A role stream could not satisfy its signature policy.
+    RoleSignature,
+    /// A role stream failed in the storage adapter.
+    RoleStorage(E),
+    /// The root document did not contain a target-provisioned trust anchor.
+    UnknownTrustAnchor,
+    /// A required role definition or record was absent.
+    MissingRecord,
+    /// A signed metadata reference did not match the streamed document.
+    ReferenceMismatch,
+    /// The selected delegation did not authorize the selected package.
+    DelegationMismatch,
+    /// The selected developer key was revoked.
+    Revoked,
+    /// The package failed streamed AMRN validation.
+    Package,
+}
+
+/// Verifies Root -> Timestamp -> Snapshot -> Targets -> Delegation ->
+/// Revocation -> AMRN through the board-agnostic streaming contract.
+pub fn load_binary_repository<S>(
+    storage: &mut S,
+    request: RepositoryLoadRequest,
+    anchors: &[dali_targets::TrustAnchorProfile],
+    buffers: &mut BinaryRepositoryBuffers,
+) -> Result<BinaryRepositoryAuthorization, BinaryRepositoryError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+{
+    let root =
+        stream_verified_root(storage, anchors, &mut buffers.chunk).map_err(map_root_error)?;
+    let keys = root.metadata.keys;
+    let timestamp = verify_role_from_root(
+        storage,
+        RepositoryDocument::Timestamp,
+        MetadataRole::Timestamp,
+        BinaryTimestampBodyStreamParser::new(),
+        root.metadata,
+        &keys,
+        &mut buffers.chunk,
+    )?;
+    let snapshot = verify_role_from_root(
+        storage,
+        RepositoryDocument::Snapshot,
+        MetadataRole::Snapshot,
+        BinarySnapshotBodyStreamParser::new(),
+        root.metadata,
+        &keys,
+        &mut buffers.chunk,
+    )?;
+    if !same_reference(
+        timestamp.metadata.snapshot_version,
+        timestamp.metadata.snapshot_length,
+        timestamp.metadata.snapshot_sha256,
+        snapshot.metadata.header.version,
+        snapshot.length,
+        snapshot.digest,
+    ) {
+        return Err(BinaryRepositoryError::ReferenceMismatch);
+    }
+    let targets_role = role(root.metadata, MetadataRole::Targets)?;
+    let targets = streaming::select_verified_binary_target(
+        storage,
+        request.package_id,
+        targets_role,
+        &keys[..usize::from(root.metadata.key_count)],
+        &mut buffers.chunk,
+    )
+    .map_err(|_| BinaryRepositoryError::Package)?
+    .ok_or(BinaryRepositoryError::MissingRecord)?;
+    if !same_reference(
+        snapshot.metadata.targets.version,
+        snapshot.metadata.targets.length,
+        snapshot.metadata.targets.sha256,
+        targets.version,
+        targets.length,
+        targets.digest,
+    ) {
+        return Err(BinaryRepositoryError::ReferenceMismatch);
+    }
+    let revocations = verify_role_from_root(
+        storage,
+        RepositoryDocument::Revocations,
+        MetadataRole::Revocation,
+        BinaryRevocationBodyStreamParser::new(),
+        root.metadata,
+        &keys,
+        &mut buffers.chunk,
+    )?;
+    if !same_reference(
+        snapshot.metadata.revocations.version,
+        snapshot.metadata.revocations.length,
+        snapshot.metadata.revocations.sha256,
+        revocations.metadata.header.version,
+        revocations.length,
+        revocations.digest,
+    ) {
+        return Err(BinaryRepositoryError::ReferenceMismatch);
+    }
+    let delegation_id = targets
+        .target
+        .delegation_id
+        .as_str()
+        .ok_or(BinaryRepositoryError::MissingRecord)?;
+    let delegation_reference = snapshot
+        .metadata
+        .delegations
+        .iter()
+        .take(usize::from(snapshot.metadata.delegation_count))
+        .find(|reference| reference.id.as_str() == Some(delegation_id))
+        .copied()
+        .ok_or(BinaryRepositoryError::MissingRecord)?;
+    let delegation = verify_role_from_root(
+        storage,
+        RepositoryDocument::Delegation(delegation_id),
+        MetadataRole::Delegation,
+        BinaryDelegationBodyStreamParser::new(),
+        root.metadata,
+        &keys,
+        &mut buffers.chunk,
+    )?;
+    if !same_reference(
+        delegation_reference.version,
+        delegation_reference.length,
+        delegation_reference.sha256,
+        delegation.metadata.header.version,
+        delegation.length,
+        delegation.digest,
+    ) {
+        return Err(BinaryRepositoryError::ReferenceMismatch);
+    }
+    validate_target_delegation(targets.target, delegation.metadata)?;
+    if is_revoked(&revocations.metadata, delegation.metadata, targets.version) {
+        return Err(BinaryRepositoryError::Revoked);
+    }
+    amrn::verify_streamed_amrn(
+        storage,
+        RepositoryPackageDigest(targets.target.sha256.0),
+        delegation.metadata,
+        request.contract,
+        &mut buffers.chunk,
+        &mut buffers.amrn,
+    )
+    .map_err(|_| BinaryRepositoryError::Package)?;
+    Ok(BinaryRepositoryAuthorization {
+        target: targets.target,
+        delegation: delegation.metadata,
+    })
+}
+
+fn verify_role_from_root<S, P>(
+    storage: &mut S,
+    document: RepositoryDocument<'_>,
+    expected_role: MetadataRole,
+    parser: P,
+    root: RootMetadata,
+    keys: &[RoleKey; dali_metadata::MAX_ROOT_KEYS],
+    chunk: &mut [u8],
+) -> Result<StreamedRole<P::Output>, BinaryRepositoryError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+    P: BinaryRoleBodyParser,
+{
+    let policy = role(root, expected_role)?;
+    stream_verified_role(
+        storage,
+        document,
+        expected_role,
+        policy,
+        &keys[..usize::from(root.key_count)],
+        chunk,
+        parser,
+    )
+    .map_err(map_role_error)
+}
+
+fn role<E>(
+    root: RootMetadata,
+    expected_role: MetadataRole,
+) -> Result<RoleDefinition, BinaryRepositoryError<E>> {
+    root.roles
+        .iter()
+        .take(usize::from(root.role_count))
+        .find(|definition| definition.role == expected_role)
+        .copied()
+        .ok_or(BinaryRepositoryError::MissingRecord)
+}
+
+fn map_root_error<E>(error: StreamedRoleError<E>) -> BinaryRepositoryError<E> {
+    match error {
+        StreamedRoleError::UnknownTrustAnchor => BinaryRepositoryError::UnknownTrustAnchor,
+        other => map_role_error(other),
+    }
+}
+
+fn map_role_error<E>(error: StreamedRoleError<E>) -> BinaryRepositoryError<E> {
+    match error {
+        StreamedRoleError::Storage(error) => BinaryRepositoryError::RoleStorage(error),
+        StreamedRoleError::Signature => BinaryRepositoryError::RoleSignature,
+        StreamedRoleError::Decode | StreamedRoleError::LengthMismatch => {
+            BinaryRepositoryError::RoleDecode
+        }
+        StreamedRoleError::UnknownTrustAnchor => BinaryRepositoryError::UnknownTrustAnchor,
+    }
+}
+
+fn same_reference(
+    expected_version: u64,
+    expected_length: u32,
+    expected_digest: Sha256Digest,
+    actual_version: u64,
+    actual_length: u32,
+    actual_digest: Sha256Digest,
+) -> bool {
+    expected_version == actual_version
+        && expected_length == actual_length
+        && expected_digest == actual_digest
+}
+
+fn validate_target_delegation<E>(
+    target: dali_metadata::TargetPackage,
+    delegation: dali_metadata::DelegationMetadata,
+) -> Result<(), BinaryRepositoryError<E>> {
+    let namespace_allowed = delegation.allowed_namespaces
+        [..usize::from(delegation.namespace_count)]
+        .contains(&target.namespace);
+    let target_allowed = delegation.allowed_targets[..usize::from(delegation.target_count)]
+        .contains(&target.target_profile);
+    let abi_allowed =
+        delegation.allowed_abis[..usize::from(delegation.abi_count)].contains(&target.abi_version);
+    if target.developer_id != delegation.developer_id
+        || target.developer_key_id != delegation.key_id
+        || !namespace_allowed
+        || !target_allowed
+        || !abi_allowed
+    {
+        return Err(BinaryRepositoryError::DelegationMismatch);
+    }
+    Ok(())
+}
+
+fn is_revoked(
+    revocations: &dali_metadata::RevocationMetadata,
+    delegation: dali_metadata::DelegationMetadata,
+    current_version: u64,
+) -> bool {
+    revocations
+        .records
+        .iter()
+        .take(usize::from(revocations.record_count))
+        .any(|record| {
+            record.developer_id == delegation.developer_id
+                && record.key_id == delegation.key_id
+                && record.effective_version <= current_version
+        })
 }
 
 /// Parses one role document and verifies it in a second bounded pass.
@@ -81,7 +383,7 @@ where
     if !anchors
         .iter()
         .copied()
-        .any(|anchor| crate::loader::repository::trust::contains_root_anchor(&root, anchor))
+        .any(|anchor| super::trust::contains_root_anchor(&root, anchor))
     {
         return Err(StreamedRoleError::UnknownTrustAnchor);
     }

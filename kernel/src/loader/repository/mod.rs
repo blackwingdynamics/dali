@@ -24,6 +24,11 @@ use crate::storage::{
 
 use io::{read_metadata, read_package};
 
+pub use chain::{
+    BinaryRepositoryAuthorization, BinaryRepositoryBuffers, BinaryRepositoryError,
+    load_binary_repository,
+};
+
 /// Caller-owned bounded buffers for one repository verification pass.
 pub struct RepositoryBuffers {
     /// Shared chunk used to move bytes from storage into role buffers.

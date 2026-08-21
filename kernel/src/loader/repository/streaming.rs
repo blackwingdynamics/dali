@@ -51,6 +51,21 @@ pub enum StreamingTargetSelectionError<E> {
     Verification,
 }
 
+/// Selected target plus the authenticated serialized Targets document shape.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct VerifiedBinaryTarget {
+    /// Package authorization record selected by package identity.
+    pub target: TargetPackage,
+    /// Exact serialized Targets document length.
+    pub length: u32,
+    /// SHA-256 digest of the complete serialized Targets document.
+    pub digest: dali_metadata::Sha256Digest,
+    /// Signed body metadata retained for chain diagnostics.
+    pub envelope: dali_metadata::StreamedEnvelope,
+    /// Metadata version declared by the Targets body.
+    pub version: u64,
+}
+
 /// Selects one target and authenticates the complete Binary v2 targets envelope.
 ///
 /// The first pass parses only the selected record. The second pass replays the
@@ -61,15 +76,17 @@ pub fn select_verified_binary_target<S>(
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
-) -> Result<Option<TargetPackage>, StreamingTargetSelectionError<S::Error>>
+) -> Result<Option<VerifiedBinaryTarget>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
     let mut selector = BinaryTargetsStreamParser::new(package_id);
     let mut envelope = BinaryEnvelopeStreamParser::new(MetadataRole::Targets);
+    let mut digest = dali_crypto::Sha256Accumulator::new();
     let mut parse_error = None;
-    storage
+    let length = storage
         .stream_metadata(RepositoryDocument::Targets, chunk, |bytes| {
+            digest.update(bytes);
             if parse_error.is_some() {
                 return Ok(());
             }
@@ -89,18 +106,22 @@ where
     let envelope = envelope.finish().map_err(|_| {
         StreamingTargetSelectionError::Parse(StreamingTargetsError::InvalidEnvelope)
     })?;
+    let version = selector.version;
     let target = selector
         .finish()
         .map_err(StreamingTargetSelectionError::Parse)?;
+    let document_digest = dali_metadata::Sha256Digest(digest.finalize());
     let mut verifier = StreamingRoleVerifier::new(role, keys, envelope.signatures)
         .map_err(|_| StreamingTargetSelectionError::Verification)?;
     let mut replay = BinaryEnvelopeStreamParser::new(MetadataRole::Targets);
+    let mut replay_digest = dali_crypto::Sha256Accumulator::new();
     let mut replay_error = false;
     storage
         .stream_metadata(RepositoryDocument::Targets, chunk, |bytes| {
             if replay_error {
                 return Ok(());
             }
+            replay_digest.update(bytes);
             if replay
                 .feed(bytes, |body| {
                     verifier.update(body);
@@ -113,10 +134,23 @@ where
             Ok(())
         })
         .map_err(StreamingTargetSelectionError::Storage)?;
-    if replay_error || replay.finish().is_err() || verifier.finish().is_err() {
+    let replayed = replay
+        .finish()
+        .map_err(|_| StreamingTargetSelectionError::Verification)?;
+    if replay_error
+        || replayed.body_sha256 != envelope.body_sha256
+        || dali_metadata::Sha256Digest(replay_digest.finalize()) != document_digest
+        || verifier.finish().is_err()
+    {
         return Err(StreamingTargetSelectionError::Verification);
     }
-    Ok(target)
+    Ok(target.map(|target| VerifiedBinaryTarget {
+        target,
+        length,
+        digest: document_digest,
+        envelope,
+        version,
+    }))
 }
 
 /// Selects one target record without retaining the complete targets document.
@@ -157,6 +191,7 @@ struct BinaryTargetsStreamParser {
     total_length: usize,
     total_seen: usize,
     phase: Phase,
+    version: u64,
     field: [u8; 16],
     field_length: usize,
     field_need: usize,
@@ -184,6 +219,7 @@ impl BinaryTargetsStreamParser {
             total_length: 0,
             total_seen: 0,
             phase: Phase::MetadataHeader,
+            version: 0,
             field: [0; 16],
             field_length: 0,
             field_need: 16,
@@ -253,6 +289,7 @@ impl BinaryTargetsStreamParser {
             Phase::MetadataHeader => {
                 self.read_field(byte, Phase::MetadataHeader);
                 if self.field_length == self.field_need {
+                    self.version = read_u64(&self.field[..8]);
                     self.reset_field(2, Phase::DelegationCount);
                 }
                 Ok(())
@@ -423,4 +460,10 @@ fn read_u16(bytes: &[u8]) -> u16 {
 
 fn read_u32(bytes: &[u8]) -> u32 {
     u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+}
+
+fn read_u64(bytes: &[u8]) -> u64 {
+    u64::from_le_bytes([
+        bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+    ])
 }

@@ -57,6 +57,7 @@ where
         |error| match error {
             StreamingTargetSelectionError::Storage(error) => PackageDiscoveryError::Storage(error),
             StreamingTargetSelectionError::Parse(_) => PackageDiscoveryError::InvalidTargets,
+            StreamingTargetSelectionError::Verification => PackageDiscoveryError::InvalidTargets,
         },
     )?;
     target.ok_or(PackageDiscoveryError::MissingPackage)

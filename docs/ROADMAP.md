@@ -199,7 +199,11 @@ milestone into `main` only after its documented validation evidence exists.
    streamed AMRN header/trailer and signature/CRC validation plus a generic
    two-pass role capture/verification primitive. Root anchor membership is
    checked against the target manifest before Root signatures are verified.
-   Storage-backed reference-chain assembly and boot integration remain pending.
+   The board-agnostic `load_binary_repository()` now assembles and verifies
+   Root -> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation ->
+   AMRN with bounded passes. The legacy `load_repository()` and F405 boot
+   handoff remain pending until the verified package result is connected to
+   the existing slot/load execution contract.
    [ ] Replace metadata JSON v1 repository files with the frozen custom binary
    v2 envelope and length-prefixed streaming records. Keep JSON v1 as a
    host-only migration format until binary v2 has CLI and F405 acceptance.

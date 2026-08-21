@@ -386,10 +386,12 @@ organized under `dali-metadata/src/parser/streaming/`, and
 `verify_binary_role_envelope` provides the parse-and-replay second pass. The
 kernel repository loader now also contains a bounded two-pass AMRN v5 validator
 under `loader/repository/amrn.rs`, a generic role-stream capture/replay helper
-under `loader/repository/chain.rs`, and Root anchor membership wiring through
-the target manifest. The complete storage-backed reference chain and its
-boot-sequence integration are still pending, so the loader MUST NOT be wired
-to this partial stream yet.
+under `loader/repository/chain.rs`, Root anchor membership wiring through the
+target manifest, and the board-agnostic `load_binary_repository()` chain
+assembler. The legacy `load_repository()` API remains the retained-buffer
+JSON-compatible contract; the new Binary v2 API is not yet called from the
+F405 boot sequence because package execution still consumes the legacy loader
+result. That boot handoff is the remaining integration boundary.
 
 ### Future multi-application package selection
 

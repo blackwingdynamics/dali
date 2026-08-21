@@ -47,14 +47,14 @@ pub(crate) enum AmrnStreamError<E> {
 }
 
 /// Streams and validates one AMRN v5 package in two bounded passes.
-pub(crate) fn verify_streamed_amrn<S>(
+pub(crate) fn verify_streamed_amrn<'a, S>(
     storage: &mut S,
     digest: RepositoryPackageDigest,
     delegation: DelegationMetadata,
     contract: v3::Contract,
     chunk: &mut [u8],
-    buffers: &mut AmrnStreamBuffers,
-) -> Result<v5::Header<'_>, AmrnStreamError<S::Error>>
+    buffers: &'a mut AmrnStreamBuffers,
+) -> Result<v5::Header<'a>, AmrnStreamError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
@@ -194,9 +194,9 @@ impl TailBuffer {
     }
     fn push(&mut self, bytes: &[u8]) {
         if bytes.len() >= self.bytes.len() {
-            self.bytes
-                .copy_from_slice(&bytes[bytes.len() - self.bytes.len()..]);
-            self.length = self.bytes.len();
+            let length = self.bytes.len();
+            self.bytes.copy_from_slice(&bytes[bytes.len() - length..]);
+            self.length = length;
             return;
         }
         let keep = self.length.min(self.bytes.len() - bytes.len());
