@@ -460,17 +460,20 @@ The target-side acceptance flow is fixed:
 3. validate metadata structure, size, version, role, and expiration policy;
 4. verify the root-to-role metadata chain;
 5. verify snapshot references and every referenced metadata hash;
-6. locate the package target record by package identity and target profile;
-7. verify package length and complete-file hash;
-8. verify the developer delegation and its validity/revocation state;
-9. verify the AMRN v5 developer signature over its specified signed range;
-10. validate AMRN fields, CRC32, bounds, compatibility, services, and entry;
-11. copy only after all checks pass;
-12. apply relocation only within the declared code/data contract;
-13. configure MPU and privilege state only after relocation is complete; and
-14. enter the application only after the active lifecycle state permits it.
+6. resolve exactly one executable target record for the boot profile; zero or
+   multiple executable records MUST be rejected;
+7. open `packages/<lowercase-sha256>.amrn` from the content-addressed package
+   directory, never by directory order or an untrusted display name;
+8. verify package length and complete-file hash;
+9. verify the developer delegation and its validity/revocation state;
+10. verify the AMRN v5 developer signature over its specified signed range;
+11. validate AMRN fields, CRC32, bounds, compatibility, services, and entry;
+12. copy only after all checks pass;
+13. apply relocation only within the declared code/data contract;
+14. configure MPU and privilege state only after relocation is complete; and
+15. enter the application only after the active lifecycle state permits it.
 
-Any failure before step 11 MUST leave the previous valid application and trust
+Any failure before step 12 MUST leave the previous valid application and trust
 store unchanged. The loader MUST report a typed reason without exposing keys
 or sensitive metadata.
 

@@ -39,7 +39,8 @@ fn rejects_storage_lengths_larger_than_caller_buffers() {
     let result = load_repository(
         &mut storage,
         RepositoryLoadRequest {
-            package_id: PackageId([1; dali_metadata::KEY_ID_LENGTH]),
+            package_id: Some(PackageId([1; dali_metadata::KEY_ID_LENGTH])),
+            target_profile: dali_metadata::BoundedText::new("test").expect("test profile fits"),
             contract: Contract {
                 target_id: 0,
                 code_load_address: 0,

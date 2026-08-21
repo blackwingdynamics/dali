@@ -77,8 +77,10 @@ impl Default for RepositoryBuffers {
 /// Inputs that are stable for one repository load.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RepositoryLoadRequest {
-    /// Package identity selected from the targets document.
-    pub package_id: PackageId,
+    /// Optional package identity for an explicit host-side selection.
+    pub package_id: Option<PackageId>,
+    /// Target profile used by boot-time unique executable discovery.
+    pub target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
     /// Board-owned AMRN v5 contract.
     pub contract: Contract,
     /// Optional trusted wall-clock value for expiry checks.
@@ -160,7 +162,10 @@ where
         .map_err(|_| RepositoryLoaderError::Decode)?;
     let targets =
         parse_targets_signed(targets_envelope.signed).map_err(|_| RepositoryLoaderError::Decode)?;
-    let target = find_target(&targets, request.package_id)?;
+    let package_id = request
+        .package_id
+        .ok_or(RepositoryLoaderError::MissingRecord)?;
+    let target = find_target(&targets, package_id)?;
     let delegation_id = target
         .delegation_id
         .as_str()
@@ -187,7 +192,7 @@ where
         delegation: parse_envelope(&buffers.delegation[..delegation_length])?,
         package: &buffers.package[..package_length],
     };
-    verify_repository_package(documents, request.package_id, request.contract, request.now)
+    verify_repository_package(documents, package_id, request.contract, request.now)
         .map_err(RepositoryLoaderError::Verification)
 }
 

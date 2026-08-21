@@ -203,7 +203,11 @@ milestone into `main` only after its documented validation evidence exists.
    Root -> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation ->
    AMRN with bounded passes. The legacy `load_repository()` and F405 boot
    handoff remain pending until the verified package result is connected to
-   the existing slot/load execution contract.
+   the existing slot/load execution contract. The boot handoff contract is now
+   fixed: Binary v2 Targets must resolve to exactly one executable package;
+   the package is opened by its lowercase SHA-256 filename under
+   `packages/`, and only then is the existing slot/relocation loader allowed
+   to execute it. Zero or multiple executable records are rejected.
    [ ] Replace metadata JSON v1 repository files with the frozen custom binary
    v2 envelope and length-prefixed streaming records. Keep JSON v1 as a
    host-only migration format until binary v2 has CLI and F405 acceptance.

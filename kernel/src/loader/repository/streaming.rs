@@ -38,6 +38,8 @@ pub enum StreamingTargetsError {
     InvalidRecord,
     /// The stream contained bytes outside its declared envelope.
     TrailingBytes,
+    /// The selected target profile resolved to more than one package.
+    MultipleMatchingRecords,
 }
 
 /// Error boundary for selecting a target through a repository stream.
@@ -80,7 +82,48 @@ pub fn select_verified_binary_target<S>(
 where
     S: RepositoryStreamStorage,
 {
-    let mut selector = BinaryTargetsStreamParser::new(package_id);
+    select_verified_target(
+        storage,
+        BinaryTargetsStreamParser::for_package(package_id),
+        role,
+        keys,
+        chunk,
+    )
+}
+
+/// Selects exactly one executable target for a declared target profile.
+pub fn select_unique_verified_binary_target<S>(
+    storage: &mut S,
+    target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
+    role: RoleDefinition,
+    keys: &[RoleKey],
+    chunk: &mut [u8],
+) -> Result<VerifiedBinaryTarget, StreamingTargetSelectionError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+{
+    select_verified_target(
+        storage,
+        BinaryTargetsStreamParser::for_profile(target_profile),
+        role,
+        keys,
+        chunk,
+    )?
+    .ok_or(StreamingTargetSelectionError::Parse(
+        StreamingTargetsError::UnexpectedEnd,
+    ))
+}
+
+fn select_verified_target<S>(
+    storage: &mut S,
+    mut selector: BinaryTargetsStreamParser,
+    role: RoleDefinition,
+    keys: &[RoleKey],
+    chunk: &mut [u8],
+) -> Result<Option<VerifiedBinaryTarget>, StreamingTargetSelectionError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+{
     let mut envelope = BinaryEnvelopeStreamParser::new(MetadataRole::Targets);
     let mut digest = dali_crypto::Sha256Accumulator::new();
     let mut parse_error = None;
@@ -162,7 +205,7 @@ pub fn select_binary_target<S>(
 where
     S: RepositoryStreamStorage,
 {
-    let mut parser = BinaryTargetsStreamParser::new(package_id);
+    let mut parser = BinaryTargetsStreamParser::for_package(package_id);
     let mut parse_error = None;
     storage
         .stream_metadata(RepositoryDocument::Targets, chunk, |bytes| {
@@ -183,7 +226,8 @@ where
 }
 
 struct BinaryTargetsStreamParser {
-    wanted: PackageId,
+    wanted: Option<PackageId>,
+    target_profile: Option<dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>>,
     envelope: [u8; BINARY_ENVELOPE_HEADER_BYTES],
     envelope_length: usize,
     body_length: usize,
@@ -206,12 +250,29 @@ struct BinaryTargetsStreamParser {
     record: [u8; MAX_STREAMING_TARGET_RECORD_BYTES],
     record_buffered: usize,
     selected_target: Option<TargetPackage>,
+    duplicate: bool,
 }
 
 impl BinaryTargetsStreamParser {
-    fn new(wanted: PackageId) -> Self {
+    fn for_package(wanted: PackageId) -> Self {
+        Self::new(Some(wanted), None)
+    }
+
+    fn for_profile(
+        target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
+    ) -> Self {
+        Self::new(None, Some(target_profile))
+    }
+
+    fn new(
+        wanted: Option<PackageId>,
+        target_profile: Option<
+            dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
+        >,
+    ) -> Self {
         Self {
             wanted,
+            target_profile,
             envelope: [0; BINARY_ENVELOPE_HEADER_BYTES],
             envelope_length: 0,
             body_length: 0,
@@ -234,6 +295,7 @@ impl BinaryTargetsStreamParser {
             record: [0; MAX_STREAMING_TARGET_RECORD_BYTES],
             record_buffered: 0,
             selected_target: None,
+            duplicate: false,
         }
     }
 
@@ -397,7 +459,10 @@ impl BinaryTargetsStreamParser {
             self.candidate_id[self.candidate_length] = byte;
             self.candidate_length += 1;
             if self.candidate_length == self.candidate_id.len() {
-                self.selected = self.candidate_id == self.wanted.0;
+                self.selected = self
+                    .wanted
+                    .map(|wanted| self.candidate_id == wanted.0)
+                    .unwrap_or(self.target_profile.is_some());
                 if self.selected {
                     self.record[..self.candidate_id.len()].copy_from_slice(&self.candidate_id);
                     self.record_buffered = self.candidate_id.len();
@@ -418,7 +483,17 @@ impl BinaryTargetsStreamParser {
         if self.selected {
             let target = parse_binary_target_record(&self.record[..self.record_buffered])
                 .map_err(|_| StreamingTargetsError::InvalidRecord)?;
-            self.selected_target = Some(target);
+            let profile_matches = self
+                .target_profile
+                .map(|profile| target.target_profile == profile)
+                .unwrap_or(true);
+            if profile_matches {
+                if self.selected_target.is_some() {
+                    self.duplicate = true;
+                } else {
+                    self.selected_target = Some(target);
+                }
+            }
         }
         self.packages_left -= 1;
         self.phase = if self.packages_left == 0 {
@@ -436,6 +511,9 @@ impl BinaryTargetsStreamParser {
             || self.phase != Phase::Complete
         {
             return Err(StreamingTargetsError::UnexpectedEnd);
+        }
+        if self.duplicate {
+            return Err(StreamingTargetsError::MultipleMatchingRecords);
         }
         Ok(self.selected_target)
     }
