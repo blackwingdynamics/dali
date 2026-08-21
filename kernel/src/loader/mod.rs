@@ -108,6 +108,20 @@ where
 }
 
 #[cfg(all(feature = "abi-current", feature = "repository-loader"))]
+#[unsafe(link_section = ".repository_workspace")]
+static mut BINARY_REPOSITORY_BUFFERS: repository::BinaryRepositoryBuffers =
+    repository::BinaryRepositoryBuffers::new();
+
+#[cfg(all(feature = "abi-current", feature = "repository-loader"))]
+fn with_binary_repository_buffers<R>(
+    operation: impl FnOnce(&mut repository::BinaryRepositoryBuffers) -> R,
+) -> R {
+    // SAFETY: boot storage initialization is single-threaded and completes
+    // before application contexts or scheduler interrupts can re-enter this loader.
+    unsafe { operation(&mut *core::ptr::addr_of_mut!(BINARY_REPOSITORY_BUFFERS)) }
+}
+
+#[cfg(all(feature = "abi-current", feature = "repository-loader"))]
 pub(crate) fn load_repository_package<D>(
     device: D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -128,28 +142,29 @@ where
         device,
         crate::storage::filesystem::RepositoryMetadataFormat::BinaryV2,
     );
-    let mut buffers = repository::BinaryRepositoryBuffers::new();
-    let authorizations = repository::load_binary_repository_with_contract(
-        &mut storage,
-        request,
-        crate::platform::TRUST_ANCHORS,
-        &mut buffers,
-        |target| {
-            let isolation = crate::platform::TARGET_PROFILE.memory.isolation?;
-            let slot = isolation
-                .slots
-                .iter()
-                .copied()
-                .find(|slot| slot.id == target.slot_id)?;
-            Some(dali_amrn::v3::Contract {
-                target_id: crate::platform::TARGET_PROFILE.amrn_target_id,
-                code_load_address: slot.code_origin,
-                code_capacity: slot.code_length,
-                data_load_address: slot.data_origin,
-                data_capacity: slot.data_length,
-            })
-        },
-    )
+    let authorizations = with_binary_repository_buffers(|buffers| {
+        repository::load_binary_repository_with_contract(
+            &mut storage,
+            request,
+            crate::platform::TRUST_ANCHORS,
+            buffers,
+            |target| {
+                let isolation = crate::platform::TARGET_PROFILE.memory.isolation?;
+                let slot = isolation
+                    .slots
+                    .iter()
+                    .copied()
+                    .find(|slot| slot.id == target.slot_id)?;
+                Some(dali_amrn::v3::Contract {
+                    target_id: crate::platform::TARGET_PROFILE.amrn_target_id,
+                    code_load_address: slot.code_origin,
+                    code_capacity: slot.code_length,
+                    data_load_address: slot.data_origin,
+                    data_capacity: slot.data_length,
+                })
+            },
+        )
+    })
     .map_err(map_repository_error)?;
     let mut loaded = LoadedPackages::new();
     for authorization in authorizations.iter() {

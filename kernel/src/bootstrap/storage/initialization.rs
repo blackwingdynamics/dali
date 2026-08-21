@@ -75,8 +75,11 @@ pub fn initialize(
         &crate::runtime::application::owner::ACTIVE_RUNTIME_STATE,
     );
 
-    let mut block: Block = [0; BLOCK_SIZE];
-    match reader.read_block(BlockAddress::new(0), &mut block) {
+    let block_read = {
+        let mut block: Block = [0; BLOCK_SIZE];
+        reader.read_block(BlockAddress::new(0), &mut block)
+    };
+    match block_read {
         Ok(()) => {
             #[cfg(feature = "storage-write")]
             {

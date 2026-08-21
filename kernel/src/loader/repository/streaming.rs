@@ -98,6 +98,7 @@ where
 }
 
 /// Selects every executable target for a declared target profile within `CAPACITY`.
+#[inline(never)]
 pub fn select_verified_binary_targets<S, const CAPACITY: usize>(
     storage: &mut S,
     target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
@@ -118,6 +119,7 @@ where
 }
 
 /// Selects and authenticates all records matching one explicit package ID.
+#[inline(never)]
 pub fn select_verified_binary_targets_for_package<S, const CAPACITY: usize>(
     storage: &mut S,
     package_id: PackageId,
@@ -196,6 +198,7 @@ impl<const CAPACITY: usize> VerifiedBinaryTargets<CAPACITY> {
 }
 
 /// Selects and authenticates a bounded set of Binary v2 target records.
+#[inline(never)]
 fn select_verified_targets<S, const CAPACITY: usize>(
     storage: &mut S,
     mut selector: BinaryTargetsStreamParser<CAPACITY>,

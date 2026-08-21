@@ -47,10 +47,11 @@ pub(crate) enum AmrnStreamError<E> {
 }
 
 /// Streams and validates one AMRN v5 package in two bounded passes.
+#[inline(never)]
 pub(crate) fn verify_streamed_amrn<'a, S>(
     storage: &mut S,
     digest: RepositoryPackageDigest,
-    delegation: DelegationMetadata,
+    delegation: &DelegationMetadata,
     contract: v3::Contract,
     chunk: &mut [u8],
     buffers: &'a mut AmrnStreamBuffers,
@@ -100,6 +101,7 @@ where
     Ok(header)
 }
 
+#[inline(never)]
 fn capture_package_shape<S>(
     storage: &mut S,
     digest: RepositoryPackageDigest,
@@ -132,6 +134,7 @@ where
     Ok(offset)
 }
 
+#[inline(never)]
 fn replay_package<S>(
     storage: &mut S,
     digest: RepositoryPackageDigest,

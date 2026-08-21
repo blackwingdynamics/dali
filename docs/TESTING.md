@@ -411,23 +411,36 @@ cargo check -p dali-kernel --no-default-features --features board-stm32f405-sd,u
 passed
 ```
 
-The release linker map was generated with the same feature set using
-`-C link-arg=-Map=/tmp/dali-kernel-repository-release.map`. The observed
-static sections were:
+The release image was rebuilt with the repository-loader feature set and
+`CARGO_PROFILE_RELEASE_DEBUG=2`. The generated linker symbols and LLVM size
+report show:
 
 ```text
-.dma_buffer 0x1400 = 5120 bytes
-.data        0x080c = 2060 bytes
-.bss         0x1688 = 5768 bytes
+.dma_buffer           0x1400 =  5120 bytes @ 0x20000000
+.repository_workspace 0x7218 = 29208 bytes @ 0x20018000
+.data                 0x080c =  2060 bytes @ 0x10000000
+.bss                  0x1688 =  5768 bytes @ 0x1000080c
+_stack_end                         0x10001e94
+_stack_start                       0x10010000
+available CCM stack               0x0000e16c = 57708 bytes
 ```
 
-The linked image therefore reserves 7,828 bytes in the 64 KiB CCM RAM region
-for static `.data` and `.bss`, plus 5,120 bytes in the separate 32 KiB DMA
-region. This does not measure a runtime stack peak, and it does not claim the
-current `RepositoryBuffers` implementation fits F405: those buffers retain
-complete documents and are the reason full Binary v2 boot wiring remains
-pending. The selective parser itself retains a 512-byte caller chunk and one
-bounded target record only.
+The repository workspace is now a target-profile-owned, board-agnostic BSS
+section in the declared runtime region. It contains the shared 512-byte
+stream chunk, AMRN pass state, and typed metadata outputs; it is not placed in
+CCM, so it does not consume the privileged kernel stack budget. The previous
+release build allocated approximately `0x19800` bytes for the main repository
+loader frame and left only `0x0f54` bytes of CCM stack after placing the
+workspace in CCM. The current main loader frame is `0x18e4` bytes, and the
+largest measured individual repository helper frame is the snapshot parser at
+approximately `0x5e74` bytes. These are static prologue measurements from the
+release ELF, not a proof of the maximum whole-program call depth; hardware
+retest is still required.
+
+`cargo-bloat` is not installed in the validation environment. The measurements
+above were obtained with the target LLVM `llvm-size`, `llvm-nm`, and
+`llvm-objdump`; no network installation was attempted. This evidence does not
+claim F405 hardware acceptance.
 
 The feature-gated board-agnostic repository loader compiles for
 `thumbv7em-none-eabihf`, and its host-visible boundary tests pass. The F405
