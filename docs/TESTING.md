@@ -219,6 +219,11 @@ multi-application isolation, or watchdog support.
 
 ### Diagnostic evidence
 
+- The kernel now retains a bounded fault capture in a linker-owned `NOLOAD`
+  section across software reset. The next boot reports the fault kind,
+  `EXC_RETURN`, validated kernel-frame address, stacked PC/LR, and SCB status
+  registers before consuming the record. This is source and target-build
+  evidence only until a real F405 reset reproduces the capture.
 - The F405 write path uses the STM32F4 HAL CPU/FIFO implementation. The custom
   raw DMA write experiment was removed after release hardware testing showed
   repeated `SdioTransmitUnderrun` failures while the HAL path passed.

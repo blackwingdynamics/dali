@@ -59,7 +59,10 @@ fault-injection cases have F405 evidence, but the result must not be described
 as a microkernel, secure boot, or complete sandbox: DMA ownership and
 multi-application isolation remain open. The current lifecycle policy requires
 manual reset after termination, does not provide rollback on read-only storage,
-and arms the hardware watchdog only from the kernel-owned heartbeat path.
+and arms the hardware watchdog before opaque storage-transport initialization,
+so a vendor HAL polling hang becomes bounded Safe Mode recovery. Block reads,
+repository loading, and application execution remain covered by the watchdog
+heartbeat and bounded storage/verification progress hooks.
 
 ## 4. Reference platform
 
@@ -311,6 +314,16 @@ The storage subsystem is responsible for:
 - root-directory package discovery;
 - bounded reads into loader-owned buffers.
 
+The boot watchdog is deliberately installed immediately before the selected
+storage transport enters its opaque card-initialization routine. A HAL may own
+an internal polling loop during that phase, so the board-agnostic storage layer
+cannot safely inject a feed callback into it. The watchdog is therefore not
+serviced inside that opaque phase; a non-responsive medium becomes bounded Safe
+Mode recovery. Once the transport returns, the watchdog covers the first block
+read, filesystem operation, repository stream, or
+application handoff; those bounded kernel-owned paths service it through the
+generic platform progress boundary.
+
 The F405 SDIO block-read path keeps HAL card initialization but owns the data
 FIFO drain in a board-local module. It uses the documented DMA2 Stream 3,
 Channel 4 receive request and an aligned word buffer, then maps SDIO timeout,
@@ -376,7 +389,7 @@ hardware acceptance.
 The concrete F405 adapter is `FatRepositoryStorage<D>`. Its constructor accepts
 an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
 board-agnostic logical documents through `metadata/`,
-`metadata/delegations/`, and `packages/`, including FAT long filenames, while durable artifacts remain
+`metadata/delegat/`, and `packages/`, using FAT-compatible bounded directory names, while durable artifacts remain
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
 The adapter also exposes `with_content_addressed_package()`, which opens only
 the lowercase SHA-256 package filename under `packages/` and hands the file to

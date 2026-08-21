@@ -59,7 +59,7 @@ The repository then contains:
 <repository>/metadata/snapshot.dmb
 <repository>/metadata/targets.dmb
 <repository>/metadata/revocations.dmb
-<repository>/metadata/delegations/
+<repository>/metadata/delegat/
 <repository>/packages/
 ```
 

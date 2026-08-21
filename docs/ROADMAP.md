@@ -118,8 +118,11 @@ milestone into `main` only after its documented validation evidence exists.
 2. **Watchdog and reset recovery** — [in progress] target facts,
    reset-cause logging, platform integration, kernel-owned heartbeat/scheduler
    feed ownership, and a real F405 IWDG timeout/reset-cause test are complete.
-   The watchdog is armed before storage/application loading and is serviced by
-   the heartbeat or scheduler tick. F405 hardware logged `Reset cause:
+   The watchdog is armed before opaque SDIO card initialization so a HAL
+   polling hang becomes bounded Safe Mode recovery; it is serviced by the
+   heartbeat, scheduler tick, or bounded storage/verification progress hook
+   after the transport returns.
+   F405 hardware logged `Reset cause:
    Watchdog`, entered Safe Mode, skipped application loading, and returned to
    the kernel heartbeat. F405 also remained in kernel recovery for 30 seconds
    after application termination without a new watchdog reset. Remaining work
