@@ -28,7 +28,87 @@ Never use an application key as a bundle key unless the signed root policy
 explicitly authorizes that same key for both roles. Never print or commit a
 private seed. Seeds must not be copied to the SD card or included in a bundle.
 
-## 2. Prepare the host
+## 2. Repository bootstrap and trust ownership
+
+The repository bootstrap workflow is implemented by three host-side commands.
+They create and update signed Binary v2 metadata; they do not move private keys
+to the SD card and they do not replace the trust owner's key-custody policy.
+
+`repository init` creates a new repository with a root policy, role metadata,
+an empty Targets document, an empty Revocation document, and the packages and
+delegations directories. The root signing seed is used for the initial role
+documents. The bundle seed is separately authorized by the generated `bundle`
+role.
+
+Run this only for a new repository. It refuses to overwrite an existing path:
+
+```bash
+"$DALI_CLI" metadata repository init \
+  --output "$DALI_REPO" \
+  --root-signing-key "$DALI_KEYS/root.seed" \
+  --root-key-id "$DALI_ROOT_KEY_ID" \
+  --bundle-signing-key "$DALI_KEYS/bundle.seed" \
+  --bundle-key-id "$DALI_BUNDLE_KEY_ID"
+```
+
+The repository then contains:
+
+```text
+<repository>/metadata/root.dmb
+<repository>/metadata/timestamp.dmb
+<repository>/metadata/snapshot.dmb
+<repository>/metadata/targets.dmb
+<repository>/metadata/revocations.dmb
+<repository>/metadata/delegations/
+<repository>/packages/
+```
+
+`repository add-developer` adds a signed delegation file, adds its delegation
+identifier to `targets.dmb`, and refreshes the signed snapshot and timestamp.
+It requires the root seed because the bootstrap policy uses the root signer for
+the Delegation, Targets, Snapshot, and Timestamp roles:
+
+```bash
+"$DALI_CLI" metadata repository add-developer \
+  --input "$DALI_REPO" \
+  --signing-key "$DALI_KEYS/root.seed" \
+  --developer-id "developer-one" \
+  --developer-key-id "$DALI_DEVELOPER_KEY_ID" \
+  --developer-public-key "$DALI_DEVELOPER_PUBLIC_KEY" \
+  --delegation-id "developer-one-delegation" \
+  --namespace "developer-one" \
+  --target "f405" \
+  --abi 3
+```
+
+`DALI_DEVELOPER_PUBLIC_KEY` is the public key from the developer anchor file;
+the private developer seed remains local and is used only to sign the AMRN.
+
+`repository publish` re-signs the current role documents and creates the
+signed `bundle.manifest`. The repository must contain at least one `.amrn`
+package and one delegation before publication can produce a valid bundle:
+
+```bash
+"$DALI_CLI" metadata repository publish \
+  --input "$DALI_REPO" \
+  --root-signing-key "$DALI_KEYS/root.seed" \
+  --bundle-signing-key "$DALI_KEYS/bundle.seed" \
+  --bundle-key-id "$DALI_BUNDLE_KEY_ID" \
+  --target-profile f405 \
+  --version 1
+```
+
+The package must be copied to `packages/<sha256>.amrn` before `publish`.
+Package authorization records in `targets.dmb` are a separate required
+operation for kernel execution and are created by `register-package` below.
+Do not claim a hardware-ready repository until that record references the
+developer, delegation, target profile, ABI, slot, digest, and package ID.
+
+For a repository supplied by an external trust owner, the same required files
+must already exist. If `metadata/root.dmb` is absent, do not run inspection or
+verification; first obtain the signed chain or bootstrap it with `init`.
+
+## 3. Prepare the host
 
 Run these commands from the repository root:
 
@@ -48,7 +128,30 @@ umask 077
 cargo build -p dali-cli
 ```
 
-## 3. Generate a developer/application key
+Generate the repository trust-owner keys before initializing a new repository:
+
+```bash
+"$DALI_CLI" key generate \
+  --private-output "$DALI_KEYS/root.seed" \
+  --public-output "$DALI_KEYS/root-anchor.toml"
+
+"$DALI_CLI" key generate \
+  --private-output "$DALI_KEYS/bundle.seed" \
+  --public-output "$DALI_KEYS/bundle-anchor.toml"
+
+export DALI_ROOT_KEY_ID="$(sed -n 's/.*key_id = "\([^"]*\)".*/\1/p' "$DALI_KEYS/root-anchor.toml")"
+export DALI_BUNDLE_KEY_ID="$(sed -n 's/.*key_id = "\([^"]*\)".*/\1/p' "$DALI_KEYS/bundle-anchor.toml")"
+```
+
+Inspect only the public fragments. Never print either seed:
+
+```bash
+cat "$DALI_KEYS/root-anchor.toml"
+cat "$DALI_KEYS/bundle-anchor.toml"
+chmod 600 "$DALI_KEYS/root.seed" "$DALI_KEYS/bundle.seed"
+```
+
+## 4. Generate a developer/application key
 
 ```bash
 "$DALI_CLI" key generate \
@@ -74,19 +177,33 @@ echo "$DALI_DEVELOPER_KEY_ID"
 chmod 600 "$DALI_KEYS/developer.seed"
 ```
 
-## 4. Authorize the developer key
+## 5. Initialize and authorize the developer key
+
+For a new repository, initialize the signed role chain before adding a
+developer:
+
+```bash
+"$DALI_CLI" metadata repository init \
+  --output "$DALI_REPO" \
+  --root-signing-key "$DALI_KEYS/root.seed" \
+  --root-key-id "$DALI_ROOT_KEY_ID" \
+  --bundle-signing-key "$DALI_KEYS/bundle.seed" \
+  --bundle-key-id "$DALI_BUNDLE_KEY_ID"
+```
 
 The new public key must be present in signed delegation and Targets metadata.
 Updating `dali.toml` alone is not authorization.
 
-Inspect the prepared repository:
+Now add the developer's public key to a signed delegation and Targets policy:
 
 ```bash
 find "$DALI_REPO" -maxdepth 3 -type f -print | sort
 rg -n "$DALI_DEVELOPER_KEY_ID|developer|delegation|targets" "$DALI_REPO"
 ```
 
-Then run the host checks:
+For an externally supplied repository, skip `init` and inspect the files only
+after the trust owner has supplied the signed chain. The optional host checks
+are:
 
 ```bash
 "$DALI_CLI" metadata bundle inspect \
@@ -104,28 +221,15 @@ the signed root/delegation policy, stop and obtain a signed metadata update
 from the repository trust owner. Do not edit binary root metadata manually and
 do not continue to hardware flashing with an unauthorized key.
 
-## 5. Generate and authorize a bundle key
+## 6. Confirm bundle-key authorization
 
-Generate a separate key:
-
-```bash
-"$DALI_CLI" key generate \
-  --private-output "$DALI_KEYS/bundle.seed" \
-  --public-output "$DALI_KEYS/bundle-anchor.toml"
-```
-
-Inspect the public fragment and extract the ID:
+The bundle key was generated before repository initialization. Inspect the
+public fragment and confirm its ID is present in the signed root policy:
 
 ```bash
 cat "$DALI_KEYS/bundle-anchor.toml"
 
-export DALI_BUNDLE_KEY_ID="$(
-  sed -n 's/.*key_id = "\([^"]*\)".*/\1/p' \
-  "$DALI_KEYS/bundle-anchor.toml"
-)"
-
 echo "$DALI_BUNDLE_KEY_ID"
-chmod 600 "$DALI_KEYS/bundle.seed"
 ```
 
 The extracted ID must be authorized in the signed root `bundle` role. The
@@ -138,7 +242,7 @@ rg -n "$DALI_BUNDLE_KEY_ID|bundle" "$DALI_REPO"
 If the ID is absent from the root policy, stop. A signed root update is
 required before bundle generation can succeed.
 
-## 6. Update the application manifest
+## 7. Update the application manifest
 
 Open the application manifest:
 
@@ -161,7 +265,7 @@ echo "$DALI_DEVELOPER_KEY_ID"
 The same ID must be authorized by delegation and referenced by the Targets
 metadata for this package.
 
-## 7. Build and inspect the AMRN package
+## 8. Build and inspect the AMRN package
 
 ```bash
 cd "$DALI_ROOT/apps/dali-app-relocation-fixture"
@@ -180,17 +284,17 @@ test -f "$APP_PACKAGE"
 
 The reported AMRN `signing_key_id` must equal `DALI_DEVELOPER_KEY_ID`.
 
-## 8. Prepare the content-addressed package repository
+## 9. Prepare the content-addressed package repository
 
 Do not delete an existing repository without reviewing it first:
 
 ```bash
 if [ -e "$DALI_REPO" ]; then
   echo "Repository already exists: $DALI_REPO"
-  exit 1
+  echo "Review it before continuing; do not delete it automatically."
+else
+  mkdir -p "$DALI_REPO/packages"
 fi
-
-mkdir -p "$DALI_REPO/packages"
 
 export PACKAGE_DIGEST="$(
   sha256sum "$APP_PACKAGE" | awk '{print tolower($1)}'
@@ -201,23 +305,39 @@ test -f "$DALI_REPO/packages/${PACKAGE_DIGEST}.amrn"
 echo "$PACKAGE_DIGEST"
 ```
 
-The signed Targets record must contain this exact digest, package ID, target
-profile, slot, and developer delegation reference.
+The signed Targets record is created by `repository register-package` and must
+contain this exact digest, package ID, target profile, slot, and developer
+delegation reference. Run the registration command below after this copy step.
 
-## 9. Generate and verify the Binary v2 bundle
-
-This command creates the signed bundle manifest. It does not create the root
-trust policy:
+Register the package. The command reads the package identity, target profile,
+ABI, slot, and developer key ID from the manifest, validates them against the
+AMRN, and derives the package digest from the actual file. The delegation ID
+and namespace are explicit because they are repository policy choices, not AMRN
+fields:
 
 ```bash
-"$DALI_CLI" metadata bundle generate \
+"$DALI_CLI" metadata repository register-package \
   --input "$DALI_REPO" \
-  --output "$DALI_REPO/bundle.manifest" \
+  --package "$APP_PACKAGE" \
+  --manifest "$DALI_ROOT/apps/dali-app-relocation-fixture/dali.toml" \
+  --delegation-id "developer-one-delegation" \
+  --namespace "developer-one" \
+  --signing-key "$DALI_KEYS/root.seed"
+```
+
+## 10. Generate and verify the Binary v2 bundle
+
+This command re-signs the current metadata chain and creates the signed bundle
+manifest. It does not create or rotate the root trust policy:
+
+```bash
+"$DALI_CLI" metadata repository publish \
+  --input "$DALI_REPO" \
+  --root-signing-key "$DALI_KEYS/root.seed" \
+  --bundle-signing-key "$DALI_KEYS/bundle.seed" \
+  --bundle-key-id "$DALI_BUNDLE_KEY_ID" \
   --target-profile f405 \
-  --version 1 \
-  --signing-key "$DALI_KEYS/bundle.seed" \
-  --signer-key-id "$DALI_BUNDLE_KEY_ID" \
-  --metadata-format binary-v2
+  --version 1
 ```
 
 Inspect and verify it:
@@ -236,7 +356,7 @@ Stop on `unknown key`, `unauthorized`, `revoked key`, `invalid chain`,
 `invalid signature`, or `invalid hash`. Do not flash a repository that fails
 host verification.
 
-## 10. Copy the repository to the SD card
+## 11. Copy the repository to the SD card
 
 Confirm the mount before writing:
 
@@ -258,7 +378,7 @@ find "$DALI_MOUNT" -maxdepth 3 -type f \
   -print | sort
 ```
 
-## 11. Build and flash the release kernel
+## 12. Build and flash the release kernel
 
 ```bash
 cd "$DALI_ROOT"
@@ -291,7 +411,7 @@ sudo "$DALI_CLI" device flash f405 \
   --input "$DALI_ROOT/target/thumbv7em-none-eabihf/release/dali-kernel"
 ```
 
-## 12. Expected hardware evidence
+## 13. Expected hardware evidence
 
 For one valid package, the console should include:
 
@@ -313,7 +433,7 @@ multi-package test. With two valid records, the expected loader line is:
 [INFO][BOOT] [LOADER] Loaded 2 application package(s) into declared slots
 ```
 
-## 13. Error interpretation
+## 14. Error interpretation
 
 - `unknown key`: the key is absent from the trust policy;
 - `unauthorized`: the key exists but lacks permission for the role or target;

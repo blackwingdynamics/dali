@@ -1,7 +1,7 @@
 //! Repository bundle generation, inspection, and host-side verification.
 
 mod common;
-mod generate;
+pub(crate) mod generate;
 mod verify;
 
 const GENERATE_COMMAND: &str = "generate";

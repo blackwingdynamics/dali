@@ -176,6 +176,13 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Add host CLI commands for bundle generation, reference inspection, and
    verification through the shared Ed25519 chain; durable target acceptance
    remains pending.
+   [x] Add Binary v2 repository bootstrap commands for signed root-role
+   initialization, developer delegation publication, and bundle-manifest
+   publication; package-record authoring and durable target acceptance remain
+   pending.
+   [x] Add Binary v2 package registration from a built AMRN and manifest, with
+   digest, slot, delegation-scope, and developer-key validation before the
+   signed Targets update; hardware acceptance remains pending.
    [x] Freeze the board-agnostic `BlockDevice`, `DurableStorageAdapter`, and
    `RepositoryStreamStorage` contracts plus the 104-byte `DALI-CMT.BIN` journal
    record; adapters, persistence coordination, loader wiring, and F405

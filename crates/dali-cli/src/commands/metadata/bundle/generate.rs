@@ -30,7 +30,46 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         arguments,
         common::SIGNING_KEY_FLAG,
     )?))?;
-    let files = collect_files(&root, format)?;
+    generate_repository(
+        &root,
+        &output,
+        format,
+        target_profile,
+        version,
+        seed,
+        signer_key_id,
+    )
+}
+
+pub(crate) fn generate_binary_repository(
+    root: &Path,
+    output: &Path,
+    target_profile: BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
+    version: u64,
+    seed: [u8; dali_crypto::PRIVATE_KEY_LENGTH],
+    signer_key_id: KeyId,
+) -> Result<(), String> {
+    generate_repository(
+        root,
+        output,
+        common::MetadataFormat::BinaryV2,
+        target_profile,
+        version,
+        seed,
+        signer_key_id,
+    )
+}
+
+fn generate_repository(
+    root: &Path,
+    output: &Path,
+    format: common::MetadataFormat,
+    target_profile: BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
+    version: u64,
+    seed: [u8; dali_crypto::PRIVATE_KEY_LENGTH],
+    signer_key_id: KeyId,
+) -> Result<(), String> {
+    let files = collect_files(root, format)?;
     let count = common::file_count(&files);
     let metadata = BundleMetadata {
         header: MetadataHeader {
@@ -80,7 +119,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             (envelope, length)
         }
     };
-    common::write_new(&output, &envelope[..envelope_length])?;
+    common::write_new(output, &envelope[..envelope_length])?;
     println!(
         "Created signed repository bundle manifest: {}",
         output.display()
