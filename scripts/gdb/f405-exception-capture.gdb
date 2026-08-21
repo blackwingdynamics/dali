@@ -41,43 +41,35 @@ end
 
 delete
 
-break BusFault
+break *BusFault
 commands
   silent
   printf "\n[FAULT] BusFault reached\n"
   print_fault_snapshot
 end
 
-break HardFault
+break *HardFault
 commands
   silent
   printf "\n[FAULT] HardFault reached\n"
   print_fault_snapshot
 end
 
-break UsageFault
+break *UsageFault
 commands
   silent
   printf "\n[FAULT] UsageFault reached\n"
   print_fault_snapshot
 end
 
-break DefaultHandler
+break *DefaultHandler
 commands
   silent
   printf "\n[FAULT] DefaultHandler reached\n"
   print_fault_snapshot
 end
 
-rbreak pet_repository_chunk
-commands
-  silent
-  printf "\n[WATCHDOG] repository chunk pet\n"
-  info registers pc lr sp
-  continue
-end
-
-break Reset
+break *Reset
 commands
   silent
   printf "\n[BOOT] Reset reached\n"
@@ -86,4 +78,3 @@ commands
 end
 
 monitor reset halt
-continue

@@ -6,6 +6,7 @@
 use crate::logging;
 use dali::svc::ExceptionFrame;
 
+mod persistent;
 pub(crate) mod scb;
 
 const EXC_RETURN_SIGNATURE_MASK: u32 = 0xFF00_0000;
@@ -69,6 +70,28 @@ pub(crate) fn report(record: FaultRecord) {
         format_args!(
             "[SECURITY][FAULT] kind={:?} status=0x{:08X} pc={:?} lr={:?} address={:?}",
             record.kind, record.status, record.stacked_pc, record.stacked_lr, record.fault_address
+        ),
+    );
+}
+
+/// Emits and consumes fault evidence retained by the previous software reset.
+pub(crate) fn report_persistent() {
+    let Some(evidence) = persistent::take() else {
+        return;
+    };
+    logging::error(
+        logging::SECURITY_SUBSYSTEM,
+        format_args!(
+            "[SECURITY][FAULT] Retained capture: kind={:?} exc_return=0x{:08X} frame=0x{:08X} pc=0x{:08X} lr=0x{:08X} cfsr=0x{:08X} hfsr=0x{:08X} mmfar=0x{:08X} bfar=0x{:08X}",
+            evidence.kind,
+            evidence.exception_return,
+            evidence.frame_address,
+            evidence.frame.pc,
+            evidence.frame.lr,
+            evidence.cfsr,
+            evidence.hfsr,
+            evidence.mmfar,
+            evidence.bfar,
         ),
     );
 }
@@ -169,6 +192,15 @@ fn application_frame_address(exception_return: u32) -> u32 {
 
 fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32) -> ! {
     let (status, fault_address) = read_status(kind);
+    persistent::capture(
+        kind,
+        exception_return,
+        frame_address,
+        status,
+        scb::read_hfsr(),
+        scb::read_mmfar(),
+        scb::read_bfar(),
+    );
     let frame = if status & USAGEFAULT_INVALID_PC != 0 {
         None
     } else {

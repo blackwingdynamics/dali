@@ -4,6 +4,7 @@ const SCB_BASE: usize = 0xE000_ED00;
 #[cfg(feature = "abi-test-fixtures")]
 const SHCSR_OFFSET: usize = 0x24;
 const CFSR_OFFSET: usize = 0x28;
+const HFSR_OFFSET: usize = 0x2C;
 const MMFAR_OFFSET: usize = 0x34;
 const BFAR_OFFSET: usize = 0x38;
 
@@ -22,6 +23,11 @@ pub(crate) fn write_shcsr(value: u32) {
 #[inline]
 pub(crate) fn read_cfsr() -> u32 {
     read_register(SCB_BASE + CFSR_OFFSET)
+}
+
+#[inline]
+pub(crate) fn read_hfsr() -> u32 {
+    read_register(SCB_BASE + HFSR_OFFSET)
 }
 
 #[inline]
