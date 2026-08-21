@@ -407,6 +407,12 @@ the watchdog. The repository loader remains board-agnostic; the platform
 supplies the hook that maps valid chunk progress to the hardware watchdog
 service operation.
 
+The cryptographic replay path additionally divides each delivered body chunk
+into bounded 64-byte verification units and invokes the same progress hook
+after each unit. This prevents a single Ed25519/SHA-256 update from exceeding
+the declared watchdog window while preserving the rule that only successfully
+processed bytes can advance the watchdog.
+
 #### Binary v2 host and linker evidence
 
 The Binary v2 CLI dispatch and metadata codec were checked with:

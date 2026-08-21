@@ -164,6 +164,7 @@ where
                     data_capacity: slot.data_length,
                 })
             },
+            crate::platform::repository_verification_progress,
         )
     })
     .map_err(map_repository_error)?;

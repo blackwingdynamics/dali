@@ -80,6 +80,7 @@ pub fn select_verified_binary_target<S>(
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
+    progress: fn() -> bool,
 ) -> Result<Option<VerifiedBinaryTarget>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
@@ -90,6 +91,7 @@ where
         role,
         keys,
         chunk,
+        progress,
     )?;
     match targets.first() {
         Some(target) => Ok(Some(target)),
@@ -105,6 +107,7 @@ pub fn select_verified_binary_targets<S, const CAPACITY: usize>(
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
+    progress: fn() -> bool,
 ) -> Result<VerifiedBinaryTargets<CAPACITY>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
@@ -115,6 +118,7 @@ where
         role,
         keys,
         chunk,
+        progress,
     )
 }
 
@@ -126,6 +130,7 @@ pub fn select_verified_binary_targets_for_package<S, const CAPACITY: usize>(
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
+    progress: fn() -> bool,
 ) -> Result<VerifiedBinaryTargets<CAPACITY>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
@@ -136,6 +141,7 @@ where
         role,
         keys,
         chunk,
+        progress,
     )
 }
 
@@ -146,12 +152,19 @@ pub fn select_unique_verified_binary_target<S>(
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
+    progress: fn() -> bool,
 ) -> Result<VerifiedBinaryTarget, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
-    let targets =
-        select_verified_binary_targets::<S, 1>(storage, target_profile, role, keys, chunk)?;
+    let targets = select_verified_binary_targets::<S, 1>(
+        storage,
+        target_profile,
+        role,
+        keys,
+        chunk,
+        progress,
+    )?;
     targets.first().ok_or(StreamingTargetSelectionError::Parse(
         StreamingTargetsError::UnexpectedEnd,
     ))
@@ -205,6 +218,7 @@ fn select_verified_targets<S, const CAPACITY: usize>(
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
+    progress: fn() -> bool,
 ) -> Result<VerifiedBinaryTargets<CAPACITY>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
@@ -252,8 +266,9 @@ where
             replay_digest.update(bytes);
             if replay
                 .feed(bytes, |body| {
-                    verifier.update(body);
-                    Ok::<(), DecodeError>(())
+                    verifier
+                        .update_with_progress(body, progress)
+                        .map_err(|_| DecodeError::InvalidValue)
                 })
                 .is_err()
             {

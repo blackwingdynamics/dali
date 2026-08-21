@@ -134,6 +134,12 @@ pub(crate) fn pet_repository_chunk() -> Result<(), crate::drivers::StorageError>
     service_watchdog().map_err(|_| crate::drivers::StorageError::Transport)
 }
 
+/// Reports whether a repository verification progress feed succeeded.
+#[cfg(feature = "repository-loader")]
+pub(crate) fn repository_verification_progress() -> bool {
+    pet_repository_chunk().is_ok()
+}
+
 #[cfg(feature = "board-stm32f405-sd")]
 impl Platform {
     pub(crate) fn set_status_led(&mut self, on: bool) {

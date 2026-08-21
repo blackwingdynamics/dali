@@ -7,6 +7,8 @@ use crate::{
 
 /// Maximum number of Ed25519 signatures authenticated by one role envelope.
 pub const MAX_STREAMING_SIGNERS: usize = crate::MAX_SIGNATURES;
+/// Maximum cryptographic update interval between progress callbacks.
+pub const STREAMING_CRYPTO_PROGRESS_BYTES: usize = 64;
 
 /// Errors returned while preparing or completing one signed role stream.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -25,6 +27,13 @@ pub enum StreamingVerificationError {
     InvalidSignature,
     /// The role threshold was not met.
     ThresholdNotMet,
+}
+
+/// Error returned when a bounded cryptographic progress callback aborts.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StreamingProgressError {
+    /// The caller could not service its progress boundary.
+    Aborted,
 }
 
 /// Result of one verified role body stream.
@@ -86,6 +95,31 @@ impl StreamingRoleVerifier {
         for verifier in self.verifiers[..self.signature_count].iter_mut().flatten() {
             verifier.update(chunk);
         }
+    }
+
+    /// Adds a body chunk while reporting bounded cryptographic progress.
+    ///
+    /// The callback runs only after each non-empty sub-chunk has been applied
+    /// to the digest and all active signature states. Returning `false`
+    /// aborts the update before another sub-chunk is processed.
+    pub fn update_with_progress<F>(
+        &mut self,
+        chunk: &[u8],
+        mut progress: F,
+    ) -> Result<(), StreamingProgressError>
+    where
+        F: FnMut() -> bool,
+    {
+        for part in chunk.chunks(STREAMING_CRYPTO_PROGRESS_BYTES) {
+            self.digest.update(part);
+            for verifier in self.verifiers[..self.signature_count].iter_mut().flatten() {
+                verifier.update(part);
+            }
+            if !progress() {
+                return Err(StreamingProgressError::Aborted);
+            }
+        }
+        Ok(())
     }
 
     /// Finalizes all cryptographic states and returns the authenticated body digest.
@@ -192,5 +226,22 @@ mod tests {
             verifier.finish(),
             Err(StreamingVerificationError::InvalidSignature)
         );
+    }
+
+    #[test]
+    fn reports_bounded_progress_after_each_crypto_subchunk() {
+        let (role, key) = role_and_key();
+        let body = [7_u8; STREAMING_CRYPTO_PROGRESS_BYTES * 2 + 1];
+        let mut verifier = StreamingRoleVerifier::new(role, &[key], signatures(&body, key.key_id))
+            .expect("stream verifier should initialize");
+        let mut progress_calls = 0;
+        verifier
+            .update_with_progress(&body, || {
+                progress_calls += 1;
+                true
+            })
+            .expect("progress callback should accept every subchunk");
+        assert_eq!(progress_calls, 3);
+        verifier.finish().expect("signature should verify");
     }
 }
