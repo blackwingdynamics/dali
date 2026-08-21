@@ -25,6 +25,7 @@ dali-kernel/
 │       ├── security/              # Privilege, fault, launch, MPU, and scheduling boundaries
 │       │   ├── fault/             # Fault records, handlers, recovery, and SCB access
 │       │   │   ├── mod.rs         # Fault classification and recovery boundary
+│       │   │   ├── persistent.rs  # Retained fault record storage across reset
 │       │   │   └── scb.rs         # System Control Block register access
 │       │   ├── launch/            # Validated application frame and entry transition
 │       │   │   └── mod.rs         # Launch-frame materialization and recovery entry
@@ -41,7 +42,9 @@ dali-kernel/
 │       │   ├── sdio.rs             # F405 SDIO transport implementation
 │       │   ├── sdio_raw/           # F405 SDIO register transport
 │       │       ├── mod.rs          # DMA-backed raw block reader
-│       │       └── status.rs       # SDIO status and interrupt helpers
+│       │       ├── init.rs         # Bounded SDIO card initialization
+│       │       ├── status.rs       # SDIO status and interrupt helpers
+│       │       └── write.rs        # Bounded CPU/FIFO block writes
 │       │   └── watchdog/           # F405 watchdog register adapter
 │       │       └── mod.rs          # IWDG and reset-cause implementation
 │       ├── bootstrap/             # Categorized kernel startup orchestration
@@ -53,7 +56,12 @@ dali-kernel/
 │       ├── loader/mod.rs          # AMRN dispatch and ABI services
 │       ├── loader/repository/      # Repository chain, streaming selection, and tests
 │       │   ├── mod.rs              # Bounded chain and durable install
+│       │   ├── amrn.rs             # Streamed AMRN v5 validation
+│       │   ├── chain.rs            # Generic role capture and replay
+│       │   ├── discovery.rs        # Target package selection
+│       │   ├── io.rs               # Repository stream I/O helpers
 │       │   ├── streaming.rs        # Binary v2 selective target scan
+│       │   ├── trust.rs            # Root trust-anchor membership
 │       │   └── tests.rs            # Repository loader contract tests
 │       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
@@ -117,7 +125,15 @@ dali-kernel/
 │   ├── console.sh, archive-changelog.sh, check-commit-message.sh
 │   ├── setup-arch.sh, setup-debian.sh, setup-fedora.sh
 │   ├── setup-macos.sh, setup-windows.ps1
-│   └── gdb/bus-fault-mpu.gdb
+│   ├── prepare-f405-binary-v2-sd.sh # Build, sign, verify, and copy an F405 bundle
+│   └── gdb/                        # Reusable F405 fault and loader diagnostics
+│       ├── bus-fault-mpu.gdb
+│       ├── f405-exception-capture.gdb
+│       ├── f405-persistent-capture.gdb
+│       ├── f405-repository-capture.gdb
+│       ├── f405-stacked-fault.gdb
+│       ├── fault-diagnostics.gdb
+│       └── repository-loader-stack-trace.gdb
 └── simulation/
     ├── README.md
     └── renode/dali_blackpill.resc
@@ -134,17 +150,17 @@ kernel/src/
 ├── main.rs
 ├── abi.rs
 ├── security/{mod.rs,
-│   fault/{mod.rs,scb.rs},launch/{mod.rs},
+│   fault/{mod.rs,persistent.rs,scb.rs},launch/{mod.rs},
 │   mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs},
 │   privilege/{mod.rs,svc.rs},scheduling/{mod.rs}}
-├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,status.rs}}}
+├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,init.rs,status.rs,write.rs}}}
 ├── bootstrap/{mod.rs,
 │   startup/{mod.rs,logging.rs,watchdog.rs},
 │   lifecycle/{mod.rs,heartbeat.rs,status.rs},
 │   storage/{mod.rs,initialization.rs,acceptance.rs},
 │   loading/{mod.rs,package.rs}}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader/{mod.rs,repository/{mod.rs,streaming.rs,tests.rs},contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
+├── loader/{mod.rs,repository/{mod.rs,amrn.rs,chain.rs,discovery.rs,io.rs,streaming.rs,trust.rs,tests.rs},contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,context_switch.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs},watchdog/mod.rs}
 └── storage/{mod.rs,durable.rs,durable/{journal.rs,coordinator.rs},filesystem/{mod.rs,artifacts.rs,multi.rs,read.rs,tests.rs,write.rs},repository.rs}
@@ -176,6 +192,8 @@ crates/dali-cli/src/
     ├── metadata/
     │   ├── mod.rs
     │   ├── delegation/mod.rs
+    │   ├── repository/{mod.rs,common.rs,init.rs,add_developer.rs,
+    │   │   manifest.rs,publish.rs,register_package.rs}
     │   └── bundle/{mod.rs,common.rs,generate.rs,verify.rs}
     └── target/{mod.rs,info.rs}
 
