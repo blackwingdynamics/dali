@@ -43,9 +43,9 @@ application restart or rollback.
 The following remain outside the current guarantee boundary:
 
 - DMA isolation and DMA ownership enforcement;
-- multi-application package loading and application-to-application isolation;
-- explicit watchdog-reset Safe Mode and recovery behavior;
-- package authenticity, secure boot, confidentiality, and anti-rollback;
+- complete multi-application lifecycle and application-to-application policy;
+- production package authenticity, Secure Boot, confidentiality, and
+  anti-rollback;
 - production debug-lock and key-storage policy.
 
 ## Post-MVP security work
@@ -56,7 +56,7 @@ The following remain outside the current guarantee boundary:
 - anti-rollback counters;
 - production debug lock;
 - broader MPU-backed isolation and multi-application ownership where supported;
-- hardware watchdog and timeout implementation;
+- cross-target watchdog failure semantics and timeout evidence;
 - atomic update and rollback;
 - security review of package parsing and storage access.
 
@@ -92,8 +92,10 @@ complete fault isolation, DMA isolation, confidentiality, or authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
 after application termination, keeps the read-only package boundary
-rollback-free, and arms a watchdog only through the kernel heartbeat feed
-owner or scheduler tick. A watchdog reset now selects Safe Mode before
+rollback-free, and arms a watchdog before opaque SDIO initialization. After
+transport initialization returns, the watchdog is serviced only by the kernel
+heartbeat, scheduler tick, or a bounded valid-progress hook. A watchdog reset
+now selects Safe Mode before
 storage/package loading, and F405 hardware evidence confirms the watchdog
 reset log, recovery transition, skipped application loading, and return to the
 kernel heartbeat. F405 feed-failure evidence remains tracked separately. The

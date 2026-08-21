@@ -382,9 +382,9 @@ capacity, opens each lowercase content-addressed `packages/<sha256>.amrn`
 object, and passes the verified streams to the existing slot/relocation loader.
 The target memory contract is resolved from each manifest-owned slot at the
 dependency-injection boundary; the generic repository loader contains no F405
-or SDIO types. The default MVP build keeps
-the legacy root-package path because repository boot remains feature-gated until
-hardware acceptance.
+or SDIO types. The default MVP build keeps the legacy root-package path because
+repository boot remains feature-gated. The Binary v2 repository path has F405
+development-profile hardware evidence, but it is not the default MVP profile.
 
 The concrete F405 adapter is `FatRepositoryStorage<D>`. Its constructor accepts
 an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
@@ -410,14 +410,15 @@ for the existing execution pipeline.
 
 ### Future multi-application package selection
 
-The current read-only filesystem contract intentionally accepts exactly one
-root `.amrn` package and rejects ambiguous selection. Before multiple
-applications can be loaded into independent slots, Dali must define package
-identity and selection independently from filenames, an explicit mapping from
-the selected package to a manifest-owned slot, and bounded behavior for
-missing, duplicate, incompatible, or already-reserved packages. The slot
-manager must consume that validated selection; it must not infer ownership from
-directory order or package names.
+The legacy root-file path intentionally accepts exactly one root `.amrn`
+package and rejects ambiguous selection. The feature-gated Binary v2
+repository path already selects multiple executable Targets records within a
+bounded capacity and maps each verified package to a manifest-owned slot.
+Before that path can become a general multi-application policy, Dali must
+define lifecycle, replacement, and recovery behavior for missing, duplicate,
+incompatible, or already-reserved packages. The slot manager must consume
+validated selection; it must not infer ownership from directory order or
+package names.
 
 ## 11. Future kernel architecture
 

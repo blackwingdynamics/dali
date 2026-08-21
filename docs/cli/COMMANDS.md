@@ -192,4 +192,4 @@ replacement, removal, and application lifecycle commands are not currently
 implemented. Probe and DFU flashing, device discovery, console access, and
 debug attachment are implemented for the declared F405 workflow. The device
 discovery contract is defined separately in
-[DEVICE_DISCOVERY.md](../DEVICE_DISCOVERY.md).
+[DEVICE_DISCOVERY.md](DEVICE_DISCOVERY.md).

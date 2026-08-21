@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-17
+## Current Status — 2026-08-21
 
 ### Completed and evidenced
 
@@ -142,8 +142,9 @@ milestone into `main` only after its documented validation evidence exists.
    trust-anchor lookup, bounded CRC/relocation checks, and authentication
    before SRAM copy. The F405 development profile provisions only the RFC8032
    test anchor behind `abi-test-fixtures`; the release profile now contains a
-   locally generated public anchor, while production key custody and release
-   acceptance remain pending.
+   locally generated public anchor, while production key custody, Secure Boot,
+   and production release acceptance remain pending. The configured F405
+   release-anchor path has completed development-profile hardware acceptance.
    v4/v5 identity metadata now rejects undeclared required-service bits before
    any SRAM copy.
    Valid signed-package hardware evidence now exists for the documented F405
@@ -185,22 +186,21 @@ milestone into `main` only after its documented validation evidence exists.
    pending.
    [x] Add Binary v2 package registration from a built AMRN and manifest, with
    digest, slot, delegation-scope, and developer-key validation before the
-   signed Targets update; hardware acceptance remains pending.
+   signed Targets update; F405 signed-package boot acceptance is complete.
    [x] Freeze the board-agnostic `BlockDevice`, `DurableStorageAdapter`, and
    `RepositoryStreamStorage` contracts plus the 104-byte `DALI-CMT.BIN` journal
-   record; adapters, persistence coordination, loader wiring, and F405
-   acceptance remain pending.
+   record; durable persistence coordination remains pending.
    [x] Add the generic block-device adapter, validated DALI-CMT encoder and
    decoder, and bounded `Active -> CandidateWritten -> CandidateVerified ->
-   CommitPending -> Active` persistence coordinator; F405 acceptance and
-   kernel-loader wiring remain pending.
+   CommitPending -> Active` persistence coordinator; durable F405 transition
+   acceptance remains pending.
    [x] Wire the hardware-neutral metadata verification chain through
-   `RepositoryStreamStorage` and the durable coordinator in the feature-gated kernel
-   repository loader; physical F405 acceptance remains pending.
+   `RepositoryStreamStorage` and the durable coordinator in the feature-gated
+   kernel repository loader; F405 signed-bundle boot acceptance is complete.
    [x] Add the concrete FAT32/LFN `FatRepositoryStorage` adapter over the
    existing block-device boundary. F405 boot wiring now uses the
-   streaming/storage-backed verification path behind the feature gate; physical
-   acceptance remains pending.
+   streaming/storage-backed verification path behind the feature gate and has
+   signed-bundle hardware evidence.
    [x] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
    kernel/runtime RAM region. The repository contract now uses
@@ -214,16 +214,18 @@ milestone into `main` only after its documented validation evidence exists.
    Root -> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation ->
    AMRN with bounded passes. `load_repository_package()` now connects the
    verified package result to the existing slot/load execution contract behind
-   the `repository-loader` feature; F405 hardware acceptance remains pending.
+   the `repository-loader` feature; F405 signed-bundle hardware acceptance is
+   complete, while interruption and recovery testing remain pending.
    The boot handoff contract is fixed: Binary v2 Targets must resolve every
    executable package matching the target profile within bounded execution
    capacity; each package is opened by its lowercase SHA-256 filename under
    `packages/`, and only after individual verification is it handed to the
    existing slot/relocation loader. Zero, duplicate, or over-capacity records
    are rejected.
-   [ ] Replace metadata JSON v1 repository files with the frozen custom binary
-   v2 envelope and length-prefixed streaming records. Keep JSON v1 as a
-   host-only migration format until binary v2 has CLI and F405 acceptance.
+   [x] Replace metadata JSON v1 repository files with the frozen custom binary
+   v2 envelope and length-prefixed streaming records. Binary v2 is the
+   feature-gated embedded repository format; JSON v1 remains as a host-only
+   compatibility and migration format.
 4. **Multi-developer package trust and distribution** — design and implement a
    kernel-independent developer identity contract. The shipped kernel must
    contain a Dali root public key, while developers generate and retain their

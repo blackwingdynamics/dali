@@ -398,7 +398,9 @@ distinguished from the kernel's fault and recovery records.
   rejection and recovery direction, not DMA isolation.
 - [ ] DMA isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
-  contract; hardware watchdog timeout and recovery evidence remain pending.
+  contract; F405 hardware watchdog timeout and Safe Mode recovery evidence are
+  recorded above. Automatic restart, rollback, and interrupted-write recovery
+  remain outside this acceptance result.
 
 ## Signed package acceptance
 
@@ -462,24 +464,30 @@ above were obtained with the target LLVM `llvm-size`, `llvm-nm`, and
 claim F405 hardware acceptance.
 
 The feature-gated board-agnostic repository loader compiles for
-`thumbv7em-none-eabihf`, and its host-visible boundary tests pass. The F405
-acceptance scenarios were not executed in this run because the target was not
-available to the test process:
+`thumbv7em-none-eabihf`, and its host-visible boundary tests pass. A real F405
+acceptance run on 2026-08-21 used the release-anchor bundle prepared by
+`scripts/prepare-f405-binary-v2-sd.sh` and produced:
 
 ```text
-probe-rs list
-The following debug probes were found:
-[0]: Debugprobe on Pico (CMSIS-DAP) -- 2e8a:000c-0:D08DDA0AD07514B4 (CMSIS-DAP) (inaccessible)
-
-findmnt -rn -t vfat -o TARGET,SOURCE,FSTYPE
-/boot /dev/nvme0n1p1 vfat
+[STORAGE] SDIO card initialized
+[STORAGE] Trust-store artifact write/read-back test passed
+[STORAGE] Read block 0 successfully
+[LOADER] AMRN header and payload validated
+[SECURITY] AMRN signature verified
+[LOADER] Loaded 1 application package(s) into declared slots
+[LOADER] Slot 1 (slot1) boundaries: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
+[SECURITY] Application lifecycle: Ready
+[SECURITY] Active application context: Running
+[APP] Relocation fixture
 ```
 
-No removable FAT volume was mounted and the probe was reported inaccessible,
-so no flash, reset, SD-card mutation, or acceptance claim was made. The five
-required scenarios remain pending: valid active bundle boot; candidate
-write/read-back/atomic commit; tampered metadata or package rejection; revoked
-developer-key rejection; and interrupted-write/power-loss recovery.
+This is hardware evidence for the configured F405 release-anchor path:
+SDIO access, Binary v2 repository traversal, AMRN validation, signature
+verification, slot loading, and relocation-fixture execution. It does not
+prove production key custody, Secure Boot, DMA isolation, or power-loss
+recovery. The remaining repository acceptance scenarios are candidate
+write/read-back with atomic activation, revoked-developer-key rejection on
+target, and interrupted-write/power-loss recovery.
 
 - [x] Host AMRN tests cover v5 header/trailer split parsing and signed-range
   boundary validation.

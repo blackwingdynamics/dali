@@ -180,9 +180,11 @@ and include scratch storage, parser state, and callback state.
 3. The current `bundle.manifest` body has no standalone format field; the
    selected CLI format controls the referenced file suffix and parser. Adding
    an explicit manifest format field requires a versioned contract change.
-4. The kernel currently has a bounded selective targets parser, but the full
-   Binary v2 verification chain is not yet wired into `load_repository()` or
-   hardware-tested. JSON v1 remains the active repository-loader path.
+4. The feature-gated kernel has a bounded selective targets parser and the
+   full Binary v2 verification chain is wired into `load_repository()` through
+   `load_binary_repository()`. F405 development-profile signed-bundle boot is
+   hardware-tested. JSON v1 remains available for host compatibility and is
+   not the active repository-loader format when `repository-loader` is enabled.
 5. Rollback protection compares the binary bundle version and digest through
    the existing durable coordinator.
 6. JSON generation may be removed only after host workflows have migrated and

@@ -1005,8 +1005,10 @@ AMRN package, and shared Root -> Timestamp -> Snapshot -> Targets -> Delegation
 `load_repository_package()` opens the same lowercase SHA-256 package path and
 passes it to the existing slot/relocation execution loader. The F405 target has
 a concrete `FatRepositoryStorage<D>` adapter injected at this boundary. The
-feature is intentionally excluded from the default MVP build pending physical
-acceptance. The old retained-slice `RepositoryBuffers` API remains host-side
+feature is intentionally excluded from the default MVP build. The
+feature-gated F405 path has signed-bundle boot evidence; physical acceptance
+of durable installation and recovery remains pending. The old retained-slice
+`RepositoryBuffers` API remains host-side
 only and still requires 360,448 bytes versus the 32 KiB kernel/runtime region;
 the feature-gated F405 boot path MUST use `load_repository_package()` instead.
 
