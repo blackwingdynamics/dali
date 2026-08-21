@@ -172,10 +172,10 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Implement the hardware-neutral Root -> Timestamp -> Snapshot -> Targets
    -> Delegation -> Revocation -> Package Record -> AMRN verification chain
    with the real `dali-crypto` Ed25519 facade and tamper/revocation tests;
-   durable target installation and kernel wiring remain pending.
+   durable target installation remains pending; kernel wiring is tracked below.
    [x] Add host CLI commands for bundle generation, reference inspection, and
-   verification through the shared Ed25519 chain; kernel-loader integration and
-   durable target acceptance remain pending.
+   verification through the shared Ed25519 chain; durable target acceptance
+   remains pending.
    [x] Freeze the board-agnostic `BlockDevice`, `DurableStorageAdapter`, and
    `RepositoryStreamStorage` contracts plus the 104-byte `DALI-CMT.BIN` journal
    record; adapters, persistence coordination, loader wiring, and F405
@@ -186,11 +186,12 @@ milestone into `main` only after its documented validation evidence exists.
    kernel-loader wiring remain pending.
    [x] Wire the hardware-neutral metadata verification chain through
    `RepositoryStreamStorage` and the durable coordinator in the feature-gated kernel
-   repository loader; target adapters and F405 acceptance remain pending.
+   repository loader; physical F405 acceptance remains pending.
    [x] Add the concrete FAT32/LFN `FatRepositoryStorage` adapter over the
-   existing block-device boundary. F405 boot wiring remains gated on the
-   streaming/storage-backed verification design below.
-   [in progress] Replace the retained-slice repository verification API with a bounded
+   existing block-device boundary. F405 boot wiring now uses the
+   streaming/storage-backed verification path behind the feature gate; physical
+   acceptance remains pending.
+   [x] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
    kernel/runtime RAM region. The repository contract now uses
    `RepositoryStreamStorage`, Binary v2 has an incremental envelope parser,
@@ -201,10 +202,10 @@ milestone into `main` only after its documented validation evidence exists.
    checked against the target manifest before Root signatures are verified.
    The board-agnostic `load_binary_repository()` now assembles and verifies
    Root -> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation ->
-   AMRN with bounded passes. The legacy `load_repository()` and F405 boot
-   handoff remain pending until the verified package result is connected to
-   the existing slot/load execution contract. The boot handoff contract is now
-   fixed: Binary v2 Targets must resolve to exactly one executable package;
+   AMRN with bounded passes. `load_repository_package()` now connects the
+   verified package result to the existing slot/load execution contract behind
+   the `repository-loader` feature; F405 hardware acceptance remains pending.
+   The boot handoff contract is fixed: Binary v2 Targets must resolve to exactly one executable package;
    the package is opened by its lowercase SHA-256 filename under
    `packages/`, and only then is the existing slot/relocation loader allowed
    to execute it. Zero or multiple executable records are rejected.

@@ -48,6 +48,7 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
     }
 
     /// Returns the number of accepted package candidates.
+    #[cfg(not(feature = "repository-loader"))]
     pub const fn len(&self) -> usize {
         self.length
     }

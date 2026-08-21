@@ -109,6 +109,24 @@ pub fn load_binary_repository<S>(
 where
     S: RepositoryStreamStorage,
 {
+    let Some(contract) = request.contract else {
+        return Err(BinaryRepositoryError::Package);
+    };
+    load_binary_repository_with_contract(storage, request, anchors, buffers, |_| Some(contract))
+}
+
+/// Verifies a repository and resolves the AMRN memory contract after target selection.
+pub fn load_binary_repository_with_contract<S, F>(
+    storage: &mut S,
+    request: RepositoryLoadRequest,
+    anchors: &[dali_targets::TrustAnchorProfile],
+    buffers: &mut BinaryRepositoryBuffers,
+    contract_for: F,
+) -> Result<BinaryRepositoryAuthorization, BinaryRepositoryError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+    F: FnOnce(dali_metadata::TargetPackage) -> Option<dali_amrn::v3::Contract>,
+{
     let root =
         stream_verified_root(storage, anchors, &mut buffers.chunk).map_err(map_root_error)?;
     let keys = root.metadata.keys;
@@ -141,15 +159,14 @@ where
         return Err(BinaryRepositoryError::ReferenceMismatch);
     }
     let targets_role = role(root.metadata, MetadataRole::Targets)?;
-    let targets = streaming::select_verified_binary_target(
+    let targets = streaming::select_unique_verified_binary_target(
         storage,
-        request.package_id,
+        request.target_profile,
         targets_role,
         &keys[..usize::from(root.metadata.key_count)],
         &mut buffers.chunk,
     )
-    .map_err(|_| BinaryRepositoryError::Package)?
-    .ok_or(BinaryRepositoryError::MissingRecord)?;
+    .map_err(|_| BinaryRepositoryError::Package)?;
     if !same_reference(
         snapshot.metadata.targets.version,
         snapshot.metadata.targets.length,
@@ -215,11 +232,12 @@ where
     if is_revoked(&revocations.metadata, delegation.metadata, targets.version) {
         return Err(BinaryRepositoryError::Revoked);
     }
+    let contract = contract_for(targets.target).ok_or(BinaryRepositoryError::Package)?;
     amrn::verify_streamed_amrn(
         storage,
         RepositoryPackageDigest(targets.target.sha256.0),
         delegation.metadata,
-        request.contract,
+        contract,
         &mut buffers.chunk,
         &mut buffers.amrn,
     )

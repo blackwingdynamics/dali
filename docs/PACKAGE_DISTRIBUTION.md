@@ -990,21 +990,20 @@ it MUST NOT open files, interpret FAT paths, or select packages by directory
 order. The adapter's returned byte count MUST equal the bytes delivered to the
 consumer, and the caller owns the chunk lifetime.
 
-The kernel now provides a feature-gated repository loader over these traits.
-`load_repository<S>` currently consumes the streaming contract through bounded
-caller-owned buffers while the role-specific verifier migration is in progress.
-It reads the five fixed roles, selects the delegation from the target record,
-reads the content-addressed AMRN package, and calls the shared Root -> Timestamp
--> Snapshot -> Targets -> Delegation -> Revocation -> Package Record -> AMRN
-verification chain. `install_repository<S>` then stages the verified package,
-performs adapter read-back, and commits through the durable coordinator. The
-feature is intentionally excluded from the default MVP build. The F405 target
-now has a concrete `FatRepositoryStorage<D>` adapter. The Binary v2 envelope
-parser validates all repository-role envelopes without retaining their body;
-typed role-body streaming parsers and the complete bounded verification chain
-remain pending. The retained-slice `RepositoryBuffers` path still requires
-360,448 bytes versus the 32 KiB kernel/runtime region and MUST NOT be called
-from the real F405 boot sequence or used as hardware acceptance evidence.
+The kernel provides a feature-gated repository loader over these traits.
+`load_binary_repository<S>` consumes the streaming contract through bounded
+caller-owned buffers. It reads the five fixed roles, requires exactly one
+executable Targets record for the configured target profile, selects the
+delegation, reads the content-addressed AMRN package, and calls the shared Root
+-> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation -> Package
+Record -> AMRN verification chain. After successful verification,
+`load_repository_package()` opens the same lowercase SHA-256 package path and
+passes it to the existing slot/relocation execution loader. The F405 target has
+a concrete `FatRepositoryStorage<D>` adapter injected at this boundary. The
+feature is intentionally excluded from the default MVP build pending physical
+acceptance. The old retained-slice `RepositoryBuffers` API remains host-side
+only and still requires 360,448 bytes versus the 32 KiB kernel/runtime region;
+the feature-gated F405 boot path MUST use `load_repository_package()` instead.
 
 ### 15.5.2 DALI-CMT.BIN commit journal record
 

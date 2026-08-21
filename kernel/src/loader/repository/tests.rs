@@ -41,13 +41,13 @@ fn rejects_storage_lengths_larger_than_caller_buffers() {
         RepositoryLoadRequest {
             package_id: Some(PackageId([1; dali_metadata::KEY_ID_LENGTH])),
             target_profile: dali_metadata::BoundedText::new("test").expect("test profile fits"),
-            contract: Contract {
+            contract: Some(Contract {
                 target_id: 0,
                 code_load_address: 0,
                 code_capacity: 0,
                 data_load_address: 0,
                 data_capacity: 0,
-            },
+            }),
             now: None,
         },
         &mut buffers,

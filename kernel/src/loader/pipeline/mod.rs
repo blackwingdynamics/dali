@@ -5,7 +5,7 @@ pub(super) use crate::loader::LoaderError;
 #[cfg(feature = "abi-relocation")]
 pub(super) use crate::loader::read_exact;
 
-#[cfg(feature = "abi-relocation")]
+#[cfg(all(feature = "abi-relocation", not(feature = "repository-loader")))]
 pub(crate) mod discovery;
 #[cfg(feature = "abi-current")]
 pub(crate) mod execution;

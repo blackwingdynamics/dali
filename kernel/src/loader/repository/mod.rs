@@ -26,7 +26,7 @@ use io::{read_metadata, read_package};
 
 pub use chain::{
     BinaryRepositoryAuthorization, BinaryRepositoryBuffers, BinaryRepositoryError,
-    load_binary_repository,
+    load_binary_repository, load_binary_repository_with_contract,
 };
 
 /// Caller-owned bounded buffers for one repository verification pass.
@@ -81,8 +81,8 @@ pub struct RepositoryLoadRequest {
     pub package_id: Option<PackageId>,
     /// Target profile used by boot-time unique executable discovery.
     pub target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
-    /// Board-owned AMRN v5 contract.
-    pub contract: Contract,
+    /// Optional fixed AMRN v5 contract for explicit host-side verification.
+    pub contract: Option<Contract>,
     /// Optional trusted wall-clock value for expiry checks.
     pub now: Option<u64>,
 }
@@ -192,7 +192,10 @@ where
         delegation: parse_envelope(&buffers.delegation[..delegation_length])?,
         package: &buffers.package[..package_length],
     };
-    verify_repository_package(documents, package_id, request.contract, request.now)
+    let contract = request
+        .contract
+        .ok_or(RepositoryLoaderError::MissingRecord)?;
+    verify_repository_package(documents, package_id, contract, request.now)
         .map_err(RepositoryLoaderError::Verification)
 }
 

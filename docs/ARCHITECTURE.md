@@ -355,23 +355,22 @@ The F405 implementation is one adapter chain below these contracts:
 STM32F405 SDIO -> F405 block adapter -> FAT32 adapter -> logical storage traits
 ```
 
-The repository loader consumes `RepositoryStreamStorage` and currently copies
-the delivered chunks into its legacy bounded integration buffers. The complete
-Root -> Timestamp -> Snapshot -> Targets
--> Delegation -> Revocation -> Package -> AMRN verification chain. The loader
-does not enumerate directories or choose packages from filenames. This keeps
-future board adapters replaceable without changing trust policy or loader
-logic.
+The repository loader consumes `RepositoryStreamStorage` through bounded
+two-pass role verification. The complete Root -> Timestamp -> Snapshot ->
+Targets -> Delegation -> Revocation -> Package -> AMRN chain is assembled before
+the execution loader receives a package. The loader does not enumerate
+directories or choose packages from filenames. This keeps future board adapters
+replaceable without changing trust policy or loader logic.
 
-The current `load_repository` implementation is a host/contract integration
-step, not yet an F405 boot entry point. Its verification API retains every
-signed role and the selected package as borrowed slices for one complete
-verification pass. With the frozen metadata limits this requires 360,448
-bytes of caller-owned RAM, while the F405 kernel/runtime region is 32 KiB.
-The F405 boot path MUST therefore remain on the existing bounded AMRN loader
-until a storage-backed or streaming verification API is implemented. Wiring
-the current buffer type into boot would be an invalid memory-layout change,
-not hardware acceptance.
+When the `repository-loader` feature is enabled, the F405 boot path constructs
+the concrete FAT adapter, requests the board target profile, requires exactly
+one executable Binary v2 Targets record, opens its lowercase content-addressed
+`packages/<sha256>.amrn` object, and passes that verified stream to the existing
+slot/relocation loader. The target memory contract is resolved from the
+manifest-owned slot at the dependency-injection boundary; the generic
+repository loader contains no F405 or SDIO types. The default MVP build keeps
+the legacy root-package path because repository boot remains feature-gated until
+hardware acceptance.
 
 The concrete F405 adapter is `FatRepositoryStorage<D>`. Its constructor accepts
 an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
@@ -391,10 +390,9 @@ kernel repository loader now also contains a bounded two-pass AMRN v5 validator
 under `loader/repository/amrn.rs`, a generic role-stream capture/replay helper
 under `loader/repository/chain.rs`, Root anchor membership wiring through the
 target manifest, and the board-agnostic `load_binary_repository()` chain
-assembler. The legacy `load_repository()` API remains the retained-buffer
-JSON-compatible contract; the new Binary v2 API is not yet called from the
-F405 boot sequence because package execution still consumes the legacy loader
-result. That boot handoff is the remaining integration boundary.
+assembler. `load_repository_package()` is the boot handoff: it injects the F405
+adapter into the generic chain and then opens only the digest-selected package
+for the existing execution pipeline.
 
 ### Future multi-application package selection
 

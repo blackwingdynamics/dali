@@ -21,7 +21,9 @@ where
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Read block 0 successfully"),
     );
-    #[cfg(feature = "abi-current")]
+    #[cfg(all(feature = "abi-current", feature = "repository-loader"))]
+    let package = crate::loader::load_repository_package(device, slot_manager);
+    #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
     let package = crate::loader::load_current_abi(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]
     let package = if platform::APPLICATION_EXECUTION_SUPPORTED {

@@ -59,7 +59,7 @@ pub enum LoaderError {
 type LoadedPackages =
     pipeline::execution::LoadedApplications<{ storage::filesystem::MAX_ROOT_AMRN_FILES }>;
 
-#[cfg(feature = "abi-current")]
+#[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
 pub(crate) fn load_current_abi<D>(
     device: D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -89,27 +89,7 @@ where
     match package_count {
         0 => Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)),
         1 => storage::filesystem::with_amrn_file(device, |file| {
-            let mut version = [0; dali_amrn::MAGIC.len() + core::mem::size_of::<u8>()];
-            read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
-            file.rewind().map_err(LoaderError::Filesystem)?;
-            match version[4] {
-                dali_amrn::v2::FORMAT_VERSION => pipeline::execution::load_file(file, slot_manager)
-                    .map(pipeline::execution::LoadedApplications::single),
-                #[cfg(feature = "abi-relocation")]
-                dali_amrn::v3::FORMAT_VERSION => {
-                    pipeline::relocation::load_file(file, slot_manager)
-                        .map(pipeline::execution::LoadedApplications::single)
-                }
-                #[cfg(feature = "abi-relocation")]
-                dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager)
-                    .map(pipeline::execution::LoadedApplications::single),
-                #[cfg(feature = "abi-authentication")]
-                dali_amrn::v5::FORMAT_VERSION => pipeline::signed::load_file(file, slot_manager)
-                    .map(pipeline::execution::LoadedApplications::single),
-                _ => Err(LoaderError::CurrentAbiPackage(
-                    dali_amrn::v2::Error::InvalidHeader,
-                )),
-            }
+            load_current_abi_file(file, slot_manager)
         })
         .map_err(LoaderError::Filesystem)?,
         _ => {
@@ -124,6 +104,108 @@ where
             }
             Err(LoaderError::Filesystem(embedded_sdmmc::Error::Unsupported))
         }
+    }
+}
+
+#[cfg(all(feature = "abi-current", feature = "repository-loader"))]
+pub(crate) fn load_repository_package<D>(
+    device: D,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+) -> Result<LoadedPackages, LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    let device = crate::drivers::BlockDeviceRef::new(&device);
+    let target_profile = dali_metadata::BoundedText::new(crate::platform::TARGET_PROFILE.name)
+        .map_err(|_| LoaderError::CurrentAbiPackage(dali_amrn::v2::Error::InvalidHeader))?;
+    let request = repository::RepositoryLoadRequest {
+        package_id: None,
+        target_profile,
+        contract: None,
+        now: None,
+    };
+    let mut storage = crate::storage::filesystem::FatRepositoryStorage::new_with_format(
+        device,
+        crate::storage::filesystem::RepositoryMetadataFormat::BinaryV2,
+    );
+    let mut buffers = repository::BinaryRepositoryBuffers::new();
+    let authorization = repository::load_binary_repository_with_contract(
+        &mut storage,
+        request,
+        crate::platform::TRUST_ANCHORS,
+        &mut buffers,
+        |target| {
+            let isolation = crate::platform::TARGET_PROFILE.memory.isolation?;
+            let slot = isolation
+                .slots
+                .iter()
+                .copied()
+                .find(|slot| slot.id == target.slot_id)?;
+            Some(dali_amrn::v3::Contract {
+                target_id: crate::platform::TARGET_PROFILE.amrn_target_id,
+                code_load_address: slot.code_origin,
+                code_capacity: slot.code_length,
+                data_load_address: slot.data_origin,
+                data_capacity: slot.data_length,
+            })
+        },
+    )
+    .map_err(map_repository_error)?;
+    storage::filesystem::with_content_addressed_package(
+        device,
+        crate::storage::repository::RepositoryPackageDigest(authorization.target.sha256.0),
+        |file| load_current_abi_file(file, slot_manager),
+    )
+    .map_err(LoaderError::Filesystem)?
+}
+
+#[cfg(all(feature = "abi-current", feature = "repository-loader"))]
+fn map_repository_error(
+    error: repository::BinaryRepositoryError<embedded_sdmmc::Error<StorageError>>,
+) -> LoaderError {
+    match error {
+        repository::BinaryRepositoryError::Storage(error)
+        | repository::BinaryRepositoryError::RoleStorage(error) => LoaderError::Filesystem(error),
+        repository::BinaryRepositoryError::Revoked | repository::BinaryRepositoryError::Package => {
+            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidSignature)
+        }
+        repository::BinaryRepositoryError::MissingRecord
+        | repository::BinaryRepositoryError::ReferenceMismatch
+        | repository::BinaryRepositoryError::DelegationMismatch
+        | repository::BinaryRepositoryError::UnknownTrustAnchor
+        | repository::BinaryRepositoryError::RoleDecode
+        | repository::BinaryRepositoryError::RoleSignature => {
+            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidHeader)
+        }
+    }
+}
+
+#[cfg(feature = "abi-current")]
+fn load_current_abi_file<D>(
+    file: storage::filesystem::AmrnFile<'_, D>,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+) -> Result<LoadedPackages, LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    let mut version = [0; dali_amrn::MAGIC.len() + core::mem::size_of::<u8>()];
+    read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
+    file.rewind().map_err(LoaderError::Filesystem)?;
+    match version[4] {
+        dali_amrn::v2::FORMAT_VERSION => pipeline::execution::load_file(file, slot_manager)
+            .map(pipeline::execution::LoadedApplications::single),
+        #[cfg(feature = "abi-relocation")]
+        dali_amrn::v3::FORMAT_VERSION => pipeline::relocation::load_file(file, slot_manager)
+            .map(pipeline::execution::LoadedApplications::single),
+        #[cfg(feature = "abi-relocation")]
+        dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager)
+            .map(pipeline::execution::LoadedApplications::single),
+        #[cfg(feature = "abi-authentication")]
+        dali_amrn::v5::FORMAT_VERSION => pipeline::signed::load_file(file, slot_manager)
+            .map(pipeline::execution::LoadedApplications::single),
+        _ => Err(LoaderError::CurrentAbiPackage(
+            dali_amrn::v2::Error::InvalidHeader,
+        )),
     }
 }
 
