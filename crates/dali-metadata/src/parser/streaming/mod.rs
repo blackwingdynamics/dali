@@ -3,6 +3,21 @@
 //! The parser validates the fixed envelope while bytes arrive and forwards
 //! only the signed body chunks to the caller. It never retains the body.
 
+mod chain;
+mod delegation;
+mod revocation;
+mod root;
+mod snapshot;
+
+pub use chain::{
+    BinaryRoleBodyParser, StreamingChainError, matches_reference, role_definition, root_keys,
+    verify_binary_role_envelope,
+};
+pub use delegation::BinaryDelegationBodyStreamParser;
+pub use revocation::BinaryRevocationBodyStreamParser;
+pub use root::BinaryRootBodyStreamParser;
+pub use snapshot::BinarySnapshotBodyStreamParser;
+
 use crate::{
     BINARY_ENVELOPE_HEADER_BYTES, BINARY_FORMAT_VERSION, BINARY_MAGIC, DecodeError, KeyId,
     MetadataRole, Signature, SignatureRecord, SignatureSet, TimestampMetadata,

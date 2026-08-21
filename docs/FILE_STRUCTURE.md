@@ -191,9 +191,14 @@ crates/dali-metadata/src/
 │   └── bundle.rs, delegation.rs, envelope.rs, revocation.rs, root.rs,
 │       signatures.rs, snapshot.rs, targets.rs, timestamp.rs, writer.rs
 ├── parser/
-│   ├── mod.rs, binary/mod.rs
-│   └── bundle.rs, cursor.rs, delegation.rs, envelope.rs, revocation.rs,
-│       root.rs, signatures.rs, snapshot.rs, targets.rs, timestamp.rs
+│   ├── mod.rs, tests.rs, binary/mod.rs
+│   ├── canonical/
+│   │   ├── mod.rs, cursor.rs, bundle.rs, envelope.rs, signatures.rs
+│   │   └── delegation.rs, revocation.rs, root.rs, snapshot.rs,
+│   │       targets.rs, timestamp.rs
+│   └── streaming/
+│       ├── mod.rs, chain.rs
+│       └── delegation.rs, revocation.rs, root.rs, snapshot.rs
 └── model.rs, validation.rs, verification.rs, chain.rs, trust_store.rs
 crates/dali-sdk/src/{lib.rs,svc.rs,svc_log.rs}
 crates/dali-targets/src/lib.rs

@@ -380,10 +380,12 @@ board-agnostic logical documents through `metadata/`,
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
 
 The adapter now exposes the streaming contract directly. The shared Binary v2
-envelope parser validates fragmented envelopes without retaining their body,
-but typed role-body parsers and the streamed AMRN package path are still
-pending. The loader MUST NOT be wired to this partial stream until those
-remaining bounded parsers are available.
+envelope parser validates fragmented envelopes without retaining their body;
+typed Root, Timestamp, Snapshot, Delegation, and Revocation parsers are
+organized under `dali-metadata/src/parser/streaming/`, and
+`verify_binary_role_envelope` provides the parse-and-replay second pass. The
+streamed AMRN package path and full storage-backed chain are still pending, so
+the loader MUST NOT be wired to this partial stream yet.
 
 ### Future multi-application package selection
 
