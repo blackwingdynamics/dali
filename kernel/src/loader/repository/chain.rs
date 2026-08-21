@@ -91,6 +91,24 @@ impl RepositoryScratch {
         // variants are ManuallyDrop because the union storage is reused.
         unsafe { self.root_parser.assume_init_mut() }
     }
+
+    unsafe fn target_verifier(&mut self) -> &mut MaybeUninit<StreamingRoleVerifier> {
+        // SAFETY: the target verifier variant is active for role replay.
+        unsafe { &mut *core::ptr::addr_of_mut!(self.target_verifier) }
+    }
+}
+
+impl RepositoryMetadataScratch {
+    unsafe fn snapshot(&mut self) -> &mut MaybeUninit<dali_metadata::SnapshotMetadata> {
+        // SAFETY: the snapshot variant is active during timestamp/snapshot
+        // verification and reference checks.
+        unsafe { &mut *core::ptr::addr_of_mut!(self.snapshot) }
+    }
+
+    unsafe fn delegation(&mut self) -> &mut MaybeUninit<dali_metadata::DelegationMetadata> {
+        // SAFETY: the delegation variant is active during one package pass.
+        unsafe { &mut *core::ptr::addr_of_mut!(self.delegation) }
+    }
 }
 
 fn reset_parser<P>(slot: &mut P, parser: P) -> &mut P {
@@ -288,13 +306,13 @@ where
         storage,
         root,
         &mut buffers.chunk,
-        unsafe { &mut *buffers.metadata.snapshot },
-        unsafe { &mut *buffers.scratch.target_verifier },
+        unsafe { buffers.metadata.snapshot() },
+        unsafe { buffers.scratch.target_verifier() },
         progress,
     )?;
     // SAFETY: the preceding helper writes the snapshot before this reference
     // is used, and the workspace remains exclusively borrowed by this load.
-    let snapshot = unsafe { (&*buffers.metadata.snapshot).assume_init_ref() };
+    let snapshot = unsafe { (*buffers.metadata.snapshot).assume_init_ref() };
     let targets_role = role(root, MetadataRole::Targets)?;
     let targets = select_targets_into(
         storage,
@@ -303,7 +321,7 @@ where
         targets_role,
         &mut buffers.chunk,
         // SAFETY: the target verifier is exclusively used by this phase.
-        unsafe { &mut *buffers.scratch.target_verifier },
+        unsafe { buffers.scratch.target_verifier() },
         progress,
     )?;
     let first_target = targets
@@ -326,7 +344,7 @@ where
         snapshot,
         &mut buffers.chunk,
         &mut buffers.revocations,
-        unsafe { &mut *buffers.scratch.target_verifier },
+        unsafe { buffers.scratch.target_verifier() },
         progress,
     )?;
     // SAFETY: the preceding helper writes the revocation metadata before this
@@ -339,15 +357,18 @@ where
         revocations,
         &targets,
         buffers.delegation_references,
-        &mut buffers.chunk,
-        &mut buffers.amrn,
-        // SAFETY: the delegation output is exclusively used by one package
-        // verification at a time.
-        unsafe { &mut *buffers.metadata.delegation },
-        // SAFETY: the verifier workspace is exclusively used by this phase.
-        unsafe { &mut *buffers.scratch.target_verifier },
-        &mut contract_for,
-        progress,
+        &mut PackageVerificationPass {
+            chunk: &mut buffers.chunk,
+            amrn_buffers: &mut buffers.amrn,
+            // SAFETY: the delegation output is exclusively used by one
+            // package verification at a time.
+            delegation_output: unsafe { buffers.metadata.delegation() },
+            // SAFETY: the verifier workspace is exclusively used by this
+            // phase.
+            role_verifier: unsafe { buffers.scratch.target_verifier() },
+            contract_for: &mut contract_for,
+            progress,
+        },
     )
 }
 
@@ -425,12 +446,7 @@ fn verify_packages_into<S, F>(
     targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
     delegation_references: [Option<dali_metadata::DelegationReference>;
         MAX_BINARY_REPOSITORY_PACKAGES],
-    chunk: &mut [u8],
-    amrn_buffers: &mut amrn::AmrnStreamBuffers,
-    delegation_output: &mut MaybeUninit<dali_metadata::DelegationMetadata>,
-    role_verifier: &mut MaybeUninit<StreamingRoleVerifier>,
-    contract_for: &mut F,
-    progress: fn() -> bool,
+    pass: &mut PackageVerificationPass<'_, F>,
 ) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
@@ -439,19 +455,19 @@ where
     let mut authorizations = BinaryRepositoryAuthorizations::new();
     for (index, selected) in targets.iter().enumerate() {
         let contract =
-            contract_for(selected.target).ok_or(BinaryRepositoryError::PackageContract)?;
+            (pass.contract_for)(selected.target).ok_or(BinaryRepositoryError::PackageContract)?;
         let developer_public_key = verify_delegation_and_package(
             &mut PackageVerificationContext {
                 storage,
                 root,
                 revocations,
-                chunk,
-                amrn_buffers,
+                chunk: pass.chunk,
+                amrn_buffers: pass.amrn_buffers,
                 delegation_reference: delegation_references[index]
                     .ok_or(BinaryRepositoryError::MissingRecord)?,
-                delegation_output,
-                role_verifier,
-                progress,
+                delegation_output: pass.delegation_output,
+                role_verifier: pass.role_verifier,
+                progress: pass.progress,
             },
             selected.target,
             selected.version,
@@ -467,6 +483,15 @@ where
             })?;
     }
     Ok(authorizations)
+}
+
+struct PackageVerificationPass<'a, F> {
+    chunk: &'a mut [u8],
+    amrn_buffers: &'a mut amrn::AmrnStreamBuffers,
+    delegation_output: &'a mut MaybeUninit<dali_metadata::DelegationMetadata>,
+    role_verifier: &'a mut MaybeUninit<StreamingRoleVerifier>,
+    contract_for: &'a mut F,
+    progress: fn() -> bool,
 }
 
 #[inline(never)]
@@ -489,9 +514,11 @@ where
         MetadataRole::Timestamp,
         &mut timestamp_parser,
         root,
-        &mut timestamp_output,
-        role_verifier,
-        RoleVerificationInput { chunk, progress },
+        RoleVerificationContext {
+            output: &mut timestamp_output,
+            role_verifier,
+            input: RoleVerificationInput { chunk, progress },
+        },
     )?;
     // SAFETY: verify_role_from_root writes the timestamp before returning.
     let timestamp_metadata = unsafe { timestamp_output.assume_init_ref() };
@@ -503,9 +530,11 @@ where
         MetadataRole::Snapshot,
         &mut snapshot_parser,
         root,
-        output,
-        role_verifier,
-        RoleVerificationInput { chunk, progress },
+        RoleVerificationContext {
+            output,
+            role_verifier,
+            input: RoleVerificationInput { chunk, progress },
+        },
     )?;
     // SAFETY: verify_role_from_root writes the snapshot before returning.
     let snapshot_metadata = unsafe { output.assume_init_ref() };
@@ -542,9 +571,11 @@ where
         MetadataRole::Revocation,
         &mut parser,
         root,
-        output,
-        role_verifier,
-        RoleVerificationInput { chunk, progress },
+        RoleVerificationContext {
+            output,
+            role_verifier,
+            input: RoleVerificationInput { chunk, progress },
+        },
     )?;
     // SAFETY: verify_role_from_root writes the revocations before returning.
     let revocation_metadata = unsafe { output.assume_init_ref() };
@@ -586,11 +617,13 @@ where
         MetadataRole::Delegation,
         &mut parser,
         context.root,
-        context.delegation_output,
-        context.role_verifier,
-        RoleVerificationInput {
-            chunk: context.chunk,
-            progress: context.progress,
+        RoleVerificationContext {
+            output: context.delegation_output,
+            role_verifier: context.role_verifier,
+            input: RoleVerificationInput {
+                chunk: context.chunk,
+                progress: context.progress,
+            },
         },
     )?;
     // SAFETY: verify_role_from_root writes the delegation before returning.
@@ -667,6 +700,17 @@ struct RoleVerificationInput<'a> {
     progress: fn() -> bool,
 }
 
+struct RoleVerificationContext<'a, T> {
+    output: &'a mut MaybeUninit<T>,
+    role_verifier: &'a mut MaybeUninit<StreamingRoleVerifier>,
+    input: RoleVerificationInput<'a>,
+}
+
+struct RoleVerificationPolicy<'a> {
+    role: RoleDefinition,
+    keys: &'a [RoleKey],
+}
+
 #[inline(never)]
 fn verify_role_from_root<S, P>(
     storage: &mut S,
@@ -674,24 +718,28 @@ fn verify_role_from_root<S, P>(
     expected_role: MetadataRole,
     parser: &mut P,
     root: &RootMetadata,
-    output: &mut MaybeUninit<P::Output>,
-    role_verifier: &mut MaybeUninit<StreamingRoleVerifier>,
-    input: RoleVerificationInput<'_>,
+    context: RoleVerificationContext<'_, P::Output>,
 ) -> Result<StreamedRoleInfo, BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
     P: BinaryRoleBodyParser,
 {
     let policy = role(root, expected_role)?;
-    let RoleVerificationInput { chunk, progress } = input;
+    let RoleVerificationContext {
+        output,
+        role_verifier,
+        input: RoleVerificationInput { chunk, progress },
+    } = context;
     let captured = capture_role_into(storage, document, expected_role, chunk, parser, output)
         .map_err(map_role_error)?;
     verify_captured_role(
         storage,
         document,
         expected_role,
-        policy,
-        &root.keys[..usize::from(root.key_count)],
+        RoleVerificationPolicy {
+            role: policy,
+            keys: &root.keys[..usize::from(root.key_count)],
+        },
         captured,
         role_verifier,
         RoleVerificationInput { chunk, progress },
@@ -822,10 +870,12 @@ where
         storage,
         RepositoryDocument::Root,
         MetadataRole::Root,
-        role,
-        &root.keys[..usize::from(root.key_count)],
+        RoleVerificationPolicy {
+            role,
+            keys: &root.keys[..usize::from(root.key_count)],
+        },
         captured,
-        unsafe { &mut *scratch.target_verifier },
+        unsafe { scratch.target_verifier() },
         RoleVerificationInput { chunk, progress },
     )
 }
@@ -887,8 +937,7 @@ fn verify_captured_role<S>(
     storage: &mut S,
     document: RepositoryDocument<'_>,
     expected_role: MetadataRole,
-    role: RoleDefinition,
-    keys: &[RoleKey],
+    policy: RoleVerificationPolicy<'_>,
     captured: StreamedRoleInfo,
     verifier_workspace: &mut MaybeUninit<StreamingRoleVerifier>,
     input: RoleVerificationInput<'_>,
@@ -897,8 +946,13 @@ where
     S: RepositoryStreamStorage,
 {
     let RoleVerificationInput { chunk, progress } = input;
-    StreamingRoleVerifier::initialize(verifier_workspace, role, keys, captured.envelope.signatures)
-        .map_err(|_| StreamedRoleError::Signature)?;
+    StreamingRoleVerifier::initialize(
+        verifier_workspace,
+        policy.role,
+        policy.keys,
+        captured.envelope.signatures,
+    )
+    .map_err(|_| StreamedRoleError::Signature)?;
     let mut replay = BinaryEnvelopeStreamParser::new(expected_role);
     let mut digest = dali_crypto::Sha256Accumulator::new();
     let mut decode_error = false;

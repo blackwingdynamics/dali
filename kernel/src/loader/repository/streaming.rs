@@ -191,6 +191,14 @@ pub struct VerifiedBinaryTargets<const CAPACITY: usize> {
     version: u64,
 }
 
+struct ParsedTargets<const CAPACITY: usize> {
+    length: u32,
+    envelope: dali_metadata::StreamedEnvelope,
+    version: u64,
+    targets: [Option<TargetPackage>; CAPACITY],
+    digest: dali_metadata::Sha256Digest,
+}
+
 /// Caller-owned workspace for the Ed25519 target verification pass.
 ///
 /// The streaming verifier contains curve arithmetic state for every
@@ -241,17 +249,24 @@ fn select_verified_targets<S, const CAPACITY: usize>(
 where
     S: RepositoryStreamStorage,
 {
-    let (length, envelope, version, targets, document_digest) =
-        parse_targets_first_pass(storage, selector, chunk)?;
+    let ParsedTargets {
+        length,
+        envelope,
+        version,
+        targets,
+        digest: document_digest,
+    } = parse_targets_first_pass(storage, selector, chunk)?;
     replay_targets(
         storage,
-        chunk,
-        &envelope,
-        document_digest,
-        role,
-        keys,
-        progress,
-        verifier_workspace,
+        TargetReplayContext {
+            chunk,
+            envelope: &envelope,
+            document_digest,
+            role,
+            keys,
+            progress,
+            verifier_workspace,
+        },
     )?;
     let selected_count = targets.iter().flatten().count();
     Ok(VerifiedBinaryTargets {
@@ -269,16 +284,7 @@ fn parse_targets_first_pass<S, const CAPACITY: usize>(
     storage: &mut S,
     mut selector: BinaryTargetsStreamParser<CAPACITY>,
     chunk: &mut [u8],
-) -> Result<
-    (
-        u32,
-        dali_metadata::StreamedEnvelope,
-        u64,
-        [Option<TargetPackage>; CAPACITY],
-        dali_metadata::Sha256Digest,
-    ),
-    StreamingTargetSelectionError<S::Error>,
->
+) -> Result<ParsedTargets<CAPACITY>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
@@ -321,29 +327,32 @@ where
     let targets = selector
         .finish_body()
         .map_err(StreamingTargetSelectionError::Parse)?;
-    Ok((
+    Ok(ParsedTargets {
         length,
         envelope,
         version,
         targets,
-        dali_metadata::Sha256Digest(digest.finalize()),
-    ))
+        digest: dali_metadata::Sha256Digest(digest.finalize()),
+    })
 }
 
 #[inline(never)]
 fn replay_targets<S>(
     storage: &mut S,
-    chunk: &mut [u8],
-    envelope: &dali_metadata::StreamedEnvelope,
-    document_digest: dali_metadata::Sha256Digest,
-    role: RoleDefinition,
-    keys: &[RoleKey],
-    progress: fn() -> bool,
-    verifier_workspace: &mut TargetVerifierWorkspace,
+    context: TargetReplayContext<'_>,
 ) -> Result<(), StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
+    let TargetReplayContext {
+        chunk,
+        envelope,
+        document_digest,
+        role,
+        keys,
+        progress,
+        verifier_workspace,
+    } = context;
     StreamingRoleVerifier::initialize(verifier_workspace, role, keys, envelope.signatures)
         .map_err(|_| StreamingTargetSelectionError::Verification)?;
     let mut replay = BinaryEnvelopeStreamParser::new(MetadataRole::Targets);
@@ -387,6 +396,16 @@ where
         return Err(StreamingTargetSelectionError::Verification);
     }
     Ok(())
+}
+
+struct TargetReplayContext<'a> {
+    chunk: &'a mut [u8],
+    envelope: &'a dali_metadata::StreamedEnvelope,
+    document_digest: dali_metadata::Sha256Digest,
+    role: RoleDefinition,
+    keys: &'a [RoleKey],
+    progress: fn() -> bool,
+    verifier_workspace: &'a mut TargetVerifierWorkspace,
 }
 
 /// Selects one target record without retaining the complete targets document.
