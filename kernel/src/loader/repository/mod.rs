@@ -1,5 +1,7 @@
 //! Board-agnostic repository loading and durable publication.
 
+mod io;
+
 use dali_amrn::v3::Contract;
 use dali_metadata::{
     MAX_DELEGATION_BYTES, MAX_ENVELOPE_BYTES, PackageId, RepositoryPackageDocuments, TargetPackage,
@@ -13,11 +15,15 @@ use crate::storage::{
         coordinator::{DurableGeneration, PersistenceCoordinator, PersistenceError},
         journal::JournalSlot,
     },
-    repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStorage},
+    repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage},
 };
+
+use io::{read_metadata, read_package};
 
 /// Caller-owned bounded buffers for one repository verification pass.
 pub struct RepositoryBuffers {
+    /// Shared chunk used to move bytes from storage into role buffers.
+    pub stream_chunk: [u8; streaming::STREAMING_METADATA_CHUNK_BYTES],
     /// Root role envelope.
     pub root: [u8; MAX_ENVELOPE_BYTES],
     /// Timestamp role envelope.
@@ -40,6 +46,7 @@ impl RepositoryBuffers {
     /// Creates zeroed caller-owned storage for one bounded verification pass.
     pub const fn new() -> Self {
         Self {
+            stream_chunk: [0; streaming::STREAMING_METADATA_CHUNK_BYTES],
             root: [0; MAX_ENVELOPE_BYTES],
             timestamp: [0; MAX_ENVELOPE_BYTES],
             snapshot: [0; MAX_ENVELOPE_BYTES],
@@ -85,6 +92,8 @@ pub enum RepositoryLoaderError<E> {
     Storage(E),
     /// A repository artifact exceeded its caller-owned buffer.
     ArtifactTooLarge,
+    /// The adapter-reported length did not match delivered bytes.
+    StorageLengthMismatch,
     /// A signed metadata envelope could not be parsed.
     Decode,
     /// The selected package or its delegation was not present.
@@ -95,28 +104,47 @@ pub enum RepositoryLoaderError<E> {
     Persistence(PersistenceError<E>),
 }
 
-/// Loads and verifies the complete repository chain through `RepositoryStorage`.
+/// Loads and verifies the complete repository chain through streaming storage.
 pub fn load_repository<'a, S>(
     storage: &mut S,
     request: RepositoryLoadRequest,
     buffers: &'a mut RepositoryBuffers,
-) -> Result<VerifiedRepositoryPackage<'a>, RepositoryLoaderError<<S as RepositoryStorage>::Error>>
+) -> Result<
+    VerifiedRepositoryPackage<'a>,
+    RepositoryLoaderError<<S as RepositoryStreamStorage>::Error>,
+>
 where
-    S: RepositoryStorage,
+    S: RepositoryStreamStorage,
 {
-    let root_length = read_metadata(storage, RepositoryDocument::Root, &mut buffers.root)?;
+    let root_length = read_metadata(
+        storage,
+        RepositoryDocument::Root,
+        &mut buffers.root,
+        &mut buffers.stream_chunk,
+    )?;
     let timestamp_length = read_metadata(
         storage,
         RepositoryDocument::Timestamp,
         &mut buffers.timestamp,
+        &mut buffers.stream_chunk,
     )?;
-    let snapshot_length =
-        read_metadata(storage, RepositoryDocument::Snapshot, &mut buffers.snapshot)?;
-    let targets_length = read_metadata(storage, RepositoryDocument::Targets, &mut buffers.targets)?;
+    let snapshot_length = read_metadata(
+        storage,
+        RepositoryDocument::Snapshot,
+        &mut buffers.snapshot,
+        &mut buffers.stream_chunk,
+    )?;
+    let targets_length = read_metadata(
+        storage,
+        RepositoryDocument::Targets,
+        &mut buffers.targets,
+        &mut buffers.stream_chunk,
+    )?;
     let revocations_length = read_metadata(
         storage,
         RepositoryDocument::Revocations,
         &mut buffers.revocations,
+        &mut buffers.stream_chunk,
     )?;
 
     let targets_envelope = parse_signed_envelope(&buffers.targets[..targets_length])
@@ -132,11 +160,13 @@ where
         storage,
         RepositoryDocument::Delegation(delegation_id),
         &mut buffers.delegation,
+        &mut buffers.stream_chunk,
     )?;
     let package_length = read_package(
         storage,
         RepositoryPackageDigest(target.sha256.0),
         &mut buffers.package,
+        &mut buffers.stream_chunk,
     )?;
 
     let documents = RepositoryPackageDocuments {
@@ -161,9 +191,10 @@ pub fn install_repository<S>(
     active_slot: JournalSlot,
     active_generation: DurableGeneration,
     next_sequence: u64,
-) -> Result<InstalledRepository, RepositoryLoaderError<<S as RepositoryStorage>::Error>>
+) -> Result<InstalledRepository, RepositoryLoaderError<<S as RepositoryStreamStorage>::Error>>
 where
-    S: RepositoryStorage + DurableStorageAdapter<Error = <S as RepositoryStorage>::Error>,
+    S: RepositoryStreamStorage
+        + DurableStorageAdapter<Error = <S as RepositoryStreamStorage>::Error>,
 {
     let verified = load_repository(&mut storage, request, buffers)?;
     let installed = InstalledRepository {
@@ -195,42 +226,6 @@ where
         .commit()
         .map_err(RepositoryLoaderError::Persistence)?;
     Ok(installed)
-}
-
-fn read_metadata<S>(
-    storage: &mut S,
-    document: RepositoryDocument<'_>,
-    output: &mut [u8],
-) -> Result<usize, RepositoryLoaderError<S::Error>>
-where
-    S: RepositoryStorage,
-{
-    let length = storage
-        .read_metadata(document, output)
-        .map_err(RepositoryLoaderError::Storage)?;
-    if length > output.len() {
-        Err(RepositoryLoaderError::ArtifactTooLarge)
-    } else {
-        Ok(length)
-    }
-}
-
-fn read_package<S>(
-    storage: &mut S,
-    digest: RepositoryPackageDigest,
-    output: &mut [u8],
-) -> Result<usize, RepositoryLoaderError<S::Error>>
-where
-    S: RepositoryStorage,
-{
-    let length = storage
-        .read_package(digest, output)
-        .map_err(RepositoryLoaderError::Storage)?;
-    if length > output.len() {
-        Err(RepositoryLoaderError::ArtifactTooLarge)
-    } else {
-        Ok(length)
-    }
 }
 
 fn parse_envelope<'a, E>(

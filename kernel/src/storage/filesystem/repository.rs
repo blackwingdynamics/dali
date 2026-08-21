@@ -4,13 +4,11 @@ use core::str;
 
 use crate::storage::{
     durable::{DurableArtifact, DurableStorageAdapter},
-    repository::{
-        RepositoryDocument, RepositoryPackageDigest, RepositoryStorage, RepositoryStreamStorage,
-    },
+    repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage},
 };
 
 use super::{
-    TrustStoreArtifact, read_repository_file, read_trust_store_artifact, stream_repository_file,
+    TrustStoreArtifact, read_trust_store_artifact, stream_repository_file,
     write_trust_store_artifact,
 };
 
@@ -31,52 +29,6 @@ impl<D> FatRepositoryStorage<D> {
     /// Creates a repository adapter over an initialized FAT block device.
     pub const fn new(device: D) -> Self {
         Self { device }
-    }
-}
-
-impl<D> RepositoryStorage for FatRepositoryStorage<D>
-where
-    D: Copy + embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
-{
-    type Error = embedded_sdmmc::Error<crate::drivers::StorageError>;
-
-    fn read_metadata(
-        &mut self,
-        document: RepositoryDocument<'_>,
-        output: &mut [u8],
-    ) -> Result<usize, Self::Error> {
-        match document {
-            RepositoryDocument::Root => {
-                read_file(self.device, "metadata", None, "root.json", output)
-            }
-            RepositoryDocument::Timestamp => {
-                read_file(self.device, "metadata", None, "timestamp.json", output)
-            }
-            RepositoryDocument::Snapshot => {
-                read_file(self.device, "metadata", None, "snapshot.json", output)
-            }
-            RepositoryDocument::Targets => {
-                read_file(self.device, "metadata", None, "targets.json", output)
-            }
-            RepositoryDocument::Revocations => {
-                read_file(self.device, "metadata", None, "revocations.json", output)
-            }
-            RepositoryDocument::Delegation(identifier) => {
-                let mut name = [0u8; DELEGATION_NAME_BYTES];
-                let name = append_json(identifier, &mut name)?;
-                read_file(self.device, "metadata", Some("delegations"), name, output)
-            }
-        }
-    }
-
-    fn read_package(
-        &mut self,
-        digest: RepositoryPackageDigest,
-        output: &mut [u8],
-    ) -> Result<usize, Self::Error> {
-        let mut name = [0u8; PACKAGE_NAME_BYTES];
-        let name = append_package_suffix(&digest.0, &mut name)?;
-        read_file(self.device, "packages", None, name, output)
     }
 }
 
@@ -111,6 +63,8 @@ impl<D> RepositoryStreamStorage for FatRepositoryStorage<D>
 where
     D: Copy + embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
 {
+    type Error = embedded_sdmmc::Error<crate::drivers::StorageError>;
+
     fn stream_metadata<F>(
         &mut self,
         document: RepositoryDocument<'_>,
@@ -186,17 +140,11 @@ where
     }
 }
 
-fn read_file<D>(
-    device: D,
-    first_directory: &str,
-    second_directory: Option<&str>,
-    file_name: &str,
-    output: &mut [u8],
-) -> Result<usize, embedded_sdmmc::Error<crate::drivers::StorageError>>
-where
-    D: Copy + embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
-{
-    read_repository_file(device, first_directory, second_directory, file_name, output)
+fn append_json<'a>(
+    identifier: &str,
+    output: &'a mut [u8; DELEGATION_NAME_BYTES],
+) -> Result<&'a str, embedded_sdmmc::Error<crate::drivers::StorageError>> {
+    append_suffix(identifier.as_bytes(), b".json", output)
 }
 
 fn stream_file<D, F>(
@@ -219,13 +167,6 @@ where
         chunk,
         consumer,
     )
-}
-
-fn append_json<'a>(
-    identifier: &str,
-    output: &'a mut [u8; DELEGATION_NAME_BYTES],
-) -> Result<&'a str, embedded_sdmmc::Error<crate::drivers::StorageError>> {
-    append_suffix(identifier.as_bytes(), b".json", output)
 }
 
 fn append_package_suffix<'a>(

@@ -74,7 +74,7 @@ dali-kernel/
 │       │   └── scheduling/      # CPU records, tick budget, and context selection
 │       └── storage/              # Filesystem and durable storage policy
 │           └── filesystem/       # FAT files, repository adapter, and streaming
-│               ├── repository.rs # FAT32/LFN RepositoryStorage adapter
+│               ├── repository.rs # FAT32/LFN RepositoryStreamStorage adapter
 │               └── multi.rs      # Bounded multi-package enumeration
 ├── apps/
 │   ├── dali-app-hello/

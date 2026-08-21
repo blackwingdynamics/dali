@@ -36,9 +36,10 @@ Every binary metadata file has this envelope:
 | `0x10 + N` | `80 * count` | Signatures | Sorted by key ID |
 
 One signature record is 16 bytes of key ID followed by 64 bytes of Ed25519
-signature. Signatures authenticate exactly the body bytes. The decoder
-validates the envelope, role, lengths, ordering, and signatures before policy
-decisions.
+signature. Signatures authenticate exactly the body bytes. The bounded
+decoder validates the envelope, role, lengths, signature-record ordering, and
+signature-set shape before policy decisions. Cryptographic signature
+verification is a separate chain step.
 
 ## 3. Common body prefix
 
@@ -135,6 +136,14 @@ targets. The F405 profile uses a 512-byte I/O chunk and bounded verifier state:
   are retained;
 - the AMRN package is verified through a streamed header/payload pass;
 - no heap allocation is permitted.
+
+The shared `BinaryEnvelopeStreamParser` in `dali-metadata` implements the
+envelope portion of this profile for root, timestamp, snapshot, targets,
+delegation, and revocation. It accepts fragmented input, forwards body chunks
+to a role parser, and retains only the fixed envelope header plus bounded
+signature records. Typed role-body streaming parsers are the next milestone;
+the existing complete-body parsers and the kernel's selective targets parser
+remain separate APIs.
 
 The `<4 KiB` figure is a measured F405 verifier-state budget, not a property
 of binary encoding alone. It must be reported from the linked target image

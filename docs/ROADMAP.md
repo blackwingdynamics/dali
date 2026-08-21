@@ -177,7 +177,7 @@ milestone into `main` only after its documented validation evidence exists.
    verification through the shared Ed25519 chain; kernel-loader integration and
    durable target acceptance remain pending.
    [x] Freeze the board-agnostic `BlockDevice`, `DurableStorageAdapter`, and
-   `RepositoryStorage` contracts plus the 104-byte `DALI-CMT.BIN` journal
+   `RepositoryStreamStorage` contracts plus the 104-byte `DALI-CMT.BIN` journal
    record; adapters, persistence coordination, loader wiring, and F405
    acceptance remain pending.
    [x] Add the generic block-device adapter, validated DALI-CMT encoder and
@@ -185,16 +185,18 @@ milestone into `main` only after its documented validation evidence exists.
    CommitPending -> Active` persistence coordinator; F405 acceptance and
    kernel-loader wiring remain pending.
    [x] Wire the hardware-neutral metadata verification chain through
-   `RepositoryStorage` and the durable coordinator in the feature-gated kernel
+   `RepositoryStreamStorage` and the durable coordinator in the feature-gated kernel
    repository loader; target adapters and F405 acceptance remain pending.
    [x] Add the concrete FAT32/LFN `FatRepositoryStorage` adapter over the
    existing block-device boundary. F405 boot wiring remains gated on the
    streaming/storage-backed verification design below.
-   [ ] Replace the retained-slice repository verification API with a bounded
+   [in progress] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
-   kernel/runtime RAM region. This requires selective streaming parsers for
-   canonical metadata roles and a streamed AMRN header/payload verifier; only
-   after that work may the chain be called from the real boot sequence.
+   kernel/runtime RAM region. The repository contract now uses
+   `RepositoryStreamStorage`, and Binary v2 has an incremental envelope parser
+   for all repository roles. Typed role-body parsers and a streamed AMRN
+   header/payload verifier remain; only after that work may the chain be called
+   from the real boot sequence.
    [ ] Replace metadata JSON v1 repository files with the frozen custom binary
    v2 envelope and length-prefixed streaming records. Keep JSON v1 as a
    host-only migration format until binary v2 has CLI and F405 acceptance.

@@ -24,29 +24,15 @@ pub const REPOSITORY_DIGEST_BYTES: usize = 32;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RepositoryPackageDigest(pub [u8; REPOSITORY_DIGEST_BYTES]);
 
-/// Logical repository source consumed by the board-agnostic kernel loader.
-pub trait RepositoryStorage {
+/// Chunk-streaming repository source consumed by the board-agnostic loader.
+///
+/// The contract deliberately exposes no whole-document read operation. A
+/// storage adapter must deliver bytes through the caller-owned chunk, so the
+/// loader can choose its RAM budget independently from the filesystem backend.
+pub trait RepositoryStreamStorage {
     /// Adapter-specific storage failure type.
     type Error;
 
-    /// Reads one signed metadata document into a bounded caller-owned buffer.
-    fn read_metadata(
-        &mut self,
-        document: RepositoryDocument<'_>,
-        output: &mut [u8],
-    ) -> Result<usize, Self::Error>;
-
-    /// Reads one content-addressed AMRN package into a bounded buffer.
-    fn read_package(
-        &mut self,
-        digest: RepositoryPackageDigest,
-        output: &mut [u8],
-    ) -> Result<usize, Self::Error>;
-}
-
-/// Chunk-streaming extension for repository sources that cannot retain a
-/// complete metadata document in RAM.
-pub trait RepositoryStreamStorage: RepositoryStorage {
     /// Reads one metadata document in caller-selected bounded chunks.
     fn stream_metadata<F>(
         &mut self,

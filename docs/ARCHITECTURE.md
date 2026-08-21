@@ -339,13 +339,14 @@ storage implementation. The kernel exposes three logical boundaries:
 ```text
 BlockDevice
     -> filesystem / durable-artifact adapter
-    -> DurableStorageAdapter and RepositoryStorage
+    -> DurableStorageAdapter and RepositoryStreamStorage
     -> persistence coordinator and repository loader
 ```
 
 `BlockDevice` owns fixed-block transfer only. `DurableStorageAdapter` owns the
-kernel's bounded Slot A, Slot B, and commit-journal artifacts. `RepositoryStorage`
-owns logical metadata-document and content-addressed AMRN reads. Neither
+kernel's bounded Slot A, Slot B, and commit-journal artifacts.
+`RepositoryStreamStorage` owns logical metadata-document and content-addressed
+AMRN streams. Neither
 trait mentions SDIO, FAT, STM32, pins, clocks, DMA, or a physical filename.
 
 The F405 implementation is one adapter chain below these contracts:
@@ -354,8 +355,9 @@ The F405 implementation is one adapter chain below these contracts:
 STM32F405 SDIO -> F405 block adapter -> FAT32 adapter -> logical storage traits
 ```
 
-The repository loader consumes `RepositoryStorage` and passes the borrowed
-document bytes through the complete Root -> Timestamp -> Snapshot -> Targets
+The repository loader consumes `RepositoryStreamStorage` and currently copies
+the delivered chunks into its legacy bounded integration buffers. The complete
+Root -> Timestamp -> Snapshot -> Targets
 -> Delegation -> Revocation -> Package -> AMRN verification chain. The loader
 does not enumerate directories or choose packages from filenames. This keeps
 future board adapters replaceable without changing trust policy or loader
@@ -376,12 +378,11 @@ board-agnostic logical documents through `metadata/`, `metadata/delegations/`,
 and `packages/`, including FAT long filenames, while durable artifacts remain
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
 
-The adapter now also exposes a bounded chunk stream. The stream is suitable
-for digest and signature accumulation, but it is not yet the complete kernel
-verification path: the metadata parser still requires a contiguous signed
-body and `TargetsMetadata` retains the maximum package-record array. The
-loader MUST NOT be wired to this partial stream until selective streaming
-parsers are available for every role and the AMRN package path.
+The adapter now exposes the streaming contract directly. The shared Binary v2
+envelope parser validates fragmented envelopes without retaining their body,
+but typed role-body parsers and the streamed AMRN package path are still
+pending. The loader MUST NOT be wired to this partial stream until those
+remaining bounded parsers are available.
 
 ### Future multi-application package selection
 

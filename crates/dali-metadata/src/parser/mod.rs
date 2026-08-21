@@ -9,6 +9,7 @@ mod revocation;
 mod root;
 mod signatures;
 mod snapshot;
+mod streaming;
 mod targets;
 mod timestamp;
 
@@ -23,6 +24,7 @@ pub use revocation::parse_revocation_signed;
 pub use root::parse_root_signed;
 pub use signatures::parse_signature_list;
 pub use snapshot::parse_snapshot_signed;
+pub use streaming::*;
 pub use targets::parse_targets_signed;
 pub use timestamp::parse_timestamp_signed;
 

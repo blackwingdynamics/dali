@@ -2,23 +2,33 @@ use super::*;
 
 struct EmptyRepository;
 
-impl RepositoryStorage for EmptyRepository {
+impl RepositoryStreamStorage for EmptyRepository {
     type Error = ();
 
-    fn read_metadata(
+    fn stream_metadata<F>(
         &mut self,
         _: RepositoryDocument<'_>,
         output: &mut [u8],
-    ) -> Result<usize, Self::Error> {
-        Ok(output.len() + 1)
+        _: F,
+    ) -> Result<u32, Self::Error>
+    where
+        F: FnMut(&[u8]) -> Result<(), Self::Error>,
+    {
+        let _ = output;
+        Ok(u32::MAX)
     }
 
-    fn read_package(
+    fn stream_package<F>(
         &mut self,
         _: RepositoryPackageDigest,
         output: &mut [u8],
-    ) -> Result<usize, Self::Error> {
-        Ok(output.len() + 1)
+        _: F,
+    ) -> Result<u32, Self::Error>
+    where
+        F: FnMut(&[u8]) -> Result<(), Self::Error>,
+    {
+        let _ = output;
+        Ok(u32::MAX)
     }
 }
 
