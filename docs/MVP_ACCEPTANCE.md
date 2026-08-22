@@ -294,3 +294,27 @@ artifacts: candidate data is written, flushed, and read back before the
 commit-marker artifact is written, flushed, and read back. It does not claim
 power-loss recovery, production key custody, Secure Boot, or general DMA
 isolation.
+
+### Manual F405 reboot-recovery acceptance evidence — 2026-08-22
+
+```text
+Date: 2026-08-22 14:37:05
+Tester: Giorgi Magradze
+Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Probe: Raspberry Pi Pico 2 running CMSIS-DAP
+SD card and filesystem: FAT32 Binary v2 repository bundle
+Kernel revision: d32ad62
+Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
+Verification method: Manual hardware run after SD card reseat
+Observed log: Committed generation selected: version=1 sequence=2 slot=B;
+  trust-store write/flush/read-back passed; AMRN header and payload validated;
+  AMRN signature verified; one package loaded into slot 1; Ready -> Running;
+  Relocation fixture executed
+Result: PASS
+Known issues: This run verifies committed-journal recovery after reboot. It
+  does not prove Prepared-only interruption recovery or power-loss recovery.
+```
+
+This is manually observed F405 evidence for the reboot recovery selector and
+the complete signed Binary v2 boot path. The separate Prepared interruption
+test remains pending.

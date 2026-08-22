@@ -66,6 +66,12 @@ The first two states are suitable for the normal and post-reset acceptance
 passes. The third state requires a deliberately interrupted prepared journal
 write on the disposable card and remains a physical interruption test.
 
+The manual F405 run at `2026-08-22 14:37:05` observed the committed-recovery
+state (`version=1 sequence=2 slot=B`) followed by successful trust-store
+flush/read-back, signed AMRN verification, slot loading, relocation, and
+`Ready -> Running` execution. This closes the manual committed-journal reboot
+check; Prepared interruption and power-loss recovery remain separate tests.
+
 Build this mode explicitly; it is not part of the default kernel profile:
 
 ```text
