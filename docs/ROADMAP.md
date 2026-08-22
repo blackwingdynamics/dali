@@ -119,11 +119,11 @@ reproducible evidence recorded in one timestamped acceptance record.
    output proving signed-package verification, slot loading, relocation, and
    `Ready -> Running`. Run watchdog reset/Safe Mode as a separate scenario.
    Store the complete result with one timestamp and the package digest.
-3. **Publish the real memory report.** Record `llvm-size` sections,
+3. **Publish the real memory report.** [x] Record `llvm-size` sections,
    `llvm-nm` linker symbols, the linker map, largest stack frames, repository
    workspace/retained sections, total 32 KiB kernel-runtime usage, and
    remaining headroom. The report must identify its exact build configuration.
-4. **Commit the milestone evidence and documentation.** Update the roadmap,
+4. **Commit the milestone evidence and documentation.** [x] Update the roadmap,
    testing/hardware evidence, and generated acceptance references only after
    steps 1–3 pass. Keep the milestone claim limited to what the evidence proves;
    signed verification is not a Secure Boot claim.

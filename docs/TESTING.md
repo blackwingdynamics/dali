@@ -485,8 +485,9 @@ cargo check -p dali-kernel --no-default-features --features board-stm32f405-sd,u
 passed
 ```
 
-The release image was rebuilt with the repository-loader feature set and
-`CARGO_PROFILE_RELEASE_DEBUG=2`. The exact build configuration was:
+The release image was rebuilt with the repository-loader feature set,
+`CARGO_PROFILE_RELEASE_DEBUG=2`, and a linker map at
+`/tmp/dali-f405-memory.map`. The exact build configuration was:
 
 ```text
 CARGO_PROFILE_RELEASE_DEBUG=2 cargo build -p dali-kernel --release --no-default-features \
@@ -494,12 +495,15 @@ CARGO_PROFILE_RELEASE_DEBUG=2 cargo build -p dali-kernel --release --no-default-
   --target thumbv7em-none-eabihf
 ```
 
-The generated linker map, target LLVM size report, and symbols show:
+The generated linker map, target LLVM size report, and symbols from the
+2026-08-22 report show:
 
 ```text
 .dma_buffer           0x1200 =  4608 bytes @ 0x20000000
 .fault_capture          0x44 =    68 bytes @ 0x10000000
 .repository_workspace 0x7640 = 30272 bytes @ 0x20018000
+.text                0x37c84 = 228484 bytes @ 0x080001a8
+.rodata                0x7004 =  28676 bytes @ 0x08037e30
 .data                 0x080c =  2060 bytes @ 0x10000080
 .bss                  0x1748 =  5960 bytes @ 0x1000088c
 _stack_end                         0x10001fd4
@@ -533,8 +537,9 @@ latter is the kernel's privileged stack space.
 
 `cargo-bloat` is not installed in the validation environment. The measurements
 above were obtained with the target LLVM `llvm-size`, `llvm-nm`, and
-`llvm-objdump`; no network installation was attempted. This evidence does not
-claim F405 hardware acceptance.
+`llvm-objdump`; no network installation was attempted. The map is reproducible
+with the build command above and is not a firmware artifact. This evidence
+does not claim F405 hardware acceptance by itself.
 
 The feature-gated board-agnostic repository loader compiles for
 `thumbv7em-none-eabihf`, and its host-visible boundary tests pass. A real F405
