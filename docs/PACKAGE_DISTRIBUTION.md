@@ -215,6 +215,42 @@ effective version.
 The `recovery` role is also root-authorized, but it is reserved for separately
 authorized recovery metadata and is not an ordinary repository bundle file.
 
+### 5.7 Secure Boot admission contract
+
+The Secure Boot contract identifier is `dali.secure-boot.v1`. It defines the
+minimum admission checks for a kernel image; it does not select a bootloader,
+flash controller, debug transport, or board-specific startup path.
+
+The signed kernel-image descriptor is a fixed Binary v1 record:
+
+```text
+magic:           4 bytes, ASCII `DLKB`
+descriptor_ver:  1 byte, value 1
+target_length:   u16, little-endian
+target_profile:  32 bytes, zero-padded UTF-8
+image_version:   u64, little-endian, non-zero
+image_length:    u32, little-endian, non-zero
+image_sha256:    32 bytes, SHA-256 of the complete image
+```
+
+The descriptor is exactly 83 bytes and is signed by the root role. A target
+MUST verify the root custody policy, root-role threshold, descriptor target,
+exact image length, complete-image SHA-256, and root signature set before
+entering the image. The image version MUST be strictly newer than the durable
+trust-store version when rollback protection is enabled. Any failure MUST
+halt admission before kernel execution.
+
+Production custody requires at least three distinct root public keys and a
+two-of-three root threshold. Their private counterparts MUST remain offline or
+hardware-backed, independently held, and MUST never be provisioned to the
+target. The target stores public verification material only.
+
+`dali-metadata` now implements this bounded policy and descriptor verification
+against caller-owned bytes. A target bootloader/ROM handoff and a production
+kernel-image release pipeline remain separate integration and hardware-
+acceptance work; this implementation must not be described as completed Secure
+Boot evidence by itself.
+
 ## 6. Metadata format contract
 
 The repository metadata wire format MUST be canonical and deterministic. The

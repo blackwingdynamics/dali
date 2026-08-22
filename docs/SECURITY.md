@@ -70,6 +70,21 @@ updates, revocation, rotation, rollback, and offline installation. The current
 F405 static release trust-anchor path is a precursor to that design and must
 not be described as a completed multi-developer registry.
 
+## Production trust contract slice
+
+The hardware-neutral `dali-metadata` policy now defines production root-key
+custody requirements: at least three distinct root public keys, a two-of-three
+root threshold, and no private key material on the target. It also defines the
+`dali.secure-boot.v1` kernel-image descriptor and admission checks for target,
+version, length, SHA-256, and root-role signatures.
+
+This is a policy and codec boundary only. The current F405 startup path does
+not yet verify a signed kernel image before reset-vector execution, so Secure
+Boot and production root custody remain unaccepted hardware claims. Existing
+trust-store verification continues to apply rotation overlap, signed
+revocation state, metadata expiry when trusted time is available, and durable
+generation rollback checks.
+
 ## F405 isolation foundation (feature-gated, single-application hardware evidence)
 
 The first isolation milestone is limited to one F405 application. It uses

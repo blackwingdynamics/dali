@@ -199,6 +199,13 @@ milestone into `main` only after its documented validation evidence exists.
    Secure Boot and production release acceptance remain separate work.
    The host CLI now generates Ed25519 seeds from OS CSPRNG output and exports
    only the public trust-anchor fragment for release provisioning.
+   [x] Define the production root-key custody validator and the
+   `dali.secure-boot.v1` kernel-image descriptor/admission contract. The
+   hardware-neutral policy requires three distinct root keys with a two-of-three
+   threshold, keeps private keys off-target, verifies target/length/SHA-256,
+   verifies root-role signatures, and rejects image-version rollback against
+   the durable generation. Bootloader/ROM integration and hardware acceptance
+   remain pending.
    [x] Implement and validate the bounded developer-delegation record before
    adding repository bundle storage or package-install authorization.
    [x] Implement and host-test the hardware-neutral package authorization
