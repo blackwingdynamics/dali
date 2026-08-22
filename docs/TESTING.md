@@ -53,6 +53,19 @@ digest `53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04`.
 This proves the bounded flush/read-back ordering on the real SDIO card. It is
 not power-loss or interrupted-write recovery evidence.
 
+With the reboot recovery wiring enabled, the boot log additionally reports one
+of these states before the acceptance write sequence:
+
+```text
+[RECOVERY] No durable commit journal found; using provisioned state
+[RECOVERY] Committed generation selected: version=1 sequence=2 slot=B
+[RECOVERY] Prepared commit discarded; previous active state retained
+```
+
+The first two states are suitable for the normal and post-reset acceptance
+passes. The third state requires a deliberately interrupted prepared journal
+write on the disposable card and remains a physical interruption test.
+
 Build this mode explicitly; it is not part of the default kernel profile:
 
 ```text

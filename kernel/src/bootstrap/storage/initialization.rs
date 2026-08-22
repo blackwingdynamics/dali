@@ -90,6 +90,38 @@ pub fn initialize(
             #[cfg(feature = "storage-write")]
             {
                 let device = crate::drivers::WritableBlockDeviceAdapter::new(reader);
+                match super::acceptance::recover_trust_store_journal(&device) {
+                    Ok(super::acceptance::JournalRecovery::Missing) => logging::info(
+                        logging::SECURITY_SUBSYSTEM,
+                        format_args!(
+                            "[RECOVERY] No durable commit journal found; using provisioned state"
+                        ),
+                    ),
+                    Ok(super::acceptance::JournalRecovery::Decision(
+                        crate::storage::durable::RecoveryDecision::Committed(record),
+                    )) => logging::info(
+                        logging::SECURITY_SUBSYSTEM,
+                        format_args!(
+                            "[RECOVERY] Committed generation selected: version={} sequence={} slot={:?}",
+                            record.bundle_version, record.sequence, record.active_slot,
+                        ),
+                    ),
+                    Ok(super::acceptance::JournalRecovery::Decision(
+                        crate::storage::durable::RecoveryDecision::DiscardPrepared,
+                    )) => logging::info(
+                        logging::SECURITY_SUBSYSTEM,
+                        format_args!(
+                            "[RECOVERY] Prepared commit discarded; previous active state retained"
+                        ),
+                    ),
+                    Err(error) => {
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!("[RECOVERY] Commit journal recovery failed: {:?}", error),
+                        );
+                        return status::StorageStatus::Failure;
+                    }
+                }
                 if let Err(error) = super::acceptance::verify_trust_store_artifacts(&device) {
                     logging::error(
                         logging::BOOT_SUBSYSTEM,

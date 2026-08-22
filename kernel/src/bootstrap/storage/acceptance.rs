@@ -5,13 +5,33 @@ use crate::{
         BlockReader, BlockTransportFlush, BlockWriter, FlushableBlockDevice, StorageError,
         WritableBlockDeviceAdapter,
     },
-    storage::filesystem,
+    storage::{
+        durable::{
+            COMMIT_JOURNAL_BYTES, COMMIT_JOURNAL_RECORD_BYTES, CommitJournalState,
+            RecoveryDecision,
+            journal::{CommitJournalRecord, JournalSlot},
+            recover_commit_journal,
+        },
+        filesystem,
+    },
 };
 
 const ARTIFACT_TEST_LENGTH: usize = 32;
 const ACTIVE_TEST_BYTE: u8 = 0xA5;
 const CANDIDATE_TEST_BYTE: u8 = 0x5A;
-const COMMIT_TEST_BYTE: u8 = 0xC3;
+const TEST_JOURNAL_SEQUENCE: u64 = 2;
+const TEST_JOURNAL_VERSION: u64 = 1;
+const TEST_JOURNAL_LENGTH: u32 = ARTIFACT_TEST_LENGTH as u32;
+const TEST_JOURNAL_DIGEST: [u8; 32] = [0xC3; 32];
+
+/// Result of inspecting the commit journal during boot acceptance.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum JournalRecovery {
+    /// No commit journal exists on the card yet.
+    Missing,
+    /// The journal was decoded and a recovery decision was produced.
+    Decision(RecoveryDecision),
+}
 
 /// Identifies the durable artifact operation that failed during acceptance.
 pub enum ArtifactTestError {
@@ -33,6 +53,8 @@ pub enum ArtifactTestError {
     CommitRead(embedded_sdmmc::Error<StorageError>),
     /// The commit marker could not be flushed.
     CommitFlush(embedded_sdmmc::Error<StorageError>),
+    /// The commit journal could not be decoded.
+    CommitJournal(crate::storage::durable::JournalError),
     /// Read-back data did not match the written bytes.
     ReadBackMismatch(filesystem::TrustStoreArtifact),
 }
@@ -57,6 +79,9 @@ impl core::fmt::Debug for ArtifactTestError {
             Self::CommitWrite(error) => formatter.debug_tuple("CommitWrite").field(error).finish(),
             Self::CommitRead(error) => formatter.debug_tuple("CommitRead").field(error).finish(),
             Self::CommitFlush(error) => formatter.debug_tuple("CommitFlush").field(error).finish(),
+            Self::CommitJournal(error) => {
+                formatter.debug_tuple("CommitJournal").field(error).finish()
+            }
             Self::ReadBackMismatch(artifact) => formatter
                 .debug_tuple("ReadBackMismatch")
                 .field(artifact)
@@ -77,7 +102,6 @@ where
 {
     let active = [ACTIVE_TEST_BYTE; ARTIFACT_TEST_LENGTH];
     let candidate = [CANDIDATE_TEST_BYTE; ARTIFACT_TEST_LENGTH];
-    let commit = [COMMIT_TEST_BYTE; ARTIFACT_TEST_LENGTH];
 
     verify_artifact(device, filesystem::TrustStoreArtifact::Active, &active)?;
     verify_artifact(
@@ -85,11 +109,34 @@ where
         filesystem::TrustStoreArtifact::Candidate,
         &candidate,
     )?;
-    verify_artifact(
+    verify_commit_journal(device)
+}
+
+/// Reads and selects the durable commit journal during boot acceptance.
+pub fn recover_trust_store_journal<R>(
+    device: &WritableBlockDeviceAdapter<R>,
+) -> Result<JournalRecovery, ArtifactTestError>
+where
+    R: BlockReader + BlockWriter,
+{
+    let mut journal = [0; COMMIT_JOURNAL_BYTES];
+    let length = match filesystem::read_trust_store_artifact(
         device,
         filesystem::TrustStoreArtifact::CommitMarker,
-        &commit,
-    )
+        &mut journal,
+    ) {
+        Ok(length) => length,
+        Err(embedded_sdmmc::Error::NotFound) => return Ok(JournalRecovery::Missing),
+        Err(error) => return Err(ArtifactTestError::CommitRead(error)),
+    };
+    if length != journal.len() {
+        return Err(ArtifactTestError::CommitJournal(
+            crate::storage::durable::JournalError::InvalidLength,
+        ));
+    }
+    recover_commit_journal(&journal)
+        .map(JournalRecovery::Decision)
+        .map_err(ArtifactTestError::CommitJournal)
 }
 
 fn verify_artifact<R>(
@@ -113,6 +160,58 @@ where
     };
     if length != expected.len() || actual != *expected {
         return Err(ArtifactTestError::ReadBackMismatch(artifact));
+    }
+    Ok(())
+}
+
+fn verify_commit_journal<R>(device: &WritableBlockDeviceAdapter<R>) -> Result<(), ArtifactTestError>
+where
+    R: BlockReader + BlockWriter + BlockTransportFlush<Error = StorageError>,
+{
+    let prepared = CommitJournalRecord {
+        state: CommitJournalState::Prepared,
+        active_slot: JournalSlot::B,
+        sequence: TEST_JOURNAL_SEQUENCE - 1,
+        bundle_version: TEST_JOURNAL_VERSION,
+        bundle_length: TEST_JOURNAL_LENGTH,
+        bundle_digest: TEST_JOURNAL_DIGEST,
+    };
+    let committed = CommitJournalRecord {
+        state: CommitJournalState::Committed,
+        active_slot: JournalSlot::B,
+        sequence: TEST_JOURNAL_SEQUENCE,
+        bundle_version: TEST_JOURNAL_VERSION,
+        bundle_length: TEST_JOURNAL_LENGTH,
+        bundle_digest: TEST_JOURNAL_DIGEST,
+    };
+    let mut expected = [0; COMMIT_JOURNAL_BYTES];
+    prepared
+        .encode(&mut expected[..COMMIT_JOURNAL_RECORD_BYTES])
+        .map_err(ArtifactTestError::CommitJournal)?;
+    committed
+        .encode(&mut expected[COMMIT_JOURNAL_RECORD_BYTES..])
+        .map_err(ArtifactTestError::CommitJournal)?;
+    if let Err(error) = filesystem::write_trust_store_artifact(
+        device,
+        filesystem::TrustStoreArtifact::CommitMarker,
+        &expected,
+    ) {
+        return Err(ArtifactTestError::CommitWrite(error));
+    }
+    if let Err(error) = device.flush().map_err(embedded_sdmmc::Error::DeviceError) {
+        return Err(ArtifactTestError::CommitFlush(error));
+    }
+    let mut actual = [0; COMMIT_JOURNAL_BYTES];
+    let length = filesystem::read_trust_store_artifact(
+        device,
+        filesystem::TrustStoreArtifact::CommitMarker,
+        &mut actual,
+    )
+    .map_err(ArtifactTestError::CommitRead)?;
+    if length != expected.len() || actual != expected {
+        return Err(ArtifactTestError::ReadBackMismatch(
+            filesystem::TrustStoreArtifact::CommitMarker,
+        ));
     }
     Ok(())
 }
