@@ -15,6 +15,8 @@ pub const STATUS_REJECTED: u32 = 1;
 pub const TEST_INVALID_PSP_SERVICE: u32 = 0xFFFF_FF01;
 /// Test-only service identifier used to exercise no-frame HardFault recovery.
 pub const TEST_NO_FRAME_HARDFAULT_SERVICE: u32 = 0xFFFF_FF02;
+/// Test-only service identifier used to verify application DMA denial.
+pub const TEST_DMA_REQUEST_SERVICE: u32 = 0xFFFF_FF03;
 
 /// Returns whether a non-null range is fully contained in a declared region.
 pub const fn contains_range(

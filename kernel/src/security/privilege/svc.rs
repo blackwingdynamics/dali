@@ -87,9 +87,20 @@ fn dispatch(frame: &mut ExceptionFrame, slot: dali_targets::IsolationSlot) {
         None if frame.r0 == dali::svc::TEST_NO_FRAME_HARDFAULT_SERVICE => {
             dispatch_no_frame_hardfault(slot)
         }
+        #[cfg(feature = "dma-test-fixture")]
+        None if frame.r0 == dali::svc::TEST_DMA_REQUEST_SERVICE => dispatch_dma_request_denied(),
         None => ServiceStatus::rejected(),
     };
     frame.r0 = status.0;
+}
+
+#[cfg(feature = "dma-test-fixture")]
+fn dispatch_dma_request_denied() -> ServiceStatus {
+    logging::info(
+        logging::SECURITY_SUBSYSTEM,
+        format_args!("[SECURITY] Application DMA request rejected"),
+    );
+    ServiceStatus::rejected()
 }
 
 #[cfg(feature = "abi-test-fixtures")]
