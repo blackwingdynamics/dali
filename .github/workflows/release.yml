@@ -10,8 +10,57 @@ permissions:
   contents: write
 
 jobs:
+  validate:
+    name: Validate production release inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust and embedded target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabihf
+
+      - name: Install LLVM tools
+        run: rustup component add llvm-tools-preview
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check host workspace
+        run: cargo check --workspace --exclude dali-kernel
+
+      - name: Run host tests
+        run: cargo test --workspace --exclude dali-kernel
+
+      - name: Run host Clippy
+        run: cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
+
+      - name: Check production kernel
+        run: cargo check -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write --target thumbv7em-none-eabihf
+
+      - name: Run production kernel Clippy
+        run: cargo clippy -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
+
+      - name: Build production kernel
+        run: cargo build -p dali-kernel --release --no-default-features --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write --target thumbv7em-none-eabihf
+
+      - name: Generate production memory report
+        env:
+          DALI_REPORT_DIR: ${{ runner.temp }}/dali-f405-memory-report
+        run: scripts/report-f405-memory.sh
+
+      - name: Upload production memory report
+        uses: actions/upload-artifact@v4
+        with:
+          name: f405-production-memory-report-release-${{ github.run_id }}
+          path: ${{ runner.temp }}/dali-f405-memory-report
+          if-no-files-found: error
+
   release:
     name: Generate changelog and release
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository history

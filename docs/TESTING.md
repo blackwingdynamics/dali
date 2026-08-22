@@ -601,6 +601,16 @@ above were obtained with the target LLVM `llvm-size`, `llvm-nm`, and
 with the build command above and is not a firmware artifact. This evidence
 does not claim F405 hardware acceptance by itself.
 
+The production CI memory artifact is generated reproducibly with:
+
+```text
+DALI_REPORT_DIR=/tmp/dali-f405-memory-report scripts/report-f405-memory.sh
+```
+
+It contains the production ELF hash, target/features metadata, LLVM section
+sizes and symbols, section headers, and the linker map. The artifact is CI
+output and is not committed to the repository.
+
 The feature-gated board-agnostic repository loader compiles for
 `thumbv7em-none-eabihf`, and its host-visible boundary tests pass. A real F405
 acceptance run on 2026-08-21 used the release-anchor bundle prepared by

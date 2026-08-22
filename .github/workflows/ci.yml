@@ -45,7 +45,7 @@ jobs:
         run: cargo check --workspace --exclude dali-kernel
 
       - name: Run host tests
-        run: cargo test -p dali -p dali-amrn -p dali-app-hello -p dali-cli -p dali-targets
+        run: cargo test --workspace --exclude dali-kernel
 
       - name: Run host Clippy
         run: cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
@@ -63,6 +63,9 @@ jobs:
           - profile: f405
             contract: isolation
             features: board-stm32f405-sd,usb-cdc,abi-current,abi-mpu,abi-relocation
+          - profile: f405
+            contract: production
+            features: board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -79,7 +82,30 @@ jobs:
         run: cargo clippy -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
 
       - name: Build kernel
+        if: matrix.contract != 'production'
         run: cargo build -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
+
+      - name: Build production kernel
+        if: matrix.contract == 'production'
+        run: cargo build -p dali-kernel --release --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
+
+      - name: Install LLVM tools
+        if: matrix.contract == 'production'
+        run: rustup component add llvm-tools-preview
+
+      - name: Generate production memory report
+        if: matrix.contract == 'production'
+        env:
+          DALI_REPORT_DIR: ${{ runner.temp }}/dali-f405-memory-report
+        run: scripts/report-f405-memory.sh
+
+      - name: Upload production memory report
+        if: matrix.contract == 'production'
+        uses: actions/upload-artifact@v4
+        with:
+          name: f405-production-memory-report
+          path: ${{ runner.temp }}/dali-f405-memory-report
+          if-no-files-found: error
 
   repository:
     name: Repository hygiene
