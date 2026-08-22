@@ -28,6 +28,10 @@ pub const MAX_DELEGATION_BYTES: usize = 4 * 1024;
 pub const MAX_REVOCATION_BYTES: usize = 4 * 1024;
 /// Maximum complete offline trust-store bundle size in bytes.
 pub const MAX_BUNDLE_BYTES: usize = 128 * 1024;
+/// Maximum file references in one durable trust-store payload.
+pub const MAX_TRUST_STORE_FILES: usize = MAX_SNAPSHOT_REFERENCES + 5;
+/// Maximum encoded durable trust-store payload size in bytes.
+pub const MAX_TRUST_STORE_BYTES: usize = MAX_BUNDLE_BYTES;
 /// Maximum file references in one offline bundle manifest.
 pub const MAX_BUNDLE_FILES: usize = MAX_TARGET_RECORDS + MAX_SNAPSHOT_REFERENCES + 5;
 /// Maximum logical identifier bytes in one bundle file reference.

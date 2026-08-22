@@ -297,6 +297,36 @@ signatures as lowercase hexadecimal strings. It encodes versions, lengths,
 limits, slot IDs, and timestamps as JSON integers. Floating-point values,
 negative integers, `null`, and duplicate object keys are invalid.
 
+### 6.2 Durable trust-store payload
+
+The bytes stored in `DALI-ACT.BIN` and `DALI-CAN.BIN` are a signed Binary
+Metadata v2 envelope with role `recovery`. Its body is a bounded
+`TrustStorePayload` with this canonical field order:
+
+```text
+metadata header: role=recovery, version, expires
+target profile: u16 length + UTF-8 bytes
+file count: u16
+file references, sorted by kind then identifier:
+  kind: u8 (root, timestamp, snapshot, targets, revocation, delegation)
+  identifier: u16 length + UTF-8 bytes
+  exact file length: u32
+  complete-file SHA-256: 32 bytes
+```
+
+The payload has a maximum of `MAX_TRUST_STORE_FILES` references and
+`MAX_TRUST_STORE_BYTES` encoded body bytes. It MUST contain the five singleton
+metadata roles and at least one delegation reference. Package references,
+duplicate references, zero lengths, zero digests, invalid UTF-8, and
+non-canonical ordering are rejected before activation. The signed envelope
+authenticates the payload; the payload itself is only a bounded state
+description.
+
+This schema stores references rather than private keys or mutable verifier
+state. Recovery can therefore reconstruct the complete signed root,
+delegation, revocation, freshness, and rotation inputs without coupling the
+payload to FAT, SDIO, or an MCU.
+
 The root signed body is:
 
 ```json

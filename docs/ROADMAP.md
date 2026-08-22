@@ -254,6 +254,10 @@ milestone into `main` only after its documented validation evidence exists.
    Prepared-only two-boot fixture now stages and flushes the journal; the
    F405 reset acceptance was verified on 2026-08-22; physical power-loss
    during a sector write remains pending.
+   [x] Define the board-agnostic package-free `Recovery` trust-store payload
+   schema with bounded Binary v2 references for root, timestamp, snapshot,
+   targets, revocations, and delegations; durable payload installation and
+   F405 boot wiring remain pending.
    [x] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
    kernel/runtime RAM region. The repository contract now uses
