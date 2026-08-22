@@ -1,0 +1,251 @@
+/// Revocation -> AMRN for all bounded matching packages.
+/// Verifies Root -> Timestamp -> Snapshot -> Targets -> Delegation ->
+/// Revocation -> AMRN for all bounded matching packages.
+pub fn load_binary_repository<S>(
+    storage: &mut S,
+    request: RepositoryLoadRequest,
+    anchors: &[dali_targets::TrustAnchorProfile],
+    buffers: &mut BinaryRepositoryBuffers,
+) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+{
+    let Some(contract) = request.contract else {
+        return Err(BinaryRepositoryError::PackageInvalidHeader(
+            dali_amrn::v5::Error::InvalidHeader,
+        ));
+    };
+    load_binary_repository_with_contract(
+        storage,
+        request,
+        anchors,
+        buffers,
+        |_| Some(contract),
+        no_repository_progress,
+    )
+}
+
+fn no_repository_progress() -> bool {
+    true
+}
+
+/// Verifies a repository and resolves the AMRN memory contract after target selection.
+pub fn load_binary_repository_with_contract<S, F>(
+    storage: &mut S,
+    request: RepositoryLoadRequest,
+    anchors: &[dali_targets::TrustAnchorProfile],
+    buffers: &mut BinaryRepositoryBuffers,
+    mut contract_for: F,
+    progress: fn() -> bool,
+) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+    F: FnMut(dali_metadata::TargetPackage) -> Option<dali_amrn::v3::Contract>,
+{
+    stream_verified_root(
+        storage,
+        anchors,
+        &mut buffers.chunk,
+        &mut buffers.root,
+        &mut buffers.scratch,
+        progress,
+    )
+    .map_err(map_root_error)?;
+    // SAFETY: stream_verified_root writes the root before returning and this
+    // workspace is exclusively borrowed for the duration of this load.
+    let root = unsafe { buffers.root.assume_init_ref() };
+    verify_timestamp_and_snapshot(
+        storage,
+        root,
+        &mut buffers.chunk,
+        unsafe { buffers.metadata.snapshot() },
+        unsafe { buffers.scratch.target_verifier() },
+        progress,
+    )?;
+    // SAFETY: the preceding helper writes the snapshot before this reference
+    // is used, and the workspace remains exclusively borrowed by this load.
+    let snapshot = unsafe { (*buffers.metadata.snapshot).assume_init_ref() };
+    let targets_role = role(root, MetadataRole::Targets)?;
+    let targets = select_targets_into(
+        storage,
+        request,
+        root,
+        targets_role,
+        &mut buffers.chunk,
+        // SAFETY: the target verifier is exclusively used by this phase.
+        unsafe { buffers.scratch.target_verifier() },
+        progress,
+    )?;
+    let first_target = targets
+        .iter()
+        .next()
+        .ok_or(BinaryRepositoryError::MissingRecord)?;
+    if !same_reference(
+        snapshot.targets.version,
+        snapshot.targets.length,
+        snapshot.targets.sha256,
+        first_target.version,
+        first_target.length,
+        first_target.digest,
+    ) {
+        return Err(BinaryRepositoryError::TargetsReferenceMismatch);
+    }
+    verify_revocations(
+        storage,
+        root,
+        snapshot,
+        &mut buffers.chunk,
+        &mut buffers.revocations,
+        unsafe { buffers.scratch.target_verifier() },
+        progress,
+    )?;
+    // SAFETY: the preceding helper writes the revocation metadata before this
+    // reference is used, and the workspace remains exclusively borrowed here.
+    let revocations = unsafe { buffers.revocations.assume_init_ref() };
+    let security_state =
+        dali_metadata::TrustStoreSecurityState::from_verified_metadata(root, revocations)
+            .map_err(|_| BinaryRepositoryError::SecurityState)?;
+    collect_delegation_references(snapshot, &targets, &mut buffers.delegation_references)?;
+    let mut authorizations = verify_packages_into(
+        storage,
+        root,
+        revocations,
+        &targets,
+        buffers.delegation_references,
+        &mut PackageVerificationPass {
+            chunk: &mut buffers.chunk,
+            amrn_buffers: &mut buffers.amrn,
+            // SAFETY: the delegation output is exclusively used by one
+            // package verification at a time.
+            delegation_output: unsafe { buffers.metadata.delegation() },
+            // SAFETY: the verifier workspace is exclusively used by this
+            // phase.
+            role_verifier: unsafe { buffers.scratch.target_verifier() },
+            contract_for: &mut contract_for,
+            progress,
+        },
+    )?;
+    authorizations.security_state = Some(security_state);
+    authorizations.committed_generation = request.committed_generation;
+    Ok(authorizations)
+}
+
+fn select_targets_into<S>(
+    storage: &mut S,
+    request: RepositoryLoadRequest,
+    root: &RootMetadata,
+    targets_role: RoleDefinition,
+    chunk: &mut [u8],
+    verifier_workspace: &mut MaybeUninit<StreamingRoleVerifier>,
+    progress: fn() -> bool,
+) -> Result<
+    streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
+    BinaryRepositoryError<S::Error>,
+>
+where
+    S: RepositoryStreamStorage,
+{
+    let targets = if let Some(package_id) = request.package_id {
+        streaming::select_verified_binary_targets_for_package::<S, MAX_BINARY_REPOSITORY_PACKAGES>(
+            storage,
+            package_id,
+            targets_role,
+            &root.keys[..usize::from(root.key_count)],
+            chunk,
+            progress,
+            verifier_workspace,
+        )
+    } else {
+        streaming::select_verified_binary_targets::<S, MAX_BINARY_REPOSITORY_PACKAGES>(
+            storage,
+            request.target_profile,
+            targets_role,
+            &root.keys[..usize::from(root.key_count)],
+            chunk,
+            progress,
+            verifier_workspace,
+        )
+    }
+    .map_err(map_targets_error)?;
+    Ok(targets)
+}
+
+fn collect_delegation_references<E>(
+    snapshot: &dali_metadata::SnapshotMetadata,
+    targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
+    output: &mut [Option<dali_metadata::DelegationReference>; MAX_BINARY_REPOSITORY_PACKAGES],
+) -> Result<(), BinaryRepositoryError<E>> {
+    *output = [None; MAX_BINARY_REPOSITORY_PACKAGES];
+    for (index, selected) in targets.iter().enumerate() {
+        let delegation_id = selected
+            .target
+            .delegation_id
+            .as_str()
+            .ok_or(BinaryRepositoryError::MissingRecord)?;
+        output[index] = Some(
+            snapshot
+                .delegations
+                .iter()
+                .take(usize::from(snapshot.delegation_count))
+                .find(|reference| reference.id.as_str() == Some(delegation_id))
+                .copied()
+                .ok_or(BinaryRepositoryError::MissingRecord)?,
+        );
+    }
+    Ok(())
+}
+
+fn verify_packages_into<S, F>(
+    storage: &mut S,
+    root: &RootMetadata,
+    revocations: &dali_metadata::RevocationMetadata,
+    targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
+    delegation_references: [Option<dali_metadata::DelegationReference>;
+        MAX_BINARY_REPOSITORY_PACKAGES],
+    pass: &mut PackageVerificationPass<'_, F>,
+) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
+where
+    S: RepositoryStreamStorage,
+    F: FnMut(dali_metadata::TargetPackage) -> Option<dali_amrn::v3::Contract>,
+{
+    let mut authorizations = BinaryRepositoryAuthorizations::new();
+    for (index, selected) in targets.iter().enumerate() {
+        let contract =
+            (pass.contract_for)(selected.target).ok_or(BinaryRepositoryError::PackageContract)?;
+        let developer_public_key = verify_delegation_and_package(
+            &mut PackageVerificationContext {
+                storage,
+                root,
+                revocations,
+                chunk: pass.chunk,
+                amrn_buffers: pass.amrn_buffers,
+                delegation_reference: delegation_references[index]
+                    .ok_or(BinaryRepositoryError::MissingRecord)?,
+                delegation_output: pass.delegation_output,
+                role_verifier: pass.role_verifier,
+                progress: pass.progress,
+            },
+            selected.target,
+            selected.version,
+            contract,
+        )?;
+        authorizations
+            .push(BinaryRepositoryAuthorization {
+                target: selected.target,
+                developer_public_key,
+            })
+            .map_err(|_| {
+                BinaryRepositoryError::PackageInvalidHeader(dali_amrn::v5::Error::InvalidHeader)
+            })?;
+    }
+    Ok(authorizations)
+}
+
+struct PackageVerificationPass<'a, F> {
+    chunk: &'a mut [u8],
+    amrn_buffers: &'a mut amrn::AmrnStreamBuffers,
+    delegation_output: &'a mut MaybeUninit<dali_metadata::DelegationMetadata>,
+    role_verifier: &'a mut MaybeUninit<StreamingRoleVerifier>,
+    contract_for: &'a mut F,
+    progress: fn() -> bool,
+}

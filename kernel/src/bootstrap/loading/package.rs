@@ -7,6 +7,7 @@ use crate::{drivers::StorageError, logging, platform};
 pub fn load<D>(
     device: D,
     board: &mut platform::Platform,
+    committed_generation: Option<crate::storage::durable::coordinator::DurableGeneration>,
     #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     #[cfg(feature = "abi-mpu")]
     context_owner: &mut crate::runtime::application::owner::ActiveContextOwner,
@@ -16,13 +17,16 @@ where
 {
     #[cfg(not(feature = "abi-context-switch"))]
     let _ = board;
+    #[cfg(not(all(feature = "abi-current", feature = "repository-loader")))]
+    let _ = committed_generation;
 
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Read block 0 successfully"),
     );
     #[cfg(all(feature = "abi-current", feature = "repository-loader"))]
-    let package = crate::loader::load_repository_package(device, slot_manager);
+    let package =
+        crate::loader::load_repository_package(device, slot_manager, committed_generation);
     #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
     let package = crate::loader::load_current_abi(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]

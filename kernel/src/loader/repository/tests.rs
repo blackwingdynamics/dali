@@ -49,6 +49,7 @@ fn rejects_storage_lengths_larger_than_caller_buffers() {
                 data_capacity: 0,
             }),
             now: None,
+            committed_generation: None,
         },
         &mut buffers,
     );

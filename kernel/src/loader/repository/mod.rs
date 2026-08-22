@@ -85,6 +85,8 @@ pub struct RepositoryLoadRequest {
     pub contract: Option<Contract>,
     /// Optional trusted wall-clock value for expiry checks.
     pub now: Option<u64>,
+    /// Durable trust-store generation selected during boot recovery.
+    pub committed_generation: Option<dali_metadata::TrustStoreRecord>,
 }
 
 /// Copy-only result returned after a repository was durably published.

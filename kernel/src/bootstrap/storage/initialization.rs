@@ -136,6 +136,16 @@ pub fn initialize(
                         return status::StorageStatus::Failure;
                     }
                 };
+                let committed_generation = match journal_recovery {
+                    super::acceptance::JournalRecovery::Decision(
+                        crate::storage::durable::RecoveryDecision::Committed(record),
+                    ) => Some(crate::storage::durable::coordinator::DurableGeneration {
+                        version: record.bundle_version,
+                        digest: record.bundle_digest,
+                        length: record.bundle_length,
+                    }),
+                    _ => None,
+                };
                 #[cfg(not(feature = "storage-interruption-test"))]
                 let _ = journal_recovery;
                 #[cfg(feature = "storage-interruption-test")]
@@ -179,6 +189,7 @@ pub fn initialize(
                 super::super::loading::load(
                     &device,
                     board,
+                    committed_generation,
                     #[cfg(feature = "abi-current")]
                     &mut slot_manager,
                     #[cfg(feature = "abi-mpu")]
@@ -189,6 +200,7 @@ pub fn initialize(
             super::super::loading::load(
                 BlockDeviceAdapter::new(reader),
                 board,
+                None,
                 #[cfg(feature = "abi-current")]
                 &mut slot_manager,
                 #[cfg(feature = "abi-mpu")]
