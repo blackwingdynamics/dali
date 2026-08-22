@@ -11,6 +11,13 @@ use crate::platform;
 pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
     let mut led_on = false;
     let mut elapsed_ms = 0;
+    #[cfg(feature = "sdio")]
+    if matches!(storage_status, StorageStatus::Removed) {
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[STORAGE] Recovery heartbeat active"),
+        );
+    }
 
     loop {
         match storage_status {
@@ -26,6 +33,14 @@ pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
                 }
             }
             StorageStatus::NotDetected => {
+                if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
+                    led_on = !led_on;
+                    board.set_status_led(led_on);
+                    elapsed_ms = 0;
+                }
+            }
+            #[cfg(feature = "sdio")]
+            StorageStatus::Removed => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;
                     board.set_status_led(led_on);

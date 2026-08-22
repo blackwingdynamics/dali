@@ -384,10 +384,10 @@ storage contract during the current MVP work.
 - [ ] Add console-session auto-reconnect after target reset and USB CDC
   re-enumeration; preserve the existing bounded log delivery contract and
   report reconnect state explicitly.
-- [ ] Define a hardware-neutral storage lifecycle contract with explicit
+- [x] Define a hardware-neutral storage lifecycle contract with explicit
   `Unavailable`, `Present`, `Ready`, `Removed`, and `Fault` states.
-- [ ] Add bounded storage health checks and safe SDIO reinitialization for
-  card insertion/removal while the kernel is in an idle or recovery loop.
+- [x] Add bounded storage health checks and safe F405 SDIO reinitialization for
+  card insertion/removal during storage bring-up and recovery.
 - [ ] Add hardware evidence for card removal, reinsertion, repeated reset, and
   recovery without treating a transient physical disconnect as a kernel panic.
 - [ ] Extend the lifecycle contract to future storage backends such as eMMC,

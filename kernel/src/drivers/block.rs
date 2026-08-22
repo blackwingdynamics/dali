@@ -37,6 +37,8 @@ pub enum StorageError {
     Unsupported,
     /// The underlying hardware transport reported an unspecified failure.
     Transport,
+    /// The card stopped responding and must be reinitialized before use.
+    CardRemoved,
 }
 
 impl core::fmt::Display for StorageError {
@@ -48,6 +50,7 @@ impl core::fmt::Display for StorageError {
             Self::DataCorruption => "storage data is corrupted",
             Self::Unsupported => "storage operation is unsupported",
             Self::Transport => "storage transport failure",
+            Self::CardRemoved => "storage card was removed",
         })
     }
 }

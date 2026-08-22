@@ -2,9 +2,11 @@
 
 use super::super::lifecycle::status;
 use crate::{
-    drivers::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError},
+    drivers::{BLOCK_SIZE, Block, StorageError},
     logging, platform,
 };
+
+use super::recovery::{initialize_with_recovery, read_block_with_recovery};
 
 #[cfg(not(feature = "storage-write"))]
 use crate::drivers::BlockDeviceAdapter;
@@ -35,7 +37,7 @@ pub fn initialize(
     // opaque phase so a non-responsive medium becomes a bounded Safe Mode
     // recovery instead of an unobservable boot hang.
     super::super::startup::install_watchdog(board);
-    let initialization = reader.initialize();
+    let initialization = initialize_with_recovery(&mut reader, board);
     if let Err(error) = initialization {
         return match error {
             StorageError::NotReady | StorageError::Timeout => {
@@ -44,6 +46,13 @@ pub fn initialize(
                     format_args!("[STORAGE] No storage medium detected; entering kernel heartbeat"),
                 );
                 status::StorageStatus::NotDetected
+            }
+            StorageError::CardRemoved => {
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[STORAGE] Card removed; entering safe recovery loop"),
+                );
+                status::StorageStatus::Removed
             }
             error => {
                 logging::error(
@@ -83,7 +92,7 @@ pub fn initialize(
 
     let block_read = {
         let mut block: Block = [0; BLOCK_SIZE];
-        reader.read_block(BlockAddress::new(0), &mut block)
+        read_block_with_recovery(&mut reader, board, &mut block)
     };
     match block_read {
         Ok(()) => {
@@ -206,6 +215,13 @@ pub fn initialize(
                 #[cfg(feature = "abi-mpu")]
                 &mut context_owner,
             )
+        }
+        Err(StorageError::CardRemoved) => {
+            logging::info(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[STORAGE] Card removed; entering safe recovery loop"),
+            );
+            status::StorageStatus::Removed
         }
         Err(error) => {
             logging::error(

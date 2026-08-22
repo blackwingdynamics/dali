@@ -34,6 +34,18 @@ filesystem adapter's multi-block reads, capacity reporting, and read-only
 write rejection. Embedded target checks remain separate evidence for the F405
 PAC adapter.
 
+Storage lifecycle host coverage includes initialization, ready operations,
+card-removal classification, fault transitions, and bounded reinitialization:
+
+```text
+cargo test -p dali-kernel --lib --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write
+```
+
+The F405 backend maps bounded SDIO command/data timeouts to `CardRemoved`
+because this board exposes no card-detect GPIO. A physical removal/reinsert
+run remains required before marking the lifecycle hardware evidence complete.
+
 The feature-gated `storage-write` target build contains a real storage
 acceptance path. On an initialized F405 SDIO card it writes each of the three
 reserved trust-store artifact names (`DALI-ACT.BIN`, `DALI-CAN.BIN`, and

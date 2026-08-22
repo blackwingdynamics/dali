@@ -30,7 +30,7 @@ impl Stm32f405SdioTransport {
 impl SdioTransport for Stm32f405SdioTransport {
     /// Initializes the card and switches the bus to the normal transfer clock.
     fn initialize(&mut self) -> Result<u32, StorageError> {
-        self.raw.borrow_mut().initialize()
+        self.raw.borrow_mut().initialize().map_err(classify_timeout)
     }
 
     fn read_block(
@@ -39,6 +39,7 @@ impl SdioTransport for Stm32f405SdioTransport {
         buffer: &mut Block,
     ) -> Result<(), StorageError> {
         cortex_m::interrupt::free(|_| self.raw.borrow_mut().read_block(address, buffer))
+            .map_err(classify_timeout)
     }
 
     #[cfg(feature = "storage-write")]
@@ -48,10 +49,21 @@ impl SdioTransport for Stm32f405SdioTransport {
     /// bounded by the peripheral's transfer and status handling.
     fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
         cortex_m::interrupt::free(|_| self.raw.borrow_mut().write_block(address, block))
+            .map_err(classify_timeout)
     }
 
     #[cfg(feature = "storage-write")]
     fn flush(&mut self) -> Result<(), StorageError> {
-        cortex_m::interrupt::free(|_| self.raw.borrow_mut().flush())
+        cortex_m::interrupt::free(|_| self.raw.borrow_mut().flush()).map_err(classify_timeout)
+    }
+}
+
+/// The F405 board has no card-detect GPIO; a bounded SDIO timeout is its
+/// target-observable indication that the medium stopped responding.
+fn classify_timeout(error: StorageError) -> StorageError {
+    if matches!(error, StorageError::Timeout) {
+        StorageError::CardRemoved
+    } else {
+        error
     }
 }

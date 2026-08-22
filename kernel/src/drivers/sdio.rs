@@ -2,7 +2,10 @@
 
 #[cfg(feature = "storage-write")]
 use super::BlockTransportFlush;
-use super::{Block, BlockAddress, BlockReader, StorageError};
+use super::{
+    Block, BlockAddress, BlockReader, StorageError,
+    lifecycle::{StorageLifecycle, StorageLifecycleEvent, StorageLifecycleState},
+};
 use crate::storage::durable::BlockDevice;
 
 /// Hardware-facing SDIO transport implemented by a platform backend.
@@ -22,10 +25,20 @@ pub trait SdioTransport {
     fn flush(&mut self) -> Result<(), StorageError>;
 }
 
+/// Lifecycle controls exposed by a reinitializable SDIO block reader.
+pub trait StorageLifecycleControl {
+    /// Initializes or reinitializes the underlying storage medium.
+    fn initialize(&mut self) -> Result<(), StorageError>;
+
+    /// Reinitializes a medium after removal or transport failure.
+    fn reinitialize(&mut self) -> Result<(), StorageError>;
+}
+
 /// Adapts any SDIO transport to the generic bounded block-reader contract.
 pub struct SdioBlockReader<T> {
     transport: T,
     block_count: Option<u32>,
+    lifecycle: StorageLifecycle,
 }
 
 impl<T> SdioBlockReader<T> {
@@ -34,6 +47,7 @@ impl<T> SdioBlockReader<T> {
         Self {
             transport,
             block_count: None,
+            lifecycle: StorageLifecycle::new(),
         }
     }
 }
@@ -44,8 +58,48 @@ where
 {
     /// Initializes the card and records its bounded capacity.
     pub fn initialize(&mut self) -> Result<(), StorageError> {
-        self.block_count = Some(self.transport.initialize()?);
-        Ok(())
+        self.lifecycle
+            .apply(StorageLifecycleEvent::InitializationStarted);
+        self.block_count = None;
+        match self.transport.initialize() {
+            Ok(block_count) => {
+                self.lifecycle
+                    .apply(StorageLifecycleEvent::InitializationSucceeded);
+                self.block_count = Some(block_count);
+                Ok(())
+            }
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
+    }
+
+    /// Returns the current lifecycle state without probing hardware.
+    pub const fn lifecycle_state(&self) -> StorageLifecycleState {
+        self.lifecycle.state()
+    }
+
+    fn record_error(&mut self, error: StorageError) {
+        let event = if matches!(error, StorageError::CardRemoved) {
+            StorageLifecycleEvent::CardRemoved
+        } else {
+            StorageLifecycleEvent::OperationFailed
+        };
+        self.lifecycle.apply(event);
+    }
+}
+
+impl<T> StorageLifecycleControl for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    fn initialize(&mut self) -> Result<(), StorageError> {
+        Self::initialize(self)
+    }
+
+    fn reinitialize(&mut self) -> Result<(), StorageError> {
+        Self::initialize(self)
     }
 }
 
@@ -58,7 +112,20 @@ where
         address: BlockAddress,
         buffer: &mut Block,
     ) -> Result<(), StorageError> {
-        self.transport.read_block(address, buffer)
+        if self.lifecycle_state() != StorageLifecycleState::Ready {
+            return Err(StorageError::NotReady);
+        }
+        match self.transport.read_block(address, buffer) {
+            Ok(()) => {
+                self.lifecycle
+                    .apply(StorageLifecycleEvent::OperationSucceeded);
+                Ok(())
+            }
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
     }
 
     fn block_count(&self) -> Result<u32, StorageError> {
@@ -133,7 +200,16 @@ where
     type Error = StorageError;
 
     fn flush(&mut self) -> Result<(), Self::Error> {
-        self.transport.flush()
+        if self.lifecycle_state() != StorageLifecycleState::Ready {
+            return Err(StorageError::NotReady);
+        }
+        match self.transport.flush() {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
     }
 }
 
@@ -143,106 +219,18 @@ where
     T: SdioTransport,
 {
     fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
-        self.transport.write_block(address, block)
+        if self.lifecycle_state() != StorageLifecycleState::Ready {
+            return Err(StorageError::NotReady);
+        }
+        match self.transport.write_block(address, block) {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::SdioTransport;
-
-    const MOCK_BLOCK_COUNT: u32 = 4;
-    const READ_BLOCK: u32 = 2;
-
-    struct MockTransport {
-        initialized: bool,
-    }
-
-    impl SdioTransport for MockTransport {
-        fn initialize(&mut self) -> Result<u32, crate::drivers::StorageError> {
-            self.initialized = true;
-            Ok(MOCK_BLOCK_COUNT)
-        }
-
-        fn read_block(
-            &mut self,
-            address: crate::drivers::BlockAddress,
-            block: &mut crate::drivers::Block,
-        ) -> Result<(), crate::drivers::StorageError> {
-            if !self.initialized {
-                return Err(crate::drivers::StorageError::NotReady);
-            }
-            if address.value() >= MOCK_BLOCK_COUNT {
-                return Err(crate::drivers::StorageError::InvalidBlockAddress);
-            }
-            block.fill(address.value() as u8);
-            Ok(())
-        }
-
-        #[cfg(feature = "storage-write")]
-        fn write_block(
-            &mut self,
-            _address: crate::drivers::BlockAddress,
-            _block: &crate::drivers::Block,
-        ) -> Result<(), crate::drivers::StorageError> {
-            if self.initialized {
-                Ok(())
-            } else {
-                Err(crate::drivers::StorageError::NotReady)
-            }
-        }
-
-        #[cfg(feature = "storage-write")]
-        fn flush(&mut self) -> Result<(), crate::drivers::StorageError> {
-            if self.initialized {
-                Ok(())
-            } else {
-                Err(crate::drivers::StorageError::NotReady)
-            }
-        }
-    }
-
-    #[test]
-    fn exposes_capacity_only_after_initialization() {
-        let mut reader = super::SdioBlockReader::new(MockTransport { initialized: false });
-        assert_eq!(
-            <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::block_count(
-                &reader,
-            ),
-            Err(crate::drivers::StorageError::NotReady)
-        );
-
-        reader.initialize().expect("mock SDIO initializes");
-
-        assert_eq!(
-            <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::block_count(
-                &reader,
-            ),
-            Ok(MOCK_BLOCK_COUNT)
-        );
-    }
-
-    #[test]
-    fn delegates_bounded_reads_to_the_transport() {
-        let mut reader = super::SdioBlockReader::new(MockTransport { initialized: false });
-        let mut block = [0; crate::drivers::BLOCK_SIZE];
-
-        reader.initialize().expect("mock SDIO initializes");
-        <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::read_block(
-            &mut reader,
-            crate::drivers::BlockAddress::new(READ_BLOCK),
-            &mut block,
-        )
-        .expect("mock block read succeeds");
-
-        assert_eq!(block, [READ_BLOCK as u8; crate::drivers::BLOCK_SIZE]);
-        assert_eq!(
-            <super::SdioBlockReader<MockTransport> as crate::drivers::BlockReader>::read_block(
-                &mut reader,
-                crate::drivers::BlockAddress::new(MOCK_BLOCK_COUNT),
-                &mut block,
-            ),
-            Err(crate::drivers::StorageError::InvalidBlockAddress)
-        );
-    }
-}
+mod tests;

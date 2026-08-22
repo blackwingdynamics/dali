@@ -342,7 +342,14 @@ DMA has a bounded tail pending, that tail is drained directly from the FIFO.
 The kernel exposes this transport through the `sdio` capability feature; board
 features enable capabilities and select pins/clocks separately.
 
-The MVP does not need package installation, deletion, hot swap, or write support. SD-card replacement requires a reboot. The first acceptance application proves execution through a deterministic LED pattern and bounded application logging.
+The hardware-neutral storage lifecycle tracks `Unavailable`, `Present`,
+`Ready`, `Removed`, and `Fault` states. The F405 board has no card-detect GPIO,
+so a bounded SDIO command or data timeout is classified as a removal
+observation; integrity and transport errors remain faults. Initialization and
+the first block read use a bounded reinitialization window before returning to
+the kernel recovery heartbeat. The existing boot-only repository contract is
+unchanged; live removal during later runtime storage use requires a separate
+runtime owner and hardware acceptance.
 
 ### Board-agnostic repository and durable-storage boundary
 

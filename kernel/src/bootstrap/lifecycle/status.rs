@@ -30,6 +30,9 @@ impl BootMode {
 pub enum StorageStatus {
     /// No storage medium was detected or the transport is not configured.
     NotDetected,
+    /// A previously probed card stopped responding and recovery is active.
+    #[cfg(feature = "sdio")]
+    Removed,
     /// The storage medium is available, but no application package is present.
     Idle,
     /// The card initialized and block zero was read successfully.

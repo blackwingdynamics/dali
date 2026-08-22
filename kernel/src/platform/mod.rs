@@ -12,7 +12,7 @@ pub(crate) trait Backend: Sized {
 
     #[cfg(feature = "sdio")]
     /// Generic block reader supplied by the platform SDIO transport.
-    type SdioReader: crate::drivers::BlockReader;
+    type SdioReader: crate::drivers::BlockReader + crate::drivers::StorageLifecycleControl;
 
     #[cfg(feature = "usb-cdc")]
     /// Board-owned resources used to construct the USB bus.
