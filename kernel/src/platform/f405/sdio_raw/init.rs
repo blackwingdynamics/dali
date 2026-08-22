@@ -174,10 +174,7 @@ fn send_inner(
             if (!allow_crc_error || !status.ccrcfail().bit_is_set())
                 && let Err(error) = status_error(&status)
             {
-                crate::logging::error(
-                    crate::logging::BOOT_SUBSYSTEM,
-                    format_args!("[SDIO] CMD{} failed: {:?}", index, error),
-                );
+                report_command_failure(index, error);
                 return Err(error);
             }
             return Ok([
@@ -193,4 +190,14 @@ fn send_inner(
         format_args!("[SDIO] CMD{} timed out", index),
     );
     Err(StorageError::Timeout)
+}
+
+fn report_command_failure(index: u8, error: StorageError) {
+    if matches!(error, StorageError::NotReady | StorageError::Timeout) {
+        return;
+    }
+    crate::logging::error(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[SDIO] CMD{} failed: {:?}", index, error),
+    );
 }
