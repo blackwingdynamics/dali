@@ -22,6 +22,7 @@ abi-test-fixtures = ["abi-mpu"]
 abi-authentication = ["abi-relocation", "dep:dali-crypto"]
 repository-loader = ["abi-authentication", "dep:dali-metadata"]
 storage-write = []
+storage-interruption-test = ["storage-write"]
 
 [lints]
 workspace = true

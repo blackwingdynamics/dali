@@ -90,30 +90,44 @@ pub fn initialize(
             #[cfg(feature = "storage-write")]
             {
                 let device = crate::drivers::WritableBlockDeviceAdapter::new(reader);
-                match super::acceptance::recover_trust_store_journal(&device) {
-                    Ok(super::acceptance::JournalRecovery::Missing) => logging::info(
-                        logging::SECURITY_SUBSYSTEM,
-                        format_args!(
-                            "[RECOVERY] No durable commit journal found; using provisioned state"
-                        ),
-                    ),
+                let journal_recovery = match super::acceptance::recover_trust_store_journal(&device)
+                {
+                    Ok(super::acceptance::JournalRecovery::Missing) => {
+                        logging::info(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[RECOVERY] No durable commit journal found; using provisioned state"
+                            ),
+                        );
+                        super::acceptance::JournalRecovery::Missing
+                    }
                     Ok(super::acceptance::JournalRecovery::Decision(
                         crate::storage::durable::RecoveryDecision::Committed(record),
-                    )) => logging::info(
-                        logging::SECURITY_SUBSYSTEM,
-                        format_args!(
-                            "[RECOVERY] Committed generation selected: version={} sequence={} slot={:?}",
-                            record.bundle_version, record.sequence, record.active_slot,
-                        ),
-                    ),
+                    )) => {
+                        logging::info(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[RECOVERY] Committed generation selected: version={} sequence={} slot={:?}",
+                                record.bundle_version, record.sequence, record.active_slot,
+                            ),
+                        );
+                        super::acceptance::JournalRecovery::Decision(
+                            crate::storage::durable::RecoveryDecision::Committed(record),
+                        )
+                    }
                     Ok(super::acceptance::JournalRecovery::Decision(
                         crate::storage::durable::RecoveryDecision::DiscardPrepared,
-                    )) => logging::info(
-                        logging::SECURITY_SUBSYSTEM,
-                        format_args!(
-                            "[RECOVERY] Prepared commit discarded; previous active state retained"
-                        ),
-                    ),
+                    )) => {
+                        logging::info(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[RECOVERY] Prepared commit discarded; previous active state retained"
+                            ),
+                        );
+                        super::acceptance::JournalRecovery::Decision(
+                            crate::storage::durable::RecoveryDecision::DiscardPrepared,
+                        )
+                    }
                     Err(error) => {
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
@@ -121,6 +135,33 @@ pub fn initialize(
                         );
                         return status::StorageStatus::Failure;
                     }
+                };
+                #[cfg(not(feature = "storage-interruption-test"))]
+                let _ = journal_recovery;
+                #[cfg(feature = "storage-interruption-test")]
+                if !matches!(
+                    journal_recovery,
+                    super::acceptance::JournalRecovery::Decision(
+                        crate::storage::durable::RecoveryDecision::DiscardPrepared
+                    )
+                ) {
+                    if let Err(error) = super::interruption::stage_prepared_journal(&device) {
+                        logging::error(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[ACCEPTANCE] Prepared interruption fixture failed: {:?}",
+                                error
+                            ),
+                        );
+                        return status::StorageStatus::Failure;
+                    }
+                    logging::info(
+                        logging::SECURITY_SUBSYSTEM,
+                        format_args!(
+                            "[ACCEPTANCE] Prepared interruption journal staged; reset target to verify recovery"
+                        ),
+                    );
+                    return status::StorageStatus::Failure;
                 }
                 if let Err(error) = super::acceptance::verify_trust_store_artifacts(&device) {
                     logging::error(

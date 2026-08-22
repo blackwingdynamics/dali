@@ -63,14 +63,40 @@ of these states before the acceptance write sequence:
 ```
 
 The first two states are suitable for the normal and post-reset acceptance
-passes. The third state requires a deliberately interrupted prepared journal
-write on the disposable card and remains a physical interruption test.
+passes. The interruption profile below provides the third state without
+depending on a timing window.
 
 The manual F405 run at `2026-08-22 14:37:05` observed the committed-recovery
 state (`version=1 sequence=2 slot=B`) followed by successful trust-store
 flush/read-back, signed AMRN verification, slot loading, relocation, and
 `Ready -> Running` execution. This closes the manual committed-journal reboot
 check; Prepared interruption and power-loss recovery remain separate tests.
+
+The `storage-interruption-test` profile provides a bounded two-boot Prepared
+state acceptance procedure on a disposable card. On the first boot it replaces
+any existing test journal with two valid `Prepared` records in `DALI-CMT.BIN`,
+flushes them, verifies the read-back, logs the staged fixture, and stops before
+application loading. Reset or power-cycle the board, then run the normal
+acceptance console capture. The second boot must log `Prepared commit
+discarded; previous active state retained`, after which the normal artifact and
+package acceptance may proceed.
+This proves durable Prepared-state discard; it does not by itself prove that a
+power cut occurred during a physical sector write.
+
+The F405 two-boot reset acceptance run at `2026-08-22 15:01:38` and
+`2026-08-22 15:02:05` observed the staged Prepared journal, rebooted the target,
+discarded the Prepared state, and then completed trust-store flush/read-back,
+signed AMRN verification, slot loading, relocation, and `Ready -> Running`.
+This closes the bounded reset-recovery test. Physical power-loss during a
+sector write remains unverified.
+
+Build the interruption profile explicitly:
+
+```text
+cargo build -p dali-kernel --release --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-interruption-test \
+  --target thumbv7em-none-eabihf
+```
 
 Build this mode explicitly; it is not part of the default kernel profile:
 
