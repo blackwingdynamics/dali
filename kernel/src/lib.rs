@@ -3,6 +3,7 @@
 //! Hardware-independent kernel contracts exposed for host-side testing.
 
 pub mod drivers;
+#[cfg(not(feature = "repository-loader"))]
 #[path = "loader/contract/mod.rs"]
 pub mod loader_contract;
 #[path = "security/mpu/mod.rs"]

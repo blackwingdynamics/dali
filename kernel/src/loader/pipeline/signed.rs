@@ -12,7 +12,7 @@ use crate::{
     storage::filesystem::AmrnFile,
 };
 
-use super::{execution::LoadedApplication, identity};
+use super::execution::LoadedApplication;
 
 const SIGNATURE_BYTES: usize = v5::SIGNATURE_SIZE;
 
@@ -28,6 +28,7 @@ where
 }
 
 /// Loads a package whose signing key was authorized by the repository chain.
+#[cfg(feature = "repository-loader")]
 pub(crate) fn load_file_with_public_key<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -68,7 +69,7 @@ where
     validate_package(&file, header, contract, signed_size, &public_key)?;
     file.rewind().map_err(super::LoaderError::Filesystem)?;
     let _header = read_header(&file)?;
-    identity::copy_segments_and_relocate(&file, header.image, contract)?;
+    copy_segments_and_relocate(&file, header.image, contract)?;
     let entry_address = header
         .image
         .code_load_address
@@ -318,4 +319,91 @@ fn read_u32(bytes: &[u8; v5::HEADER_SIZE], offset: usize) -> u32 {
 
 fn v5_error(error: v5::Error) -> super::LoaderError {
     super::LoaderError::V5SignedPackage(error)
+}
+
+fn copy_segments_and_relocate<D>(
+    file: &AmrnFile<'_, D>,
+    header: v3::Header,
+    contract: v3::Contract,
+) -> Result<(), super::LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    file.rewind().map_err(super::LoaderError::Filesystem)?;
+    let mut header_bytes = [0; v5::HEADER_SIZE];
+    super::read_exact(file, &mut header_bytes).map_err(super::LoaderError::Filesystem)?;
+    copy_segment(file, header.code_load_address, header.code_size)?;
+    copy_segment(file, header.data_load_address, header.data_init_size)?;
+    let zero_start = header
+        .data_load_address
+        .checked_add(header.data_init_size)
+        .ok_or(v5_error(v5::Error::InvalidPayload))?;
+    zero_segment(zero_start, header.data_zero_size)?;
+    apply_relocations(file, header, contract)
+}
+
+fn apply_relocations<D>(
+    file: &AmrnFile<'_, D>,
+    header: v3::Header,
+    contract: v3::Contract,
+) -> Result<(), super::LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    let code = mutable_segment(header.code_load_address, header.code_size)?;
+    let data = mutable_segment(header.data_load_address, header.data_init_size)?;
+    let mut entry = [0; v3::RELOCATION_ENTRY_SIZE];
+    for _ in 0..header.relocation_count {
+        super::read_exact(file, &mut entry).map_err(super::LoaderError::Filesystem)?;
+        let relocation =
+            v3::decode_relocation(&entry).map_err(|_| v5_error(v5::Error::InvalidRelocation))?;
+        v3::apply(code, data, header, contract, &[relocation])
+            .map_err(|_| v5_error(v5::Error::InvalidRelocation))?;
+    }
+    Ok(())
+}
+
+fn copy_segment<D>(
+    file: &AmrnFile<'_, D>,
+    destination: u32,
+    size: u32,
+) -> Result<(), super::LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    let mut remaining = usize::try_from(size).map_err(|_| v5_error(v5::Error::InvalidPayload))?;
+    let mut offset = 0usize;
+    let mut chunk: Block = [0; BLOCK_SIZE];
+    while remaining > 0 {
+        let chunk_size = remaining.min(chunk.len());
+        super::read_exact(file, &mut chunk[..chunk_size])
+            .map_err(super::LoaderError::Filesystem)?;
+        let address = usize::try_from(destination)
+            .ok()
+            .and_then(|value| value.checked_add(offset))
+            .ok_or(v5_error(v5::Error::InvalidPayload))?;
+        let target = unsafe {
+            // SAFETY: v5 validation proved this copied segment fits its manifest slot.
+            core::slice::from_raw_parts_mut(address as *mut u8, chunk_size)
+        };
+        target.copy_from_slice(&chunk[..chunk_size]);
+        offset += chunk_size;
+        remaining -= chunk_size;
+    }
+    Ok(())
+}
+
+fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::LoaderError> {
+    let length = usize::try_from(size).map_err(|_| v5_error(v5::Error::InvalidPayload))?;
+    let target = unsafe {
+        // SAFETY: v5 validation proved the complete segment fits the selected manifest slot.
+        core::slice::from_raw_parts_mut(address as *mut u8, length)
+    };
+    Ok(target)
+}
+
+fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
+    let target = mutable_segment(destination, size)?;
+    target.fill(0);
+    Ok(())
 }

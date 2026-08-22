@@ -33,13 +33,13 @@ pub enum LoaderError {
     #[cfg(feature = "abi-current")]
     Lifecycle(crate::runtime::application::lifecycle::LifecycleError),
     /// The package failed the identity and slot catalog contract.
-    #[cfg(feature = "abi-relocation")]
+    #[cfg(all(feature = "abi-relocation", not(feature = "repository-loader")))]
     PackageCatalog(crate::loader_contract::CatalogError),
     /// The relocatable ABI v3 package failed format validation or patching.
-    #[cfg(feature = "abi-relocation")]
+    #[cfg(all(feature = "abi-relocation", not(feature = "repository-loader")))]
     V3RelocationPackage(dali_amrn::v3::Error),
     /// The identity-aware ABI v3 package failed format validation or patching.
-    #[cfg(feature = "abi-relocation")]
+    #[cfg(all(feature = "abi-relocation", not(feature = "repository-loader")))]
     V4IdentityPackage(dali_amrn::v4::Error),
     /// The signed v5 package failed format validation or authentication.
     #[cfg(feature = "abi-authentication")]

@@ -2,21 +2,26 @@
 
 use dali_amrn::{v3, v4};
 
-use crate::security::launch::{self, LaunchFrame};
-use crate::{
-    drivers::{BLOCK_SIZE, Block, StorageError},
-    runtime::{
-        application::lifecycle::{ApplicationIdentity, ApplicationLifecycle},
-        memory::slots::SlotAllocation,
-    },
-    storage::filesystem::AmrnFile,
+use crate::drivers::{BLOCK_SIZE, Block, StorageError};
+#[cfg(not(feature = "repository-loader"))]
+use crate::runtime::{
+    application::lifecycle::{ApplicationIdentity, ApplicationLifecycle},
+    memory::slots::SlotAllocation,
 };
+#[cfg(not(feature = "repository-loader"))]
+use crate::security::launch;
+#[cfg(not(feature = "repository-loader"))]
+use crate::security::launch::LaunchFrame;
+use crate::storage::filesystem::AmrnFile;
 
+#[cfg(not(feature = "repository-loader"))]
 use super::execution::LoadedApplication;
 
 const RELOCATION_BYTES: usize = v4::RELOCATION_ENTRY_SIZE;
+#[cfg(not(feature = "repository-loader"))]
 const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
 
+#[cfg(not(feature = "repository-loader"))]
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -80,6 +85,7 @@ where
     })
 }
 
+#[cfg(not(feature = "repository-loader"))]
 pub(super) fn parse_target_header(
     bytes: &[u8; v4::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -106,6 +112,7 @@ pub(super) fn parse_target_header(
     Ok((selected.header, contract, allocation))
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn prepare_launch(
     entry_address: u32,
     stack_origin: u32,
@@ -117,6 +124,7 @@ fn prepare_launch(
     })
 }
 
+#[cfg(not(feature = "repository-loader"))]
 pub(crate) fn read_header<D>(
     file: &AmrnFile<'_, D>,
 ) -> Result<[u8; v4::HEADER_SIZE], super::LoaderError>
@@ -128,6 +136,7 @@ where
     Ok(header)
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn package_length(header: v3::Header) -> Option<u32> {
     u32::try_from(v4::HEADER_SIZE)
         .ok()?
@@ -140,6 +149,7 @@ fn package_length(header: v3::Header) -> Option<u32> {
         )
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn validate_payload<D>(
     file: &AmrnFile<'_, D>,
     header: v4::Header,
@@ -237,6 +247,7 @@ pub(super) fn zero_segment(destination: u32, size: u32) -> Result<(), super::Loa
     Ok(())
 }
 
+#[cfg(not(feature = "repository-loader"))]
 pub(super) struct FileReader<'a, 'file, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -244,6 +255,7 @@ where
     file: &'a AmrnFile<'file, D>,
 }
 
+#[cfg(not(feature = "repository-loader"))]
 impl<'a, 'file, D> crate::loader_contract::PackageReader for FileReader<'a, 'file, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -259,6 +271,7 @@ where
     }
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn map_stream_error(
     error: crate::loader_contract::StreamError<embedded_sdmmc::Error<StorageError>>,
 ) -> super::LoaderError {

@@ -1,11 +1,16 @@
 //! Streaming ABI v3 package loading for the feature-gated kernel path.
 
+#[cfg(not(feature = "repository-loader"))]
 use dali_amrn::{Crc32, v2};
 
-use crate::security::launch::{self, LaunchFrame};
+use crate::runtime::{application::lifecycle::ApplicationLifecycle, memory::slots::SlotAllocation};
+#[cfg(not(feature = "repository-loader"))]
+use crate::security::launch;
+use crate::security::launch::LaunchFrame;
+
+#[cfg(not(feature = "repository-loader"))]
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
-    runtime::{application::lifecycle::ApplicationLifecycle, memory::slots::SlotAllocation},
     storage::filesystem::AmrnFile,
 };
 
@@ -93,6 +98,7 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
 }
 
 /// Reads, validates, and copies one ABI v3 package using bounded storage reads.
+#[cfg(not(feature = "repository-loader"))]
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -151,6 +157,7 @@ where
     })
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn target_contract(
     bytes: &[u8; v2::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -182,6 +189,7 @@ fn target_contract(
     Err(super::LoaderError::CurrentAbiPackage(last_error))
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v2::HEADER_SIZE], super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -191,6 +199,7 @@ where
     Ok(header)
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn package_length(header: v2::Header) -> Option<u32> {
     u32::try_from(v2::HEADER_SIZE)
         .ok()?
@@ -198,6 +207,7 @@ fn package_length(header: v2::Header) -> Option<u32> {
         .checked_add(header.data_init_size)
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn validate_payload<D>(file: &AmrnFile<'_, D>, header: v2::Header) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -225,6 +235,7 @@ where
     Ok(())
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn copy_segments<D>(file: &AmrnFile<'_, D>, header: v2::Header) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -243,6 +254,7 @@ where
     Ok(())
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn copy_segment<D>(
     file: &AmrnFile<'_, D>,
     destination: u32,
@@ -276,6 +288,7 @@ where
     Ok(())
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let length = usize::try_from(size)
         .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
@@ -291,6 +304,7 @@ fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     Ok(())
 }
 
+#[cfg(not(feature = "repository-loader"))]
 fn read_exact<D>(
     file: &AmrnFile<'_, D>,
     buffer: &mut [u8],
