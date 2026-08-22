@@ -433,30 +433,50 @@ passed
 ```
 
 The release image was rebuilt with the repository-loader feature set and
-`CARGO_PROFILE_RELEASE_DEBUG=2`. The generated linker symbols and LLVM size
-report show:
+`CARGO_PROFILE_RELEASE_DEBUG=2`. The exact build configuration was:
 
 ```text
-.dma_buffer           0x1400 =  5120 bytes @ 0x20000000
-.repository_workspace 0x7218 = 29208 bytes @ 0x20018000
-.data                 0x080c =  2060 bytes @ 0x10000000
-.bss                  0x1688 =  5768 bytes @ 0x1000080c
-_stack_end                         0x10001e94
+CARGO_PROFILE_RELEASE_DEBUG=2 cargo build -p dali-kernel --release --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write \
+  --target thumbv7em-none-eabihf
+```
+
+The generated linker map, target LLVM size report, and symbols show:
+
+```text
+.dma_buffer           0x1200 =  4608 bytes @ 0x20000000
+.fault_capture          0x44 =    68 bytes @ 0x10000000
+.repository_workspace 0x7640 = 30272 bytes @ 0x20018000
+.data                 0x080c =  2060 bytes @ 0x10000080
+.bss                  0x1748 =  5960 bytes @ 0x1000088c
+_stack_end                         0x10001fd4
 _stack_start                       0x10010000
-available CCM stack               0x0000e16c = 57708 bytes
+available CCM stack               0x0000e02c = 57388 bytes
+runtime region remaining          0x000009c0 =  2496 bytes
 ```
 
 The repository workspace is now a target-profile-owned, board-agnostic BSS
-section in the declared runtime region. It contains the shared 512-byte
-stream chunk, AMRN pass state, and typed metadata outputs; it is not placed in
-CCM, so it does not consume the privileged kernel stack budget. The previous
-release build allocated approximately `0x19800` bytes for the main repository
-loader frame and left only `0x0f54` bytes of CCM stack after placing the
-workspace in CCM. The current main loader frame is `0x18e4` bytes, and the
-largest measured individual repository helper frame is the snapshot parser at
-approximately `0x5e74` bytes. These are static prologue measurements from the
-release ELF, not a proof of the maximum whole-program call depth; hardware
-retest is still required.
+section in the declared runtime region. It contains the shared stream chunk,
+AMRN pass state, and typed metadata outputs; it is not placed in CCM, so it
+does not consume the privileged kernel stack budget. The previous repository
+loader frame overflow is no longer present in this build. Static prologue
+inspection of the release ELF measured these largest repository-path local
+allocations:
+
+```text
+load_repository_package       0x251c = 9500 bytes
+replay_targets                 0xdfc = 3580 bytes
+capture_role_into              0xce4 = 3300 bytes
+parse_targets_first_pass       0xcdc = 3292 bytes
+verify_packages_into            0xc74 = 3188 bytes
+load_file_with_key              0xa3c = 2620 bytes
+verify_timestamp_and_snapshot  0x83c = 2108 bytes
+```
+
+These are static function-prologue measurements, not a proof of the maximum
+whole-program call depth. The 32 KiB runtime-region headroom is also distinct
+from the CCM stack headroom: the former is workspace capacity, while the
+latter is the kernel's privileged stack space.
 
 `cargo-bloat` is not installed in the validation environment. The measurements
 above were obtained with the target LLVM `llvm-size`, `llvm-nm`, and
