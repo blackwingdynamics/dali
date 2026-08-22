@@ -269,3 +269,28 @@ Known issues: Package size, board revision, and power source were not captured.
 This record proves the configured release-anchor Binary v2 path on physical
 F405 hardware. It does not claim Secure Boot, production key custody, general
 DMA isolation, or power-loss recovery.
+
+### Durable trust-store flush acceptance evidence — 2026-08-22
+
+```text
+Date: 2026-08-22 13:16:45
+Tester: Giorgi Magradze
+Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Probe: Raspberry Pi Pico 2 running CMSIS-DAP
+SD card and filesystem: FAT32 Binary v2 repository bundle
+Kernel revision: baa9a47
+Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
+Observed log: Trust-store artifact write/flush/read-back passed; AMRN header
+  and payload validated; AMRN signature verified; one package loaded into
+  slot 1; Ready -> Running; Relocation fixture executed
+Observed slot: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
+Result: PASS
+Known issues: This run proves the bounded F405 flush/read-back sequence. A
+  power-loss/interrupted-write recovery test remains separate.
+```
+
+This record proves the F405 SDIO durable-flush boundary for the acceptance
+artifacts: candidate data is written, flushed, and read back before the
+commit-marker artifact is written, flushed, and read back. It does not claim
+power-loss recovery, production key custody, Secure Boot, or general DMA
+isolation.

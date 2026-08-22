@@ -47,6 +47,12 @@ build is not hardware evidence; the console must report:
 [STORAGE] Trust-store artifact write/flush/read-back test passed
 ```
 
+The F405 hardware acceptance record for this path is dated
+`2026-08-22 13:16:45`, uses kernel revision `baa9a47`, and records package
+digest `53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04`.
+This proves the bounded flush/read-back ordering on the real SDIO card. It is
+not power-loss or interrupted-write recovery evidence.
+
 Build this mode explicitly; it is not part of the default kernel profile:
 
 ```text
@@ -571,8 +577,10 @@ watchdog reset/Safe Mode scenario remains a distinct test.
 - [x] F405 hardware: reject a truncated DSIG trailer; the loader returned
   `V5SignedPackage(InvalidSignature)` and entered the kernel heartbeat.
 - [ ] Secure Boot and kernel-image authenticity.
-- [ ] F405 hardware: run the feature-gated trust-store artifact write/read-back
-  acceptance path on a disposable FAT32 card and record the console result.
+- [x] F405 hardware: run the feature-gated trust-store artifact
+  write/flush/read-back acceptance path on a disposable FAT32 card and record
+  the console result. Candidate durability is verified before commit-marker
+  durability; power-loss recovery remains separate.
 
 ## MVP acceptance test
 

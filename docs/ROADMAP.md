@@ -201,17 +201,16 @@ milestone into `main` only after its documented validation evidence exists.
    boundary against delegation identity, key, namespace, target, ABI, and
    validity scope.
    [x] Define and host-test the storage-independent atomic trust-store
-   transition contract; durable filesystem/block-device adapters and package
-   installation authorization remain pending.
+   transition contract; durable filesystem/block-device adapters are now
+   implemented, while package installation authorization remains pending.
    [x] Add the explicit FAT root-file write boundary; target read-back,
-   candidate/commit-marker sequencing, and durable trust-store activation
-   remain pending hardware acceptance.
+   candidate/commit-marker sequencing, and durable trust-store activation are
+   covered by the F405 flush acceptance record.
    [x] Define named active, candidate, and commit-marker FAT artifacts and
-   add bounded read-back accessors; their durable transition sequence remains
-   pending hardware acceptance.
+   add bounded read-back accessors; their durable transition sequence is
+   covered by the F405 flush acceptance record.
    [x] Connect the real F405 SDIO write transport to the bounded filesystem
-   artifact acceptance path; disposable-card hardware evidence remains
-   pending.
+   artifact acceptance path; disposable-card hardware evidence is recorded.
    [x] Freeze the repository metadata v1 role vocabulary, Ed25519 profile rule,
    single delegation version field, and explicit revocation document contract.
    [x] Implement the hardware-neutral Root -> Timestamp -> Snapshot -> Targets
@@ -248,7 +247,7 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Add the F405 SDIO durable flush boundary and sequence candidate
    write/flush/read-back before commit-marker write/flush/read-back in the
    feature-gated artifact acceptance path; disposable-card hardware evidence
-   remains pending.
+   is recorded in the 2026-08-22 acceptance log.
    [x] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
    kernel/runtime RAM region. The repository contract now uses
