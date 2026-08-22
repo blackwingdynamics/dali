@@ -3,7 +3,6 @@
 #[cfg(any(feature = "abi-current", feature = "abi-relocation"))]
 pub(super) use crate::loader::LoaderError;
 #[cfg(any(
-    feature = "abi-current",
     feature = "abi-authentication",
     all(feature = "abi-relocation", not(feature = "repository-loader")),
 ))]
@@ -19,8 +18,14 @@ pub(crate) mod identity;
 pub(crate) mod relocation;
 #[cfg(feature = "abi-authentication")]
 pub(crate) mod signed;
-#[cfg(feature = "abi-authentication")]
+#[cfg(any(
+    feature = "abi-authentication",
+    all(feature = "abi-relocation", not(feature = "repository-loader")),
+))]
 pub(super) use services::supports_required_services;
 
-#[cfg(feature = "abi-authentication")]
+#[cfg(any(
+    feature = "abi-authentication",
+    all(feature = "abi-relocation", not(feature = "repository-loader")),
+))]
 mod services;

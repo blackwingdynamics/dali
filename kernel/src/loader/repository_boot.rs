@@ -1,6 +1,7 @@
 //! Binary repository boot loading and error mapping.
 
-use super::{LoadedPackages, LoaderError, pipeline, repository};
+use super::package::LoadedPackages;
+use super::{LoaderError, pipeline, repository};
 use crate::storage;
 
 #[cfg(feature = "repository-loader")]

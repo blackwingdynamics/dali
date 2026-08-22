@@ -10,8 +10,6 @@ mod repository_boot;
 #[cfg(feature = "repository-loader")]
 pub mod repository;
 
-#[cfg(feature = "abi-current")]
-pub(crate) use package::LoadedPackages;
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
 pub(crate) use package::load_current_abi;
 pub use package::{load_amrn_file, start_application, validate_amrn_file};
