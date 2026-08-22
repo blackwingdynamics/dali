@@ -156,6 +156,10 @@ milestone into `main` only after its documented validation evidence exists.
    writes are not part of the production storage path. Revisit a real DMA
    write backend only when larger transfer throughput or CPU-offload needs
    justify its added complexity, with a dedicated hardware acceptance plan.
+   [x] The hardware-neutral owner policy now rejects application-owned DMA
+   configuration and authorizes the kernel-owned SDIO transport before DMA2
+   setup. F405 unauthorized-configuration and application-owned-DMA evidence
+   remain pending.
 2. **Watchdog and reset recovery** — [in progress] target facts,
    reset-cause logging, platform integration, kernel-owned heartbeat/scheduler
    feed ownership, and a real F405 IWDG timeout/reset-cause test are complete.

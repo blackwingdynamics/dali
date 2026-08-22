@@ -232,6 +232,8 @@ multi-application isolation, or watchdog support.
 
 - [x] Host contract tests validate kernel DMA-buffer range, alignment, empty
   range, and overflow rejection.
+- [x] The hardware-neutral DMA ownership policy rejects application-owned DMA
+  requests and authorizes only kernel-owned transport configuration.
 - [x] The F405 SDIO path validates its manifest-declared DMA buffer before
   programming DMA2 and retains exclusive mutable ownership for the transfer.
 - [x] F405 hardware evidence that the guarded SDIO path remains operational
@@ -240,6 +242,15 @@ multi-application isolation, or watchdog support.
 - [ ] Hardware evidence for unauthorized DMA configuration or application-owned
   DMA. The current ABI exposes no application DMA service, so general DMA
   isolation is not claimed yet.
+
+The first DMA-isolation hardware flow must use the release F405 target profile
+and an SWD probe. Capture the board revision, firmware image hash, target
+manifest revision, SD card and power details, SWD register state at DMA setup,
+the SDIO read result, and the application-DMA rejection result. The expected
+result is one successful kernel-owned SDIO block read and no application DMA
+entry point or peripheral configuration path. This flow is evidence for the
+current default-deny policy only; it does not establish arbitrary peripheral
+or DMA-controller isolation.
 
 ### Watchdog and reset recovery
 

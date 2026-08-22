@@ -4,6 +4,57 @@ use core::mem::align_of;
 
 use dali_targets::TargetMemoryRegion;
 
+/// Owner permitted to configure a DMA transfer.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DmaOwner {
+    /// A kernel-owned peripheral transport.
+    Kernel,
+    /// An application request crossing the kernel DMA boundary.
+    Application,
+}
+
+/// Application DMA policy for the current single-application contract.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ApplicationDmaPolicy {
+    /// Applications have no DMA service or peripheral ownership.
+    Denied,
+}
+
+/// Errors returned when a caller requests DMA ownership.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DmaOwnershipError {
+    /// The current policy does not expose DMA to applications.
+    ApplicationDmaDenied,
+}
+
+/// Kernel-owned DMA authorization policy.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DmaPolicy {
+    application: ApplicationDmaPolicy,
+}
+
+impl DmaPolicy {
+    /// Returns the policy for the current application execution contract.
+    pub const fn current() -> Self {
+        Self {
+            application: ApplicationDmaPolicy::Denied,
+        }
+    }
+
+    /// Authorizes one owner before any peripheral DMA configuration.
+    pub const fn authorize(self, owner: DmaOwner) -> Result<(), DmaOwnershipError> {
+        match (owner, self.application) {
+            (DmaOwner::Kernel, _) => Ok(()),
+            (DmaOwner::Application, ApplicationDmaPolicy::Denied) => {
+                Err(DmaOwnershipError::ApplicationDmaDenied)
+            }
+        }
+    }
+}
+
+/// Single source of truth for application DMA ownership.
+pub const CURRENT_POLICY: DmaPolicy = DmaPolicy::current();
+
 /// Rejects a buffer before a peripheral DMA controller can be programmed.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DmaBufferError {
@@ -117,6 +168,22 @@ mod tests {
         assert_eq!(
             super::validate_range(u32::MAX - 3, 8, 4, DMA_REGION),
             Err(super::DmaBufferError::RangeOverflow)
+        );
+    }
+
+    #[test]
+    fn rejects_application_dma_configuration() {
+        assert_eq!(
+            super::CURRENT_POLICY.authorize(super::DmaOwner::Application),
+            Err(super::DmaOwnershipError::ApplicationDmaDenied)
+        );
+    }
+
+    #[test]
+    fn authorizes_kernel_transport_dma() {
+        assert_eq!(
+            super::CURRENT_POLICY.authorize(super::DmaOwner::Kernel),
+            Ok(())
         );
     }
 }
