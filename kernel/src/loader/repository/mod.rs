@@ -3,6 +3,7 @@
 mod amrn;
 mod chain;
 pub mod discovery;
+mod installation;
 mod io;
 mod trust;
 
@@ -13,13 +14,9 @@ use dali_metadata::{
     verify_repository_package,
 };
 
-use crate::storage::{
-    durable::{
-        DurableStorageAdapter,
-        coordinator::{DurableGeneration, PersistenceCoordinator, PersistenceError},
-        journal::JournalSlot,
-    },
-    repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage},
+use crate::storage::durable::coordinator::PersistenceError;
+use crate::storage::repository::{
+    RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage,
 };
 
 use io::{read_metadata, read_package};
@@ -28,6 +25,7 @@ pub use chain::{
     BinaryRepositoryAuthorization, BinaryRepositoryAuthorizations, BinaryRepositoryBuffers,
     BinaryRepositoryError, load_binary_repository, load_binary_repository_with_contract,
 };
+pub use installation::{PackageInstallationAuthorization, install_repository};
 
 /// Caller-owned bounded buffers for one repository verification pass.
 pub struct RepositoryBuffers {
@@ -199,52 +197,6 @@ where
         .ok_or(RepositoryLoaderError::MissingRecord)?;
     verify_repository_package(documents, package_id, contract, request.now)
         .map_err(RepositoryLoaderError::Verification)
-}
-
-/// Verifies, stages, reads back, and commits one authenticated repository.
-pub fn install_repository<S>(
-    mut storage: S,
-    request: RepositoryLoadRequest,
-    buffers: &mut RepositoryBuffers,
-    bundle_version: u64,
-    active_slot: JournalSlot,
-    active_generation: DurableGeneration,
-    next_sequence: u64,
-) -> Result<InstalledRepository, RepositoryLoaderError<<S as RepositoryStreamStorage>::Error>>
-where
-    S: RepositoryStreamStorage
-        + DurableStorageAdapter<Error = <S as RepositoryStreamStorage>::Error>,
-{
-    let verified = load_repository(&mut storage, request, buffers)?;
-    let installed = InstalledRepository {
-        target: verified.target,
-        delegation: verified.delegation,
-    };
-    let package_length = installed.target.length as usize;
-    if package_length > buffers.package.len() {
-        return Err(RepositoryLoaderError::ArtifactTooLarge);
-    }
-    let generation = DurableGeneration {
-        version: bundle_version,
-        digest: installed.target.sha256.0,
-        length: installed.target.length,
-    };
-    let mut coordinator =
-        PersistenceCoordinator::new(storage, active_slot, active_generation, next_sequence);
-    coordinator
-        .write_candidate(&buffers.package[..package_length], generation)
-        .map_err(RepositoryLoaderError::Persistence)?;
-    coordinator
-        .verify_candidate(
-            generation,
-            &buffers.package[..package_length],
-            &mut buffers.candidate_readback[..package_length],
-        )
-        .map_err(RepositoryLoaderError::Persistence)?;
-    coordinator
-        .commit()
-        .map_err(RepositoryLoaderError::Persistence)?;
-    Ok(installed)
 }
 
 fn parse_envelope<'a, E>(

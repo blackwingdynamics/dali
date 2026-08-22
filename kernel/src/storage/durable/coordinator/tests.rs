@@ -115,6 +115,25 @@ fn rejects_equal_and_older_generations_before_writing() {
 }
 
 #[test]
+fn authorizes_only_a_newer_generation_before_installation() {
+    let coordinator = PersistenceCoordinator::new(
+        TestStorage {
+            writes: 0,
+            candidate: [1, 2, 3, 4],
+        },
+        JournalSlot::A,
+        generation(4),
+        5,
+    );
+
+    assert_eq!(coordinator.authorize_candidate(generation(5)), Ok(()));
+    assert_eq!(
+        coordinator.authorize_candidate(generation(4)),
+        Err(PersistenceError::Rollback)
+    );
+}
+
+#[test]
 fn rejects_an_unidentifiable_generation_before_writing() {
     let mut coordinator = PersistenceCoordinator::new(
         TestStorage {

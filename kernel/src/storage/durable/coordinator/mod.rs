@@ -23,8 +23,13 @@ pub struct DurableGeneration {
 }
 
 impl DurableGeneration {
-    fn is_valid(self) -> bool {
+    pub(crate) fn is_valid(self) -> bool {
         self.version != 0 && self.length != 0 && self.digest != [0; SHA256_LENGTH]
+    }
+
+    /// Returns whether this generation advances the active durable generation.
+    pub const fn is_newer_than(self, active: Self) -> bool {
+        self.version > active.version
     }
 }
 
@@ -94,10 +99,9 @@ where
         self.state
     }
 
-    /// Writes candidate bytes and makes them durable.
-    pub fn write_candidate(
-        &mut self,
-        contents: &[u8],
+    /// Checks candidate identity and monotonicity before any storage write.
+    pub fn authorize_candidate(
+        &self,
         generation: DurableGeneration,
     ) -> Result<(), PersistenceError<S::Error>> {
         if self.state != PersistenceState::Active {
@@ -106,9 +110,19 @@ where
         if !generation.is_valid() {
             return Err(PersistenceError::InvalidGeneration);
         }
-        if generation.version <= self.active_generation.version {
+        if !generation.is_newer_than(self.active_generation) {
             return Err(PersistenceError::Rollback);
         }
+        Ok(())
+    }
+
+    /// Writes candidate bytes and makes them durable.
+    pub fn write_candidate(
+        &mut self,
+        contents: &[u8],
+        generation: DurableGeneration,
+    ) -> Result<(), PersistenceError<S::Error>> {
+        self.authorize_candidate(generation)?;
         if contents.len() != generation.length as usize {
             return Err(PersistenceError::InvalidTransition);
         }

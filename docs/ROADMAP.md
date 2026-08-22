@@ -248,6 +248,9 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Enforce strict monotonic candidate-generation rejection in the durable
    coordinator before any inactive-slot write; add equal-version and
    lower-version tests.
+   [x] Bind verified package installation to a candidate generation and require
+   that it advance the active `DALI-CMT.BIN` generation before durable writes;
+   host tests cover the authorization boundary and rollback rejection.
    [x] Wire the hardware-neutral metadata verification chain through
    `RepositoryStreamStorage` and the durable coordinator in the feature-gated
    kernel repository loader; F405 signed-bundle boot acceptance is complete.

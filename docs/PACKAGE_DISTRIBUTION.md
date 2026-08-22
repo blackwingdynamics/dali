@@ -566,8 +566,12 @@ with the root-declared role threshold before its references are consumed.
 deterministic or test-only verifier in the production path. The chain is
 bounded and borrows caller-owned bytes, so it is suitable for host tooling and
 later target integration without introducing storage ownership or heap policy
-into the metadata contract. Durable trust-store installation, rollback state,
-and kernel loader wiring remain separate acceptance work.
+into the metadata contract. The kernel installation path creates a
+`PackageInstallationAuthorization` only after this chain succeeds, binds the
+package digest and length to the candidate generation, and checks that
+generation against the active `DALI-CMT.BIN` counter before writing the
+inactive slot. F405 production release acceptance remains separate hardware
+evidence.
 
 ## 8. Trust-store update flow
 
@@ -590,9 +594,11 @@ The update flow is:
 Power loss at any point MUST recover either the old valid trust store or the
 new fully verified trust store. It MUST NOT activate a partially written slot.
 
-The current Dali implementation does not yet provide this flow. The existing
-`release_trust_anchors` target manifest is the single-image development
-precursor and must not be presented as a multi-developer trust store.
+The kernel provides this flow through the board-agnostic persistence
+coordinator and repository installation boundary. The existing
+`release_trust_anchors` target manifest remains the single-image development
+precursor and must not be presented as a multi-developer trust store. F405
+production release acceptance of installation and recovery remains pending.
 
 ## 8.1 Authority-side delegation artifact generation
 
