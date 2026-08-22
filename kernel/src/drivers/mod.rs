@@ -6,8 +6,10 @@ pub mod block;
 pub mod sdio;
 
 #[cfg(feature = "storage-write")]
+pub use block::BlockTransportFlush;
+#[cfg(feature = "storage-write")]
 pub use block::BlockWriter;
-pub use block::{BLOCK_SIZE, Block, BlockAddress, BlockReader, StorageError};
+pub use block::{BLOCK_SIZE, Block, BlockAddress, BlockReader, FlushableBlockDevice, StorageError};
 use embedded_sdmmc::{
     Block as FilesystemBlock, BlockCount, BlockDevice as FilesystemBlockDevice, BlockIdx,
 };
@@ -78,6 +80,18 @@ where
 
     fn num_blocks(&self) -> Result<BlockCount, Self::Error> {
         self.device.num_blocks()
+    }
+}
+
+#[cfg(feature = "abi-current")]
+impl<D> FlushableBlockDevice for BlockDeviceRef<'_, D>
+where
+    D: FlushableBlockDevice,
+{
+    type Error = D::Error;
+
+    fn flush(&self) -> Result<(), Self::Error> {
+        self.device.flush()
     }
 }
 
@@ -187,6 +201,18 @@ where
 }
 
 #[cfg(feature = "storage-write")]
+impl<R> FlushableBlockDevice for WritableBlockDeviceAdapter<R>
+where
+    R: BlockTransportFlush,
+{
+    type Error = R::Error;
+
+    fn flush(&self) -> Result<(), Self::Error> {
+        self.transport.borrow_mut().flush()
+    }
+}
+
+#[cfg(feature = "storage-write")]
 impl<R> FilesystemBlockDevice for &WritableBlockDeviceAdapter<R>
 where
     R: BlockReader + BlockWriter,
@@ -214,7 +240,19 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "storage-write")]
+impl<R> FlushableBlockDevice for &WritableBlockDeviceAdapter<R>
+where
+    R: BlockTransportFlush,
+{
+    type Error = R::Error;
+
+    fn flush(&self) -> Result<(), Self::Error> {
+        (**self).flush()
+    }
+}
+
+#[cfg(all(test, not(feature = "storage-write")))]
 mod tests {
     struct MockReader {
         blocks: [super::Block; 2],

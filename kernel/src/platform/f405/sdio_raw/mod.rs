@@ -23,6 +23,16 @@ const CMD_SET_BLOCK_LENGTH: u8 = 16;
 const CMD_READ_SINGLE_BLOCK: u8 = 17;
 #[cfg(feature = "storage-write")]
 const CMD_WRITE_SINGLE_BLOCK: u8 = 24;
+#[cfg(feature = "storage-write")]
+const CMD_SEND_STATUS: u8 = 13;
+#[cfg(feature = "storage-write")]
+const CARD_READY_FOR_DATA: u32 = 1 << 8;
+#[cfg(feature = "storage-write")]
+const CARD_STATE_TRAN: u32 = 4;
+#[cfg(feature = "storage-write")]
+const CARD_STATE_MASK: u32 = 0xF << 9;
+#[cfg(feature = "storage-write")]
+const CARD_STATUS_POLL_LIMIT: u32 = 1_000_000;
 
 #[repr(C, align(4))]
 struct AlignedDmaWords([u32; DATA_WORD_COUNT as usize]);
@@ -101,6 +111,27 @@ impl RawSdioReader {
         block: &Block,
     ) -> Result<(), StorageError> {
         write::write_block(self, address, block)
+    }
+
+    /// Waits until the card reports that all writes are durable and idle.
+    #[cfg(feature = "storage-write")]
+    pub(crate) fn flush(&self) -> Result<(), StorageError> {
+        let registers = Self::registers();
+        for _ in 0..CARD_STATUS_POLL_LIMIT {
+            let response = init::send(
+                registers,
+                CMD_SEND_STATUS,
+                self.relative_address,
+                init::Response::Short,
+            )?;
+            let status = response[0];
+            if status & CARD_READY_FOR_DATA != 0
+                && (status & CARD_STATE_MASK) >> 9 == CARD_STATE_TRAN
+            {
+                return Ok(());
+            }
+        }
+        Err(StorageError::Timeout)
     }
     fn command_argument(&self, address: BlockAddress) -> Result<u32, StorageError> {
         if self.high_capacity {

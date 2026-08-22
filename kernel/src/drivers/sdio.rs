@@ -1,5 +1,7 @@
 //! Hardware-neutral SDIO block-reader contract.
 
+#[cfg(feature = "storage-write")]
+use super::BlockTransportFlush;
 use super::{Block, BlockAddress, BlockReader, StorageError};
 use crate::storage::durable::BlockDevice;
 
@@ -14,6 +16,10 @@ pub trait SdioTransport {
     /// Writes one complete block to the initialized card.
     #[cfg(feature = "storage-write")]
     fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError>;
+
+    /// Waits until the card has completed previously accepted writes.
+    #[cfg(feature = "storage-write")]
+    fn flush(&mut self) -> Result<(), StorageError>;
 }
 
 /// Adapts any SDIO transport to the generic bounded block-reader contract.
@@ -104,11 +110,30 @@ where
     }
 
     fn flush(&mut self) -> Result<(), Self::Error> {
-        Ok(())
+        #[cfg(feature = "storage-write")]
+        {
+            return <Self as BlockTransportFlush>::flush(self);
+        }
+        #[cfg(not(feature = "storage-write"))]
+        {
+            Err(StorageError::Unsupported)
+        }
     }
 
     fn block_count(&self) -> Result<u32, Self::Error> {
         <Self as BlockReader>::block_count(self)
+    }
+}
+
+#[cfg(feature = "storage-write")]
+impl<T> BlockTransportFlush for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    type Error = StorageError;
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        self.transport.flush()
     }
 }
 
@@ -160,6 +185,15 @@ mod tests {
             _address: crate::drivers::BlockAddress,
             _block: &crate::drivers::Block,
         ) -> Result<(), crate::drivers::StorageError> {
+            if self.initialized {
+                Ok(())
+            } else {
+                Err(crate::drivers::StorageError::NotReady)
+            }
+        }
+
+        #[cfg(feature = "storage-write")]
+        fn flush(&mut self) -> Result<(), crate::drivers::StorageError> {
             if self.initialized {
                 Ok(())
             } else {

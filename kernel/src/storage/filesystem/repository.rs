@@ -4,9 +4,12 @@ use core::str;
 
 use embedded_sdmmc::{Error, Mode, VolumeIdx, VolumeManager};
 
-use crate::storage::{
-    durable::{DurableArtifact, DurableStorageAdapter},
-    repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage},
+use crate::{
+    drivers::FlushableBlockDevice,
+    storage::{
+        durable::{DurableArtifact, DurableStorageAdapter},
+        repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage},
+    },
 };
 
 use super::{
@@ -181,7 +184,9 @@ where
 
 impl<D> DurableStorageAdapter for FatRepositoryStorage<D>
 where
-    D: Copy + embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
+    D: Copy
+        + embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>
+        + FlushableBlockDevice<Error = crate::drivers::StorageError>,
 {
     type Error = embedded_sdmmc::Error<crate::drivers::StorageError>;
 
@@ -202,7 +207,7 @@ where
     }
 
     fn flush(&mut self) -> Result<(), Self::Error> {
-        Ok(())
+        self.device.flush().map_err(Error::DeviceError)
     }
 }
 

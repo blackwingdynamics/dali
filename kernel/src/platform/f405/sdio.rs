@@ -49,4 +49,9 @@ impl SdioTransport for Stm32f405SdioTransport {
     fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
         cortex_m::interrupt::free(|_| self.raw.borrow_mut().write_block(address, block))
     }
+
+    #[cfg(feature = "storage-write")]
+    fn flush(&mut self) -> Result<(), StorageError> {
+        cortex_m::interrupt::free(|_| self.raw.borrow_mut().flush())
+    }
 }

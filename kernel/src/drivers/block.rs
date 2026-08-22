@@ -67,6 +67,25 @@ pub trait BlockReader {
     fn block_count(&self) -> Result<u32, StorageError>;
 }
 
+/// Flushes completed writes at a block-transport boundary.
+pub trait FlushableBlockDevice {
+    /// Transport-specific failure type.
+    type Error;
+
+    /// Waits until previously accepted writes are ready on durable media.
+    fn flush(&self) -> Result<(), Self::Error>;
+}
+
+/// Mutable flush operation exposed by a concrete block transport.
+#[cfg(feature = "storage-write")]
+pub trait BlockTransportFlush {
+    /// Transport-specific failure type.
+    type Error;
+
+    /// Waits until previously accepted writes are ready on durable media.
+    fn flush(&mut self) -> Result<(), Self::Error>;
+}
+
 /// Writes complete fixed-size blocks to a storage medium.
 #[cfg(feature = "storage-write")]
 pub trait BlockWriter {
