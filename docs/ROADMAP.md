@@ -871,7 +871,11 @@ Compilation and host tests do not replace hardware evidence.
   slot1-to-slot0 and slot0-to-slot1 reads were rejected on F405 hardware.
 - [x] Add and run the reverse slot0-to-slot1 CPU isolation fixture so both
   directions are hardware-tested. DMA isolation remains separate.
-- [ ] Verify DMA isolation and reject unauthorized DMA configuration.
+- [x] Verify DMA isolation and reject unauthorized DMA configuration. F405
+  SWD captured the active marker with DMA2 Stream 3 enabled, `NDTR=128`,
+  `PAR=0x40012C80`, and `M0AR=0x20000024`; the signed application produced
+  both kernel and application DMA-request rejection records. `DCOUNT=0` is
+  retained as a storage-driver sequence observation, not a DMA policy failure.
 - [x] Define application crash, restart, and rollback lifecycle policy;
   hardware watchdog implementation remains deferred until heartbeat ownership.
 

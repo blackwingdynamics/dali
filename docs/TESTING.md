@@ -239,18 +239,22 @@ multi-application isolation, or watchdog support.
 - [x] F405 hardware evidence that the guarded SDIO path remains operational
   after the ownership check: firmware reported `SDIO card initialized` and
   `Read block 0 successfully` before loading two AMRN v4 packages.
-- [ ] Hardware evidence for unauthorized DMA configuration or application-owned
-  DMA. The current ABI exposes no application DMA service, so general DMA
-  isolation is not claimed yet.
+- [x] F405 SWD evidence for kernel-owned DMA configuration and application-owned
+  DMA denial. At the active diagnostic marker, DMA2 Stream 3 reported
+  `CR=0x08025401`, `NDTR=128`, `PAR=0x40012C80`, and `M0AR=0x20000024`, while
+  the target-visible trace reported `Application DMA request rejected` from
+  both the kernel security boundary and the application. `DCOUNT=0` remains a
+  storage-driver sequence observation and is not required for this DMA policy
+  acceptance.
 
 The first DMA-isolation hardware flow must use the release F405 target profile
 and an SWD probe. Capture the board revision, firmware image hash, target
 manifest revision, SD card and power details, SWD register state at DMA setup,
 the SDIO read result, and the application-DMA rejection result. The expected
-result is one successful kernel-owned SDIO block read and no application DMA
-entry point or peripheral configuration path. This flow is evidence for the
-current default-deny policy only; it does not establish arbitrary peripheral
-or DMA-controller isolation.
+result is one successful kernel-owned SDIO block read, a kernel-only DMA
+configuration snapshot, and no application DMA configuration path. This flow
+is evidence for the current default-deny policy only; it does not establish
+arbitrary peripheral or DMA-controller isolation.
 
 ### Watchdog and reset recovery
 

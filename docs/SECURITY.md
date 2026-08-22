@@ -42,7 +42,8 @@ application restart or rollback.
 
 The following remain outside the current guarantee boundary:
 
-- DMA isolation and DMA ownership enforcement;
+- complete arbitrary-peripheral DMA-controller isolation beyond the tested
+  kernel-owned F405 SDIO path;
 - complete multi-application lifecycle and application-to-application policy;
 - production package authenticity, Secure Boot, confidentiality, and
   anti-rollback;
@@ -88,7 +89,8 @@ for each of those cases, including bounded fault-frame decoding for the
 MemManage and BusFault paths.
 
 This milestone still does not claim a secure kernel, complete sandbox,
-complete fault isolation, DMA isolation, confidentiality, or authenticity.
+complete fault isolation, arbitrary DMA-controller isolation, confidentiality,
+or authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
 after application termination, keeps the read-only package boundary
