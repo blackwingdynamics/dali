@@ -27,6 +27,15 @@ pub enum JournalSlot {
     B,
 }
 
+/// Result of examining both fixed journal records after a reboot.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RecoveryDecision {
+    /// A committed generation is the durable active state.
+    Committed(CommitJournalRecord),
+    /// No committed record survived; any prepared state must be discarded.
+    DiscardPrepared,
+}
+
 impl JournalSlot {
     fn encode(self) -> u8 {
         match self {
@@ -80,6 +89,8 @@ pub enum JournalError {
     InvalidBundleLength,
     /// The stored CRC32 does not match the record body.
     InvalidCrc,
+    /// Neither journal record contains a committed generation.
+    NoCommittedRecord,
 }
 
 impl CommitJournalRecord {
@@ -134,6 +145,37 @@ impl CommitJournalRecord {
     }
 }
 
+/// Selects the durable generation from the two fixed journal records.
+///
+/// Torn or otherwise invalid records are ignored when the other record is
+/// valid. Prepared records never select an active slot. Among committed
+/// records, the greatest bundle version wins; journal sequence breaks ties.
+pub fn recover(input: &[u8]) -> Result<RecoveryDecision, JournalError> {
+    if input.len() != super::COMMIT_JOURNAL_BYTES {
+        return Err(JournalError::InvalidLength);
+    }
+    let first = CommitJournalRecord::decode(&input[..COMMIT_JOURNAL_RECORD_BYTES]).ok();
+    let second = CommitJournalRecord::decode(&input[COMMIT_JOURNAL_RECORD_BYTES..]).ok();
+    let selected = [first, second]
+        .into_iter()
+        .flatten()
+        .filter(|record| record.state == CommitJournalState::Committed)
+        .max_by(|left, right| {
+            (left.bundle_version, left.sequence).cmp(&(right.bundle_version, right.sequence))
+        });
+    if let Some(record) = selected {
+        return Ok(RecoveryDecision::Committed(record));
+    }
+    if first
+        .into_iter()
+        .chain(second)
+        .any(|record| record.state == CommitJournalState::Prepared)
+    {
+        return Ok(RecoveryDecision::DiscardPrepared);
+    }
+    Err(JournalError::NoCommittedRecord)
+}
+
 fn validate_fields(record: &CommitJournalRecord) -> Result<(), JournalError> {
     if record.bundle_length > MAX_BUNDLE_BYTES {
         return Err(JournalError::InvalidBundleLength);
@@ -184,12 +226,16 @@ fn crc32(bytes: &[u8]) -> u32 {
 mod tests {
     use super::*;
 
-    fn record() -> CommitJournalRecord {
+    fn record(
+        state: CommitJournalState,
+        sequence: u64,
+        bundle_version: u64,
+    ) -> CommitJournalRecord {
         CommitJournalRecord {
-            state: CommitJournalState::Committed,
+            state,
             active_slot: JournalSlot::B,
-            sequence: 7,
-            bundle_version: 3,
+            sequence,
+            bundle_version,
             bundle_length: 512,
             bundle_digest: [0xA5; 32],
         }
@@ -198,20 +244,25 @@ mod tests {
     #[test]
     fn round_trips_frozen_record() {
         let mut bytes = [0; COMMIT_JOURNAL_RECORD_BYTES];
-        record().encode(&mut bytes).expect("record encodes");
-        assert_eq!(CommitJournalRecord::decode(&bytes), Ok(record()));
+        let expected = record(CommitJournalState::Committed, 7, 3);
+        expected.encode(&mut bytes).expect("record encodes");
+        assert_eq!(CommitJournalRecord::decode(&bytes), Ok(expected));
     }
 
     #[test]
     fn rejects_tampered_body_and_reserved_bytes() {
         let mut bytes = [0; COMMIT_JOURNAL_RECORD_BYTES];
-        record().encode(&mut bytes).expect("record encodes");
+        record(CommitJournalState::Committed, 7, 3)
+            .encode(&mut bytes)
+            .expect("record encodes");
         bytes[0x10] ^= 1;
         assert_eq!(
             CommitJournalRecord::decode(&bytes),
             Err(JournalError::InvalidCrc)
         );
-        record().encode(&mut bytes).expect("record encodes");
+        record(CommitJournalState::Committed, 7, 3)
+            .encode(&mut bytes)
+            .expect("record encodes");
         bytes[RESERVED_OFFSET] = 1;
         assert_eq!(
             CommitJournalRecord::decode(&bytes),
@@ -222,11 +273,85 @@ mod tests {
     #[test]
     fn rejects_oversized_bundle() {
         let mut bytes = [0; COMMIT_JOURNAL_RECORD_BYTES];
-        let mut invalid = record();
+        let mut invalid = record(CommitJournalState::Committed, 7, 3);
         invalid.bundle_length = MAX_BUNDLE_BYTES + 1;
         assert_eq!(
             invalid.encode(&mut bytes),
             Err(JournalError::InvalidBundleLength)
+        );
+    }
+
+    #[test]
+    fn selects_the_newest_committed_generation_and_ignores_prepared() {
+        let prepared = record(CommitJournalState::Prepared, 12, 8);
+        let committed = record(CommitJournalState::Committed, 11, 7);
+        let mut journal = [0; super::super::COMMIT_JOURNAL_BYTES];
+        prepared
+            .encode(&mut journal[..COMMIT_JOURNAL_RECORD_BYTES])
+            .expect("prepared record encodes");
+        committed
+            .encode(&mut journal[COMMIT_JOURNAL_RECORD_BYTES..])
+            .expect("committed record encodes");
+
+        assert_eq!(
+            recover(&journal),
+            Ok(RecoveryDecision::Committed(committed))
+        );
+    }
+
+    #[test]
+    fn prefers_version_then_sequence_when_both_records_are_committed() {
+        let older = record(CommitJournalState::Committed, 20, 9);
+        let newer = record(CommitJournalState::Committed, 19, 10);
+        let mut journal = [0; super::super::COMMIT_JOURNAL_BYTES];
+        older
+            .encode(&mut journal[..COMMIT_JOURNAL_RECORD_BYTES])
+            .expect("older record encodes");
+        newer
+            .encode(&mut journal[COMMIT_JOURNAL_RECORD_BYTES..])
+            .expect("newer record encodes");
+
+        assert_eq!(recover(&journal), Ok(RecoveryDecision::Committed(newer)));
+    }
+
+    #[test]
+    fn uses_sequence_to_break_equal_version_ties() {
+        let older = record(CommitJournalState::Committed, 20, 9);
+        let newer = record(CommitJournalState::Committed, 21, 9);
+        let mut journal = [0; super::super::COMMIT_JOURNAL_BYTES];
+        older
+            .encode(&mut journal[..COMMIT_JOURNAL_RECORD_BYTES])
+            .expect("older record encodes");
+        newer
+            .encode(&mut journal[COMMIT_JOURNAL_RECORD_BYTES..])
+            .expect("newer record encodes");
+
+        assert_eq!(recover(&journal), Ok(RecoveryDecision::Committed(newer)));
+    }
+
+    #[test]
+    fn discards_prepared_state_when_no_committed_record_survives() {
+        let prepared = record(CommitJournalState::Prepared, 12, 8);
+        let mut journal = [0; super::super::COMMIT_JOURNAL_BYTES];
+        prepared
+            .encode(&mut journal[..COMMIT_JOURNAL_RECORD_BYTES])
+            .expect("prepared record encodes");
+
+        assert_eq!(recover(&journal), Ok(RecoveryDecision::DiscardPrepared));
+    }
+
+    #[test]
+    fn ignores_one_torn_record_when_the_other_is_committed() {
+        let committed = record(CommitJournalState::Committed, 11, 7);
+        let mut journal = [0; super::super::COMMIT_JOURNAL_BYTES];
+        journal[..COMMIT_JOURNAL_RECORD_BYTES].fill(0xFF);
+        committed
+            .encode(&mut journal[COMMIT_JOURNAL_RECORD_BYTES..])
+            .expect("committed record encodes");
+
+        assert_eq!(
+            recover(&journal),
+            Ok(RecoveryDecision::Committed(committed))
         );
     }
 }

@@ -5,6 +5,8 @@ use crate::drivers::{Block, BlockAddress};
 pub mod coordinator;
 pub mod journal;
 
+pub use journal::{JournalError, RecoveryDecision, recover as recover_commit_journal};
+
 /// Hardware-neutral fixed-block boundary below filesystem adapters.
 ///
 /// Board support packages implement this boundary. The trait deliberately

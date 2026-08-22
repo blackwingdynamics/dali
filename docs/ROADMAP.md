@@ -248,6 +248,10 @@ milestone into `main` only after its documented validation evidence exists.
    write/flush/read-back before commit-marker write/flush/read-back in the
    feature-gated artifact acceptance path; disposable-card hardware evidence
    is recorded in the 2026-08-22 acceptance log.
+   [x] Add bounded reboot recovery for both DALI-CMT.BIN records: ignore torn
+   records, select the newest valid committed generation by version then
+   sequence, and discard Prepared-only state. F405 interruption testing
+   remains pending hardware evidence.
    [x] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
    kernel/runtime RAM region. The repository contract now uses
