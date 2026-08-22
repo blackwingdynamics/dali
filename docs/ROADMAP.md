@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-22
+## Current Status — 2026-08-23
 
 ### Completed and evidenced
 
@@ -133,10 +133,12 @@ reproducible evidence recorded in one timestamped acceptance record.
    Bundle manifest boot gate. F405 hardware evidence confirms signed bundle
    verification and rejection of a rollback generation on 2026-08-22.
    Pre-reset kernel-image Secure Boot remains a separate contract boundary.
-6. **Implement storage lifecycle.** [in progress] Add bounded card
+6. **Implement storage lifecycle.** [x] Add bounded card
    `Unavailable -> Present -> Ready -> Removed/Fault` transitions,
    removal/reinsert handling, bounded SDIO reinitialization, safe recovery-loop
-   return, and the corresponding physical hardware tests.
+   return, and the corresponding physical hardware tests. F405 evidence on
+   2026-08-23 recorded `Card removed`, `Recovery heartbeat active`, repeated
+   bounded reinitialization probes, and `Card reinitialized; state Ready`.
 7. **Harden release and CI.** Add the strict feature-matrix checks, reproducible
    memory/evidence artifacts, and release gates after the preceding milestone
    is closed.
@@ -387,9 +389,11 @@ storage contract during the current MVP work.
 - [x] Define a hardware-neutral storage lifecycle contract with explicit
   `Unavailable`, `Present`, `Ready`, `Removed`, and `Fault` states.
 - [x] Add bounded storage health checks and safe F405 SDIO reinitialization for
-  card insertion/removal during storage bring-up and recovery.
-- [ ] Add hardware evidence for card removal, reinsertion, repeated reset, and
-  recovery without treating a transient physical disconnect as a kernel panic.
+  card insertion/removal during storage bring-up, recovery, and the recovery
+  heartbeat.
+- [x] Add F405 hardware evidence for card removal, reinsertion, repeated
+  bounded probes, and recovery without treating a transient physical
+  disconnect as a kernel panic. The 2026-08-23 trace reached `Ready`.
 - [ ] Extend the lifecycle contract to future storage backends such as eMMC,
   NVMe, or SSD without adding backend-specific conditions to kernel policy.
 

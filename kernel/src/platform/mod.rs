@@ -91,6 +91,9 @@ pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targe
 #[cfg(feature = "board-stm32f405-sd")]
 pub(crate) const SYSTEM_CLOCK_MHZ: u32 = <f405::Board as Backend>::SYSTEM_CLOCK_MHZ;
 
+#[cfg(feature = "sdio")]
+pub(crate) type PlatformSdioReader = <f405::Board as Backend>::SdioReader;
+
 #[cfg(feature = "board-stm32f405-sd")]
 pub(crate) fn initialize() -> Platform {
     Platform(<f405::Board as Backend>::initialize())

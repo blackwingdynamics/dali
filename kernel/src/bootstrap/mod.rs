@@ -7,6 +7,52 @@ mod storage;
 
 use crate::{logging, platform};
 
+/// Storage state and the reader retained for runtime card recovery.
+pub(super) struct StorageRuntime {
+    status: lifecycle::status::StorageStatus,
+    #[cfg(feature = "sdio")]
+    recovery_reader: Option<platform::PlatformSdioReader>,
+}
+
+impl StorageRuntime {
+    pub(super) const fn from_status(status: lifecycle::status::StorageStatus) -> Self {
+        Self::new(status)
+    }
+
+    pub(super) const fn new(status: lifecycle::status::StorageStatus) -> Self {
+        Self {
+            status,
+            #[cfg(feature = "sdio")]
+            recovery_reader: None,
+        }
+    }
+
+    #[cfg(feature = "sdio")]
+    pub(super) const fn with_recovery_reader(
+        status: lifecycle::status::StorageStatus,
+        reader: platform::PlatformSdioReader,
+    ) -> Self {
+        Self {
+            status,
+            recovery_reader: Some(reader),
+        }
+    }
+
+    pub(super) const fn status(&self) -> lifecycle::status::StorageStatus {
+        self.status
+    }
+
+    #[cfg(feature = "sdio")]
+    pub(super) fn poll_recovery(&mut self, board: &mut platform::Platform) {
+        storage::poll_runtime(self, board);
+    }
+
+    #[cfg(feature = "sdio")]
+    pub(super) const fn recovery_poll_due(&self, elapsed_ms: u32) -> bool {
+        elapsed_ms >= crate::drivers::lifecycle::policy::RECOVERY_POLL_PERIOD_MS
+    }
+}
+
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
 pub fn run() -> ! {
     let mut board = platform::initialize();
@@ -66,12 +112,12 @@ pub fn run() -> ! {
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Starting storage initialization"),
     );
-    let storage_status = storage::initialize(&mut board, boot_mode);
+    let storage_runtime = storage::initialize(&mut board, boot_mode);
 
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("Entering kernel heartbeat"),
     );
 
-    lifecycle::heartbeat::run(board, storage_status);
+    lifecycle::heartbeat::run(board, storage_runtime);
 }

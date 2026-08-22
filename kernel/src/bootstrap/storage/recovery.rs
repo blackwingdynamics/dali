@@ -77,3 +77,33 @@ where
         Err(error) => Err(error),
     }
 }
+
+pub(super) fn poll_runtime(
+    runtime: &mut super::super::StorageRuntime,
+    board: &mut platform::Platform,
+) {
+    let Some(reader) = runtime.recovery_reader.as_mut() else {
+        return;
+    };
+    logging::info(
+        logging::BOOT_SUBSYSTEM,
+        format_args!("[STORAGE] Reinitialization probe started"),
+    );
+    match initialize_with_recovery(reader, board) {
+        Ok(()) => {
+            runtime.status = super::super::lifecycle::status::StorageStatus::Ready;
+            logging::info(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[STORAGE] Card reinitialized; state Ready"),
+            );
+        }
+        Err(StorageError::CardRemoved) => {}
+        Err(error) => {
+            runtime.status = super::super::lifecycle::status::StorageStatus::Failure;
+            logging::error(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[STORAGE] Recovery reinitialization failed: {:?}", error),
+            );
+        }
+    }
+}

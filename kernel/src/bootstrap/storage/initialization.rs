@@ -1,5 +1,6 @@
 //! Storage initialization and AMRN loading policy.
 
+use super::super::StorageRuntime;
 use super::super::lifecycle::status;
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
@@ -12,16 +13,13 @@ use super::recovery::{initialize_with_recovery, read_block_with_recovery};
 use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]
-pub fn initialize(
-    board: &mut platform::Platform,
-    boot_mode: status::BootMode,
-) -> status::StorageStatus {
+pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -> StorageRuntime {
     if boot_mode == status::BootMode::SafeMode {
         logging::info(
             logging::SECURITY_SUBSYSTEM,
             format_args!("[RECOVERY] Safe Mode active; application loading skipped"),
         );
-        return status::StorageStatus::SafeMode;
+        return StorageRuntime::from_status(status::StorageStatus::SafeMode);
     }
 
     let Some(mut reader) = board.take_sdio_reader() else {
@@ -29,7 +27,7 @@ pub fn initialize(
             logging::BOOT_SUBSYSTEM,
             format_args!("[STORAGE] Storage interface unavailable"),
         );
-        return status::StorageStatus::Failure;
+        return StorageRuntime::from_status(status::StorageStatus::Failure);
     };
 
     // The selected transport may call an external HAL whose internal polling
@@ -45,21 +43,21 @@ pub fn initialize(
                     logging::BOOT_SUBSYSTEM,
                     format_args!("[STORAGE] No storage medium detected; entering kernel heartbeat"),
                 );
-                status::StorageStatus::NotDetected
+                StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
             }
             StorageError::CardRemoved => {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
                     format_args!("[STORAGE] Card removed; entering safe recovery loop"),
                 );
-                status::StorageStatus::Removed
+                StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
             }
             error => {
                 logging::error(
                     logging::BOOT_SUBSYSTEM,
                     format_args!("[STORAGE] Storage initialization failed: {:?}", error),
                 );
-                status::StorageStatus::Failure
+                StorageRuntime::from_status(status::StorageStatus::Failure)
             }
         };
     }
@@ -82,7 +80,7 @@ pub fn initialize(
                 logging::SECURITY_SUBSYSTEM,
                 format_args!("[SECURITY] Slot manager unavailable: {:?}", error),
             );
-            return status::StorageStatus::Failure;
+            return StorageRuntime::from_status(status::StorageStatus::Failure);
         }
     };
     #[cfg(feature = "abi-mpu")]
@@ -142,7 +140,7 @@ pub fn initialize(
                             logging::SECURITY_SUBSYSTEM,
                             format_args!("[RECOVERY] Commit journal recovery failed: {:?}", error),
                         );
-                        return status::StorageStatus::Failure;
+                        return StorageRuntime::from_status(status::StorageStatus::Failure);
                     }
                 };
                 let committed_generation = match journal_recovery {
@@ -172,7 +170,7 @@ pub fn initialize(
                                 error
                             ),
                         );
-                        return status::StorageStatus::Failure;
+                        return StorageRuntime::from_status(status::StorageStatus::Failure);
                     }
                     logging::info(
                         logging::SECURITY_SUBSYSTEM,
@@ -180,14 +178,14 @@ pub fn initialize(
                             "[ACCEPTANCE] Prepared interruption journal staged; reset target to verify recovery"
                         ),
                     );
-                    return status::StorageStatus::Failure;
+                    return StorageRuntime::from_status(status::StorageStatus::Failure);
                 }
                 if let Err(error) = super::acceptance::verify_trust_store_artifacts(&device) {
                     logging::error(
                         logging::BOOT_SUBSYSTEM,
                         format_args!("[STORAGE] Trust-store artifact test failed: {:?}", error),
                     );
-                    return status::StorageStatus::Failure;
+                    return StorageRuntime::from_status(status::StorageStatus::Failure);
                 }
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
@@ -195,7 +193,7 @@ pub fn initialize(
                         "[STORAGE] Trust-store artifact write/flush/read-back test passed"
                     ),
                 );
-                super::super::loading::load(
+                StorageRuntime::from_status(super::super::loading::load(
                     &device,
                     board,
                     committed_generation,
@@ -203,10 +201,10 @@ pub fn initialize(
                     &mut slot_manager,
                     #[cfg(feature = "abi-mpu")]
                     &mut context_owner,
-                )
+                ))
             }
             #[cfg(not(feature = "storage-write"))]
-            super::super::loading::load(
+            StorageRuntime::from_status(super::super::loading::load(
                 BlockDeviceAdapter::new(reader),
                 board,
                 None,
@@ -214,21 +212,21 @@ pub fn initialize(
                 &mut slot_manager,
                 #[cfg(feature = "abi-mpu")]
                 &mut context_owner,
-            )
+            ))
         }
         Err(StorageError::CardRemoved) => {
             logging::info(
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Card removed; entering safe recovery loop"),
             );
-            status::StorageStatus::Removed
+            StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
         }
         Err(error) => {
             logging::error(
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[STORAGE] Block 0 read failed: {:?}", error),
             );
-            status::StorageStatus::Failure
+            StorageRuntime::from_status(status::StorageStatus::Failure)
         }
     }
 }
@@ -237,6 +235,6 @@ pub fn initialize(
 pub fn initialize(
     _board: &mut platform::Platform,
     _boot_mode: status::BootMode,
-) -> status::StorageStatus {
-    status::StorageStatus::NotDetected
+) -> super::StorageRuntime {
+    super::StorageRuntime::from_status(status::StorageStatus::NotDetected)
 }

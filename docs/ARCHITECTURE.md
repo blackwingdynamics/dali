@@ -347,9 +347,11 @@ The hardware-neutral storage lifecycle tracks `Unavailable`, `Present`,
 so a bounded SDIO command or data timeout is classified as a removal
 observation; integrity and transport errors remain faults. Initialization and
 the first block read use a bounded reinitialization window before returning to
-the kernel recovery heartbeat. The existing boot-only repository contract is
-unchanged; live removal during later runtime storage use requires a separate
-runtime owner and hardware acceptance.
+the kernel recovery heartbeat. When recovery retains the SDIO reader, the
+heartbeat performs bounded presence probes and reinitializes the reader at the
+configured recovery interval; a successful probe transitions the runtime to
+`Ready`. The existing boot-only repository contract is unchanged, and a
+recovered card is not used to relaunch an application without a new boot.
 
 ### Board-agnostic repository and durable-storage boundary
 

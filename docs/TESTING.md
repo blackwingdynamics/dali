@@ -43,8 +43,17 @@ cargo test -p dali-kernel --lib --no-default-features \
 ```
 
 The F405 backend maps bounded SDIO command/data timeouts to `CardRemoved`
-because this board exposes no card-detect GPIO. A physical removal/reinsert
-run remains required before marking the lifecycle hardware evidence complete.
+because this board exposes no card-detect GPIO. The recovery heartbeat retains
+the reader after a failed bring-up, probes at the configured interval, and
+performs bounded reinitialization when the card responds again. On 2026-08-23,
+F405 hardware recorded the complete trace:
+
+```text
+[STORAGE] Card removed; entering safe recovery loop
+[STORAGE] Recovery heartbeat active
+[STORAGE] Reinitialization probe started
+[STORAGE] Card reinitialized; state Ready
+```
 
 The feature-gated `storage-write` target build contains a real storage
 acceptance path. On an initialized F405 SDIO card it writes each of the three

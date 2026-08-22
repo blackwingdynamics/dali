@@ -5,14 +5,14 @@ use super::status::FAST_BLINK_PERIOD_MS;
 use super::status::{
     HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus,
 };
-use crate::platform;
+use crate::{bootstrap::StorageRuntime, platform};
 
-/// Displays the storage status through the board's single status LED forever.
-pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
+/// Displays the storage status and polls retained storage during recovery.
+pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
     let mut led_on = false;
     let mut elapsed_ms = 0;
     #[cfg(feature = "sdio")]
-    if matches!(storage_status, StorageStatus::Removed) {
+    if matches!(storage.status(), StorageStatus::Removed) {
         crate::logging::info(
             crate::logging::BOOT_SUBSYSTEM,
             format_args!("[STORAGE] Recovery heartbeat active"),
@@ -20,8 +20,15 @@ pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
     }
 
     loop {
-        match storage_status {
-            #[cfg(all(feature = "sdio", not(feature = "abi-mpu")))]
+        #[cfg(feature = "sdio")]
+        if matches!(storage.status(), StorageStatus::Removed)
+            && storage.recovery_poll_due(elapsed_ms)
+        {
+            storage.poll_recovery(&mut board);
+            elapsed_ms = 0;
+        }
+        match storage.status() {
+            #[cfg(feature = "sdio")]
             StorageStatus::Ready => {
                 board.set_status_led(true);
             }
@@ -32,6 +39,7 @@ pub fn run(mut board: platform::Platform, storage_status: StorageStatus) -> ! {
                     elapsed_ms = 0;
                 }
             }
+            #[cfg(not(feature = "sdio"))]
             StorageStatus::NotDetected => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;
