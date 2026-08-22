@@ -14,13 +14,14 @@ use crate::{
 
 use super::{
     AmrnFile, FilesystemManager, KernelTimeSource, TrustStoreArtifact, read_trust_store_artifact,
-    stream_repository_file, write_trust_store_artifact,
+    stream_repository_file, stream_root_file, write_trust_store_artifact,
 };
 
 const PACKAGE_NAME_BYTES: usize = 64 + 5;
 const DELEGATION_NAME_BYTES: usize = 64 + 5;
 const METADATA_NAME_BYTES: usize = 16;
 const DELEGATIONS_DIRECTORY: &str = "delegat";
+const BUNDLE_MANIFEST_NAME: &str = "bundle.manifest";
 
 type RepositoryChunkPet = fn() -> Result<(), crate::drivers::StorageError>;
 
@@ -227,6 +228,13 @@ where
         F: FnMut(&[u8]) -> Result<(), Self::Error>,
     {
         match document {
+            RepositoryDocument::Bundle => stream_root_file(
+                self.device,
+                BUNDLE_MANIFEST_NAME,
+                chunk,
+                consumer,
+                self.chunk_pet,
+            ),
             RepositoryDocument::Root => self.stream_fixed_metadata(b"root", chunk, consumer),
             RepositoryDocument::Timestamp => {
                 self.stream_fixed_metadata(b"timestamp", chunk, consumer)

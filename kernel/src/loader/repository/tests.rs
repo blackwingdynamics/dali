@@ -50,6 +50,7 @@ fn rejects_storage_lengths_larger_than_caller_buffers() {
             }),
             now: None,
             committed_generation: None,
+            generation_admission: RepositoryGenerationAdmission::ActiveBoot,
         },
         &mut buffers,
     );

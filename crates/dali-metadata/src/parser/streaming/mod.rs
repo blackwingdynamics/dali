@@ -3,12 +3,14 @@
 //! The parser validates the fixed envelope while bytes arrive and forwards
 //! only the signed body chunks to the caller. It never retains the body.
 
+mod bundle;
 mod chain;
 mod delegation;
 mod revocation;
 mod root;
 mod snapshot;
 
+pub use bundle::{BinaryBundleBodyStreamParser, BundleManifestSummary};
 pub use chain::{
     BinaryRoleBodyParser, StreamingChainError, matches_reference, role_definition, root_keys,
     verify_binary_role_envelope,

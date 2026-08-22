@@ -12,6 +12,7 @@ mod artifacts;
 mod multi;
 mod read;
 mod repository;
+mod root_stream;
 #[cfg(test)]
 mod tests;
 mod write;
@@ -21,11 +22,12 @@ pub use artifacts::{
     TrustStoreArtifact, read_trust_store_artifact, write_trust_store_artifact,
 };
 pub use multi::with_amrn_files;
-pub(crate) use read::{close_directories, close_file_with_error};
+pub(crate) use read::{close_directories, close_file_with_error, close_root};
 pub use read::{read_repository_file, read_root_file, stream_repository_file};
 pub use repository::{
     FatRepositoryStorage, RepositoryMetadataFormat, with_content_addressed_package,
 };
+pub(crate) use root_stream::stream_root_file;
 pub use write::write_root_file;
 
 /// The package extension recognized by the MVP root-directory scan.

@@ -27,6 +27,15 @@ pub use chain::{
 };
 pub use installation::{PackageInstallationAuthorization, install_repository};
 
+/// Generation rule applied to a signed bundle during repository loading.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RepositoryGenerationAdmission {
+    /// Load the bundle selected by the durable active-generation record.
+    ActiveBoot,
+    /// Accept only an explicitly authorized candidate newer than the active record.
+    AuthorizedCandidate,
+}
+
 /// Caller-owned bounded buffers for one repository verification pass.
 pub struct RepositoryBuffers {
     /// Shared chunk used to move bytes from storage into role buffers.
@@ -85,6 +94,8 @@ pub struct RepositoryLoadRequest {
     pub now: Option<u64>,
     /// Durable trust-store generation selected during boot recovery.
     pub committed_generation: Option<dali_metadata::TrustStoreRecord>,
+    /// Context that determines whether equality is an active boot or a candidate.
+    pub generation_admission: RepositoryGenerationAdmission,
 }
 
 /// Copy-only result returned after a repository was durably published.

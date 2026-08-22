@@ -1,10 +1,10 @@
 //! Second-pass verification for Binary Metadata v2 role envelopes.
 
 use crate::{
-    BinaryDelegationBodyStreamParser, BinaryEnvelopeStreamParser, BinaryRevocationBodyStreamParser,
-    BinaryRootBodyStreamParser, BinarySnapshotBodyStreamParser, BinaryTimestampBodyStreamParser,
-    DecodeError, MetadataRole, RoleDefinition, RoleKey, Sha256Digest, StreamVerificationResult,
-    StreamingBodyError, StreamingRoleVerifier,
+    BinaryBundleBodyStreamParser, BinaryDelegationBodyStreamParser, BinaryEnvelopeStreamParser,
+    BinaryRevocationBodyStreamParser, BinaryRootBodyStreamParser, BinarySnapshotBodyStreamParser,
+    BinaryTimestampBodyStreamParser, DecodeError, MetadataRole, RoleDefinition, RoleKey,
+    Sha256Digest, StreamVerificationResult, StreamingBodyError, StreamingRoleVerifier,
 };
 use core::mem::MaybeUninit;
 
@@ -44,6 +44,7 @@ macro_rules! role_parser {
 }
 
 role_parser!(BinaryRootBodyStreamParser, crate::RootMetadata);
+role_parser!(BinaryBundleBodyStreamParser, crate::BundleManifestSummary);
 role_parser!(BinaryTimestampBodyStreamParser, crate::TimestampMetadata);
 impl<const CAPACITY: usize> BinaryRoleBodyParser for BinarySnapshotBodyStreamParser<CAPACITY> {
     type Output = crate::SnapshotMetadata;

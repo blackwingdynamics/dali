@@ -24,6 +24,7 @@ abi-authentication = ["abi-relocation", "dep:dali-crypto"]
 repository-loader = ["abi-authentication", "dep:dali-metadata"]
 storage-write = []
 storage-interruption-test = ["storage-write"]
+storage-rollback-test = ["storage-write"]
 
 [lints]
 workspace = true

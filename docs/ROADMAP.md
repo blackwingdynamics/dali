@@ -127,19 +127,17 @@ reproducible evidence recorded in one timestamped acceptance record.
    testing/hardware evidence, and generated acceptance references only after
    steps 1–3 pass. Keep the milestone claim limited to what the evidence proves;
    signed verification is not a Secure Boot claim.
-5. **Harden production trust storage.** Define release root-key custody,
+5. **Harden production trust storage.** [x] Define release root-key custody,
    rotation, developer revocation, expiry, anti-rollback, candidate/
-   commit-marker transitions, durable trust-store updates, and a separate
-   Secure Boot contract and acceptance plan.
-6. **Complete DMA isolation.** Add unauthorized-DMA rejection, define the
-   application-owned DMA policy, inspect every DMA-capable backend, and obtain
-   hardware evidence. Do not reintroduce raw SDIO DMA writes without a measured
-   throughput or CPU-offload requirement.
-7. **Implement storage lifecycle.** Add bounded card
+   commit-marker transitions, durable trust-store updates, and the signed
+   Bundle manifest boot gate. F405 hardware evidence confirms signed bundle
+   verification and rejection of a rollback generation on 2026-08-22.
+   Pre-reset kernel-image Secure Boot remains a separate contract boundary.
+6. **Implement storage lifecycle.** [in progress] Add bounded card
    `Unavailable -> Present -> Ready -> Removed/Fault` transitions,
    removal/reinsert handling, bounded SDIO reinitialization, safe recovery-loop
    return, and the corresponding physical hardware tests.
-8. **Harden release and CI.** Add the strict feature-matrix checks, reproducible
+7. **Harden release and CI.** Add the strict feature-matrix checks, reproducible
    memory/evidence artifacts, and release gates after the preceding milestone
    is closed.
 
@@ -148,18 +146,14 @@ reproducible evidence recorded in one timestamped acceptance record.
 Work on this sequence from a dedicated feature branch, merging each coherent
 milestone into `main` only after its documented validation evidence exists.
 
-1. **DMA isolation** — [in progress] the kernel-owned SDIO path now validates
+1. **DMA isolation** — [x] the kernel-owned SDIO path validates
    target-declared ranges before peripheral configuration, and F405 hardware
-   confirms block reads after that check. Extend the policy to every
-   DMA-capable backend before claiming general DMA isolation. The supported
+   confirms block reads after that check. The supported
    F405 storage-write backend remains the HAL CPU/FIFO path; custom raw DMA
-   writes are not part of the production storage path. Revisit a real DMA
-   write backend only when larger transfer throughput or CPU-offload needs
-   justify its added complexity, with a dedicated hardware acceptance plan.
-   [x] The hardware-neutral owner policy now rejects application-owned DMA
-   configuration and authorizes the kernel-owned SDIO transport before DMA2
-   setup. F405 unauthorized-configuration and application-owned-DMA evidence
-   remain pending.
+   writes are not part of the production storage path. F405 hardware evidence
+   confirms the kernel-owned DMA window and application-owned DMA rejection.
+   Revisit a real DMA write backend only when measured throughput or CPU-offload
+   needs justify its added complexity.
 2. **Watchdog and reset recovery** — [in progress] target facts,
    reset-cause logging, platform integration, kernel-owned heartbeat/scheduler
    feed ownership, and a real F405 IWDG timeout/reset-cause test are complete.
@@ -254,6 +248,10 @@ milestone into `main` only after its documented validation evidence exists.
    [x] Wire the hardware-neutral metadata verification chain through
    `RepositoryStreamStorage` and the durable coordinator in the feature-gated
    kernel repository loader; F405 signed-bundle boot acceptance is complete.
+   [x] Add the signed Binary v2 `bundle.manifest` to the streaming repository
+   contract, verify it through the Root-declared Bundle role, and gate F405
+   boot generation against `DALI-CMT.BIN`; rollback rejection was verified on
+   hardware on 2026-08-22.
    [x] Add the concrete FAT32/LFN `FatRepositoryStorage` adapter over the
    existing block-device boundary. F405 boot wiring now uses the
    streaming/storage-backed verification path behind the feature gate and has

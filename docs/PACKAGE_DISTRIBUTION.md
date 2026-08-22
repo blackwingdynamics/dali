@@ -551,6 +551,7 @@ The hardware-neutral `dali-metadata` crate now exposes the bounded
 
 ```text
 Root
+  -> Bundle manifest (signature and generation admission against DALI-CMT.BIN)
   -> Timestamp (snapshot length/version/SHA-256)
   -> Snapshot (targets, revocation, delegation references)
   -> Targets (package record)
@@ -562,6 +563,10 @@ Root
 
 Every metadata document is parsed from its canonical signed body and verified
 with the root-declared role threshold before its references are consumed.
+The signed `bundle.manifest` is streamed through the same Root-declared bundle
+role policy before its generation is used. Active boot accepts the committed
+generation; an explicitly authorized candidate must be strictly newer, and an
+older or otherwise inadmissible generation is rejected before package loading.
 `Ed25519Verifier` delegates to the workspace `dali-crypto` facade; there is no
 deterministic or test-only verifier in the production path. The chain is
 bounded and borrows caller-owned bytes, so it is suitable for host tooling and

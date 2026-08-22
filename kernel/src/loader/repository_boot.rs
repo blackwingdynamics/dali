@@ -46,6 +46,7 @@ where
         contract: None,
         now: None,
         committed_generation,
+        generation_admission: repository::RepositoryGenerationAdmission::ActiveBoot,
     };
     let mut storage = crate::storage::filesystem::FatRepositoryStorage::new_with_format_and_pet(
         device,
@@ -126,9 +127,21 @@ fn map_repository_error(
             repository_error_label(&error)
         ),
     );
+    if matches!(
+        &error,
+        repository::BinaryRepositoryError::BundleGenerationRollback
+    ) {
+        crate::logging::error(
+            crate::logging::SECURITY_SUBSYSTEM,
+            format_args!(
+                "[SECURITY] Rejection: package generation older than committed generation\r\n"
+            ),
+        );
+    }
     match error {
         repository::BinaryRepositoryError::Storage(error)
         | repository::BinaryRepositoryError::RoleStorage(error)
+        | repository::BinaryRepositoryError::BundleRoleStorage(error)
         | repository::BinaryRepositoryError::PackageStorage(error) => {
             LoaderError::Filesystem(error)
         }
@@ -138,6 +151,10 @@ fn map_repository_error(
         }
         repository::BinaryRepositoryError::PackageCrc => {
             LoaderError::V5SignedPackage(dali_amrn::v5::Error::CrcMismatch)
+        }
+        repository::BinaryRepositoryError::BundleGenerationRollback
+        | repository::BinaryRepositoryError::BundleGenerationAhead => {
+            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidHeader)
         }
         repository::BinaryRepositoryError::PackageLengthMismatch
         | repository::BinaryRepositoryError::PackageContract
@@ -155,6 +172,9 @@ fn map_repository_error(
         | repository::BinaryRepositoryError::RevocationReferenceMismatch
         | repository::BinaryRepositoryError::DelegationReferenceMismatch
         | repository::BinaryRepositoryError::DelegationMismatch
+        | repository::BinaryRepositoryError::BundleRoleDecode
+        | repository::BinaryRepositoryError::BundleRoleSignature
+        | repository::BinaryRepositoryError::BundleTargetMismatch
         | repository::BinaryRepositoryError::UnknownTrustAnchor
         | repository::BinaryRepositoryError::RoleDecode
         | repository::BinaryRepositoryError::RoleSignature => {
@@ -168,6 +188,7 @@ fn repository_error_label<E>(error: &repository::BinaryRepositoryError<E>) -> &'
     match error {
         repository::BinaryRepositoryError::Storage(_) => "storage",
         repository::BinaryRepositoryError::RoleStorage(_) => "role-storage",
+        repository::BinaryRepositoryError::BundleRoleStorage(_) => "bundle-role-storage",
         repository::BinaryRepositoryError::MissingRecord => "missing-record",
         repository::BinaryRepositoryError::TargetsParse(error) => match error {
             repository::streaming::StreamingTargetsError::InvalidEnvelope => "targets-envelope",
@@ -198,6 +219,11 @@ fn repository_error_label<E>(error: &repository::BinaryRepositoryError<E>) -> &'
         repository::BinaryRepositoryError::UnknownTrustAnchor => "unknown-trust-anchor",
         repository::BinaryRepositoryError::RoleDecode => "role-decode",
         repository::BinaryRepositoryError::RoleSignature => "role-signature",
+        repository::BinaryRepositoryError::BundleRoleDecode => "bundle-role-decode",
+        repository::BinaryRepositoryError::BundleRoleSignature => "bundle-role-signature",
+        repository::BinaryRepositoryError::BundleTargetMismatch => "bundle-target-mismatch",
+        repository::BinaryRepositoryError::BundleGenerationRollback => "bundle-rollback",
+        repository::BinaryRepositoryError::BundleGenerationAhead => "bundle-ahead",
         repository::BinaryRepositoryError::Revoked => "revoked",
         repository::BinaryRepositoryError::SecurityState => "security-state",
         repository::BinaryRepositoryError::PackageStorage(_) => "package-storage",

@@ -1,7 +1,8 @@
 use core::mem::{ManuallyDrop, MaybeUninit};
 use dali_metadata::{
     BinaryDelegationBodyStreamParser, BinaryEnvelopeStreamParser, BinaryRevocationBodyStreamParser,
-    BinaryRoleBodyParser, BinaryRootBodyStreamParser, BinarySnapshotBodyStreamParser,
+    BinaryBundleBodyStreamParser, BinaryRoleBodyParser, BinaryRootBodyStreamParser,
+    BinarySnapshotBodyStreamParser,
     BinaryTimestampBodyStreamParser, DecodeError, MetadataRole, RoleDefinition, RoleKey,
     RootMetadata, Sha256Digest, StreamedEnvelope, StreamingRoleVerifier,
 };
@@ -79,6 +80,8 @@ pub(crate) union RepositoryScratch {
 pub(crate) union RepositoryMetadataScratch {
     /// Snapshot retained through target and revocation reference checks.
     pub(crate) snapshot: ManuallyDrop<MaybeUninit<dali_metadata::SnapshotMetadata>>,
+    /// Bundle summary retained during generation admission.
+    pub(crate) bundle: ManuallyDrop<MaybeUninit<BinaryBundleBodyStreamParser>>,
     /// Delegation metadata retained while its package is authenticated.
     pub(crate) delegation: ManuallyDrop<MaybeUninit<dali_metadata::DelegationMetadata>>,
 }
@@ -106,6 +109,11 @@ impl RepositoryMetadataScratch {
     unsafe fn delegation(&mut self) -> &mut MaybeUninit<dali_metadata::DelegationMetadata> {
         // SAFETY: the delegation variant is active during one package pass.
         unsafe { &mut *core::ptr::addr_of_mut!(self.delegation) }
+    }
+
+    unsafe fn bundle_parser(&mut self) -> &mut BinaryBundleBodyStreamParser {
+        // SAFETY: the bundle parser variant is active during bundle verification.
+        unsafe { self.bundle.assume_init_mut() }
     }
 }
 
@@ -159,6 +167,8 @@ pub struct BinaryRepositoryAuthorizations {
     pub committed_generation: Option<dali_metadata::TrustStoreRecord>,
     /// Security state reconstructed from the verified Root and Revocation roles.
     pub security_state: Option<dali_metadata::TrustStoreSecurityState>,
+    /// Signed bundle generation admitted for this load.
+    pub bundle_generation: Option<u64>,
 }
 
 impl BinaryRepositoryAuthorizations {
@@ -169,6 +179,7 @@ impl BinaryRepositoryAuthorizations {
             length: 0,
             committed_generation: None,
             security_state: None,
+            bundle_generation: None,
         }
     }
 
@@ -217,6 +228,18 @@ pub enum BinaryRepositoryError<E> {
     RoleSignature,
     /// A role stream failed in the storage adapter.
     RoleStorage(E),
+    /// Bundle-manifest streaming failed in the storage adapter.
+    BundleRoleStorage(E),
+    /// Bundle-manifest parsing failed.
+    BundleRoleDecode,
+    /// Bundle-manifest signature policy failed.
+    BundleRoleSignature,
+    /// Bundle manifest targets another profile.
+    BundleTargetMismatch,
+    /// Bundle generation is not admissible for the requested load context.
+    BundleGenerationRollback,
+    /// Active boot found a bundle newer than the committed generation.
+    BundleGenerationAhead,
     /// The root document did not contain a target-provisioned trust anchor.
     UnknownTrustAnchor,
     /// A required role definition or record was absent.

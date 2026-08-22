@@ -5,6 +5,7 @@
 //! scratch types without widening their visibility.
 
 include!("types.rs");
+include!("bundle.rs");
 include!("loading.rs");
 include!("roles.rs");
 include!("validation.rs");

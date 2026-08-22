@@ -3,6 +3,8 @@
 /// Logical metadata document requested by the kernel loader.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RepositoryDocument<'a> {
+    /// Signed repository bundle manifest at the filesystem root.
+    Bundle,
     /// Root trust policy.
     Root,
     /// Freshness reference to a snapshot.

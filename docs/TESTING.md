@@ -90,6 +90,30 @@ signed AMRN verification, slot loading, relocation, and `Ready -> Running`.
 This closes the bounded reset-recovery test. Physical power-loss during a
 sector write remains unverified.
 
+The feature-gated `storage-rollback-test` profile writes a valid committed
+generation `version=2` to `DALI-CMT.BIN` on a disposable F405 card. A subsequent
+production boot must stream and authenticate the existing signed bundle
+manifest, observe its older `version=1`, and reject it before package loading.
+The F405 run at `2026-08-22 23:31:09` observed:
+
+```text
+[RECOVERY] Committed generation selected: version=2 sequence=2 slot=B
+[LOADER] Binary v2 repository verification failed: bundle-rollback
+[SECURITY] Rejection: package generation older than committed generation
+```
+
+The follow-up production boot restored the card to the committed `version=1`
+state and completed signed package verification, slot loading, and
+`Ready -> Running`.
+
+Build the rollback fixture explicitly:
+
+```text
+cargo build -p dali-kernel --release --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-rollback-test \
+  --target thumbv7em-none-eabihf
+```
+
 Build the interruption profile explicitly:
 
 ```text

@@ -80,8 +80,10 @@ version, length, SHA-256, and root-role signatures.
 
 This is a policy and codec boundary only. The current F405 startup path does
 not yet verify a signed kernel image before reset-vector execution, so Secure
-Boot and production root custody remain unaccepted hardware claims. Existing
-trust-store verification continues to apply rotation overlap, signed
+Boot and production root custody remain unaccepted hardware claims. The F405
+repository boot path now verifies the signed `bundle.manifest` through the
+Root-declared Bundle role before applying its generation admission policy.
+Existing trust-store verification continues to apply rotation overlap, signed
 revocation state, metadata expiry when trusted time is available, and durable
 generation rollback checks.
 

@@ -54,6 +54,15 @@ where
     // SAFETY: stream_verified_root writes the root before returning and this
     // workspace is exclusively borrowed for the duration of this load.
     let root = unsafe { buffers.root.assume_init_ref() };
+    let bundle = admit_bundle_manifest(
+        storage,
+        root,
+        request,
+        &mut buffers.chunk,
+        &mut buffers.metadata,
+        &mut buffers.scratch,
+        progress,
+    )?;
     verify_timestamp_and_snapshot(
         storage,
         root,
@@ -127,6 +136,7 @@ where
     )?;
     authorizations.security_state = Some(security_state);
     authorizations.committed_generation = request.committed_generation;
+    authorizations.bundle_generation = Some(bundle.header.version);
     Ok(authorizations)
 }
 

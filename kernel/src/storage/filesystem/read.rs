@@ -226,7 +226,7 @@ where
     Ok(())
 }
 
-fn close_root<D, R>(
+pub(crate) fn close_root<D, R>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,
     file: Option<RawFile>,
