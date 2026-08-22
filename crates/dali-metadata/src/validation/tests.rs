@@ -53,6 +53,20 @@ fn rejects_expired_metadata_when_a_clock_is_available() {
 }
 
 #[test]
+fn does_not_treat_an_unavailable_clock_as_current_time() {
+    assert_eq!(
+        validate_header_at(
+            MetadataHeader {
+                expires: 1,
+                ..header(MetadataRole::Targets)
+            },
+            TrustedTime::Unavailable,
+        ),
+        Ok(())
+    );
+}
+
+#[test]
 fn accepts_an_explicit_revocation_record() {
     let mut records = [crate::RevocationRecord::default(); crate::MAX_REVOCATIONS];
     records[0] = crate::RevocationRecord {

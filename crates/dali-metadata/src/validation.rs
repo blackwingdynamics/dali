@@ -12,7 +12,9 @@ pub(crate) use common::validate_reference;
 pub use common::{
     is_repository_role, validate_developer_id, validate_namespace, validate_signature_set,
 };
-pub use core::{validate_header, validate_role, validate_role_references};
+pub use core::{
+    TrustedTime, validate_header, validate_header_at, validate_role, validate_role_references,
+};
 pub use delegation::validate_delegation;
 pub(crate) use delegation::validate_target_profile;
 pub use records::{
