@@ -235,7 +235,7 @@ milestone into `main` only after its documented validation evidence exists.
    decoder, and bounded `Active -> CandidateWritten -> CandidateVerified ->
    CommitPending -> Active` persistence coordinator; durable F405 transition
    acceptance remains pending.
-   [ ] Enforce strict monotonic candidate-generation rejection in the durable
+   [x] Enforce strict monotonic candidate-generation rejection in the durable
    coordinator before any inactive-slot write; add equal-version and
    lower-version tests.
    [x] Wire the hardware-neutral metadata verification chain through
@@ -245,6 +245,10 @@ milestone into `main` only after its documented validation evidence exists.
    existing block-device boundary. F405 boot wiring now uses the
    streaming/storage-backed verification path behind the feature gate and has
    signed-bundle hardware evidence.
+   [x] Add the F405 SDIO durable flush boundary and sequence candidate
+   write/flush/read-back before commit-marker write/flush/read-back in the
+   feature-gated artifact acceptance path; disposable-card hardware evidence
+   remains pending.
    [x] Replace the retained-slice repository verification API with a bounded
    streaming or storage-backed verifier that fits the F405 32 KiB
    kernel/runtime RAM region. The repository contract now uses

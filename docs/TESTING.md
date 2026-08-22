@@ -35,14 +35,16 @@ write rejection. Embedded target checks remain separate evidence for the F405
 PAC adapter.
 
 The feature-gated `storage-write` target build contains a real storage
-acceptance path. On an initialized F405 SDIO card it writes and reads back the
-three reserved trust-store artifact names (`DALI-ACT.BIN`, `DALI-CAN.BIN`, and
-`DALI-CMT.BIN`) through the FAT filesystem boundary. The path is destructive
-to those reserved files, so it is for a disposable test card only. A successful
+acceptance path. On an initialized F405 SDIO card it writes each of the three
+reserved trust-store artifact names (`DALI-ACT.BIN`, `DALI-CAN.BIN`, and
+`DALI-CMT.BIN`) through the FAT filesystem boundary, flushes the underlying
+card, and reads the artifact back before continuing. The candidate sequence
+completes before the commit-marker sequence begins. The path is destructive to
+those reserved files, so it is for a disposable test card only. A successful
 build is not hardware evidence; the console must report:
 
 ```text
-[STORAGE] Trust-store artifact write/read-back test passed
+[STORAGE] Trust-store artifact write/flush/read-back test passed
 ```
 
 Build this mode explicitly; it is not part of the default kernel profile:

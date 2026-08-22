@@ -112,7 +112,7 @@ where
     fn flush(&mut self) -> Result<(), Self::Error> {
         #[cfg(feature = "storage-write")]
         {
-            return <Self as BlockTransportFlush>::flush(self);
+            <Self as BlockTransportFlush>::flush(self)
         }
         #[cfg(not(feature = "storage-write"))]
         {

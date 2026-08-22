@@ -1,7 +1,10 @@
 //! Feature-gated hardware acceptance checks for durable storage artifacts.
 
 use crate::{
-    drivers::{BlockReader, BlockWriter, StorageError, WritableBlockDeviceAdapter},
+    drivers::{
+        BlockReader, BlockTransportFlush, BlockWriter, FlushableBlockDevice, StorageError,
+        WritableBlockDeviceAdapter,
+    },
     storage::filesystem,
 };
 
@@ -16,14 +19,20 @@ pub enum ArtifactTestError {
     ActiveWrite(embedded_sdmmc::Error<StorageError>),
     /// The active trust-store artifact could not be read back.
     ActiveRead(embedded_sdmmc::Error<StorageError>),
+    /// The active trust-store artifact could not be flushed.
+    ActiveFlush(embedded_sdmmc::Error<StorageError>),
     /// The candidate trust-store artifact could not be written.
     CandidateWrite(embedded_sdmmc::Error<StorageError>),
     /// The candidate trust-store artifact could not be read back.
     CandidateRead(embedded_sdmmc::Error<StorageError>),
+    /// The candidate trust-store artifact could not be flushed.
+    CandidateFlush(embedded_sdmmc::Error<StorageError>),
     /// The commit marker could not be written.
     CommitWrite(embedded_sdmmc::Error<StorageError>),
     /// The commit marker could not be read back.
     CommitRead(embedded_sdmmc::Error<StorageError>),
+    /// The commit marker could not be flushed.
+    CommitFlush(embedded_sdmmc::Error<StorageError>),
     /// Read-back data did not match the written bytes.
     ReadBackMismatch(filesystem::TrustStoreArtifact),
 }
@@ -33,6 +42,7 @@ impl core::fmt::Debug for ArtifactTestError {
         match self {
             Self::ActiveWrite(error) => formatter.debug_tuple("ActiveWrite").field(error).finish(),
             Self::ActiveRead(error) => formatter.debug_tuple("ActiveRead").field(error).finish(),
+            Self::ActiveFlush(error) => formatter.debug_tuple("ActiveFlush").field(error).finish(),
             Self::CandidateWrite(error) => formatter
                 .debug_tuple("CandidateWrite")
                 .field(error)
@@ -40,8 +50,13 @@ impl core::fmt::Debug for ArtifactTestError {
             Self::CandidateRead(error) => {
                 formatter.debug_tuple("CandidateRead").field(error).finish()
             }
+            Self::CandidateFlush(error) => formatter
+                .debug_tuple("CandidateFlush")
+                .field(error)
+                .finish(),
             Self::CommitWrite(error) => formatter.debug_tuple("CommitWrite").field(error).finish(),
             Self::CommitRead(error) => formatter.debug_tuple("CommitRead").field(error).finish(),
+            Self::CommitFlush(error) => formatter.debug_tuple("CommitFlush").field(error).finish(),
             Self::ReadBackMismatch(artifact) => formatter
                 .debug_tuple("ReadBackMismatch")
                 .field(artifact)
@@ -58,7 +73,7 @@ pub fn verify_trust_store_artifacts<R>(
     device: &WritableBlockDeviceAdapter<R>,
 ) -> Result<(), ArtifactTestError>
 where
-    R: BlockReader + BlockWriter,
+    R: BlockReader + BlockWriter + BlockTransportFlush<Error = StorageError>,
 {
     let active = [ACTIVE_TEST_BYTE; ARTIFACT_TEST_LENGTH];
     let candidate = [CANDIDATE_TEST_BYTE; ARTIFACT_TEST_LENGTH];
@@ -83,10 +98,13 @@ fn verify_artifact<R>(
     expected: &[u8; ARTIFACT_TEST_LENGTH],
 ) -> Result<(), ArtifactTestError>
 where
-    R: BlockReader + BlockWriter,
+    R: BlockReader + BlockWriter + BlockTransportFlush<Error = StorageError>,
 {
     if let Err(error) = filesystem::write_trust_store_artifact(device, artifact, expected) {
         return Err(write_error(artifact, error));
+    }
+    if let Err(error) = device.flush().map_err(embedded_sdmmc::Error::DeviceError) {
+        return Err(flush_error(artifact, error));
     }
     let mut actual = [0; ARTIFACT_TEST_LENGTH];
     let length = match filesystem::read_trust_store_artifact(device, artifact, &mut actual) {
@@ -118,5 +136,16 @@ fn read_error(
         filesystem::TrustStoreArtifact::Active => ArtifactTestError::ActiveRead(error),
         filesystem::TrustStoreArtifact::Candidate => ArtifactTestError::CandidateRead(error),
         filesystem::TrustStoreArtifact::CommitMarker => ArtifactTestError::CommitRead(error),
+    }
+}
+
+fn flush_error(
+    artifact: filesystem::TrustStoreArtifact,
+    error: embedded_sdmmc::Error<StorageError>,
+) -> ArtifactTestError {
+    match artifact {
+        filesystem::TrustStoreArtifact::Active => ArtifactTestError::ActiveFlush(error),
+        filesystem::TrustStoreArtifact::Candidate => ArtifactTestError::CandidateFlush(error),
+        filesystem::TrustStoreArtifact::CommitMarker => ArtifactTestError::CommitFlush(error),
     }
 }

@@ -99,7 +99,9 @@ pub fn initialize(
                 }
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
-                    format_args!("[STORAGE] Trust-store artifact write/read-back test passed"),
+                    format_args!(
+                        "[STORAGE] Trust-store artifact write/flush/read-back test passed"
+                    ),
                 );
                 super::super::loading::load(
                     &device,
