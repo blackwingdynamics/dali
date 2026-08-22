@@ -404,7 +404,7 @@ distinguished from the kernel's fault and recovery records.
 
 ## Signed package acceptance
 
-### Repository loader hardware acceptance status (2026-08-21)
+### Repository loader hardware acceptance status (2026-08-22)
 
 Repository streaming watchdog progress is injected through the target
 platform boundary. The FAT repository adapter invokes the bounded progress
@@ -488,6 +488,39 @@ prove production key custody, Secure Boot, DMA isolation, or power-loss
 recovery. The remaining repository acceptance scenarios are candidate
 write/read-back with atomic activation, revoked-developer-key rejection on
 target, and interrupted-write/power-loss recovery.
+
+#### Final F405 Binary v2 acceptance record — 2026-08-22
+
+The kernel was rebuilt with the release repository-loader feature set and
+flashed to the WeAct Studio STM32F405RGT6 through the Raspberry Pi Pico 2
+CMSIS-DAP probe. The SD card contained the freshly generated release-anchor
+Binary v2 bundle. The package digest was:
+
+```text
+53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
+```
+
+The observed F405 output at `2026-08-22 12:27:00` was:
+
+```text
+[STORAGE] SDIO card initialized
+[STORAGE] Trust-store artifact write/read-back test passed
+[STORAGE] Read block 0 successfully
+[LOADER] AMRN header and payload validated
+[SECURITY] AMRN signature verified
+[LOADER] Loaded 1 application package(s) into declared slots
+[LOADER] Slot 1 (slot1) boundaries: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
+[SECURITY] Application lifecycle: Ready
+[SECURITY] Active application context: Running
+[APP] Relocation fixture
+```
+
+This closes the normal Binary v2 F405 acceptance path for the recorded build:
+SDIO initialization, trust-store access, repository traversal, signed AMRN
+verification, slot loading, relocation, and `Ready -> Running` application
+execution. The package file size, board revision, and power source were not
+captured in this run and remain unspecified evidence fields. The separate
+watchdog reset/Safe Mode scenario remains a distinct test.
 
 - [x] Host AMRN tests cover v5 header/trailer split parsing and signed-range
   boundary validation.

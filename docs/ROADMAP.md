@@ -2,7 +2,7 @@
 
 Tasks are intentionally small. A task is complete only when its stated evidence exists. Later tasks must not silently expand the MVP.
 
-## Current Status — 2026-08-21
+## Current Status — 2026-08-22
 
 ### Completed and evidenced
 
@@ -10,9 +10,9 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 - The STM32F411 BlackPill backend has been removed; its board facts now live in
   a generator-only `targets/f411.toml` profile.
 - The WeAct STM32F405RGT6 Core Board backend exists with its 8 MHz HSE, 168 MHz system clock, PB2 LED, and SDIO pin mapping.
-- The default F405 kernel profile builds, checks, and passes strict target
-  Clippy; the full `abi-context-switch` plus `repository-loader` feature
-  combination still has legacy-path dead-code warnings tracked below.
+- The default F405 kernel profile and the full
+  `abi-context-switch` plus `repository-loader` feature combination build,
+  check, and pass strict target Clippy without legacy-path dead-code warnings.
 - DFU flashing of the F405 firmware completes successfully.
 - The F405 USB CDC device has enumerated as `1209:da11` and created `/dev/ttyACM0` during hardware testing.
 - Read-only FAT filesystem integration, root-directory enumeration, AMRN extension filtering, and package discovery logging are implemented.
@@ -110,11 +110,11 @@ The following order is the immediate project priority. Do not start
 production-security or broader lifecycle work until steps 1–4 have fresh,
 reproducible evidence recorded in one timestamped acceptance record.
 
-1. **Finish embedded Clippy.** Feature-gate legacy v1/v3/v4 loader paths and
+1. **Finish embedded Clippy.** [x] Feature-gate legacy v1/v3/v4 loader paths and
    unused contract/catalog modules so the strict
    `abi-context-switch,repository-loader` target Clippy run is warning-free.
    Do not use `#[allow(dead_code)]` as a workaround.
-2. **Rerun final F405 acceptance.** Perform a fresh build, generate a new
+2. **Rerun final F405 acceptance.** [x] Perform a fresh build, generate a new
    Binary v2 repository, verify the SD card, flash F405, and capture console
    output proving signed-package verification, slot loading, relocation, and
    `Ready -> Running`. Run watchdog reset/Safe Mode as a separate scenario.
