@@ -139,15 +139,15 @@ reproducible evidence recorded in one timestamped acceptance record.
    return, and the corresponding physical hardware tests. F405 evidence on
    2026-08-23 recorded `Card removed`, `Recovery heartbeat active`, repeated
    bounded reinitialization probes, and `Card reinitialized; state Ready`.
-7. **Harden release and CI.** [in progress] Add the strict feature-matrix
+7. **Harden release and CI.** [x] Add the strict feature-matrix
    checks, reproducible memory/evidence artifacts, and release gates after the
    preceding milestone is closed. The first slice adds the production F405
    authentication, repository-loader, and writable-storage profile to CI with
    its required release-profile build gate. The second slice publishes a
    reproducible LLVM/linker-map/hash artifact for that profile. The release
    workflow now requires the same production validation gate before publishing.
-   Local production-equivalent validation passes; completion awaits a green
-   CI run of the new gates.
+   Local production-equivalent validation passes, and GitHub Actions CI run
+   `32603279767` passed on commit `7eacc79`.
 
 ### Post-alpha2 implementation order
 
