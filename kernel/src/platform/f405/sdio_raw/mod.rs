@@ -44,6 +44,45 @@ struct AlignedDmaWords([u32; DATA_WORD_COUNT as usize]);
 #[unsafe(link_section = ".dma_buffer")]
 static mut DMA_WORDS: AlignedDmaWords = AlignedDmaWords([0; DATA_WORD_COUNT as usize]);
 
+#[cfg(feature = "dma-test-fixture")]
+#[used]
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".dma_buffer")]
+static mut DMA_TRACE_MARKER: u32 = 0;
+
+#[cfg(feature = "dma-test-fixture")]
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct DmaTraceSnapshot {
+    dma_cr: u32,
+    dma_ndtr: u32,
+    dma_par: u32,
+    dma_m0ar: u32,
+    sdio_dctrl: u32,
+    sdio_dcount: u32,
+    sdio_sta: u32,
+    sdio_fifocnt: u32,
+}
+
+#[cfg(feature = "dma-test-fixture")]
+#[used]
+#[unsafe(link_section = ".dma_buffer")]
+static mut DMA_TRACE_SNAPSHOT: DmaTraceSnapshot = DmaTraceSnapshot {
+    dma_cr: 0,
+    dma_ndtr: 0,
+    dma_par: 0,
+    dma_m0ar: 0,
+    sdio_dctrl: 0,
+    sdio_dcount: 0,
+    sdio_sta: 0,
+    sdio_fifocnt: 0,
+};
+
+#[cfg(feature = "dma-test-fixture")]
+const DMA_TRACE_ACTIVE: u32 = 0xD1A0_0001;
+#[cfg(feature = "dma-test-fixture")]
+const DMA_TRACE_COMPLETE: u32 = 0xD1A0_0002;
+
 /// Reads SDIO blocks without the HAL half-full FIFO tail deadlock.
 pub(crate) struct RawSdioReader {
     high_capacity: bool,
@@ -95,8 +134,41 @@ impl RawSdioReader {
             Self::configure_dma(registers, words);
             Self::start_receive(registers);
             Self::start_read_command(registers, argument);
+            #[cfg(feature = "dma-test-fixture")]
+            let dma = &*pac::DMA2::ptr();
+            #[cfg(feature = "dma-test-fixture")]
+            // SAFETY: The fixture snapshot is kernel-owned diagnostic state
+            // written inside the exclusive transfer critical section.
+            core::ptr::write_volatile(
+                core::ptr::addr_of_mut!(DMA_TRACE_SNAPSHOT),
+                DmaTraceSnapshot {
+                    dma_cr: dma.st[DMA_STREAM_INDEX].cr.read().bits(),
+                    dma_ndtr: dma.st[DMA_STREAM_INDEX].ndtr.read().bits(),
+                    dma_par: dma.st[DMA_STREAM_INDEX].par.read().bits(),
+                    dma_m0ar: dma.st[DMA_STREAM_INDEX].m0ar.read().bits(),
+                    sdio_dctrl: registers.dctrl.read().bits(),
+                    sdio_dcount: registers.dcount.read().bits(),
+                    sdio_sta: registers.sta.read().bits(),
+                    sdio_fifocnt: registers.fifocnt.read().bits(),
+                },
+            );
+            #[cfg(feature = "dma-test-fixture")]
+            // SAFETY: The fixture marker is kernel-owned diagnostic state
+            // written inside the same exclusive transfer critical section.
+            core::ptr::write_volatile(core::ptr::addr_of_mut!(DMA_TRACE_MARKER), DMA_TRACE_ACTIVE);
+            #[cfg(feature = "dma-test-fixture")]
+            // The diagnostic build halts here so SWD can inspect the active
+            // transfer before the bounded receive loop consumes the block.
+            cortex_m::asm::bkpt();
             let result = Self::receive_block(registers, words);
             Self::stop_dma();
+            #[cfg(feature = "dma-test-fixture")]
+            // SAFETY: The marker remains kernel-owned and the transfer has
+            // stopped before the completion state is published.
+            core::ptr::write_volatile(
+                core::ptr::addr_of_mut!(DMA_TRACE_MARKER),
+                DMA_TRACE_COMPLETE,
+            );
             result?;
             for (index, word) in words.iter().enumerate() {
                 let bytes = word.to_le_bytes();

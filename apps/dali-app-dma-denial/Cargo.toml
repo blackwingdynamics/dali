@@ -1,0 +1,26 @@
+[package]
+name = "dali-app-dma-denial"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+dali = { path = "../../crates/dali-sdk", features = ["abi-current"] }
+
+[build-dependencies]
+dali-targets = { path = "../../crates/dali-targets" }
+
+[features]
+embedded-payload = []
+abi-current = ["dali/abi-current"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "dali-app-dma-denial"
+path = "src/main.rs"
+required-features = ["embedded-payload"]
+test = false
