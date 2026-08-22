@@ -156,10 +156,6 @@ impl RawSdioReader {
             // SAFETY: The fixture marker is kernel-owned diagnostic state
             // written inside the same exclusive transfer critical section.
             core::ptr::write_volatile(core::ptr::addr_of_mut!(DMA_TRACE_MARKER), DMA_TRACE_ACTIVE);
-            #[cfg(feature = "dma-test-fixture")]
-            // The diagnostic build halts here so SWD can inspect the active
-            // transfer before the bounded receive loop consumes the block.
-            cortex_m::asm::bkpt();
             let result = Self::receive_block(registers, words);
             Self::stop_dma();
             #[cfg(feature = "dma-test-fixture")]
