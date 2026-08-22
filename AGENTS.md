@@ -133,6 +133,17 @@ MVP applications do not own interrupts, do not use a scheduler, do not access ke
 
 ## 5. Required implementation workflow
 
+### Architecture change gate
+
+Never change the repository architecture, module ownership, boot path,
+storage layout, backend selection, loader mode, feature contract, ABI, or
+filesystem package layout as part of an implementation task. If the requested
+behavior appears to require an architectural change, stop before editing,
+describe the exact proposed change and its impact, and obtain explicit user
+approval. Do not silently substitute a different build profile, loader path,
+package location, or storage contract to make a fixture or validation flow
+work.
+
 Before editing:
 
 1. Read the relevant contract documents.
