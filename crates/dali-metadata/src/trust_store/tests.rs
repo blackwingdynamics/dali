@@ -1,4 +1,8 @@
 use super::*;
+use crate::{
+    BoundedText, KeyId, MetadataHeader, MetadataRole, PublicKey, RevocationMetadata,
+    RevocationRecord, RoleDefinition, RoleKey, RootMetadata,
+};
 
 fn record(version: u64, byte: u8) -> TrustStoreRecord {
     TrustStoreRecord::new(version, Sha256Digest([byte; crate::SHA256_LENGTH]))
@@ -53,4 +57,58 @@ fn rejects_rollback_and_invalid_transitions() {
 fn compares_generations_by_monotonic_version() {
     assert!(record(2, 2).is_newer_than(record(1, 1)));
     assert!(!record(1, 1).is_newer_than(record(2, 2)));
+}
+
+#[test]
+fn preserves_rotated_root_keys_and_revocations() {
+    let key_a = RoleKey {
+        role: MetadataRole::Root,
+        key_id: KeyId([1; crate::KEY_ID_LENGTH]),
+        public_key: PublicKey([2; crate::PUBLIC_KEY_LENGTH]),
+    };
+    let key_b = RoleKey {
+        role: MetadataRole::Root,
+        key_id: KeyId([3; crate::KEY_ID_LENGTH]),
+        public_key: PublicKey([4; crate::PUBLIC_KEY_LENGTH]),
+    };
+    let mut keys = [key_a; crate::MAX_ROOT_KEYS];
+    keys[1] = key_b;
+    let root = RootMetadata {
+        header: MetadataHeader {
+            role: MetadataRole::Root,
+            version: 2,
+            expires: 0,
+        },
+        keys,
+        key_count: 2,
+        roles: [RoleDefinition {
+            role: MetadataRole::Root,
+            keys: [key_a.key_id; crate::MAX_ROLE_KEYS],
+            key_count: 1,
+            threshold: 1,
+        }; crate::MAX_ROOT_ROLES],
+        role_count: 1,
+    };
+    let mut records = [RevocationRecord::default(); crate::MAX_REVOCATIONS];
+    records[0] = RevocationRecord {
+        developer_id: BoundedText::new("developer").expect("developer fits"),
+        effective_version: 2,
+        issuer_key_id: key_a.key_id,
+        key_id: KeyId([5; crate::KEY_ID_LENGTH]),
+        reason: BoundedText::new("rotated").expect("reason fits"),
+    };
+    let revocations = RevocationMetadata {
+        header: MetadataHeader {
+            role: MetadataRole::Revocation,
+            version: 2,
+            expires: 0,
+        },
+        records,
+        record_count: 1,
+    };
+    let state = TrustStoreSecurityState::from_verified_metadata(&root, &revocations)
+        .expect("verified security state reconstructs");
+    assert!(state.contains_root_key(key_a.key_id));
+    assert!(state.contains_root_key(key_b.key_id));
+    assert!(state.is_revoked(KeyId([5; crate::KEY_ID_LENGTH])));
 }

@@ -1,6 +1,6 @@
 //! Hardware-neutral atomic trust-store update state machine.
 
-use crate::Sha256Digest;
+use crate::{KeyId, RevocationMetadata, RoleKey, RootMetadata, Sha256Digest};
 
 /// One durable trust-store generation identified by version and digest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -51,6 +51,83 @@ pub enum TrustStoreError {
     CandidateMismatch,
     /// The transition is not valid for the current durable phase.
     InvalidTransition,
+    /// Verified root or revocation state exceeds fixed-capacity bounds.
+    InvalidSecurityState,
+}
+
+/// Verified key and revocation state reconstructed from signed metadata.
+///
+/// Root key rotation keeps old and new keys concurrently available until the
+/// signed root metadata removes the old key. Revocations remain effective
+/// because their key identifiers are retained with the committed generation.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TrustStoreSecurityState {
+    root_keys: [Option<RoleKey>; crate::MAX_ROOT_KEYS],
+    root_key_count: u8,
+    revoked_keys: [Option<KeyId>; crate::MAX_REVOCATIONS],
+    revoked_key_count: u8,
+}
+
+impl TrustStoreSecurityState {
+    /// Reconstructs security state from an already verified root and revocation document.
+    pub fn from_verified_metadata(
+        root: &RootMetadata,
+        revocations: &RevocationMetadata,
+    ) -> Result<Self, TrustStoreError> {
+        let root_count = usize::from(root.key_count);
+        let revoked_count = usize::from(revocations.record_count);
+        if root_count == 0
+            || root_count > crate::MAX_ROOT_KEYS
+            || revoked_count > crate::MAX_REVOCATIONS
+        {
+            return Err(TrustStoreError::InvalidSecurityState);
+        }
+        let mut state = Self {
+            root_keys: [None; crate::MAX_ROOT_KEYS],
+            root_key_count: root.key_count,
+            revoked_keys: [None; crate::MAX_REVOCATIONS],
+            revoked_key_count: revocations.record_count,
+        };
+        for (index, key) in root.keys.iter().take(root_count).enumerate() {
+            if key.key_id.0 == [0; crate::KEY_ID_LENGTH]
+                || state.root_keys[..index]
+                    .iter()
+                    .flatten()
+                    .any(|candidate| candidate.key_id == key.key_id)
+            {
+                return Err(TrustStoreError::InvalidSecurityState);
+            }
+            state.root_keys[index] = Some(*key);
+        }
+        for (index, record) in revocations.records.iter().take(revoked_count).enumerate() {
+            if record.key_id.0 == [0; crate::KEY_ID_LENGTH]
+                || state.revoked_keys[..index]
+                    .iter()
+                    .flatten()
+                    .any(|candidate| *candidate == record.key_id)
+            {
+                return Err(TrustStoreError::InvalidSecurityState);
+            }
+            state.revoked_keys[index] = Some(record.key_id);
+        }
+        Ok(state)
+    }
+
+    /// Returns whether a key is present in the committed root key set.
+    pub fn contains_root_key(&self, key_id: KeyId) -> bool {
+        self.root_keys[..usize::from(self.root_key_count)]
+            .iter()
+            .flatten()
+            .any(|key| key.key_id == key_id)
+    }
+
+    /// Returns whether a developer key is revoked in the committed state.
+    pub fn is_revoked(&self, key_id: KeyId) -> bool {
+        self.revoked_keys[..usize::from(self.revoked_key_count)]
+            .iter()
+            .flatten()
+            .any(|revoked| *revoked == key_id)
+    }
 }
 
 /// Two-slot trust-store state without owning storage or bundle bytes.
