@@ -149,6 +149,17 @@ reproducible evidence recorded in one timestamped acceptance record.
    Local production-equivalent validation passes, and GitHub Actions CI run
    `32603279767` passed on commit `7eacc79`.
 
+### Future work / out of scope
+
+- [ ] Collect platform-specific watchdog feed-failure evidence for watchdog
+  controllers that expose a detectable feed error. The F405 IWDG has no
+  observable feed-error result; its no-feed timeout and Safe Mode behavior are
+  already hardware-tested.
+- [ ] Integrate the `dali.secure-boot.v1` kernel-image admission contract with
+  a pre-reset ROM or bootloader verification boundary. The current production
+  trust store verifies signed repository and package content after reset; it
+  does not claim ROM- or bootloader-enforced kernel-image Secure Boot.
+
 ### Post-alpha2 implementation order
 
 Work on this sequence from a dedicated feature branch, merging each coherent
