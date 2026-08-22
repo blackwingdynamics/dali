@@ -39,6 +39,8 @@ pub enum PersistenceError<E> {
     Journal(JournalError),
     /// A method was called outside its allowed phase.
     InvalidTransition,
+    /// The candidate generation is not newer than the committed generation.
+    Rollback,
     /// The verified candidate did not match the staged candidate.
     CandidateMismatch,
 }
@@ -85,7 +87,13 @@ where
         contents: &[u8],
         generation: DurableGeneration,
     ) -> Result<(), PersistenceError<S::Error>> {
-        if self.state != PersistenceState::Active || contents.len() != generation.length as usize {
+        if self.state != PersistenceState::Active {
+            return Err(PersistenceError::InvalidTransition);
+        }
+        if generation.version <= self.active_generation.version {
+            return Err(PersistenceError::Rollback);
+        }
+        if contents.len() != generation.length as usize {
             return Err(PersistenceError::InvalidTransition);
         }
         self.storage
@@ -290,5 +298,28 @@ mod tests {
             coordinator.verify_candidate(generation(3), &[1, 2, 3, 4], &mut [0; 4]),
             Err(PersistenceError::CandidateMismatch)
         );
+    }
+
+    #[test]
+    fn rejects_equal_and_older_generations_before_writing() {
+        let mut coordinator = PersistenceCoordinator::new(
+            TestStorage {
+                writes: 0,
+                candidate: [1, 2, 3, 4],
+            },
+            JournalSlot::A,
+            generation(2),
+            3,
+        );
+
+        assert_eq!(
+            coordinator.write_candidate(&[1, 2, 3, 4], generation(2)),
+            Err(PersistenceError::Rollback)
+        );
+        assert_eq!(
+            coordinator.write_candidate(&[1, 2, 3, 4], generation(1)),
+            Err(PersistenceError::Rollback)
+        );
+        assert_eq!(coordinator.into_storage().writes, 0);
     }
 }

@@ -235,6 +235,9 @@ milestone into `main` only after its documented validation evidence exists.
    decoder, and bounded `Active -> CandidateWritten -> CandidateVerified ->
    CommitPending -> Active` persistence coordinator; durable F405 transition
    acceptance remains pending.
+   [ ] Enforce strict monotonic candidate-generation rejection in the durable
+   coordinator before any inactive-slot write; add equal-version and
+   lower-version tests.
    [x] Wire the hardware-neutral metadata verification chain through
    `RepositoryStreamStorage` and the durable coordinator in the feature-gated
    kernel repository loader; F405 signed-bundle boot acceptance is complete.
