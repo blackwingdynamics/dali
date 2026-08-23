@@ -25,6 +25,8 @@ repository-loader = ["abi-authentication", "dep:dali-metadata"]
 storage-write = []
 storage-interruption-test = ["storage-write"]
 storage-rollback-test = ["storage-write"]
+# Hardware acceptance only: stop F405 IWDG refresh and wait for reset.
+watchdog-feed-failure-test = []
 
 [lints]
 workspace = true

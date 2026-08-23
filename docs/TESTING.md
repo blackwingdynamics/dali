@@ -190,7 +190,7 @@ Hardware tests should cover:
 The following tests have been executed on the STM32F405RGT6 board with a
 Raspberry Pi Pico 2 CMSIS-DAP probe and USB CDC console. These records are
 evidence of the listed behavior only; they do not claim DMA isolation,
-multi-application isolation, or watchdog support.
+multi-application isolation beyond the documented F405 scope.
 
 ### Boot, storage, and application path
 
@@ -311,16 +311,19 @@ arbitrary peripheral or DMA-controller isolation.
   heartbeat running, halting the CPU for more than the declared 2000 ms IWDG
   timeout caused a reset, and the next boot logged `Reset cause: Watchdog`
   before returning to the kernel heartbeat.
+- [x] On 2026-08-23, the opt-in `watchdog-feed-failure-test` F405 profile
+  blocked the backend refresh after IWDG arm. The target reset, and the next
+  boot logged `Reset cause: Watchdog`, entered Safe Mode, skipped application
+  loading, and returned to the kernel heartbeat.
 - [x] Feed-failure policy is explicit: after a backend feed error, the kernel
   stops issuing further feeds and allows the armed hardware watchdog to reset
   the target.
-- F405 backend feed-failure injection is not an observable hardware contract:
-  the STM32F4 HAL IWDG `feed()` operation has no failure result or status bit
-  that can distinguish a rejected reload. The real F405 safety evidence is the
-  stronger failure mode already recorded above: when kernel servicing stops,
-  the armed IWDG resets the target and the next boot reports `Watchdog`.
-  A backend-error acceptance item remains applicable only to a future target
-  whose watchdog controller exposes a detectable feed failure.
+- The STM32F4 HAL IWDG `feed()` operation has no failure result or status bit
+  that can distinguish a rejected reload. The F405 test-only profile therefore
+  blocks the refresh before the HAL call and verifies the resulting hardware
+  timeout through the next boot's RCC reset flag. A backend-error acceptance
+  item remains applicable only to a future target whose watchdog controller
+  exposes a detectable feed failure.
 - [x] F405 hardware Safe Mode evidence confirms a watchdog reset logged
   `Reset cause: Watchdog`, reported the recovery transition, skipped AMRN
   application loading, and returned to the kernel heartbeat without an
@@ -329,6 +332,22 @@ arbitrary peripheral or DMA-controller isolation.
 - [x] F405 hardware held the kernel after the invalid-PSP application reached
   `Terminated` for 30 seconds without a new watchdog reset or boot sequence.
   This confirms watchdog servicing remains active after application recovery.
+
+The F405 feed-failure acceptance profile is opt-in and must never be used for
+production firmware:
+
+```text
+cargo build -p dali-kernel --release --no-default-features \
+  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,watchdog-feed-failure-test \
+  --target thumbv7em-none-eabihf
+```
+
+With this feature, the F405 watchdog backend rejects the first kernel feed
+after the IWDG is armed. The kernel drops further feed attempts and leaves the
+armed IWDG to expire. Acceptance requires the console to show the feed-failure
+trace, a reset, and on the next boot `[BOOT] Reset cause: Watchdog` followed by
+Safe Mode recovery. This verifies the F405 timeout path; it is not a claim that
+the STM32F4 HAL exposes an observable hardware feed-error status.
 
 ### Diagnostic evidence
 
@@ -377,9 +396,10 @@ distinguished from the kernel's fault and recovery records.
 - [x] Watchdog arming and feed ownership are integrated behind the platform
   facade, with heartbeat and scheduler-tick feed paths target-checked; this is
   not hardware evidence.
-- [x] Hardware watchdog timeout and reset-cause behavior was observed on F405
-  with a real IWDG reset; F405 also logged the Safe Mode transition and skipped
-  application loading. Feed-failure hardware evidence remains pending.
+- [x] Hardware watchdog timeout, reset-cause behavior, and the test-only
+  feed-failure path were observed on F405 with a real IWDG reset; F405 also
+  logged the Safe Mode transition and skipped application loading. Feed-error
+  status evidence for other watchdog controllers remains pending.
 - [ ] Alternative RWPI/PIC contract behavior; explicit relocation metadata is
   hardware-verified.
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot

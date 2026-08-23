@@ -15,6 +15,9 @@ pub enum F405WatchdogError {
     UnsupportedController,
     /// The timeout exceeds the HAL-supported IWDG range.
     TimeoutOutOfRange,
+    /// Test-only failure used to verify the armed IWDG reset path on F405.
+    #[cfg(feature = "watchdog-feed-failure-test")]
+    FeedFailureInjected,
 }
 
 /// F405 IWDG backend with the reset cause captured during early bootstrap.
@@ -70,8 +73,16 @@ impl WatchdogBackend for F405Watchdog {
     }
 
     fn feed(&mut self) -> Result<(), Self::Error> {
-        self.watchdog.feed();
-        Ok(())
+        #[cfg(feature = "watchdog-feed-failure-test")]
+        {
+            Err(F405WatchdogError::FeedFailureInjected)
+        }
+
+        #[cfg(not(feature = "watchdog-feed-failure-test"))]
+        {
+            self.watchdog.feed();
+            Ok(())
+        }
     }
 
     fn reset_cause(&self) -> ResetCause {

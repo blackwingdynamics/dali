@@ -117,7 +117,8 @@ heartbeat, scheduler tick, or a bounded valid-progress hook. A watchdog reset
 now selects Safe Mode before
 storage/package loading, and F405 hardware evidence confirms the watchdog
 reset log, recovery transition, skipped application loading, and return to the
-kernel heartbeat. F405 feed-failure evidence remains tracked separately. The
+kernel heartbeat. The F405 test-only no-feed path has also been hardware-tested;
+cross-target feed-failure semantics remain tracked separately. The
 initial valid-service
 authorization policy and repeated invalid-PSP fault-status clearing are
 hardware-tested. MPU protection applies to

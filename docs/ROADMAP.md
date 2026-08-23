@@ -183,11 +183,12 @@ milestone into `main` only after its documented validation evidence exists.
    F405 hardware logged `Reset cause:
    Watchdog`, entered Safe Mode, skipped application loading, and returned to
    the kernel heartbeat. F405 also remained in kernel recovery for 30 seconds
-   after application termination without a new watchdog reset. Remaining work
-   is platform-specific feed-failure evidence only for watchdog controllers
-   that expose a detectable feed error; the F405 IWDG has no such observable
-   hardware/API result, and its no-feed timeout/reset behavior is already
-   hardware-tested.
+   after application termination without a new watchdog reset. The
+   `watchdog-feed-failure-test` profile also blocked the F405 refresh and
+   produced the expected IWDG reset and next-boot cause. Remaining work is
+   feed-error status evidence only for watchdog controllers that expose a
+   detectable feed failure; the F405 IWDG has no such observable
+   hardware/API result.
 3. **Package authenticity** — [in progress] define a bounded signature
    envelope, trust-anchor identifier, and declarative development/release
    policy. The signed AMRN container contract now uses a new versioned
