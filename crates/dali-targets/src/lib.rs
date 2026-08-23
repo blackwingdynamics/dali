@@ -298,6 +298,8 @@ mod tests {
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
+        assert_eq!(SUPPORTED_TARGETS[0].status_led.number, 2);
+        assert!(SUPPORTED_TARGETS[0].status_led.active_high);
         assert!(SUPPORTED_TARGETS[0].capabilities.storage);
         assert!(SUPPORTED_TARGETS[0].capabilities.usb_console);
         assert!(SUPPORTED_TARGETS[0].capabilities.mpu);
