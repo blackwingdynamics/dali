@@ -89,20 +89,28 @@ vector or permit an application to claim kernel-owned pins.
 Update this checklist after each implementation, test, and commit. Keep items
 atomic and mark an item `[x]` only when its stated evidence exists.
 
+### Slice 1 core API
+
+- [x] Add `dali-driver-api` as a workspace crate with a grouped module layout.
+- [x] Keep the production crate `no_std`, dependency-free, and zero-heap.
+- [x] Define the bounded `DriverError` and `DriverResult` contract.
+- [x] Add deterministic GPIO and timer contract-test doubles under `tests/`.
+- [x] Run the `dali-driver-api` host test suite and strict Clippy.
+
 ### GPIO
 
-- [ ] Define `InputPin`, `OutputPin`, and `PinMode` contracts.
-- [ ] Define typed GPIO ownership and transition errors.
-- [ ] Define interrupt enable, disable, pending, and acknowledgment contract.
-- [ ] Add host tests for levels, modes, ownership, and unsupported interrupts.
+- [x] Define `InputPin`, `OutputPin`, and `PinMode` contracts.
+- [x] Define typed GPIO ownership and transition errors.
+- [x] Define interrupt enable, disable, pending, and acknowledgment contract.
+- [x] Add host tests for levels, modes, ownership, and unsupported interrupts.
 - [ ] Implement a target adapter without leaking F405 facts into the API crate.
 - [ ] Record F405 GPIO input/output and interrupt evidence.
 
 ### Timers
 
-- [ ] Define `TimerDriver` and `CountDown` contracts.
-- [ ] Define typed duration, maximum timeout, cancellation, and expiration rules.
-- [ ] Add host tests for bounds, restart, cancellation, and repeated expiry.
+- [x] Define `TimerDriver` and `CountDown` contracts.
+- [x] Define typed duration, maximum timeout, cancellation, and expiration rules.
+- [x] Add host tests for bounds, restart, cancellation, and repeated expiry.
 - [ ] Implement a target timer adapter from manifest-owned timing metadata.
 - [ ] Record F405 timer and bounded-timeout evidence.
 
