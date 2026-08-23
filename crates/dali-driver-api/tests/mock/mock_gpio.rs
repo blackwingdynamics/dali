@@ -1,6 +1,6 @@
 use dali_driver_api::{
-    DriverError, DriverResult, GpioMode, InputPin, InterruptPin, InterruptTrigger, OutputPin,
-    PinMode,
+    DriverError, DriverResult, GpioMode, InputPin, InterruptCallback, InterruptPin,
+    InterruptTrigger, OutputPin, PinMode,
 };
 
 pub struct MockGpio {
@@ -8,6 +8,7 @@ pub struct MockGpio {
     pub mode: GpioMode,
     pub pending: bool,
     pub interrupt: Option<InterruptTrigger>,
+    pub callback: Option<InterruptCallback>,
     pub interrupt_supported: bool,
     pub busy: bool,
 }
@@ -19,6 +20,7 @@ impl MockGpio {
             mode: GpioMode::Input,
             pending: false,
             interrupt: None,
+            callback: None,
             interrupt_supported: true,
             busy: false,
         }
@@ -69,18 +71,24 @@ impl PinMode for MockGpio {
 }
 
 impl InterruptPin for MockGpio {
-    fn enable_interrupt(&mut self, trigger: InterruptTrigger) -> DriverResult<()> {
+    fn enable_interrupt(
+        &mut self,
+        trigger: InterruptTrigger,
+        callback: Option<InterruptCallback>,
+    ) -> DriverResult<()> {
         self.check_available()?;
         if !self.interrupt_supported {
             return Err(DriverError::Unsupported);
         }
         self.interrupt = Some(trigger);
+        self.callback = callback;
         Ok(())
     }
 
     fn disable_interrupt(&mut self) -> DriverResult<()> {
         self.check_available()?;
         self.interrupt = None;
+        self.callback = None;
         Ok(())
     }
 
@@ -88,6 +96,9 @@ impl InterruptPin for MockGpio {
         self.check_available()?;
         let pending = self.pending;
         self.pending = false;
+        if pending && let Some(callback) = self.callback {
+            callback();
+        }
         Ok(pending)
     }
 }

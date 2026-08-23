@@ -17,6 +17,20 @@ pub enum DriverError {
     InvalidState,
     /// The underlying device is absent or disconnected.
     Disconnected,
+    /// The hardware cannot complete the operation without blocking.
+    WouldBlock,
+    /// The serial peripheral detected a framing error.
+    Framing,
+    /// The serial peripheral detected a parity error.
+    Parity,
+    /// The serial peripheral overran its receive boundary.
+    Overrun,
+    /// A caller-owned buffer cannot represent the requested transfer.
+    InvalidBuffer,
+    /// A peripheral rejected a transaction with a negative acknowledgment.
+    Nack,
+    /// A shared bus transaction lost arbitration.
+    ArbitrationLost,
 }
 
 /// Result type used by driver contracts.
