@@ -45,20 +45,23 @@ The following remain outside the current guarantee boundary:
 - complete arbitrary-peripheral DMA-controller isolation beyond the tested
   kernel-owned F405 SDIO path;
 - complete multi-application lifecycle and application-to-application policy;
-- production package authenticity, Secure Boot, confidentiality, and
-  anti-rollback;
-- production debug-lock and key-storage policy.
+- pre-reset kernel-image Secure Boot and immutable boot-anchor enforcement;
+- production key custody, debug-lock policy, and power-loss recovery;
+- confidentiality for native application images.
 
-## Post-MVP security work
+The configured feature-gated F405 repository path does provide signed
+AMRN/repository verification and durable generation anti-rollback checks. The
+F405 evidence is limited to that configured path and must not be generalized
+to every target or package mode.
 
-- signed kernel and application images;
-- secure key storage;
-- signature and certificate policy;
-- anti-rollback counters;
-- production debug lock;
+## Remaining security work
+
+- pre-reset ROM/first-stage bootloader verification for the kernel image;
+- production key custody and debug-lock enforcement;
 - broader MPU-backed isolation and multi-application ownership where supported;
+- arbitrary DMA-controller/peripheral isolation;
 - cross-target watchdog failure semantics and timeout evidence;
-- atomic update and rollback;
+- power-loss-safe update and rollback acceptance;
 - security review of package parsing and storage access.
 
 Security claims must be added only after the corresponding mechanism and test evidence exist.
@@ -78,14 +81,14 @@ root threshold, and no private key material on the target. It also defines the
 `dali.secure-boot.v1` kernel-image descriptor and admission checks for target,
 version, length, SHA-256, and root-role signatures.
 
-This is a policy and codec boundary only. The current F405 startup path does
-not yet verify a signed kernel image before reset-vector execution, so Secure
-Boot and production root custody remain unaccepted hardware claims. The F405
-repository boot path now verifies the signed `bundle.manifest` through the
-Root-declared Bundle role before applying its generation admission policy.
-Existing trust-store verification continues to apply rotation overlap, signed
-revocation state, metadata expiry when trusted time is available, and durable
-generation rollback checks.
+This is a policy and codec boundary only for the kernel image. The current F405
+startup path does not yet verify a signed kernel image before reset-vector
+execution, so pre-reset Secure Boot and production root custody remain
+unaccepted hardware claims. Separately, the F405 repository boot path verifies
+the signed `bundle.manifest` through the Root-declared Bundle role before
+applying its generation admission policy. Existing trust-store verification
+continues to apply rotation overlap, signed revocation state, metadata expiry
+when trusted time is available, and durable generation rollback checks.
 
 ## F405 isolation foundation (feature-gated, single-application hardware evidence)
 
@@ -107,7 +110,7 @@ MemManage and BusFault paths.
 
 This milestone still does not claim a secure kernel, complete sandbox,
 complete fault isolation, arbitrary DMA-controller isolation, confidentiality,
-or authenticity.
+or pre-reset kernel-image authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
 after application termination, keeps the read-only package boundary

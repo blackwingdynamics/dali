@@ -189,8 +189,9 @@ Hardware tests should cover:
 
 The following tests have been executed on the STM32F405RGT6 board with a
 Raspberry Pi Pico 2 CMSIS-DAP probe and USB CDC console. These records are
-evidence of the listed behavior only; they do not claim DMA isolation,
-multi-application isolation beyond the documented F405 scope.
+evidence of the listed behavior only; they do not claim arbitrary
+DMA-controller isolation or multi-application isolation beyond the documented
+F405 scope.
 
 ### Boot, storage, and application path
 
@@ -537,7 +538,8 @@ distinguished from the kernel's fault and recovery records.
   `0x200100A0`; the slot1 progress marker increased from `0x00000000` to
   `0x0048D887` without a second slot0 entry. This proves the reverse CPU-side
   rejection and recovery direction, not DMA isolation.
-- [ ] DMA isolation.
+- [x] Bounded F405 SDIO DMA ownership and application-DMA denial.
+- [ ] Arbitrary DMA-controller and peripheral isolation.
 - [x] Application restart and rollback policy is covered by the lifecycle policy
   contract; F405 hardware watchdog timeout and Safe Mode recovery evidence are
   recorded above. Automatic restart, rollback, and interrupted-write recovery
@@ -660,8 +662,8 @@ acceptance run on 2026-08-21 used the release-anchor bundle prepared by
 This is hardware evidence for the configured F405 release-anchor path:
 SDIO access, Binary v2 repository traversal, AMRN validation, signature
 verification, slot loading, and relocation-fixture execution. It does not
-prove production key custody, Secure Boot, DMA isolation, or power-loss
-recovery. The remaining repository acceptance scenarios are candidate
+prove production key custody, pre-reset Secure Boot, arbitrary DMA isolation,
+or power-loss recovery. The remaining repository acceptance scenarios are candidate
 write/read-back with atomic activation, revoked-developer-key rejection on
 target, and interrupted-write/power-loss recovery.
 

@@ -23,10 +23,16 @@ proves that the kernel can:
 - load its native ARM payload into reserved SRAM;
 - transfer control to the documented application entry point.
 
-The baseline ABI v2 application is trusted native code. The feature-gated ABI
-v3 path provides tested processor-side isolation for one application, but Dali
-OS does not yet claim complete sandboxing, DMA isolation, signed packages,
-secure boot, or multi-application isolation.
+The baseline ABI v2 application is trusted native code. The feature-gated F405
+path provides hardware-evidenced processor-side MPU isolation for one
+application, bounded kernel-owned SDIO DMA policy, signed AMRN/repository
+verification, anti-rollback admission, watchdog Safe Mode recovery, and
+bounded storage-card recovery. These are scoped implementation claims, not
+complete sandboxing, arbitrary DMA isolation, pre-reset Secure Boot, or
+multi-application isolation.
+
+The `dali.secure-boot.v1` image contract is implemented and host-tested, but
+pre-reset ROM/first-stage bootloader enforcement remains future work.
 
 ## Architecture
 

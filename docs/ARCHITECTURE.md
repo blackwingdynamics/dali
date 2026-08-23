@@ -56,8 +56,8 @@ F405 execution mode. It implements privileged kernel bootstrap, unprivileged
 application Thread mode, PSP ownership, MPU regions, SVC-based services, and a
 kernel-owned fault boundary. These processor-side mechanisms and their listed
 fault-injection cases have F405 evidence, but the result must not be described
-as a microkernel, secure boot, or complete sandbox: DMA ownership and
-multi-application isolation remain open. The current lifecycle policy requires
+as a microkernel, secure boot, or complete sandbox: arbitrary DMA-controller
+and multi-application isolation remain open. The current lifecycle policy requires
 manual reset after termination, does not provide rollback on read-only storage,
 and arms the hardware watchdog before opaque storage-transport initialization,
 so a vendor HAL polling hang becomes bounded Safe Mode recovery. Block reads,
@@ -233,8 +233,8 @@ An MVP application must:
 
 Native execution in a shared address space is intentionally a baseline ABI v2
 limitation. ABI v3 provides a separate feature-gated processor-side boundary
-for one application; it does not provide DMA isolation or multi-application
-isolation.
+for one application. Its bounded F405 SDIO DMA policy is separate from general
+DMA isolation, and multi-application isolation remains open.
 
 ## 8. `.amrn` package format
 
@@ -272,7 +272,10 @@ The loader must reject:
 - a CRC32 mismatch;
 - an entry point outside the payload.
 
-Digital signatures, encryption, manifests, version compatibility, and anti-rollback are post-MVP features. The format should reserve versioning space for them without pretending they already exist.
+Digital signatures, manifests, version compatibility, and anti-rollback exist
+in the feature-gated post-MVP repository path; they are not part of the
+baseline ABI v2 package contract. Encryption and pre-reset kernel-image Secure
+Boot remain future work.
 
 ## 9. RAM loading and execution
 

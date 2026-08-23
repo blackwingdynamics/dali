@@ -10,7 +10,8 @@ Read the documents in this order:
 
 1. [Architecture](ARCHITECTURE.md) — project vision, MVP boundary, runtime layers, and core contracts.
 2. [File Structure](FILE_STRUCTURE.md) — repository layout and prioritized file sequence.
-3. [Roadmap](ROADMAP.md) — atomic implementation tasks and acceptance gates.
+3. [Roadmap](ROADMAP.md) — phase gateway, status, and acceptance boundaries;
+   detailed phase plans are in [docs/roadmap](roadmap/).
 4. [Coding Standards](CODING_STANDARDS.md) — mandatory code, comment, safety, and review rules.
 5. [AMRN Format](AMRN_FORMAT.md) — binary package layout and validation rules.
 6. [ABI](ABI.md) — kernel-to-application execution contract.
