@@ -51,3 +51,15 @@ impl UsbBusReset for stm32f4xx_hal::otg_fs::UsbBusType {
         let _ = self.force_reset(&mut adapter);
     }
 }
+
+/// Enables the board's USB interrupt after the CDC backend is initialized.
+pub(crate) fn unmask_usb_irq() {
+    // SAFETY: The backend initializes USB state before unmasking its sole IRQ.
+    unsafe { cortex_m::peripheral::NVIC::unmask(pac::Interrupt::OTG_FS) };
+}
+
+/// Wakes the board's USB backend after a main-context log enqueue.
+pub(crate) fn pend_usb_irq() {
+    // SAFETY: PENDING is a software wake-up for the initialized USB owner.
+    cortex_m::peripheral::NVIC::pend(pac::Interrupt::OTG_FS);
+}

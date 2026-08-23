@@ -1,8 +1,8 @@
 //! F405 GPIO adapter kept behind the platform boundary.
 
 use dali_driver_api::{
-    DriverError, DriverResult, GpioMode, InputPin, InterruptPin, InterruptTrigger, OutputPin,
-    PinMode,
+    DriverError, DriverResult, GpioMode, InputPin, InterruptCallback, InterruptPin,
+    InterruptTrigger, OutputPin, PinMode,
 };
 use stm32f4xx_hal::gpio::{DynamicPin, PinState};
 
@@ -87,7 +87,11 @@ impl<const PORT: char, const PIN: u8> PinMode for F405GpioPin<PORT, PIN> {
 }
 
 impl<const PORT: char, const PIN: u8> InterruptPin for F405GpioPin<PORT, PIN> {
-    fn enable_interrupt(&mut self, _: InterruptTrigger) -> DriverResult<()> {
+    fn enable_interrupt(
+        &mut self,
+        _: InterruptTrigger,
+        _: Option<InterruptCallback>,
+    ) -> DriverResult<()> {
         Err(DriverError::Unsupported)
     }
 

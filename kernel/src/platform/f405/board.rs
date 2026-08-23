@@ -1,14 +1,12 @@
 //! WeAct Studio STM32F405RGT6 Core Board hardware backend.
 
-use super::drivers::F405GpioPin;
+use super::drivers::{F405ExtiPin, F405GpioPin};
 use crate::runtime::watchdog::WatchdogBackend;
-use dali_driver_api::OutputPin;
+use dali_driver_api::{InterruptPin, InterruptTrigger, OutputPin};
 use dali_targets::TARGET_F405;
 
 #[cfg(feature = "abi-context-switch")]
 use super::drivers::F405TimerDriver;
-#[cfg(feature = "abi-context-switch")]
-use dali_driver_api::Duration;
 #[cfg(feature = "abi-current")]
 use dali_targets::MemoryProfile;
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
@@ -17,6 +15,13 @@ use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysD
 mod usb;
 #[cfg(feature = "usb-cdc")]
 pub use usb::UsbResources;
+#[cfg(feature = "usb-cdc")]
+pub(crate) use usb::{pend_usb_irq, unmask_usb_irq};
+mod input;
+#[cfg(feature = "abi-context-switch")]
+mod scheduler;
+#[cfg(feature = "abi-context-switch")]
+pub(crate) use scheduler::enable_scheduler_tick;
 
 /// First planned single-application F405 isolation layout.
 pub const ISOLATION_LAYOUT: Option<crate::security::mpu::IsolationLayout> =
@@ -47,13 +52,6 @@ pub const MEMORY_PROFILE: MemoryProfile = TARGET_F405.memory;
 const HZ_PER_MHZ: u32 = 1_000_000;
 /// System clock in megahertz for the common platform facade.
 pub const SYSTEM_CLOCK_MHZ: u32 = SYSTEM_CLOCK_HZ / HZ_PER_MHZ;
-#[cfg(feature = "abi-context-switch")]
-const SYSTICK_MIN_RELOAD: u32 = 1;
-#[cfg(feature = "abi-context-switch")]
-const SYSTICK_MAX_RELOAD: u32 = 0x00FF_FFFF;
-#[cfg(all(feature = "abi-context-switch", feature = "driver-hardware-test"))]
-const DRIVER_EVIDENCE_POLL_LIMIT: u32 = SYSTICK_MAX_RELOAD;
-
 const _: () = assert!(TARGET_F405.amrn_target_id == dali_amrn::TARGET_ID);
 #[cfg(feature = "abi-current")]
 const _: () = assert!(crate::abi::CURRENT_VERSION == dali_amrn::v2::ABI_VERSION);
@@ -64,8 +62,21 @@ const _: () = assert!(
         && TARGET_F405.memory.application_length == dali_amrn::MAX_PAYLOAD_SIZE as u32
 );
 
+/// Port selected by the board manifest for the active-high status LED.
+const STATUS_LED_PORT: char = 'B';
+/// Pin selected by the board manifest for the active-high status LED.
+const STATUS_LED_PIN: u8 = 2;
+
 /// Status LED output pin on the active-high PB2 LED.
-pub type StatusLed = F405GpioPin<'B', 2>;
+pub type StatusLed = F405GpioPin<STATUS_LED_PORT, STATUS_LED_PIN>;
+
+/// Port selected by the board manifest for the active-low user key.
+const USER_KEY_PORT: char = 'C';
+/// Pin selected by the board manifest for the active-low user key.
+const USER_KEY_PIN: u8 = 13;
+
+/// Board user-key input bound to the PC13 EXTI line.
+pub type UserKey = F405ExtiPin<USER_KEY_PORT, USER_KEY_PIN>;
 
 /// SDIO pins owned by the kernel after board initialization.
 pub type SdioPins = (
@@ -83,8 +94,14 @@ pub struct Board {
     delay: Option<TimerMode>,
     /// WeAct board status LED on active-high PB2.
     pub status_led: StatusLed,
+    /// User key input reserved for board-local EXTI handling.
+    pub user_key: UserKey,
+    /// Whether the board-local EXTI line was enabled during initialization.
+    user_key_enabled: bool,
     #[cfg(feature = "driver-hardware-test")]
     status_led_on: bool,
+    #[cfg(feature = "driver-hardware-test")]
+    gpio_driver_log_emitted: bool,
     /// Hardware SDIO 4-bit pins for the on-board microSD socket.
     sdio_pins: Option<SdioPins>,
     /// SDIO peripheral reserved for the storage driver.
@@ -136,45 +153,6 @@ impl Board {
     }
 }
 
-/// Enables SysTick for the scheduler after the application context is ready.
-#[cfg(feature = "abi-context-switch")]
-pub fn enable_scheduler_tick(board: &mut Board, tick_hz: u32) -> bool {
-    let Some(core_ticks) = SYSTEM_CLOCK_HZ.checked_div(tick_hz) else {
-        return false;
-    };
-    let Some(reload) = core_ticks.checked_sub(1) else {
-        return false;
-    };
-    if !(SYSTICK_MIN_RELOAD..=SYSTICK_MAX_RELOAD).contains(&reload) {
-        return false;
-    }
-
-    let Some(TimerMode::Delay(delay)) = board.delay.take() else {
-        return false;
-    };
-    let maximum_timeout = Duration::from_ticks(tick_hz);
-    let mut counter = F405TimerDriver::new(delay.release().counter_hz(), tick_hz, maximum_timeout);
-    if counter.start_frequency(tick_hz).is_err() {
-        return false;
-    }
-    #[cfg(feature = "driver-hardware-test")]
-    if !counter.wait_for_tick(DRIVER_EVIDENCE_POLL_LIMIT) {
-        crate::logging::error(
-            crate::logging::BOOT_SUBSYSTEM,
-            format_args!("[DRIVER][TIMER] Hardware timer tick probe failed"),
-        );
-        return false;
-    }
-    #[cfg(feature = "driver-hardware-test")]
-    crate::logging::info(
-        crate::logging::BOOT_SUBSYSTEM,
-        format_args!("[DRIVER][TIMER] Hardware timer tick elapsed"),
-    );
-    counter.listen_update();
-    board.delay = Some(TimerMode::Scheduler(counter));
-    true
-}
-
 /// Takes singleton peripherals and initializes the STM32F405 board hardware.
 pub fn initialize() -> Board {
     // The platform backend owns singleton acquisition so the kernel core does
@@ -196,12 +174,27 @@ pub fn initialize() -> Board {
     let clocks = clocks.freeze();
     let delay = TimerMode::Delay(core.SYST.delay(&clocks));
 
-    let gpiob = device.GPIOB.split();
+    // GPIOA is split only for USB FS PA11/PA12. PA13/PA14 remain untouched
+    // so the SWD debug connection stays in its reset-time AF0 configuration.
     #[cfg(feature = "usb-cdc")]
     let gpioa = device.GPIOA.split();
+    let gpiob = device.GPIOB.split();
     let gpioc = device.GPIOC.split();
     let gpiod = device.GPIOD.split();
     let status_led = F405GpioPin::new_output(gpiob.pb2.into_dynamic());
+    let mut user_key = F405ExtiPin::new(
+        gpioc.pc13.into_pull_up_input(),
+        device.EXTI,
+        device.SYSCFG.constrain(),
+    );
+    let user_key_enabled = matches!(
+        user_key.enable_interrupt(InterruptTrigger::FallingEdge, None),
+        Ok(())
+    );
+    #[cfg(feature = "driver-hardware-test")]
+    if user_key_enabled {
+        super::unmask_exti15_10_irq();
+    }
 
     let sdio_pins = (
         gpioc.pc12,
@@ -225,8 +218,12 @@ pub fn initialize() -> Board {
     Board {
         delay: Some(delay),
         status_led,
+        user_key,
+        user_key_enabled,
         #[cfg(feature = "driver-hardware-test")]
         status_led_on: false,
+        #[cfg(feature = "driver-hardware-test")]
+        gpio_driver_log_emitted: false,
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
         clocks,
@@ -252,10 +249,13 @@ pub fn set_status_led(board: &mut Board, on: bool) {
     #[cfg(feature = "driver-hardware-test")]
     if result.is_ok() && board.status_led_on != on {
         board.status_led_on = on;
-        crate::logging::info(
-            crate::logging::BOOT_SUBSYSTEM,
-            format_args!("[DRIVER][GPIO] Hardware pin toggled"),
-        );
+        if !board.gpio_driver_log_emitted {
+            board.gpio_driver_log_emitted = true;
+            crate::logging::info(
+                crate::logging::BOOT_SUBSYSTEM,
+                format_args!("[DRIVER][GPIO] Hardware pin toggled"),
+            );
+        }
     }
 }
 
@@ -279,18 +279,4 @@ pub fn delay_ms(board: &mut Board, milliseconds: u32) {
         }
     };
     board.delay = Some(TimerMode::Delay(delay));
-}
-
-/// Enables the board's USB interrupt after the CDC backend is initialized.
-#[cfg(feature = "usb-cdc")]
-pub fn unmask_usb_irq() {
-    // SAFETY: The backend initializes USB state before unmasking its sole IRQ.
-    unsafe { cortex_m::peripheral::NVIC::unmask(pac::Interrupt::OTG_FS) };
-}
-
-/// Wakes the board's USB backend after a main-context log enqueue.
-#[cfg(feature = "usb-cdc")]
-pub fn pend_usb_irq() {
-    // SAFETY: PENDING is a software wake-up for the initialized USB owner.
-    cortex_m::peripheral::NVIC::pend(pac::Interrupt::OTG_FS);
 }

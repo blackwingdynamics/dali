@@ -88,11 +88,46 @@ pub(crate) const CONTEXT_CAPACITY: usize = dali_targets::TARGET_F405_CONTEXT_CAP
 pub(crate) const SCHEDULER_PROFILE: Option<dali_targets::SchedulerProfile> =
     dali_targets::TARGET_F405.scheduler;
 
-#[cfg(feature = "usb-cdc")]
+#[cfg(feature = "driver-hardware-test")]
+use stm32f4xx_hal::pac;
+#[cfg(any(feature = "usb-cdc", feature = "driver-hardware-test"))]
 use stm32f4xx_hal::pac::interrupt;
+
+#[cfg(feature = "driver-hardware-test")]
+const USER_KEY_EXTI_MASK: u32 = 1_u32 << 13;
 
 #[cfg(feature = "usb-cdc")]
 #[interrupt]
 fn OTG_FS() {
     crate::logging::service_usb_irq();
+}
+
+/// Enables the shared NVIC line used by EXTI10..EXTI15 during the hardware probe.
+#[cfg(feature = "driver-hardware-test")]
+pub(crate) fn unmask_exti15_10_irq() {
+    // SAFETY: The board configured only the kernel-owned PC13 EXTI line before
+    // enabling this shared interrupt during the bounded driver probe.
+    unsafe { cortex_m::peripheral::NVIC::unmask(pac::Interrupt::EXTI15_10) };
+}
+
+/// Handles the board-owned PC13 falling-edge event without waiting for storage.
+#[cfg(feature = "driver-hardware-test")]
+#[interrupt]
+fn EXTI15_10() {
+    let exti = unsafe {
+        // SAFETY: EXTI is exclusively owned by the board's PC13 driver in the
+        // hardware-test build, and this handler only accesses EXTI13's bit.
+        &*pac::EXTI::ptr()
+    };
+    if exti.pr.read().bits() & USER_KEY_EXTI_MASK != 0 {
+        exti.pr.write(|writer| unsafe {
+            // SAFETY: USER_KEY_EXTI_MASK names only EXTI13; STM32 EXTI PR is
+            // write-one-to-clear.
+            writer.bits(USER_KEY_EXTI_MASK)
+        });
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][EXTI] PC13 interrupt triggered"),
+        );
+    }
 }

@@ -12,6 +12,10 @@ pub(super) struct StorageRuntime {
     status: lifecycle::status::StorageStatus,
     #[cfg(feature = "sdio")]
     recovery_reader: Option<platform::PlatformSdioReader>,
+    #[cfg(feature = "sdio")]
+    recovery_retry_log_count: u32,
+    #[cfg(feature = "sdio")]
+    recovery_probe_count: u32,
 }
 
 impl StorageRuntime {
@@ -24,6 +28,10 @@ impl StorageRuntime {
             status,
             #[cfg(feature = "sdio")]
             recovery_reader: None,
+            #[cfg(feature = "sdio")]
+            recovery_retry_log_count: 0,
+            #[cfg(feature = "sdio")]
+            recovery_probe_count: 0,
         }
     }
 
@@ -35,6 +43,8 @@ impl StorageRuntime {
         Self {
             status,
             recovery_reader: Some(reader),
+            recovery_retry_log_count: 0,
+            recovery_probe_count: 0,
         }
     }
 
@@ -90,6 +100,13 @@ pub fn run() -> ! {
             logging::BOOT_SUBSYSTEM,
             format_args!("[USB] USB resources unavailable"),
         );
+    }
+
+    #[cfg(feature = "driver-hardware-test")]
+    unsafe {
+        // SAFETY: All test-build interrupt handlers are linked, and USB/logging
+        // ownership is initialized before EXTI events can emit diagnostics.
+        cortex_m::interrupt::enable();
     }
 
     startup::emit_boot_banner();

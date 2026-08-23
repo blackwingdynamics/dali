@@ -3,7 +3,7 @@
 use core::cell::UnsafeCell;
 
 #[cfg(feature = "board-stm32f405-sd")]
-mod f405;
+pub(crate) mod f405;
 
 /// Stable operations supplied by a selected platform backend.
 pub(crate) trait Backend: Sized {
@@ -154,6 +154,10 @@ pub(crate) fn repository_verification_progress() -> bool {
 impl Platform {
     pub(crate) fn set_status_led(&mut self, on: bool) {
         self.0.set_status_led(on);
+    }
+
+    pub(crate) fn poll_user_key(&mut self) {
+        self.0.poll_user_key();
     }
 
     pub(crate) fn delay_ms(&mut self, milliseconds: u32) {
