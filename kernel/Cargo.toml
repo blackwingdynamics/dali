@@ -27,6 +27,8 @@ storage-interruption-test = ["storage-write"]
 storage-rollback-test = ["storage-write"]
 # Hardware acceptance only: stop F405 IWDG refresh and wait for reset.
 watchdog-feed-failure-test = []
+# Hardware acceptance only: emit target-visible GPIO and timer evidence.
+driver-hardware-test = []
 
 [lints]
 workspace = true
@@ -36,6 +38,7 @@ dali-amrn = { path = "../crates/dali-amrn" }
 dali-crypto = { path = "../crates/dali-crypto", optional = true }
 dali-metadata = { path = "../crates/dali-metadata", optional = true }
 dali = { path = "../crates/dali-sdk" }
+dali-driver-api = { path = "../crates/dali-driver-api" }
 dali-usb = { path = "../crates/dali-usb" }
 dali-targets = { path = "../crates/dali-targets" }
 cortex-m = "0.7"

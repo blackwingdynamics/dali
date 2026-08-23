@@ -103,16 +103,18 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 - [x] Define typed GPIO ownership and transition errors.
 - [x] Define interrupt enable, disable, pending, and acknowledgment contract.
 - [x] Add host tests for levels, modes, ownership, and unsupported interrupts.
-- [ ] Implement a target adapter without leaking F405 facts into the API crate.
-- [ ] Record F405 GPIO input/output and interrupt evidence.
+- [x] Implement a target adapter without leaking F405 facts into the API crate.
+- [x] Record F405 GPIO output-toggle evidence with the F405 acceptance firmware.
+- [ ] Record F405 GPIO input and interrupt evidence.
 
 ### Timers
 
 - [x] Define `TimerDriver` and `CountDown` contracts.
 - [x] Define typed duration, maximum timeout, cancellation, and expiration rules.
 - [x] Add host tests for bounds, restart, cancellation, and repeated expiry.
-- [ ] Implement a target timer adapter from manifest-owned timing metadata.
-- [ ] Record F405 timer and bounded-timeout evidence.
+- [x] Implement a target timer adapter from manifest-owned timing metadata.
+- [x] Record F405 timer elapsed-tick evidence with the F405 acceptance firmware.
+- [ ] Record F405 bounded-timeout evidence.
 
 ### UART
 

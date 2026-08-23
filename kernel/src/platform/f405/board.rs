@@ -1,12 +1,16 @@
 //! WeAct Studio STM32F405RGT6 Core Board hardware backend.
 
+use super::drivers::F405GpioPin;
 use crate::runtime::watchdog::WatchdogBackend;
+use dali_driver_api::OutputPin;
 use dali_targets::TARGET_F405;
 
+#[cfg(feature = "abi-context-switch")]
+use super::drivers::F405TimerDriver;
+#[cfg(feature = "abi-context-switch")]
+use dali_driver_api::Duration;
 #[cfg(feature = "abi-current")]
 use dali_targets::MemoryProfile;
-#[cfg(feature = "abi-context-switch")]
-use stm32f4xx_hal::timer::{SysCounterHz, SysEvent};
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
 #[cfg(feature = "usb-cdc")]
@@ -47,6 +51,8 @@ pub const SYSTEM_CLOCK_MHZ: u32 = SYSTEM_CLOCK_HZ / HZ_PER_MHZ;
 const SYSTICK_MIN_RELOAD: u32 = 1;
 #[cfg(feature = "abi-context-switch")]
 const SYSTICK_MAX_RELOAD: u32 = 0x00FF_FFFF;
+#[cfg(all(feature = "abi-context-switch", feature = "driver-hardware-test"))]
+const DRIVER_EVIDENCE_POLL_LIMIT: u32 = SYSTICK_MAX_RELOAD;
 
 const _: () = assert!(TARGET_F405.amrn_target_id == dali_amrn::TARGET_ID);
 #[cfg(feature = "abi-current")]
@@ -59,7 +65,7 @@ const _: () = assert!(
 );
 
 /// Status LED output pin on the active-high PB2 LED.
-pub type StatusLed = gpio::gpiob::PB2<gpio::Output<gpio::PushPull>>;
+pub type StatusLed = F405GpioPin<'B', 2>;
 
 /// SDIO pins owned by the kernel after board initialization.
 pub type SdioPins = (
@@ -77,6 +83,8 @@ pub struct Board {
     delay: Option<TimerMode>,
     /// WeAct board status LED on active-high PB2.
     pub status_led: StatusLed,
+    #[cfg(feature = "driver-hardware-test")]
+    status_led_on: bool,
     /// Hardware SDIO 4-bit pins for the on-board microSD socket.
     sdio_pins: Option<SdioPins>,
     /// SDIO peripheral reserved for the storage driver.
@@ -96,7 +104,7 @@ enum TimerMode {
     Delay(SysDelay),
     /// Scheduler interrupt mode after an application context is active.
     #[cfg(feature = "abi-context-switch")]
-    Scheduler(SysCounterHz),
+    Scheduler(F405TimerDriver),
 }
 
 impl Board {
@@ -144,11 +152,25 @@ pub fn enable_scheduler_tick(board: &mut Board, tick_hz: u32) -> bool {
     let Some(TimerMode::Delay(delay)) = board.delay.take() else {
         return false;
     };
-    let mut counter = delay.release().counter_hz();
-    if counter.start(Hertz::from_raw(tick_hz)).is_err() {
+    let maximum_timeout = Duration::from_ticks(tick_hz);
+    let mut counter = F405TimerDriver::new(delay.release().counter_hz(), tick_hz, maximum_timeout);
+    if counter.start_frequency(tick_hz).is_err() {
         return false;
     }
-    counter.listen(SysEvent::Update);
+    #[cfg(feature = "driver-hardware-test")]
+    if !counter.wait_for_tick(DRIVER_EVIDENCE_POLL_LIMIT) {
+        crate::logging::error(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][TIMER] Hardware timer tick probe failed"),
+        );
+        return false;
+    }
+    #[cfg(feature = "driver-hardware-test")]
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[DRIVER][TIMER] Hardware timer tick elapsed"),
+    );
+    counter.listen_update();
     board.delay = Some(TimerMode::Scheduler(counter));
     true
 }
@@ -179,8 +201,7 @@ pub fn initialize() -> Board {
     let gpioa = device.GPIOA.split();
     let gpioc = device.GPIOC.split();
     let gpiod = device.GPIOD.split();
-    let mut status_led = gpiob.pb2.into_push_pull_output();
-    status_led.set_low();
+    let status_led = F405GpioPin::new_output(gpiob.pb2.into_dynamic());
 
     let sdio_pins = (
         gpioc.pc12,
@@ -204,6 +225,8 @@ pub fn initialize() -> Board {
     Board {
         delay: Some(delay),
         status_led,
+        #[cfg(feature = "driver-hardware-test")]
+        status_led_on: false,
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
         clocks,
@@ -215,10 +238,24 @@ pub fn initialize() -> Board {
 
 /// Sets the active-high F405 board LED to the requested logical state.
 pub fn set_status_led(board: &mut Board, on: bool) {
-    if on {
-        board.status_led.set_high();
+    let result = if on {
+        OutputPin::set_high(&mut board.status_led)
     } else {
-        board.status_led.set_low();
+        OutputPin::set_low(&mut board.status_led)
+    };
+    if result.is_err() {
+        crate::logging::error(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[GPIO] Status LED operation failed"),
+        );
+    }
+    #[cfg(feature = "driver-hardware-test")]
+    if result.is_ok() && board.status_led_on != on {
+        board.status_led_on = on;
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][GPIO] Hardware pin toggled"),
+        );
     }
 }
 
