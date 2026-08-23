@@ -6,6 +6,14 @@ Tasks are intentionally small. A task is complete only when its stated evidence 
 
 ### Completed and evidenced
 
+- **Kernel Core & Security Foundations — [Completed]** for the current F405
+  scope: bounded kernel bootstrap, context/MPU isolation, faulted-context
+  retirement, kernel-owned DMA policy, production trust storage, and dynamic
+  storage recovery are implemented with their recorded validation evidence.
+- **Watchdog Verification — [Completed]** for the current F405 scope: the
+  one-shot feed-failure test produced an IWDG reset, the next boot identified
+  `Watchdog`, Safe Mode fed the watchdog continuously, and the recovery
+  heartbeat remained stable without a reset loop.
 - The repository is a Rust workspace with kernel, SDK, CLI, and demo-application boundaries.
 - The STM32F411 BlackPill backend has been removed; its board facts now live in
   a generator-only `targets/f411.toml` profile.
@@ -155,8 +163,9 @@ reproducible evidence recorded in one timestamped acceptance record.
   controllers that expose a detectable feed error. The F405 IWDG has no
   observable feed-error result; its no-feed timeout and Safe Mode behavior are
   already hardware-tested.
-- [ ] Integrate the `dali.secure-boot.v1` kernel-image admission contract with
-  a pre-reset ROM or bootloader verification boundary. The current production
+- [ ] **First-Stage Bootloader backlog:** integrate the
+  `dali.secure-boot.v1` kernel-image admission contract with a pre-reset ROM
+  or first-stage bootloader verification boundary. The current production
   trust store verifies signed repository and package content after reset; it
   does not claim ROM- or bootloader-enforced kernel-image Secure Boot.
 
