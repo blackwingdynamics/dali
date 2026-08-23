@@ -51,6 +51,13 @@ pub(crate) trait Backend: Sized {
 /// Stable kernel-facing facade over the selected platform backend.
 pub(crate) struct Platform(f405::Board);
 
+#[cfg(feature = "usb-cdc")]
+impl crate::logging::usb_cdc::UsbResetDelay for Platform {
+    fn delay_ms(&mut self, milliseconds: u32) {
+        Platform::delay_ms(self, milliseconds);
+    }
+}
+
 /// Watchdog runtime selected by the active platform backend.
 pub(crate) type WatchdogRuntime = crate::runtime::watchdog::WatchdogRuntime<f405::F405Watchdog>;
 

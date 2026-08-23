@@ -312,9 +312,14 @@ arbitrary peripheral or DMA-controller isolation.
   timeout caused a reset, and the next boot logged `Reset cause: Watchdog`
   before returning to the kernel heartbeat.
 - [x] On 2026-08-23, the opt-in `watchdog-feed-failure-test` F405 profile
-  blocked the backend refresh after IWDG arm. The target reset, and the next
-  boot logged `Reset cause: Watchdog`, entered Safe Mode, skipped application
-  loading, and returned to the kernel heartbeat.
+  blocked the first backend refresh after IWDG arm. The target reset, and the
+  next boot logged `Reset cause: Watchdog`, entered Safe Mode, skipped
+  application loading, and returned to the kernel heartbeat. This earlier
+  run exposed the reset-loop risk that the follow-up fix addresses.
+- [x] On 2026-08-23, the opt-in F405 profile blocked one intentional refresh,
+  produced the watchdog reset and Safe Mode transition, then emitted repeated
+  `(IWDG refreshed)` diagnostics without a second reset. The heartbeat remained
+  stable on the USB CDC console.
 - [x] Feed-failure policy is explicit: after a backend feed error, the kernel
   stops issuing further feeds and allows the armed hardware watchdog to reset
   the target.
@@ -342,12 +347,15 @@ cargo build -p dali-kernel --release --no-default-features \
   --target thumbv7em-none-eabihf
 ```
 
-With this feature, the F405 watchdog backend rejects the first kernel feed
-after the IWDG is armed. The kernel drops further feed attempts and leaves the
-armed IWDG to expire. Acceptance requires the console to show the feed-failure
-trace, a reset, and on the next boot `[BOOT] Reset cause: Watchdog` followed by
-Safe Mode recovery. This verifies the F405 timeout path; it is not a claim that
-the STM32F4 HAL exposes an observable hardware feed-error status.
+With this feature, the F405 watchdog backend rejects one kernel feed after the
+IWDG is armed on a normal boot. The kernel drops that runtime feed path and
+leaves the armed IWDG to expire. After the reset, the backend recognizes the
+watchdog reset cause, does not inject another failure, and Safe Mode feeds the
+IWDG from its recovery heartbeat. Acceptance requires the console to show the
+reset, the next boot's `[BOOT] Reset cause: Watchdog`, Safe Mode recovery, and
+a stable heartbeat without another reset. This verifies the F405 timeout path;
+it is not a claim that the STM32F4 HAL exposes an observable hardware feed-error
+status.
 
 ### Diagnostic evidence
 

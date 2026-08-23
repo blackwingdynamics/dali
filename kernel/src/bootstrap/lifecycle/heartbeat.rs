@@ -3,7 +3,8 @@
 #[cfg(feature = "sdio")]
 use super::status::FAST_BLINK_PERIOD_MS;
 use super::status::{
-    HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus,
+    HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SAFE_MODE_LOG_PERIOD_MS, SLOW_BLINK_PERIOD_MS,
+    StorageStatus,
 };
 use crate::{bootstrap::StorageRuntime, platform};
 
@@ -11,11 +12,19 @@ use crate::{bootstrap::StorageRuntime, platform};
 pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
     let mut led_on = false;
     let mut elapsed_ms = 0;
+    let safe_mode = matches!(storage.status(), StorageStatus::SafeMode);
+    let mut safe_mode_log_elapsed_ms = 0;
     #[cfg(feature = "sdio")]
     if matches!(storage.status(), StorageStatus::Removed) {
         crate::logging::info(
             crate::logging::BOOT_SUBSYSTEM,
             format_args!("[STORAGE] Recovery heartbeat active"),
+        );
+    }
+    if safe_mode {
+        crate::logging::info(
+            crate::logging::SECURITY_SUBSYSTEM,
+            format_args!("[RECOVERY] Safe Mode heartbeat active"),
         );
     }
 
@@ -71,16 +80,28 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
                 }
             }
         }
+        let watchdog_refreshed = match platform::service_watchdog() {
+            Ok(()) => true,
+            Err(error) => {
+                crate::logging::error(
+                    crate::logging::BOOT_SUBSYSTEM,
+                    format_args!(
+                        "[WATCHDOG] Feed failed: {:?}; allowing hardware reset",
+                        error
+                    ),
+                );
+                false
+            }
+        };
+        if safe_mode && watchdog_refreshed && safe_mode_log_elapsed_ms >= SAFE_MODE_LOG_PERIOD_MS {
+            crate::logging::info(
+                crate::logging::SECURITY_SUBSYSTEM,
+                format_args!("[RECOVERY] Safe Mode heartbeat active (IWDG refreshed)"),
+            );
+            safe_mode_log_elapsed_ms = 0;
+        }
         board.delay_ms(HEARTBEAT_PERIOD_MS);
         elapsed_ms = elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
-        if let Err(error) = platform::service_watchdog() {
-            crate::logging::error(
-                crate::logging::BOOT_SUBSYSTEM,
-                format_args!(
-                    "[WATCHDOG] Feed failed: {:?}; allowing hardware reset",
-                    error
-                ),
-            );
-        }
+        safe_mode_log_elapsed_ms = safe_mode_log_elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
     }
 }

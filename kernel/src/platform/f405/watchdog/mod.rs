@@ -24,6 +24,8 @@ pub enum F405WatchdogError {
 pub struct F405Watchdog {
     watchdog: IndependentWatchdog,
     reset_cause: ResetCause,
+    #[cfg(feature = "watchdog-feed-failure-test")]
+    feed_failure_pending: bool,
 }
 
 impl F405Watchdog {
@@ -32,6 +34,8 @@ impl F405Watchdog {
         Self {
             watchdog: IndependentWatchdog::new(watchdog),
             reset_cause,
+            #[cfg(feature = "watchdog-feed-failure-test")]
+            feed_failure_pending: reset_cause != ResetCause::Watchdog,
         }
     }
 
@@ -74,15 +78,13 @@ impl WatchdogBackend for F405Watchdog {
 
     fn feed(&mut self) -> Result<(), Self::Error> {
         #[cfg(feature = "watchdog-feed-failure-test")]
-        {
-            Err(F405WatchdogError::FeedFailureInjected)
+        if self.feed_failure_pending {
+            self.feed_failure_pending = false;
+            return Err(F405WatchdogError::FeedFailureInjected);
         }
 
-        #[cfg(not(feature = "watchdog-feed-failure-test"))]
-        {
-            self.watchdog.feed();
-            Ok(())
-        }
+        self.watchdog.feed();
+        Ok(())
     }
 
     fn reset_cause(&self) -> ResetCause {

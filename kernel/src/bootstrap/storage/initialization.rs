@@ -14,6 +14,9 @@ use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]
 pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -> StorageRuntime {
+    // Keep the watchdog service available in Safe Mode so recovery remains
+    // stable after a watchdog reset instead of entering another reset loop.
+    super::super::startup::install_watchdog(board);
     if boot_mode == status::BootMode::SafeMode {
         logging::info(
             logging::SECURITY_SUBSYSTEM,
@@ -30,11 +33,6 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
         return StorageRuntime::from_status(status::StorageStatus::Failure);
     };
 
-    // The selected transport may call an external HAL whose internal polling
-    // loop cannot receive a kernel callback. Arm the watchdog before that
-    // opaque phase so a non-responsive medium becomes a bounded Safe Mode
-    // recovery instead of an unobservable boot hang.
-    super::super::startup::install_watchdog(board);
     let initialization = initialize_with_recovery(&mut reader, board);
     if let Err(error) = initialization {
         return match error {

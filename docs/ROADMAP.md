@@ -173,7 +173,7 @@ milestone into `main` only after its documented validation evidence exists.
    confirms the kernel-owned DMA window and application-owned DMA rejection.
    Revisit a real DMA write backend only when measured throughput or CPU-offload
    needs justify its added complexity.
-2. **Watchdog and reset recovery** — [in progress] target facts,
+2. **Watchdog and reset recovery** — [Completed] target facts,
    reset-cause logging, platform integration, kernel-owned heartbeat/scheduler
    feed ownership, and a real F405 IWDG timeout/reset-cause test are complete.
    The watchdog is armed before opaque SDIO card initialization so a HAL
@@ -184,11 +184,12 @@ milestone into `main` only after its documented validation evidence exists.
    Watchdog`, entered Safe Mode, skipped application loading, and returned to
    the kernel heartbeat. F405 also remained in kernel recovery for 30 seconds
    after application termination without a new watchdog reset. The
-   `watchdog-feed-failure-test` profile also blocked the F405 refresh and
-   produced the expected IWDG reset and next-boot cause. Remaining work is
-   feed-error status evidence only for watchdog controllers that expose a
-   detectable feed failure; the F405 IWDG has no such observable
-   hardware/API result.
+   `watchdog-feed-failure-test` profile blocks one normal-boot refresh,
+   produces the expected IWDG reset and next-boot cause, and now emits
+   periodic Safe Mode refresh evidence without a second reset. Remaining work
+   is feed-error status evidence only for watchdog controllers that expose a
+   detectable feed failure; the F405 IWDG has no such observable hardware/API
+   result.
 3. **Package authenticity** — [in progress] define a bounded signature
    envelope, trust-anchor identifier, and declarative development/release
    policy. The signed AMRN container contract now uses a new versioned

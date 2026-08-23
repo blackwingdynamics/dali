@@ -80,7 +80,11 @@ pub fn run() -> ! {
     }
     #[cfg(feature = "usb-cdc")]
     if let Some(resources) = board.take_usb_resources() {
-        logging::initialize_usb(resources);
+        logging::initialize_usb(
+            resources,
+            boot_mode == lifecycle::status::BootMode::SafeMode,
+            &mut board,
+        );
     } else {
         logging::error(
             logging::BOOT_SUBSYSTEM,

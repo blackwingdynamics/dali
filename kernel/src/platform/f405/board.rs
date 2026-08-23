@@ -9,6 +9,11 @@ use dali_targets::MemoryProfile;
 use stm32f4xx_hal::timer::{SysCounterHz, SysEvent};
 use stm32f4xx_hal::{gpio, pac, prelude::*, rcc::Clocks, time::Hertz, timer::SysDelay};
 
+#[cfg(feature = "usb-cdc")]
+mod usb;
+#[cfg(feature = "usb-cdc")]
+pub use usb::UsbResources;
+
 /// First planned single-application F405 isolation layout.
 pub const ISOLATION_LAYOUT: Option<crate::security::mpu::IsolationLayout> =
     crate::security::mpu::IsolationLayout::from_memory(TARGET_F405.memory);
@@ -55,40 +60,6 @@ const _: () = assert!(
 
 /// Status LED output pin on the active-high PB2 LED.
 pub type StatusLed = gpio::gpiob::PB2<gpio::Output<gpio::PushPull>>;
-
-/// USB FS resources connected to the board's USB-C data pins.
-#[cfg(feature = "usb-cdc")]
-pub struct UsbResources {
-    /// USB global registers.
-    pub global: pac::OTG_FS_GLOBAL,
-    /// USB device registers.
-    pub device: pac::OTG_FS_DEVICE,
-    /// USB power and clock registers.
-    pub power_clock: pac::OTG_FS_PWRCLK,
-    /// USB D- pin on PA11.
-    pub dm: gpio::gpioa::PA11<gpio::Alternate<10>>,
-    /// USB D+ pin on PA12.
-    pub dp: gpio::gpioa::PA12<gpio::Alternate<10>>,
-    /// Frozen clocks used to configure the USB peripheral.
-    pub clocks: Clocks,
-}
-
-#[cfg(feature = "usb-cdc")]
-impl crate::logging::usb_cdc::UsbResources for UsbResources {
-    type Bus = stm32f4xx_hal::otg_fs::UsbBusType;
-
-    fn into_bus(
-        self,
-        endpoint_memory: &'static mut [u32],
-    ) -> usb_device::bus::UsbBusAllocator<Self::Bus> {
-        let usb = stm32f4xx_hal::otg_fs::USB::new(
-            (self.global, self.device, self.power_clock),
-            (self.dm, self.dp),
-            &self.clocks,
-        );
-        stm32f4xx_hal::otg_fs::UsbBus::new(usb, endpoint_memory)
-    }
-}
 
 /// SDIO pins owned by the kernel after board initialization.
 pub type SdioPins = (

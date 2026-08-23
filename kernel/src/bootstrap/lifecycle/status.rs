@@ -56,6 +56,9 @@ pub const FAST_BLINK_PERIOD_MS: u32 = 100;
 /// Delay between safe-mode status LED transitions.
 pub const SAFE_MODE_BLINK_PERIOD_MS: u32 = 250;
 
+/// Delay between Safe Mode watchdog refresh diagnostics.
+pub const SAFE_MODE_LOG_PERIOD_MS: u32 = 1_000;
+
 /// Heartbeat loop tick used for bounded status LED timing.
 pub const HEARTBEAT_PERIOD_MS: u32 = 10;
 

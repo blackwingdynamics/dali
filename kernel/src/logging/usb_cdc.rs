@@ -14,6 +14,18 @@ pub(crate) trait UsbResources {
     fn into_bus(self, endpoint_memory: &'static mut [u32]) -> UsbBusAllocator<Self::Bus>;
 }
 
+/// Performs a backend-specific USB bus disconnect and reconnect sequence.
+pub(crate) trait UsbBusReset {
+    /// Requests host-visible re-enumeration using the backend's reset primitive.
+    fn force_reenumeration(&self, delay: &mut dyn UsbResetDelay);
+}
+
+/// Delay capability required by a USB backend's bounded reset sequence.
+pub(crate) trait UsbResetDelay {
+    /// Delays for the backend-defined USB disconnect interval.
+    fn delay_ms(&mut self, milliseconds: u32);
+}
+
 type ActiveBus = <crate::platform::UsbResources as UsbResources>::Bus;
 
 const USB_VENDOR_ID: u16 = 0x1209;
@@ -31,7 +43,11 @@ static USB_DEVICE: Mutex<RefCell<Option<UsbDevice<'static, ActiveBus>>>> =
     Mutex::new(RefCell::new(None));
 
 /// Initializes the USB CDC-ACM console.
-pub(super) fn initialize(resources: crate::platform::UsbResources) {
+pub(super) fn initialize(
+    resources: crate::platform::UsbResources,
+    force_reenumeration: bool,
+    delay: &mut dyn UsbResetDelay,
+) {
     // SAFETY: USB endpoint memory is initialized once during reset bootstrap and
     // remains exclusively owned by the single kernel execution context.
     let bus = unsafe {
@@ -50,13 +66,16 @@ pub(super) fn initialize(resources: crate::platform::UsbResources) {
             Some(bus) => bus,
             None => return,
         };
+        let serial = SerialPort::new(bus);
+        let device = UsbDeviceBuilder::new(bus, UsbVidPid(USB_VENDOR_ID, USB_PRODUCT_ID))
+            .device_class(usbd_serial::USB_CLASS_CDC)
+            .build();
+        if force_reenumeration {
+            device.bus().force_reenumeration(delay);
+        }
         free(|cs| {
-            *USB_SERIAL.borrow(cs).borrow_mut() = Some(SerialPort::new(bus));
-            *USB_DEVICE.borrow(cs).borrow_mut() = Some(
-                UsbDeviceBuilder::new(bus, UsbVidPid(USB_VENDOR_ID, USB_PRODUCT_ID))
-                    .device_class(usbd_serial::USB_CLASS_CDC)
-                    .build(),
-            );
+            *USB_SERIAL.borrow(cs).borrow_mut() = Some(serial);
+            *USB_DEVICE.borrow(cs).borrow_mut() = Some(device);
         });
 
         // SAFETY: USB resources and shared state are initialized before the

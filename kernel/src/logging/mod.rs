@@ -67,8 +67,12 @@ pub fn initialize() {
 
 /// Initializes the optional USB CDC logging backend.
 #[cfg(feature = "usb-cdc")]
-pub(crate) fn initialize_usb(resources: crate::platform::UsbResources) {
-    usb_cdc::initialize(resources);
+pub(crate) fn initialize_usb(
+    resources: crate::platform::UsbResources,
+    force_reenumeration: bool,
+    delay: &mut dyn usb_cdc::UsbResetDelay,
+) {
+    usb_cdc::initialize(resources, force_reenumeration, delay);
 }
 
 /// Services the optional USB CDC device state machine from its interrupt.
