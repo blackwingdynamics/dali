@@ -7,7 +7,9 @@ use crate::{
     logging, platform,
 };
 
-use super::recovery::{initialize_with_recovery, read_block_with_recovery};
+use super::recovery::{
+    BOOT_RETRY_LOG_INTERVAL, initialize_with_recovery, read_block_with_recovery,
+};
 
 #[cfg(not(feature = "storage-write"))]
 use crate::drivers::BlockDeviceAdapter;
@@ -33,13 +35,21 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
         return StorageRuntime::from_status(status::StorageStatus::Failure);
     };
 
-    let initialization = initialize_with_recovery(&mut reader, board);
+    let mut retry_log_count = 0;
+    let initialization = initialize_with_recovery(
+        &mut reader,
+        board,
+        BOOT_RETRY_LOG_INTERVAL,
+        &mut retry_log_count,
+    );
     if let Err(error) = initialization {
         return match error {
-            StorageError::NotReady | StorageError::Timeout => {
+            StorageError::NotReady | StorageError::Timeout | StorageError::Transport => {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
-                    format_args!("[STORAGE] No storage medium detected; entering kernel heartbeat"),
+                    format_args!(
+                        "[STORAGE] Storage transport unavailable; entering safe recovery loop"
+                    ),
                 );
                 StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
             }
@@ -88,7 +98,8 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
 
     let block_read = {
         let mut block: Block = [0; BLOCK_SIZE];
-        read_block_with_recovery(&mut reader, board, &mut block)
+        let mut retry_log_count = 0;
+        read_block_with_recovery(&mut reader, board, &mut block, &mut retry_log_count)
     };
     match block_read {
         Ok(()) => {
@@ -212,10 +223,10 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
                 &mut context_owner,
             ))
         }
-        Err(StorageError::CardRemoved) => {
+        Err(StorageError::CardRemoved | StorageError::NotReady | StorageError::Transport) => {
             logging::info(
                 logging::BOOT_SUBSYSTEM,
-                format_args!("[STORAGE] Card removed; entering safe recovery loop"),
+                format_args!("[STORAGE] Storage read unavailable; entering safe recovery loop"),
             );
             StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
         }
