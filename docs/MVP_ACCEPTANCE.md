@@ -36,7 +36,7 @@ This test does not prove:
 - 3.3 V microSD card in the on-board SDIO socket;
 - FAT16 or FAT32 SD card;
 - RTT-capable debug connection;
-- PB2 status LED.
+- PB2 status LED and PC13 user key.
 
 Record the board revision, SD-card type, wiring, power source, and probe before testing.
 

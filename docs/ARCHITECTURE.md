@@ -71,7 +71,7 @@ heartbeat and bounded storage/verification progress hooks.
 - CPU: ARM Cortex-M4F;
 - target: `thumbv7em-none-eabihf`;
 - clock target: 168 MHz from an 8 MHz HSE;
-- status LED: PB2, active-high;
+- status LED: PB2, active-high; user key: PC13, active-low with pull-up;
 - SD interface: hardware SDIO, 4-bit mode;
 - initial logging: RTT;
 - runtime logging: USB CDC-ACM;

@@ -28,5 +28,9 @@ Read the documents in this order:
 17. [Target Profiles](TARGET_PROFILES.md) — declarative board metadata and kernel mapping ownership.
 18. [Target Manifest Reference](TARGET_MANIFEST.md) — complete TOML schema, field rules, and F405 example.
 19. [Platform Backend Contract](PLATFORM_BACKENDS.md) — ownership boundaries and the workflow for adding a target backend.
+20. [Driver Architecture](drivers/README.md) — no-heap, bounded, hardware-neutral driver principles.
+    - [GPIO and EXTI](drivers/gpio.md) — pin modes, level access, and interrupt polling.
+    - [Timers](drivers/timer.md) — countdown, timeout, and SysTick policy.
+    - [UART and SPI](drivers/serial.md) — bounded serial contracts and buffer rules.
 
 The architecture and MVP documents are the source of truth until the more detailed specifications are created.

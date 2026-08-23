@@ -31,7 +31,7 @@ The application load address is fixed at `0x20008000` for the MVP.
 - HSE: 8 MHz
 - Maximum documented MCU frequency: 168 MHz
 - Status LED: PB2, active-high push-pull
-- User key: PC13
+- User key: PC13, active-low with pull-up
 - Programming: USB DFU or SWD on PA13/PA14
 - SD interface: hardware SDIO, 4-bit mode
 

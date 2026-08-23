@@ -195,7 +195,7 @@ F405 scope.
 
 ### Boot, storage, and application path
 
-- [x] F405 boot, 168 MHz clock, PB2 LED, SDIO initialization, and block-zero
+- [x] F405 boot, 168 MHz clock, PB2 LED, PC13 key, SDIO initialization, and block-zero
   read.
 - [x] FAT32 root scan and `.amrn` package discovery.
 - [x] AMRN validation, bounded application load, entry transfer, and the

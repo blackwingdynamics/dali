@@ -105,7 +105,9 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 - [x] Add host tests for levels, modes, ownership, and unsupported interrupts.
 - [x] Implement a target adapter without leaking F405 facts into the API crate.
 - [x] Record F405 GPIO output-toggle evidence with the F405 acceptance firmware.
-- [ ] Record F405 GPIO input and interrupt evidence.
+- [x] Record F405 GPIO input and interrupt evidence: grounding the PC13 input
+  produced repeated `[DRIVER][EXTI] PC13 interrupt triggered` traces both with
+  the SD card absent and during a successful SDIO/package boot.
 
 ### Timers
 
@@ -115,6 +117,26 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 - [x] Implement a target timer adapter from manifest-owned timing metadata.
 - [x] Record F405 timer elapsed-tick evidence with the F405 acceptance firmware.
 - [ ] Record F405 bounded-timeout evidence.
+
+### Slice 3 — EXTI and serial driver contracts
+
+- [x] Extend `InterruptPin` with edge selection, an allocation-free callback,
+  and a polling handle contract.
+- [x] Add bounded `SerialRead` and `SerialWrite` contracts for caller-owned
+  byte slices.
+- [x] Add bounded `SpiTransfer` contract for caller-owned full-duplex buffers.
+- [x] Add typed non-blocking, framing, overrun, buffer, NACK, and arbitration
+  errors without exposing target-specific types.
+- [x] Add fixed-size host mocks for GPIO callbacks, serial partial transfers,
+  and SPI failures.
+- [x] Add host tests for callback delivery, partial I/O, timeout bounds,
+  disconnects, buffer limits, and protocol failures.
+- [x] Implement the F405 EXTI adapter inside the platform driver boundary.
+- [x] Bind an F405 EXTI input resource to board-owned EXTI and SYSCFG state.
+- [x] Record F405 EXTI edge and pending-bit evidence: grounding the PC13 input
+  produced repeated `[DRIVER][EXTI] PC13 interrupt triggered` traces both with
+  the SD card absent and during a successful SDIO/package boot.
+- [x] Run Slice 3 host tests, strict Clippy, and the production F405 build.
 
 ### UART
 

@@ -249,7 +249,7 @@ Hardware recipes accept one optional positional board argument. The default is
 
 | Argument | Board | On-board LED | SD interface |
 | --- | --- | --- | --- |
-| `f405` | WeAct Studio STM32F405RGT6 Core Board | PB2 | On-board SDIO 4-bit socket |
+| `f405` | WeAct Studio STM32F405RGT6 Core Board | PB2 | On-board SDIO 4-bit socket; PC13 user key |
 
 Use the same recipe names for either board:
 
@@ -274,7 +274,8 @@ on both supported boards:
 | Not detected | Slow blink, 1 second per transition | No card was detected or storage is not configured for the selected board. |
 | Failure | Fast blink, 100 milliseconds per transition | The card or storage transport reported an operational failure. |
 
-On the STM32F405 board, `PB2` is active-high. Applications must not depend on
+On the STM32F405 board, `PB2` is active-high and `PC13` is an active-low user
+key. Applications must not depend on
 the physical polarity; the board backend owns that mapping.
 
 Do not pass Cargo feature names to these recipes. The recipe converts the board

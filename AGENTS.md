@@ -9,7 +9,7 @@ Dali OS is a `no_std` Rust operating system and embedded runtime for STM32 micro
 The first milestone is deliberately narrow:
 
 1. boot a Rust kernel on the STM32F405RGT6 WeAct Studio Core Board;
-2. initialize the clock, PB2 status LED, and RTT logging;
+2. initialize the clock, PB2 status LED, PC13 user key, and RTT logging;
 3. read a FAT16/FAT32 SD card over SDIO;
 4. discover an `.amrn` package in the card root;
 5. validate a fixed 32-byte AMRN header and CRC32 payload checksum;
@@ -97,7 +97,7 @@ Any exception must be reviewed, named, documented, and justified by the relevant
 - board: WeAct Studio STM32F405RGT6 Core Board;
 - target: `thumbv7em-none-eabihf`;
 - clock target: 168 MHz;
-- status LED: PB2;
+- status LED: PB2, active-high; user key: PC13, active-low with pull-up;
 - SD interface: hardware SDIO in 4-bit mode.
 
 ### SRAM
