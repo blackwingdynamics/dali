@@ -221,6 +221,23 @@ existing security and memory boundaries.
 - [ ] Define versioning and compatibility rules for target and host.
 - [ ] Obtain architecture approval before modifying kernel or boot paths.
 
+### Phase 5 / Services — Ustari integration entry point
+
+This is the entry point for the future Services phase. The accepted protocol
+architecture is recorded in
+[`ustari_application_protocol.md`](../architecture/ustari_application_protocol.md).
+The first implementation slice is wired, read-only diagnostics; lifecycle
+control, telemetry actuation, and wireless transports remain gated by their
+own contracts and acceptance evidence.
+
+- [ ] Review and approve the Ustari application protocol contract.
+- [ ] Implement the hardware-neutral Ustari full-profile codec and bounded
+      session boundary.
+- [ ] Integrate Ustari with USB CDC and UART without exposing HAL or PAC types.
+- [ ] Implement wired read-only `sysinfo`, `free`, `mem`, `ps`, and `dmesg`.
+- [ ] Validate AEAD, replay protection, authorization, and typed error paths.
+- [ ] Capture F405 wired diagnostics evidence before enabling remote control.
+
 ### Phase B — Wired diagnostics MVP
 
 - [ ] Implement the hardware-neutral stream and parser contracts.
