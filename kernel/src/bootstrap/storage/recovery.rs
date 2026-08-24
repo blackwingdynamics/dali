@@ -5,19 +5,25 @@ use crate::{
     logging, platform,
 };
 
+/// Defines the `REINITIALIZATION_ATTEMPTS` bound used by this subsystem.
 const REINITIALIZATION_ATTEMPTS: u32 = crate::drivers::lifecycle::policy::REINITIALIZATION_ATTEMPTS;
+/// Defines the `REINITIALIZATION_DELAY_MS` bound used by this subsystem.
 const REINITIALIZATION_DELAY_MS: u32 = crate::drivers::lifecycle::policy::REINITIALIZATION_DELAY_MS;
+/// Defines the `BOOT_RETRY_LOG_INTERVAL` bound used by this subsystem.
 pub(super) const BOOT_RETRY_LOG_INTERVAL: u32 = 1;
 #[cfg(feature = "driver-hardware-test")]
 const RUNTIME_RETRY_LOG_INTERVAL: u32 = 50;
 #[cfg(not(feature = "driver-hardware-test"))]
+/// Defines the `RUNTIME_RETRY_LOG_INTERVAL` bound used by this subsystem.
 const RUNTIME_RETRY_LOG_INTERVAL: u32 = 1;
+/// Defines the `RUNTIME_PROBE_LOG_INTERVAL` bound used by this subsystem.
 const RUNTIME_PROBE_LOG_INTERVAL: u32 = 10;
 
 const _: () = assert!(
     BOOT_RETRY_LOG_INTERVAL > 0 && RUNTIME_RETRY_LOG_INTERVAL > 0 && RUNTIME_PROBE_LOG_INTERVAL > 0
 );
 
+/// Performs the `delay_before_reinitialization` operation for this subsystem.
 fn delay_before_reinitialization(board: &mut platform::Platform) {
     board.delay_ms(REINITIALIZATION_DELAY_MS);
     if let Err(error) = platform::service_watchdog() {
@@ -96,6 +102,7 @@ where
     }
 }
 
+/// Performs the `poll_runtime` operation for this subsystem.
 pub(super) fn poll_runtime(
     runtime: &mut super::super::StorageRuntime,
     board: &mut platform::Platform,

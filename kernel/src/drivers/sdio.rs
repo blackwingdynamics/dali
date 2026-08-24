@@ -36,8 +36,11 @@ pub trait StorageLifecycleControl {
 
 /// Adapts any SDIO transport to the generic bounded block-reader contract.
 pub struct SdioBlockReader<T> {
+    /// Stores the transport associated with this bounded state.
     transport: T,
+    /// Stores the block count associated with this bounded state.
     block_count: Option<u32>,
+    /// Stores the lifecycle associated with this bounded state.
     lifecycle: StorageLifecycle,
 }
 
@@ -80,6 +83,9 @@ where
         self.lifecycle.state()
     }
 
+    /// Records the `record error` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn record_error(&mut self, error: StorageError) {
         let event = if matches!(error, StorageError::CardRemoved) {
             StorageLifecycleEvent::CardRemoved

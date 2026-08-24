@@ -4,6 +4,8 @@ use super::super::lifecycle::status;
 use crate::{drivers::StorageError, logging, platform};
 
 #[cfg(feature = "sdio")]
+/// Performs the `load` operation for this subsystem.
+/// Performs the `load` operation for this subsystem.
 pub fn load<D>(
     device: D,
     board: &mut platform::Platform,

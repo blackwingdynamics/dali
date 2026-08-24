@@ -3,6 +3,8 @@
 #[cfg(feature = "sdio")]
 use super::status::FAST_BLINK_PERIOD_MS;
 #[cfg(feature = "sdio")]
+/// Defines the `FAILURE_LOG_PERIOD_MS` bound used by this subsystem.
+/// Defines the `FAILURE_LOG_PERIOD_MS` bound used by this subsystem.
 const FAILURE_LOG_PERIOD_MS: u32 = 2_000;
 use super::status::{
     HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SAFE_MODE_LOG_PERIOD_MS, SLOW_BLINK_PERIOD_MS,

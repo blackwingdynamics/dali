@@ -9,20 +9,26 @@ use crate::{logging, platform};
 
 /// Storage state and the reader retained for runtime card recovery.
 pub(super) struct StorageRuntime {
+    /// Stores the `status` value for this bounded state.
     status: lifecycle::status::StorageStatus,
     #[cfg(feature = "sdio")]
+    /// Stores the `recovery_reader` value for this bounded state.
     recovery_reader: Option<platform::PlatformSdioReader>,
     #[cfg(feature = "sdio")]
+    /// Stores the `recovery_retry_log_count` value for this bounded state.
     recovery_retry_log_count: u32,
     #[cfg(feature = "sdio")]
+    /// Stores the `recovery_probe_count` value for this bounded state.
     recovery_probe_count: u32,
 }
 
 impl StorageRuntime {
+    /// Builds storage recovery state with an attached SDIO reader.
     pub(super) const fn from_status(status: lifecycle::status::StorageStatus) -> Self {
         Self::new(status)
     }
 
+    /// Creates storage recovery state without an attached reader.
     pub(super) const fn new(status: lifecycle::status::StorageStatus) -> Self {
         Self {
             status,
@@ -36,6 +42,7 @@ impl StorageRuntime {
     }
 
     #[cfg(feature = "sdio")]
+    /// Creates storage recovery state with an attached SDIO reader.
     pub(super) const fn with_recovery_reader(
         status: lifecycle::status::StorageStatus,
         reader: platform::PlatformSdioReader,
@@ -48,16 +55,19 @@ impl StorageRuntime {
         }
     }
 
+    /// Returns the current storage lifecycle status.
     pub(super) const fn status(&self) -> lifecycle::status::StorageStatus {
         self.status
     }
 
     #[cfg(feature = "sdio")]
+    /// Performs the `poll_recovery` operation for this subsystem.
     pub(super) fn poll_recovery(&mut self, board: &mut platform::Platform) {
         storage::poll_runtime(self, board);
     }
 
     #[cfg(feature = "sdio")]
+    /// Reports whether the bounded recovery poll interval has elapsed.
     pub(super) const fn recovery_poll_due(&self, elapsed_ms: u32) -> bool {
         elapsed_ms >= crate::drivers::lifecycle::policy::RECOVERY_POLL_PERIOD_MS
     }

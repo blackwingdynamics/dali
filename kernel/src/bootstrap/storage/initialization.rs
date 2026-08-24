@@ -15,6 +15,7 @@ use super::recovery::{
 use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]
+/// Performs the `initialize` operation for this subsystem.
 pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -> StorageRuntime {
     // Keep the watchdog service available in Safe Mode so recovery remains
     // stable after a watchdog reset instead of entering another reset loop.

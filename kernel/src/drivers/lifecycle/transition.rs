@@ -5,6 +5,7 @@ use super::state::{StorageLifecycleEvent, StorageLifecycleState};
 /// Bounded state holder for one storage transport instance.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct StorageLifecycle {
+    /// Stores the state associated with this bounded state.
     state: StorageLifecycleState,
 }
 
