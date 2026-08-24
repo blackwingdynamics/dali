@@ -1,5 +1,7 @@
 //! WeAct Studio STM32F405RGT6 Core Board hardware backend.
 
+#[cfg(feature = "driver-hardware-test")]
+use super::drivers::{F405DriverProbe, F405DriverProbeResult};
 use super::drivers::{F405ExtiPin, F405GpioPin};
 use crate::runtime::watchdog::WatchdogBackend;
 use dali_driver_api::{InterruptPin, InterruptTrigger, OutputPin};
@@ -102,6 +104,9 @@ pub struct Board {
     status_led_on: bool,
     #[cfg(feature = "driver-hardware-test")]
     gpio_driver_log_emitted: bool,
+    /// Test-only UART/SPI bounded-timeout resources.
+    #[cfg(feature = "driver-hardware-test")]
+    driver_probe: Option<F405DriverProbe>,
     /// Hardware SDIO 4-bit pins for the on-board microSD socket.
     sdio_pins: Option<SdioPins>,
     /// SDIO peripheral reserved for the storage driver.
@@ -151,6 +156,51 @@ impl Board {
     pub fn take_watchdog(&mut self) -> Option<super::F405Watchdog> {
         self.watchdog.take()
     }
+
+    /// Runs the opt-in UART and SPI bounded-timeout acceptance probe.
+    #[cfg(feature = "driver-hardware-test")]
+    pub(crate) fn run_driver_timeout_probe(&mut self) {
+        let Some(probe) = self.driver_probe.as_mut() else {
+            crate::logging::error(
+                crate::logging::BOOT_SUBSYSTEM,
+                format_args!("[DRIVER] UART/SPI probe initialization failed"),
+            );
+            return;
+        };
+        let F405DriverProbeResult {
+            uart_timed_out,
+            spi_timed_out,
+        } = probe.run();
+        log_uart_probe_result(uart_timed_out);
+        log_spi_probe_result(spi_timed_out);
+    }
+}
+
+/// Emits target-visible evidence for one bounded peripheral operation.
+#[cfg(feature = "driver-hardware-test")]
+fn log_uart_probe_result(timed_out: bool) {
+    if timed_out {
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][UART] Bounded timeout enforced"),
+        );
+    } else {
+        crate::logging::error(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][UART] Timeout probe did not time out"),
+        );
+    }
+}
+
+/// Emits target-visible evidence for the bounded SPI transfer probe.
+#[cfg(feature = "driver-hardware-test")]
+fn log_spi_probe_result(timed_out: bool) {
+    let message = if timed_out {
+        "[DRIVER][SPI] Bounded timeout enforced"
+    } else {
+        "[DRIVER][SPI] Bounded transfer completed"
+    };
+    crate::logging::info(crate::logging::BOOT_SUBSYSTEM, format_args!("{}", message));
 }
 
 /// Takes singleton peripherals and initializes the STM32F405 board hardware.
@@ -176,7 +226,7 @@ pub fn initialize() -> Board {
 
     // GPIOA is split only for USB FS PA11/PA12. PA13/PA14 remain untouched
     // so the SWD debug connection stays in its reset-time AF0 configuration.
-    #[cfg(feature = "usb-cdc")]
+    #[cfg(any(feature = "usb-cdc", feature = "driver-hardware-test"))]
     let gpioa = device.GPIOA.split();
     let gpiob = device.GPIOB.split();
     let gpioc = device.GPIOC.split();
@@ -195,6 +245,22 @@ pub fn initialize() -> Board {
     if user_key_enabled {
         super::unmask_exti15_10_irq();
     }
+
+    #[cfg(feature = "driver-hardware-test")]
+    let driver_probe = F405DriverProbe::new(
+        device.USART1,
+        device.SPI1,
+        (
+            gpioa.pa9.into_alternate::<7>(),
+            gpioa.pa10.into_alternate::<7>(),
+        ),
+        (
+            gpioa.pa5.into_alternate::<5>(),
+            gpioa.pa6.into_alternate::<5>(),
+            gpioa.pa7.into_alternate::<5>(),
+        ),
+        &clocks,
+    );
 
     let sdio_pins = (
         gpioc.pc12,
@@ -224,6 +290,8 @@ pub fn initialize() -> Board {
         status_led_on: false,
         #[cfg(feature = "driver-hardware-test")]
         gpio_driver_log_emitted: false,
+        #[cfg(feature = "driver-hardware-test")]
+        driver_probe,
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
         clocks,

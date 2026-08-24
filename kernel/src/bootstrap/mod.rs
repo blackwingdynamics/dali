@@ -129,6 +129,9 @@ pub fn run() -> ! {
         format_args!("Hardware bootstrap complete"),
     );
 
+    #[cfg(feature = "driver-hardware-test")]
+    platform::run_driver_timeout_probe(&mut board);
+
     #[cfg(feature = "abi-context-switch")]
     if let Err(error) = crate::security::scheduling::initialize() {
         logging::error(

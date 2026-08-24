@@ -115,6 +115,12 @@ pub(crate) fn initialize() -> Platform {
     Platform(<f405::Board as Backend>::initialize())
 }
 
+/// Runs the target-only bounded UART/SPI acceptance probe.
+#[cfg(feature = "f405-serial-spi")]
+pub(crate) fn run_driver_timeout_probe(platform: &mut Platform) {
+    platform.0.run_driver_timeout_probe();
+}
+
 /// Arms and installs the single kernel-owned watchdog before storage loading.
 pub(crate) fn install_watchdog(mut runtime: WatchdogRuntime) -> Result<(), WatchdogServiceError> {
     runtime
