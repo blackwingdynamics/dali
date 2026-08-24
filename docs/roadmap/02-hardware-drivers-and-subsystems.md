@@ -140,19 +140,28 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 
 ### UART
 
-- [ ] Define bounded UART read/write and framing-error contracts.
+- [x] Define bounded UART read/write and framing-error contracts.
 - [ ] Define ownership, baud configuration, and backpressure errors.
 - [ ] Add host tests for partial transfers, overflow, timeout, and disconnect.
-- [ ] Implement a target adapter only after the contract is accepted.
-- [ ] Record target console/UART evidence where applicable.
+- [x] Implement the F405 UART adapter behind the accepted driver contract.
+- [x] Record F405 target UART timeout evidence with the acceptance firmware.
 
 ### SPI / I2C
 
 - [ ] Define bounded transaction, bus ownership, and device-selection contracts.
-- [ ] Define timeout, arbitration, NACK, and protocol-error variants.
-- [ ] Add host tests for transaction bounds and typed failure propagation.
-- [ ] Implement target adapters with board-owned pin and clock configuration.
+- [x] Define timeout, arbitration, NACK, and protocol-error variants.
+- [x] Add host tests for transaction bounds and typed failure propagation.
+- [x] Implement the F405 SPI adapter with board-owned pin and clock configuration.
 - [ ] Record physical bus and recovery evidence for each supported backend.
+
+### F405 bounded-I/O acceptance
+
+- [x] Run the real F405 UART no-data probe and observe
+  `[DRIVER][UART] Bounded timeout enforced`.
+- [x] Run the real F405 SPI transfer probe and observe
+  `[DRIVER][SPI] Bounded transfer completed`.
+- [ ] Exercise an external SPI device or an intentionally stalled SPI state;
+  a no-peer master transfer does not by itself prove the SPI timeout branch.
 
 ### Display
 
