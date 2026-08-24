@@ -10,7 +10,9 @@ use super::saved_state::SavedContext;
 /// path can select the matching MPU layout before exception return.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ScheduledContext {
+    /// Stores the cpu associated with this bounded state.
     cpu: SavedContext,
+    /// Stores the slot associated with this bounded state.
     slot: IsolationSlot,
 }
 

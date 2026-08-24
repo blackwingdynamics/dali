@@ -6,8 +6,11 @@ use core::{
     sync::atomic::{AtomicU8, Ordering},
 };
 
+/// Defines the UNINITIALIZED used by this module.
 const UNINITIALIZED: u8 = 0;
+/// Defines the INITIALIZING used by this module.
 const INITIALIZING: u8 = 1;
+/// Defines the READY used by this module.
 const READY: u8 = 2;
 
 /// Errors returned by scheduler storage ownership operations.
@@ -21,7 +24,9 @@ pub enum SchedulerStorageError {
 
 /// Fixed-address storage initialized once during kernel bootstrap.
 pub struct SchedulerStorage<T> {
+    /// Stores the state associated with this bounded state.
     state: AtomicU8,
+    /// Stores the value associated with this bounded state.
     value: UnsafeCell<MaybeUninit<T>>,
 }
 

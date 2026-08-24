@@ -38,10 +38,15 @@ pub enum WatchdogFailureAction {
 /// Kernel-owned decisions for the current single-context boot contract.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LifecyclePolicy {
+    /// Stores the fault recovery associated with this bounded state.
     fault_recovery: FaultRecoveryAction,
+    /// Stores the restart associated with this bounded state.
     restart: RestartPolicy,
+    /// Stores the rollback associated with this bounded state.
     rollback: RollbackPolicy,
+    /// Stores the watchdog associated with this bounded state.
     watchdog: WatchdogPolicy,
+    /// Stores the watchdog failure associated with this bounded state.
     watchdog_failure: WatchdogFailureAction,
 }
 

@@ -9,6 +9,7 @@ use crate::runtime::memory::slots::SlotAllocation;
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/// Internal RuntimePhase classification for the bounded kernel path.
 enum RuntimePhase {
     Inactive = 0,
     Running = 1,
@@ -19,6 +20,7 @@ enum RuntimePhase {
 
 /// Kernel-owned atomic state shared by launch and fault entry paths.
 pub struct RuntimeState {
+    /// Stores the phase associated with this bounded state.
     phase: AtomicU8,
 }
 
@@ -30,6 +32,9 @@ impl RuntimeState {
         }
     }
 
+    /// Performs the `transition` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn transition(&self, expected: RuntimePhase, next: RuntimePhase) -> bool {
         self.phase
             .compare_exchange(
@@ -41,6 +46,9 @@ impl RuntimeState {
             .is_ok()
     }
 
+    /// Performs the `publish running` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn publish_running(&self) {
         self.phase
             .store(RuntimePhase::Running as u8, Ordering::SeqCst);
@@ -61,10 +69,16 @@ impl RuntimeState {
         self.transition(RuntimePhase::Recovering, RuntimePhase::Terminated)
     }
 
+    /// Reports whether the `is terminated` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn is_terminated(&self) -> bool {
         self.phase.load(Ordering::SeqCst) == RuntimePhase::Terminated as u8
     }
 
+    /// Clears the `clear` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn clear(&self) {
         self.phase
             .store(RuntimePhase::Inactive as u8, Ordering::SeqCst);
@@ -98,7 +112,9 @@ pub fn terminate_active_context() -> bool {
 /// The application context owned by the current runtime execution path.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ActiveContext {
+    /// Stores the identity associated with this bounded state.
     identity: ApplicationIdentity,
+    /// Stores the allocation associated with this bounded state.
     allocation: SlotAllocation,
 }
 
@@ -136,7 +152,9 @@ pub enum ContextOwnerError {
 /// Kernel-owned holder for at most one active application context.
 #[derive(Clone, Copy)]
 pub struct ActiveContextOwner<'state> {
+    /// Stores the active associated with this bounded state.
     active: Option<ApplicationLifecycle>,
+    /// Stores the runtime state associated with this bounded state.
     runtime_state: &'state RuntimeState,
 }
 

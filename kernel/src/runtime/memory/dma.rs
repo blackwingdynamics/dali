@@ -30,6 +30,7 @@ pub enum DmaOwnershipError {
 /// Kernel-owned DMA authorization policy.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DmaPolicy {
+    /// Stores the application associated with this bounded state.
     application: ApplicationDmaPolicy,
 }
 
@@ -72,6 +73,7 @@ pub enum DmaBufferError {
 
 /// A mutable buffer whose address and extent were validated for DMA use.
 pub struct DmaBuffer<'a, T> {
+    /// Stores the buffer associated with this bounded state.
     buffer: &'a mut [T],
 }
 
@@ -88,6 +90,12 @@ impl<'a, T> DmaBuffer<'a, T> {
     }
 }
 
+/// Validates the `validate buffer` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+///
+/// # Errors
+/// Returns a typed error when validation, state, or hardware access fails.
 fn validate_buffer<T>(buffer: &[T], region: TargetMemoryRegion) -> Result<(), DmaBufferError> {
     let start =
         u32::try_from(buffer.as_ptr() as usize).map_err(|_| DmaBufferError::AddressOverflow)?;

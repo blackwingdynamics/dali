@@ -34,8 +34,11 @@ pub struct SwitchSelection {
 
 /// Fixed-capacity scheduler state consumed by SysTick and PendSV adapters.
 pub struct Scheduler<const CAPACITY: usize> {
+    /// Stores the contexts associated with this bounded state.
     contexts: ContextTable<CAPACITY>,
+    /// Stores the tick associated with this bounded state.
     tick: TickBudget,
+    /// Stores the recovery target associated with this bounded state.
     recovery_target: Option<ContextId>,
 }
 

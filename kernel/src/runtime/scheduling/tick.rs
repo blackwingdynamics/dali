@@ -10,8 +10,11 @@ pub enum TickBudgetError {
 /// Tracks one preemption quantum without owning a timer peripheral.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TickBudget {
+    /// Stores the quantum ticks associated with this bounded state.
     quantum_ticks: u32,
+    /// Stores the elapsed ticks associated with this bounded state.
     elapsed_ticks: u32,
+    /// Stores the pendsv requested associated with this bounded state.
     pendsv_requested: bool,
 }
 
