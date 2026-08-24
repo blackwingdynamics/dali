@@ -20,6 +20,45 @@ F405 hardware records for these paths are maintained in
 [`docs/TESTING.md`](../TESTING.md). Driver claims must remain specific to the
 observed backend and board configuration.
 
+## Current execution order
+
+### Phase 1 — F405 bounded-timeout acceptance
+
+- [ ] Capture Timer timeout integration and expiration evidence on the F405.
+- [ ] Capture external-SPI or intentionally stalled-SPI recovery evidence on the
+  F405.
+- [ ] Record the firmware revision, wiring, transport, expected trace, observed
+  trace, and result in `docs/TESTING.md`.
+
+### Phase 2 — Communication drivers
+
+- [ ] Define a hardware-neutral bounded I2C Write, Read, and Write-Read
+  (repeated-start) contract.
+- [ ] Implement the F405 I2C backend with bounded bus-lockup recovery.
+- [ ] Add fixed-capacity I2C mocks and host tests for ownership, repeated-start,
+  timeout, and bus errors.
+
+### Phase 3 — Small-form-factor I2C display
+
+- [ ] Specify an SSD1306 or SH1106 128x64 I2C display backend.
+- [ ] Add a bounded I2C OLED driver and lightweight diagnostic text console
+  after the I2C acceptance gate.
+- [ ] Record target rendering and unavailable-display recovery evidence.
+
+### Phase 4 — Power and diagnostics
+
+- [ ] Complete accurate RCC reset-reason mapping.
+- [ ] Implement Ustari-based wired read-only `sysinfo`, `mem`, `ps`, and
+  `dmesg` diagnostics with target evidence.
+
+## Frozen boundaries
+
+- SDIO and Storage are frozen at the Known-Good baseline. Do not modify
+  `kernel/src/platform/f405/sdio_raw/`, `kernel/src/storage/`, or SDIO manifest
+  limits while this roadmap is active.
+- USB CDC core servicing and polling loops are frozen.
+- ILI9341 and SPI display experiments are frozen.
+
 ## Slice 1 — GPIO and timers contract
 
 Status: **Planned**.

@@ -42,6 +42,40 @@ cargo test -p dali-kernel --lib --no-default-features \
   --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write
 ```
 
+The Phase 1 bounded-timeout host coverage is hardware-neutral contract
+coverage. It verifies that a zero timer timeout is rejected without starting
+the timer, a stalled SPI transfer returns a typed bounded error, a timeout
+branch returns DriverError::Timeout, and ownership can be released after the
+failed transfer. These tests do not prove F405 peripheral timing or external
+device recovery:
+
+~~~text
+cargo test -p dali-driver-api --test driver_contracts \
+  timer_timeout_and_spi_stall_paths_remain_bounded_and_recoverable
+~~~
+
+### Phase 1 F405 acceptance record
+
+The remaining target acceptance requires a freshly built F405 firmware and a
+real console capture. Keep the two scenarios separate:
+
+- [x] Timer integration: the Silicon Trace recorded
+  `[DRIVER][TIMER] Hardware timer tick elapsed`.
+- [x] SPI bounded transfer: the Silicon Trace recorded
+  `[DRIVER][SPI] Bounded transfer completed`.
+- [x] Trust-store write/read: the Silicon Trace recorded
+  `[STORAGE] Trust-store artifact write/flush/read-back test passed`.
+- [x] AMRN signature verification: the Silicon Trace recorded
+  `[SECURITY] AMRN signature verified`.
+- [ ] Timer hardware timeout probe: a timeout-path result is still required.
+- [ ] Stalled SPI recovery: a stalled condition, timeout, recovery transfer,
+  and ownership-release trace is still required.
+- [ ] Record board revision, wiring, power source, firmware revision, logging
+  transport, expected trace, observed trace, and result.
+
+The timer integration and SPI transfer markers close only those two acceptance
+items. They do not close the separate timer-timeout or stalled-recovery items.
+
 The F405 backend maps bounded SDIO command/data timeouts to `CardRemoved`
 because this board exposes no card-detect GPIO. The recovery heartbeat retains
 the reader after a failed bring-up, probes at the configured interval, and
