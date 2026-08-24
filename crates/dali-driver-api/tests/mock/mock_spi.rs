@@ -8,6 +8,7 @@ pub struct MockSpi<const CAPACITY: usize> {
     pub response: [u8; CAPACITY],
     pub response_len: usize,
     pub connected: bool,
+    pub timed_out: bool,
     pub would_block: bool,
     pub nack: bool,
     pub arbitration_lost: bool,
@@ -22,6 +23,7 @@ impl<const CAPACITY: usize> MockSpi<CAPACITY> {
             response: [0; CAPACITY],
             response_len: 0,
             connected: true,
+            timed_out: false,
             would_block: false,
             nack: false,
             arbitration_lost: false,
@@ -98,6 +100,9 @@ impl<const CAPACITY: usize> SpiTransfer for MockSpi<CAPACITY> {
         self.validate_timeout(timeout)?;
         if !self.connected {
             return Err(DriverError::Disconnected);
+        }
+        if self.timed_out {
+            return Err(DriverError::Timeout);
         }
         if self.would_block {
             return Err(DriverError::WouldBlock);

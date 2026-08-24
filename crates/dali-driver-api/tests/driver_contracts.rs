@@ -120,6 +120,38 @@ fn spi_contract_bounds_transactions_and_propagates_nack() {
 }
 
 #[test]
+fn timer_timeout_and_spi_stall_paths_remain_bounded_and_recoverable() {
+    let mut timer = MockTimer::new(TIMER_LIMIT);
+    assert_eq!(
+        TimerDriver::start(&mut timer, Duration::from_ticks(0)),
+        Err(DriverError::Timeout)
+    );
+    assert!(!timer.is_running().unwrap());
+
+    let mut spi = MockSpi::<1>::new(TIMER_LIMIT);
+    let mut transfer = [0; 1];
+    spi.acquire().unwrap();
+    spi.select(SpiDeviceId::new(1)).unwrap();
+
+    spi.timed_out = true;
+    assert_eq!(
+        spi.transfer(&mut transfer, VALID_TIMEOUT),
+        Err(DriverError::Timeout)
+    );
+    spi.timed_out = false;
+    spi.would_block = true;
+    assert_eq!(
+        spi.transfer(&mut transfer, VALID_TIMEOUT),
+        Err(DriverError::WouldBlock)
+    );
+
+    spi.would_block = false;
+    spi.deselect().unwrap();
+    spi.release().unwrap();
+    assert!(!spi.is_owned());
+}
+
+#[test]
 fn serial_ownership_and_configuration_are_exclusive_and_bounded() {
     let mut serial = MockSerial::<4>::new(TIMER_LIMIT);
     let baud_rate = BaudRate::from_bits_per_second(115_200).unwrap();
