@@ -1,7 +1,10 @@
 //! Bounded SPI adapter for the F405 platform boundary.
 
 use super::timeout::F405TimeoutConfig;
-use dali_driver_api::{BoundedTimeout, DriverError, DriverResult, Duration, SpiTransfer};
+use dali_driver_api::{
+    BoundedTimeout, DriverError, DriverResult, Duration, SpiBusOwnership, SpiDeviceId,
+    SpiDeviceSelect, SpiTransfer,
+};
 use stm32f4xx_hal::{
     hal_02::spi::FullDuplex,
     nb::Error as NbError,
@@ -12,12 +15,28 @@ use stm32f4xx_hal::{
 pub(crate) struct F405Spi<SPI: Instance> {
     spi: Spi<SPI, false, u8>,
     timeout: F405TimeoutConfig,
+    owned: bool,
+    selected: Option<SpiDeviceId>,
 }
 
 impl<SPI: Instance> F405Spi<SPI> {
     /// Wraps an initialized HAL SPI master and its timeout policy.
     pub(crate) const fn new(spi: Spi<SPI, false, u8>, timeout: F405TimeoutConfig) -> Self {
-        Self { spi, timeout }
+        Self {
+            spi,
+            timeout,
+            owned: false,
+            selected: None,
+        }
+    }
+
+    /// Rejects transfers that do not hold both bus and device ownership.
+    fn require_selection(&self) -> DriverResult<()> {
+        if self.owned && self.selected.is_some() {
+            Ok(())
+        } else {
+            Err(DriverError::InvalidState)
+        }
     }
 
     /// Maps a HAL SPI error into the hardware-neutral driver vocabulary.
@@ -64,8 +83,58 @@ impl<SPI: Instance> BoundedTimeout for F405Spi<SPI> {
     }
 }
 
+impl<SPI: Instance> SpiBusOwnership for F405Spi<SPI> {
+    fn acquire(&mut self) -> DriverResult<()> {
+        if self.owned {
+            Err(DriverError::ResourceBusy)
+        } else {
+            self.owned = true;
+            Ok(())
+        }
+    }
+
+    fn release(&mut self) -> DriverResult<()> {
+        if !self.owned || self.selected.is_some() {
+            Err(DriverError::InvalidState)
+        } else {
+            self.owned = false;
+            Ok(())
+        }
+    }
+
+    fn is_owned(&self) -> bool {
+        self.owned
+    }
+}
+
+impl<SPI: Instance> SpiDeviceSelect for F405Spi<SPI> {
+    fn select(&mut self, device: SpiDeviceId) -> DriverResult<()> {
+        if !self.owned {
+            return Err(DriverError::InvalidState);
+        }
+        if self.selected.is_some() {
+            return Err(DriverError::ResourceBusy);
+        }
+        self.selected = Some(device);
+        Ok(())
+    }
+
+    fn deselect(&mut self) -> DriverResult<()> {
+        if !self.owned || self.selected.take().is_none() {
+            Err(DriverError::InvalidState)
+        } else {
+            Ok(())
+        }
+    }
+
+    fn selected(&self) -> Option<SpiDeviceId> {
+        self.selected
+    }
+}
+
 impl<SPI: Instance> SpiTransfer for F405Spi<SPI> {
     fn transfer(&mut self, buffer: &mut [u8], timeout: Duration) -> DriverResult<()> {
+        self.require_selection()?;
         let mut remaining = self.timeout.poll_budget(timeout)?;
         for byte in buffer.iter_mut() {
             *byte = self.exchange_byte(*byte, &mut remaining)?;

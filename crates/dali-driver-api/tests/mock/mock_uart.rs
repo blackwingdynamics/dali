@@ -14,6 +14,7 @@ pub struct MockSerial<const CAPACITY: usize> {
     pub framing_error: bool,
     pub parity_error: bool,
     pub overrun: bool,
+    pub timed_out: bool,
     pub owned: bool,
     pub config: Option<SerialConfig>,
 }
@@ -31,6 +32,7 @@ impl<const CAPACITY: usize> MockSerial<CAPACITY> {
             framing_error: false,
             parity_error: false,
             overrun: false,
+            timed_out: false,
             owned: false,
             config: None,
         }
@@ -49,6 +51,9 @@ impl<const CAPACITY: usize> MockSerial<CAPACITY> {
         self.validate_timeout(timeout)?;
         if !self.connected {
             return Err(DriverError::Disconnected);
+        }
+        if self.timed_out {
+            return Err(DriverError::Timeout);
         }
         if self.would_block {
             return Err(DriverError::WouldBlock);

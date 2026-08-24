@@ -1,13 +1,16 @@
 //! F405 bounded-I/O acceptance probe.
 
 use super::{F405Spi, F405TimeoutConfig, F405Uart};
-use dali_driver_api::{Duration, SerialRead, SpiTransfer};
+use dali_driver_api::{
+    BaudRate, DataBits, Duration, Parity, SerialConfig, SerialConfigure, SerialOwnership,
+    SerialRead, SpiBusOwnership, SpiDeviceId, SpiDeviceSelect, SpiTransfer, StopBits,
+};
 use stm32f4xx_hal::{
     gpio::{self, Alternate},
     pac,
     prelude::*,
     rcc::Clocks,
-    serial::{Config as SerialConfig, SerialExt},
+    serial::{Config as HalSerialConfig, SerialExt},
     spi::{Mode, Phase, Polarity, SpiExt},
     time::Hertz,
 };
@@ -26,6 +29,8 @@ const PROBE_TIMEOUT: Duration = Duration::from_ticks(PROBE_MAX_TIMEOUT_TICKS);
 const PROBE_BUFFER_LENGTH: usize = 1;
 /// Initial byte sent by the SPI timeout probe.
 const PROBE_SPI_FILL_BYTE: u8 = 0xff;
+/// Logical device selector reserved by this no-peer SPI acceptance probe.
+const PROBE_SPI_DEVICE_ID: u8 = 0;
 
 /// Result of the real peripheral timeout probes.
 pub(crate) struct F405DriverProbeResult {
@@ -39,6 +44,7 @@ pub(crate) struct F405DriverProbeResult {
 pub(crate) struct F405DriverProbe {
     uart: F405Uart,
     spi: F405Spi<pac::SPI1>,
+    uart_config: SerialConfig,
 }
 
 impl F405DriverProbe {
@@ -57,9 +63,15 @@ impl F405DriverProbe {
         ),
         clocks: &Clocks,
     ) -> Option<Self> {
+        let baud_rate = BaudRate::from_bits_per_second(PROBE_UART_BAUD_HZ).ok()?;
+        let uart_config =
+            SerialConfig::new(baud_rate, DataBits::Eight, Parity::None, StopBits::One);
         let serial = match usart.serial(
             uart_pins,
-            SerialConfig::default().baudrate(PROBE_UART_BAUD_HZ.bps()),
+            HalSerialConfig::default()
+                .baudrate(PROBE_UART_BAUD_HZ.bps())
+                .wordlength_8()
+                .parity_none(),
             clocks,
         ) {
             Ok(serial) => serial,
@@ -76,26 +88,56 @@ impl F405DriverProbe {
         );
         let timeout = F405TimeoutConfig::new(PROBE_TIMEOUT, PROBE_POLLS_PER_TIMEOUT_TICK);
         Some(Self {
-            uart: F405Uart::new(serial, timeout),
+            uart: F405Uart::new(serial, timeout, uart_config),
             spi: F405Spi::new(spi, timeout),
+            uart_config,
         })
     }
 
     /// Runs one bounded no-peer receive test on each initialized peripheral.
     pub(crate) fn run(&mut self) -> F405DriverProbeResult {
         let mut uart_byte = [0; PROBE_BUFFER_LENGTH];
-        let uart_timed_out = matches!(
-            self.uart.read(&mut uart_byte, PROBE_TIMEOUT),
-            Err(dali_driver_api::DriverError::Timeout)
-        );
+        let uart_timed_out = self.run_uart_probe(&mut uart_byte);
         let mut spi_byte = [PROBE_SPI_FILL_BYTE; PROBE_BUFFER_LENGTH];
-        let spi_timed_out = matches!(
-            self.spi.transfer(&mut spi_byte, PROBE_TIMEOUT),
-            Err(dali_driver_api::DriverError::Timeout)
-        );
+        let spi_timed_out = self.run_spi_probe(&mut spi_byte);
         F405DriverProbeResult {
             uart_timed_out,
             spi_timed_out,
         }
+    }
+
+    /// Runs the owned UART timeout probe and always releases the UART.
+    fn run_uart_probe(&mut self, buffer: &mut [u8; PROBE_BUFFER_LENGTH]) -> bool {
+        if self.uart.acquire().is_err() {
+            return false;
+        }
+        let timed_out = self.uart.configure(self.uart_config).is_ok()
+            && matches!(
+                self.uart.read(buffer, PROBE_TIMEOUT),
+                Err(dali_driver_api::DriverError::Timeout)
+            );
+        timed_out && self.uart.release().is_ok()
+    }
+
+    /// Runs the logically selected SPI timeout probe and balances its state.
+    fn run_spi_probe(&mut self, buffer: &mut [u8; PROBE_BUFFER_LENGTH]) -> bool {
+        if self.spi.acquire().is_err() {
+            return false;
+        }
+        let selected = self
+            .spi
+            .select(SpiDeviceId::new(PROBE_SPI_DEVICE_ID))
+            .is_ok();
+        if !selected {
+            let _ = self.spi.release();
+            return false;
+        }
+        let timed_out = selected
+            && matches!(
+                self.spi.transfer(buffer, PROBE_TIMEOUT),
+                Err(dali_driver_api::DriverError::Timeout)
+            );
+        let deselected = selected && self.spi.deselect().is_ok();
+        timed_out && deselected && self.spi.release().is_ok()
     }
 }

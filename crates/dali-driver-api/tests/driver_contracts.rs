@@ -78,6 +78,19 @@ fn serial_contracts_bound_partial_transfers_and_failures() {
         serial.read(&mut received, VALID_TIMEOUT),
         Err(DriverError::Disconnected)
     );
+    assert_eq!(
+        serial.write(&[9], VALID_TIMEOUT),
+        Err(DriverError::Disconnected)
+    );
+    assert_eq!(serial.flush(VALID_TIMEOUT), Err(DriverError::Disconnected));
+    serial.connected = true;
+    serial.timed_out = true;
+    assert_eq!(
+        serial.read(&mut received, VALID_TIMEOUT),
+        Err(DriverError::Timeout)
+    );
+    assert_eq!(serial.write(&[9], VALID_TIMEOUT), Err(DriverError::Timeout));
+    assert_eq!(serial.flush(VALID_TIMEOUT), Err(DriverError::Timeout));
 }
 
 #[test]

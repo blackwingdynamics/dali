@@ -141,16 +141,20 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 ### UART
 
 - [x] Define bounded UART read/write and framing-error contracts.
-- [ ] Define ownership, baud configuration, and backpressure errors.
-- [ ] Add host tests for partial transfers, overflow, timeout, and disconnect.
+- [x] Define hardware-neutral UART ownership, baud configuration, and
+  backpressure error contracts.
+- [x] Add host tests for exclusive ownership and invalid zero baud rates.
+- [x] Add host tests for partial transfers, overflow, timeout, and disconnect
+  across UART read, write, and flush operations.
 - [x] Implement the F405 UART adapter behind the accepted driver contract.
 - [x] Record F405 target UART timeout evidence with the acceptance firmware.
 
 ### SPI / I2C
 
-- [ ] Define bounded transaction, bus ownership, and device-selection contracts.
+- [x] Define bounded transaction, bus ownership, and device-selection contracts.
 - [x] Define timeout, arbitration, NACK, and protocol-error variants.
 - [x] Add host tests for transaction bounds and typed failure propagation.
+- [x] Add host tests for balanced bus ownership and chip-selection lifecycle.
 - [x] Implement the F405 SPI adapter with board-owned pin and clock configuration.
 - [ ] Record physical bus and recovery evidence for each supported backend.
 

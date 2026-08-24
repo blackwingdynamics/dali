@@ -2,7 +2,8 @@
 
 use super::timeout::F405TimeoutConfig;
 use dali_driver_api::{
-    BoundedTimeout, DriverError, DriverResult, Duration, SerialRead, SerialWrite,
+    BoundedTimeout, DriverError, DriverResult, Duration, SerialConfig, SerialConfigure,
+    SerialOwnership, SerialRead, SerialWrite,
 };
 use stm32f4xx_hal::{
     hal_02::serial::{Read as SerialReadNb, Write as SerialWriteNb},
@@ -14,12 +15,32 @@ use stm32f4xx_hal::{
 pub(crate) struct F405Uart {
     serial: Serial1,
     timeout: F405TimeoutConfig,
+    config: SerialConfig,
+    owned: bool,
 }
 
 impl F405Uart {
     /// Wraps an initialized HAL UART and its target-specific timeout policy.
-    pub(crate) const fn new(serial: Serial1, timeout: F405TimeoutConfig) -> Self {
-        Self { serial, timeout }
+    pub(crate) const fn new(
+        serial: Serial1,
+        timeout: F405TimeoutConfig,
+        config: SerialConfig,
+    ) -> Self {
+        Self {
+            serial,
+            timeout,
+            config,
+            owned: false,
+        }
+    }
+
+    /// Rejects I/O from callers that have not claimed the UART resource.
+    fn require_ownership(&self) -> DriverResult<()> {
+        if self.owned {
+            Ok(())
+        } else {
+            Err(DriverError::InvalidState)
+        }
     }
 
     /// Maps a HAL UART error into the hardware-neutral driver vocabulary.
@@ -66,8 +87,47 @@ impl BoundedTimeout for F405Uart {
     }
 }
 
+impl SerialOwnership for F405Uart {
+    fn acquire(&mut self) -> DriverResult<()> {
+        if self.owned {
+            Err(DriverError::ResourceBusy)
+        } else {
+            self.owned = true;
+            Ok(())
+        }
+    }
+
+    fn release(&mut self) -> DriverResult<()> {
+        if !self.owned {
+            Err(DriverError::InvalidState)
+        } else {
+            self.owned = false;
+            Ok(())
+        }
+    }
+
+    fn is_owned(&self) -> bool {
+        self.owned
+    }
+}
+
+impl SerialConfigure for F405Uart {
+    fn configure(&mut self, config: SerialConfig) -> DriverResult<()> {
+        self.require_ownership()?;
+        if config == self.config {
+            Ok(())
+        } else {
+            // stm32f4xx-hal configures Serial1 while constructing the HAL
+            // resource; changing registers after construction is not exposed
+            // by this backend, so incompatible requests are rejected.
+            Err(DriverError::Unsupported)
+        }
+    }
+}
+
 impl SerialRead for F405Uart {
     fn read(&mut self, buffer: &mut [u8], timeout: Duration) -> DriverResult<usize> {
+        self.require_ownership()?;
         let mut remaining = self.timeout.poll_budget(timeout)?;
         for byte in buffer.iter_mut() {
             *byte = self.read_byte(&mut remaining)?;
@@ -78,6 +138,7 @@ impl SerialRead for F405Uart {
 
 impl SerialWrite for F405Uart {
     fn write(&mut self, buffer: &[u8], timeout: Duration) -> DriverResult<usize> {
+        self.require_ownership()?;
         let mut remaining = self.timeout.poll_budget(timeout)?;
         for &byte in buffer {
             self.write_byte(byte, &mut remaining)?;
@@ -86,6 +147,7 @@ impl SerialWrite for F405Uart {
     }
 
     fn flush(&mut self, timeout: Duration) -> DriverResult<()> {
+        self.require_ownership()?;
         let mut remaining = self.timeout.poll_budget(timeout)?;
         while remaining != 0 {
             match SerialWriteNb::flush(&mut self.serial) {
