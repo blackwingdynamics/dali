@@ -1,6 +1,6 @@
 //! Kernel service capability checks for identity-aware package metadata.
 
-use dali::svc::ServiceId;
+use dali_sdk::svc::ServiceId;
 
 /// Bit mask of services exposed by the current ABI gateway.
 const SUPPORTED_SERVICE_MASK: u32 = 1u32 << (ServiceId::Log as u32 - 1);

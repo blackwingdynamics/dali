@@ -4,7 +4,7 @@
 use core::panic::PanicInfo;
 
 const TEST_MESSAGE: &str = "Fault injection: invalid PSP bounds";
-const TEST_INVALID_PSP_SERVICE: u32 = dali::svc::TEST_INVALID_PSP_SERVICE;
+const TEST_INVALID_PSP_SERVICE: u32 = dali_sdk::svc::TEST_INVALID_PSP_SERVICE;
 
 /// Enters the invalid-PSP fault test after proving SVC communication.
 ///
@@ -15,7 +15,7 @@ const TEST_INVALID_PSP_SERVICE: u32 = dali::svc::TEST_INVALID_PSP_SERVICE;
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log(TEST_MESSAGE);
+    let _ = dali_sdk::log(TEST_MESSAGE);
     let _ = unsafe { trigger_invalid_psp() };
     loop {
         core::hint::spin_loop();
@@ -29,7 +29,7 @@ unsafe fn trigger_invalid_psp() -> u32 {
         // service through the same bounded SVC gateway as normal services.
         core::arch::asm!(
             "svc {immediate}",
-            immediate = const dali::svc::GATEWAY_IMMEDIATE,
+            immediate = const dali_sdk::svc::GATEWAY_IMMEDIATE,
             inout("r0") status,
             options(nostack, preserves_flags),
         );

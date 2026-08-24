@@ -28,7 +28,7 @@ const _: () = assert!(PERIPHERAL_PROBE_ADDRESS != 0);
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log(TEST_MESSAGE);
+    let _ = dali_sdk::log(TEST_MESSAGE);
     let _value = unsafe {
         // SAFETY: This read intentionally targets the manifest-declared
         // peripheral region to prove that unprivileged MMIO access is rejected.

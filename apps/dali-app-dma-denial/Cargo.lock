@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "dali"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 
 [[package]]
 name = "dali-app-dma-denial"
@@ -16,7 +16,7 @@ dependencies = [
 
 [[package]]
 name = "dali-targets"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "serde",
  "toml",

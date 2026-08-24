@@ -1,11 +1,11 @@
 [package]
 name = "dali-app-hello"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2024"
 publish = false
 
 [dependencies]
-dali = { path = "../../crates/dali-sdk" }
+dali_sdk = { package = "dali", path = "../../crates/dali-sdk" }
 
 [features]
 embedded-payload = []

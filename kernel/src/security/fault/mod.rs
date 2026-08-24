@@ -4,7 +4,7 @@
 //! application fault handlers. ABI v2 remains unchanged.
 
 use crate::logging;
-use dali::svc::ExceptionFrame;
+use dali_sdk::svc::ExceptionFrame;
 
 mod persistent;
 pub(crate) mod scb;

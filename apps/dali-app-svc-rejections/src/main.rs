@@ -5,8 +5,8 @@ use core::panic::PanicInfo;
 
 const TARGET_MEMORY: dali_targets::MemoryProfile = dali_targets::TARGET_F405.memory;
 const UNKNOWN_SERVICE: u32 = u32::MAX;
-const LOG_SERVICE: u32 = dali::svc::ServiceId::Log as u32;
-const STATUS_REJECTED: u32 = dali::svc::STATUS_REJECTED;
+const LOG_SERVICE: u32 = dali_sdk::svc::ServiceId::Log as u32;
+const STATUS_REJECTED: u32 = dali_sdk::svc::STATUS_REJECTED;
 static INVALID_UTF8: [u8; 1] = [0xFF];
 
 const fn kernel_probe_address() -> usize {
@@ -37,7 +37,7 @@ const _: () = assert!(PERIPHERAL_PROBE_ADDRESS != 0);
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
     let valid_message = "SVC rejection matrix passed";
-    let oversized_length = dali::MAX_LOG_MESSAGE_BYTES + 1;
+    let oversized_length = dali_sdk::MAX_LOG_MESSAGE_BYTES + 1;
 
     report_rejection(
         "SVC rejected unknown service",
@@ -59,7 +59,7 @@ pub unsafe extern "C" fn amiran_entry() -> ! {
         "SVC rejected invalid UTF-8",
         unsafe { raw_svc(LOG_SERVICE, INVALID_UTF8.as_ptr(), INVALID_UTF8.len()) },
     );
-    let _ = dali::log("SVC rejection matrix complete");
+    let _ = dali_sdk::log("SVC rejection matrix complete");
     loop {
         core::hint::spin_loop();
     }
@@ -67,7 +67,7 @@ pub unsafe extern "C" fn amiran_entry() -> ! {
 
 fn report_rejection(message: &str, status: u32) {
     if status == STATUS_REJECTED {
-        let _ = dali::log(message);
+        let _ = dali_sdk::log(message);
     }
 }
 
@@ -79,7 +79,7 @@ unsafe fn raw_svc(service: u32, pointer: *const u8, length: usize) -> u32 {
         // values through the ABI v3 gateway to verify kernel rejection.
         core::arch::asm!(
             "svc {immediate}",
-            immediate = const dali::svc::GATEWAY_IMMEDIATE,
+            immediate = const dali_sdk::svc::GATEWAY_IMMEDIATE,
             inout("r0") status,
             in("r1") pointer,
             in("r2") length,

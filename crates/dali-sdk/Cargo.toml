@@ -1,6 +1,6 @@
 [package]
 name = "dali"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2024"
 publish = false
 
@@ -8,6 +8,7 @@ publish = false
 abi-current = []
 
 [lib]
+name = "dali_sdk"
 path = "src/lib.rs"
 
 [lints]

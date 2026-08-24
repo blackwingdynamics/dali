@@ -1,6 +1,6 @@
 [package]
 name = "dali-kernel"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2024"
 publish = false
 
@@ -37,7 +37,7 @@ workspace = true
 dali-amrn = { path = "../crates/dali-amrn" }
 dali-crypto = { path = "../crates/dali-crypto", optional = true }
 dali-metadata = { path = "../crates/dali-metadata", optional = true }
-dali = { path = "../crates/dali-sdk" }
+dali_sdk = { package = "dali", path = "../crates/dali-sdk" }
 dali-driver-api = { path = "../crates/dali-driver-api" }
 dali-usb = { path = "../crates/dali-usb" }
 dali-targets = { path = "../crates/dali-targets" }

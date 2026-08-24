@@ -42,7 +42,7 @@ unsafe extern "C" fn fixture_loop() -> ! {
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log(TEST_MESSAGE);
+    let _ = dali_sdk::log(TEST_MESSAGE);
     let initialized = unsafe {
         // SAFETY: The fixture accesses only its own declared data region.
         core::ptr::read_volatile(core::ptr::addr_of!(INITIALIZED_STATE))

@@ -1,7 +1,7 @@
 //! AMRN package validation and application entry support.
 
-use dali::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable};
 use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, parse_header};
+use dali_sdk::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable};
 
 #[cfg(feature = "abi-current")]
 use super::pipeline;
