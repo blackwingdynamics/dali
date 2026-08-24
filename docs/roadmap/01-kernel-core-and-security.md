@@ -42,6 +42,17 @@ The baseline ABI v2 remains trusted native code. The isolation and repository
 security paths require their documented feature combinations and target
 configuration.
 
+## Future Microkernel IPC backlog
+
+- [ ] Approve and implement the staged Ustari message boundary between AMRN
+  applications and the kernel SVC gateway.
+- [ ] Define MPU-protected, fixed-capacity request/response rings with explicit
+  ownership, publication ordering, stale-slot invalidation, and reset recovery.
+- [ ] Add hardware-neutral host tests before introducing a target IPC runtime.
+
+See [`RFC: Ustari-Based AMRN IPC Messaging`](../architecture/rfc-ustari-amrn-ipc.md)
+for the proposed message, zero-copy, security, and acceptance model.
+
 ## Validation gate
 
 - Host workspace checks and strict host Clippy pass when the no-std kernel
