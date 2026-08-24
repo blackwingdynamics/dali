@@ -263,6 +263,19 @@ docs(amrn): define the CRC32 field
 
 Keep commits atomic. Do not combine unrelated formatting, dependencies, behavior, or documentation changes.
 
+### Branch-to-main documentation gate
+
+Before merging an active feature branch into `main`, compare the branch's
+implementation, tests, and hardware evidence with the repository
+documentation. Every user-visible behavior, contract change, acceptance
+result, limitation, and security claim introduced on the branch must be
+reflected in the appropriate `docs/` file and, when applicable, the relevant
+roadmap checklist. Replace stale claims rather than appending contradictory
+text. If the branch work is not accurately documented, update the
+documentation and validate it before merging; do not merge first and defer
+the documentation audit to `main`. This is a merge-gate audit, not a
+requirement to reread every document for each individual commit.
+
 Changelogs are generated from commit history by `git-cliff`. Do not edit release changelogs manually. Release tags use `vX.Y.Z` or `vX.Y.Z-alpha.N`; the release workflow creates the archived changelog and GitHub Release.
 
 ## 11. Things an agent must not do
