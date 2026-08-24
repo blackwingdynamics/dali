@@ -3,8 +3,10 @@ mod mock;
 use core::sync::atomic::{AtomicU8, Ordering};
 
 use dali_driver_api::{
-    BoundedTimeout, CountDown, DriverError, Duration, GpioMode, InputPin, InterruptPin,
-    InterruptTrigger, OutputPin, PinMode, SerialRead, SerialWrite, SpiTransfer, TimerDriver,
+    BaudRate, BoundedTimeout, CountDown, DataBits, DriverError, Duration, GpioMode, InputPin,
+    InterruptPin, InterruptTrigger, OutputPin, Parity, PinMode, SerialConfig, SerialConfigure,
+    SerialOwnership, SerialRead, SerialWrite, SpiBusOwnership, SpiDeviceId, SpiDeviceSelect,
+    SpiTransfer, StopBits, TimerDriver,
 };
 use mock::{MockGpio, MockSerial, MockSpi, MockTimer};
 
@@ -101,6 +103,48 @@ fn spi_contract_bounds_transactions_and_propagates_nack() {
     assert_eq!(
         spi.transfer(&mut transfer, VALID_TIMEOUT),
         Err(DriverError::ArbitrationLost)
+    );
+}
+
+#[test]
+fn serial_ownership_and_configuration_are_exclusive_and_bounded() {
+    let mut serial = MockSerial::<4>::new(TIMER_LIMIT);
+    let baud_rate = BaudRate::from_bits_per_second(115_200).unwrap();
+    let config = SerialConfig::new(baud_rate, DataBits::Eight, Parity::None, StopBits::One);
+
+    assert!(!serial.is_owned());
+    assert_eq!(serial.release(), Err(DriverError::InvalidState));
+    assert_eq!(serial.configure(config), Err(DriverError::InvalidState));
+    serial.acquire().unwrap();
+    assert_eq!(serial.acquire(), Err(DriverError::ResourceBusy));
+    serial.configure(config).unwrap();
+    assert_eq!(serial.config, Some(config));
+    serial.release().unwrap();
+    assert!(!serial.is_owned());
+}
+
+#[test]
+fn spi_bus_ownership_requires_balanced_device_selection() {
+    let mut spi = MockSpi::<4>::new(TIMER_LIMIT);
+    let device = SpiDeviceId::new(3);
+
+    assert_eq!(spi.select(device), Err(DriverError::InvalidState));
+    spi.acquire().unwrap();
+    assert_eq!(spi.acquire(), Err(DriverError::ResourceBusy));
+    spi.select(device).unwrap();
+    assert_eq!(spi.selected(), Some(device));
+    assert_eq!(spi.select(device), Err(DriverError::ResourceBusy));
+    spi.deselect().unwrap();
+    assert_eq!(spi.deselect(), Err(DriverError::InvalidState));
+    spi.release().unwrap();
+    assert!(!spi.is_owned());
+}
+
+#[test]
+fn baud_rate_rejects_zero_without_platform_values() {
+    assert_eq!(
+        BaudRate::from_bits_per_second(0),
+        Err(DriverError::InvalidState)
     );
 }
 

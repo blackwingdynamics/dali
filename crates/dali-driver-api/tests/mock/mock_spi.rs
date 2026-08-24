@@ -1,4 +1,7 @@
-use dali_driver_api::{BoundedTimeout, DriverError, DriverResult, Duration, SpiTransfer};
+use dali_driver_api::{
+    BoundedTimeout, DriverError, DriverResult, Duration, SpiBusOwnership, SpiDeviceId,
+    SpiDeviceSelect, SpiTransfer,
+};
 
 pub struct MockSpi<const CAPACITY: usize> {
     pub max_timeout: Duration,
@@ -8,6 +11,8 @@ pub struct MockSpi<const CAPACITY: usize> {
     pub would_block: bool,
     pub nack: bool,
     pub arbitration_lost: bool,
+    pub owned: bool,
+    pub selected: Option<SpiDeviceId>,
 }
 
 impl<const CAPACITY: usize> MockSpi<CAPACITY> {
@@ -20,6 +25,8 @@ impl<const CAPACITY: usize> MockSpi<CAPACITY> {
             would_block: false,
             nack: false,
             arbitration_lost: false,
+            owned: false,
+            selected: None,
         }
     }
 
@@ -36,6 +43,53 @@ impl<const CAPACITY: usize> MockSpi<CAPACITY> {
 impl<const CAPACITY: usize> BoundedTimeout for MockSpi<CAPACITY> {
     fn max_timeout(&self) -> Duration {
         self.max_timeout
+    }
+}
+
+impl<const CAPACITY: usize> SpiBusOwnership for MockSpi<CAPACITY> {
+    fn acquire(&mut self) -> DriverResult<()> {
+        if self.owned {
+            Err(DriverError::ResourceBusy)
+        } else {
+            self.owned = true;
+            Ok(())
+        }
+    }
+
+    fn release(&mut self) -> DriverResult<()> {
+        if !self.owned || self.selected.is_some() {
+            return Err(DriverError::InvalidState);
+        }
+        self.owned = false;
+        Ok(())
+    }
+
+    fn is_owned(&self) -> bool {
+        self.owned
+    }
+}
+
+impl<const CAPACITY: usize> SpiDeviceSelect for MockSpi<CAPACITY> {
+    fn select(&mut self, device: SpiDeviceId) -> DriverResult<()> {
+        if !self.owned {
+            return Err(DriverError::InvalidState);
+        }
+        if self.selected.is_some() {
+            return Err(DriverError::ResourceBusy);
+        }
+        self.selected = Some(device);
+        Ok(())
+    }
+
+    fn deselect(&mut self) -> DriverResult<()> {
+        if self.selected.take().is_none() {
+            return Err(DriverError::InvalidState);
+        }
+        Ok(())
+    }
+
+    fn selected(&self) -> Option<SpiDeviceId> {
+        self.selected
     }
 }
 

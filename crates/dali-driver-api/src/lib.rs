@@ -13,6 +13,9 @@ pub use error::{DriverError, DriverResult};
 pub use gpio::{
     GpioMode, InputPin, InterruptCallback, InterruptPin, InterruptTrigger, OutputPin, PinMode,
 };
-pub use spi::SpiTransfer;
+pub use spi::{SpiBusOwnership, SpiDeviceId, SpiDeviceSelect, SpiTransfer};
 pub use timer::{BoundedTimeout, CountDown, Duration, TimerDriver};
-pub use uart::{SerialRead, SerialWrite};
+pub use uart::{
+    BaudRate, DataBits, Parity, SerialConfig, SerialConfigure, SerialOwnership, SerialRead,
+    SerialWrite, StopBits,
+};

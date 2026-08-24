@@ -1,5 +1,6 @@
 use dali_driver_api::{
-    BoundedTimeout, DriverError, DriverResult, Duration, SerialRead, SerialWrite,
+    BoundedTimeout, DriverError, DriverResult, Duration, SerialConfig, SerialConfigure,
+    SerialOwnership, SerialRead, SerialWrite,
 };
 
 pub struct MockSerial<const CAPACITY: usize> {
@@ -13,6 +14,8 @@ pub struct MockSerial<const CAPACITY: usize> {
     pub framing_error: bool,
     pub parity_error: bool,
     pub overrun: bool,
+    pub owned: bool,
+    pub config: Option<SerialConfig>,
 }
 
 impl<const CAPACITY: usize> MockSerial<CAPACITY> {
@@ -28,6 +31,8 @@ impl<const CAPACITY: usize> MockSerial<CAPACITY> {
             framing_error: false,
             parity_error: false,
             overrun: false,
+            owned: false,
+            config: None,
         }
     }
 
@@ -64,6 +69,40 @@ impl<const CAPACITY: usize> MockSerial<CAPACITY> {
 impl<const CAPACITY: usize> BoundedTimeout for MockSerial<CAPACITY> {
     fn max_timeout(&self) -> Duration {
         self.max_timeout
+    }
+}
+
+impl<const CAPACITY: usize> SerialOwnership for MockSerial<CAPACITY> {
+    fn acquire(&mut self) -> DriverResult<()> {
+        if self.owned {
+            Err(DriverError::ResourceBusy)
+        } else {
+            self.owned = true;
+            Ok(())
+        }
+    }
+
+    fn release(&mut self) -> DriverResult<()> {
+        if !self.owned {
+            Err(DriverError::InvalidState)
+        } else {
+            self.owned = false;
+            Ok(())
+        }
+    }
+
+    fn is_owned(&self) -> bool {
+        self.owned
+    }
+}
+
+impl<const CAPACITY: usize> SerialConfigure for MockSerial<CAPACITY> {
+    fn configure(&mut self, config: SerialConfig) -> DriverResult<()> {
+        if !self.owned {
+            return Err(DriverError::InvalidState);
+        }
+        self.config = Some(config);
+        Ok(())
     }
 }
 
