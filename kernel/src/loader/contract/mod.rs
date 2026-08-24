@@ -108,6 +108,7 @@ where
     Ok(())
 }
 
+/// Performs the `read_checksum_bytes` operation for this subsystem.
 fn read_checksum_bytes<R>(
     reader: &R,
     size: u32,
@@ -129,6 +130,7 @@ where
     Ok(())
 }
 
+/// Performs the `read_exact` operation for this subsystem.
 fn read_exact<R>(reader: &R, buffer: &mut [u8]) -> Result<(), StreamError<R::Error>>
 where
     R: PackageReader,

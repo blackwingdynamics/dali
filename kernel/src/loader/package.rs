@@ -118,10 +118,12 @@ pub fn start_application(payload: ValidatedPayload) -> ! {
     }
 }
 
+/// Stores the shared `APPLICATION_SERVICES` state used by this subsystem.
 static APPLICATION_SERVICES: ServiceTable = ServiceTable {
     log: application_log,
 };
 
+/// Performs the `application_log` operation for this subsystem.
 unsafe extern "C" fn application_log(message: *const u8, length: usize) -> u32 {
     let start = message as usize;
     let end = match start.checked_add(length) {
@@ -155,6 +157,7 @@ unsafe extern "C" fn application_log(message: *const u8, length: usize) -> u32 {
     LOG_OK
 }
 
+/// Performs the `validate_file` operation for this subsystem.
 fn validate_file<D>(file: &AmrnFile<'_, D>) -> Result<ValidatedPayload, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -182,6 +185,7 @@ where
     validator.finish().map_err(LoaderError::Package)
 }
 
+/// Performs the `load_file` operation for this subsystem.
 fn load_file<D>(file: AmrnFile<'_, D>) -> Result<ValidatedPayload, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -191,6 +195,7 @@ where
     Ok(validated)
 }
 
+/// Performs the `copy_payload` operation for this subsystem.
 fn copy_payload<D>(file: &AmrnFile<'_, D>, payload_size: usize) -> Result<(), LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
