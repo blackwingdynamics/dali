@@ -44,7 +44,9 @@ pub enum ApplicationState {
 pub enum LifecycleError {
     /// The requested transition is not valid for the current state.
     InvalidTransition {
+        /// Lifecycle state from which the invalid transition was requested.
         state: ApplicationState,
+        /// Event that was rejected by the lifecycle state machine.
         event: LifecycleEvent,
     },
     /// The reserved slot does not match the package's declared slot.

@@ -1,4 +1,5 @@
 #![no_std]
+#![warn(missing_docs)]
 
 //! Hardware-neutral, allocation-free driver contracts.
 

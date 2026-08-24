@@ -51,7 +51,7 @@ pub struct StreamVerificationResult {
 /// Incrementally authenticates one canonical role body.
 ///
 /// The verifier owns only SHA-256 state and one Ed25519 state per signature
-/// record. Body chunks are borrowed for the duration of [`update`].
+/// record. Body chunks are borrowed for the duration of [`Self::update`].
 pub struct StreamingRoleVerifier {
     digest: dali_crypto::Sha256Accumulator,
     verifiers: [MaybeUninit<dali_crypto::StreamingVerifier>; MAX_STREAMING_SIGNERS],

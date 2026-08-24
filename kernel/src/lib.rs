@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+#![warn(missing_docs)]
 
 //! Hardware-independent kernel contracts exposed for host-side testing.
 

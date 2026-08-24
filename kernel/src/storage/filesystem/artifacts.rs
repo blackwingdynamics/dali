@@ -6,7 +6,9 @@ use super::{read_root_file, write_root_file};
 
 /// Fixed FAT-compatible names for the two trust-store slots and commit marker.
 pub const TRUST_STORE_ACTIVE_FILE: &str = "DALI-ACT.BIN";
+/// Fixed FAT-compatible name for the candidate trust-store artifact.
 pub const TRUST_STORE_CANDIDATE_FILE: &str = "DALI-CAN.BIN";
+/// Fixed FAT-compatible name for the durable trust-store commit marker.
 pub const TRUST_STORE_COMMIT_FILE: &str = "DALI-CMT.BIN";
 
 /// Kernel-owned durable trust-store artifact.
