@@ -9,6 +9,7 @@ use super::{
 #[cfg(test)]
 mod tests;
 
+/// Defines the `SHA256_LENGTH` bound used by this subsystem.
 const SHA256_LENGTH: usize = 32;
 
 /// A verified repository generation independent of its wire encoding.
@@ -23,6 +24,7 @@ pub struct DurableGeneration {
 }
 
 impl DurableGeneration {
+    /// Performs the `is_valid` operation for this subsystem.
     pub(crate) fn is_valid(self) -> bool {
         self.version != 0 && self.length != 0 && self.digest != [0; SHA256_LENGTH]
     }
@@ -65,11 +67,17 @@ pub enum PersistenceError<E> {
 
 /// Coordinates candidate publication without assuming a filesystem or board.
 pub struct PersistenceCoordinator<S> {
+    /// Stores the `storage` value for this bounded state.
     storage: S,
+    /// Stores the `state` value for this bounded state.
     state: PersistenceState,
+    /// Stores the `active_slot` value for this bounded state.
     active_slot: JournalSlot,
+    /// Stores the `active_generation` value for this bounded state.
     active_generation: DurableGeneration,
+    /// Stores the `candidate` value for this bounded state.
     candidate: Option<DurableGeneration>,
+    /// Stores the `next_sequence` value for this bounded state.
     next_sequence: u64,
 }
 
@@ -184,6 +192,7 @@ where
         self.storage
     }
 
+    /// Performs the `record` operation for this subsystem.
     fn record(
         &mut self,
         state: CommitJournalState,
@@ -202,6 +211,7 @@ where
         record
     }
 
+    /// Performs the `inactive_slot` operation for this subsystem.
     fn inactive_slot(&self) -> JournalSlot {
         match self.active_slot {
             JournalSlot::A => JournalSlot::B,
@@ -209,6 +219,7 @@ where
         }
     }
 
+    /// Performs the `inactive_artifact` operation for this subsystem.
     fn inactive_artifact(&self) -> DurableArtifact {
         match self.inactive_slot() {
             JournalSlot::A => DurableArtifact::SlotA,
@@ -216,6 +227,7 @@ where
         }
     }
 
+    /// Performs the `write_journal_pair` operation for this subsystem.
     fn write_journal_pair(
         &mut self,
         first: &CommitJournalRecord,
