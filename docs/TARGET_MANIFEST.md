@@ -159,8 +159,11 @@ An isolation manifest may also declare ordered slots with repeated
 The first declared slot must preserve the active single-application code/data
 contract until the loader and MPU switch to slot selection. The explicit `id`
 is the package-facing identity and must remain stable if declarations are
-reordered. Slot declarations are metadata only until that implementation is
-completed; they do not enable multiple applications or context switching.
+reordered. Slot declarations are metadata and do not by themselves enable
+multiple applications or context switching. The feature-gated ABI v3
+scheduler and F405 backend provide the separately validated context/MPU
+switching path; complete production lifecycle and ownership policy remain
+outside this manifest.
 
 When present, the code and data regions must be contiguous, begin at
 `application_origin`, and end at the application boundary. They are metadata

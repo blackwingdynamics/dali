@@ -512,8 +512,8 @@ distinguished from the kernel's fault and recovery records.
 - [x] F405 GDB hardware evidence verified repeated PendSV CPU switching: PSP
   alternated between slot0 (`0x2000CFB8`) and slot1 (`0x20014FB8`) stack
   ranges, while slot0 progress reached `0x26A` and slot1 progress reached
-  `0x2F4`. This proves repeated CPU context execution, but not MPU region
-  switching or cross-slot memory isolation.
+  `0x2F4`. Slot-specific MPU region switching is verified separately below;
+  this evidence does not by itself prove cross-slot memory isolation.
 - [x] F405 GDB hardware evidence verified MPU region switching at
   `restore_selected`: slot0 used code/data bases
   `0x20008000`/`0x2000C000`, and slot1 used `0x20010000`/`0x20014000`.
@@ -525,7 +525,7 @@ distinguished from the kernel's fault and recovery records.
   application read slot0 code origin `0x20008000` and the kernel reported
   `MemManage status=0x00000082 address=Some(536903680)`, followed by
   `Faulted`, `Recovering`, and `Terminated`. This proves CPU MPU rejection of
-  a slot1-to-slot0 read, but not DMA isolation or faulted-context scheduling.
+  a slot1-to-slot0 read, but not DMA isolation or complete application policy.
 - [x] F405 hardware ran the two-package fault-recovery fixture with
   `abi-context-switch,abi-relocation`. GDB observed the slot1 entry breakpoint
   once, stopped in `recover_faulted_context`, and then observed slot0 progress

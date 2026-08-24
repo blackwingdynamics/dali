@@ -1,9 +1,9 @@
 # F405 DMA isolation diagnostic fixture
 
-`apps/dali-app-dma-denial` is a non-production ABI v4 application fixture. It
-requests the test-only DMA service through the normal SVC gateway. The kernel
-must reject the request and the fixture then logs the target-visible acceptance
-message.
+`apps/dali-app-dma-denial` is a non-production AMRN format v4 / ABI v3
+application fixture. It requests the test-only DMA service through the normal
+SVC gateway. The kernel must reject the request and the fixture then logs the
+target-visible acceptance message.
 
 The F405 diagnostic feature publishes `DMA_TRACE_MARKER` in the
 manifest-declared DMA section. The marker changes to `0xD1A00001` after DMA2

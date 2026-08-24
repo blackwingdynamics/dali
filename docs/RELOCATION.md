@@ -114,8 +114,9 @@ The final 32 KiB remains the target's runtime/shared-memory reserve.
 
 The manifest-owned slot table now drives the application linker, package
 contract, loader, and MPU slot boundaries. The slot manager must never infer
-slots from arithmetic on addresses. Concurrent allocation, restart, and
-context switching remain future work.
+slots from arithmetic on addresses. The feature-gated ABI v3 scheduler can
+switch declared contexts on F405; concurrent allocation, restart, and
+production lifecycle policy remain future work.
 
 ## Required evidence before implementation
 

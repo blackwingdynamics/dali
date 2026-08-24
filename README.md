@@ -11,8 +11,9 @@ The project is named after Dali, the Georgian goddess of the hunt. Its applicati
 ## Status
 
 Dali OS `0.1.0-alpha.1` is the first accepted F405 MVP release. The project
-also contains a feature-gated ABI v3 single-application isolation path and an
-AMRN v4 identity/relocation loader; these remain post-MVP platform features.
+also contains a feature-gated ABI v3 processor-isolation and multi-context
+execution path, plus AMRN format v4 identity/relocation and format v5 signed
+package paths; these remain post-MVP platform features.
 
 The accepted baseline targets the WeAct Studio STM32F405RGT6 Core Board and
 proves that the kernel can:
@@ -24,12 +25,13 @@ proves that the kernel can:
 - transfer control to the documented application entry point.
 
 The baseline ABI v2 application is trusted native code. The feature-gated F405
-path provides hardware-evidenced processor-side MPU isolation for one
-application, bounded kernel-owned SDIO DMA policy, signed AMRN/repository
-verification, anti-rollback admission, watchdog Safe Mode recovery, and
-bounded storage-card recovery. These are scoped implementation claims, not
-complete sandboxing, arbitrary DMA isolation, pre-reset Secure Boot, or
-multi-application isolation.
+path provides hardware-evidenced ABI v3 PSP/SysTick/PendSV context switching,
+MPU region switching, faulted-context retirement, bounded kernel-owned SDIO
+DMA policy, AMRN v5 signed package/repository verification, anti-rollback
+admission, watchdog Safe Mode recovery, and bounded storage-card recovery.
+These are scoped implementation claims, not complete sandboxing, arbitrary DMA
+isolation, pre-reset Secure Boot, production multi-application lifecycle
+policy, or general multi-target portability.
 
 The `dali.secure-boot.v1` image contract is implemented and host-tested, but
 pre-reset ROM/first-stage bootloader enforcement remains future work.

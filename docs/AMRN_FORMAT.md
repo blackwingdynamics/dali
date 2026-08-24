@@ -143,10 +143,12 @@ never accepted from the package. The application starts unprivileged and can
 reach kernel services only through the ABI v3 SVC gateway.
 
 The v3 launch frame, PSP bounds, SVC gateway, and documented fault cases have
-host and F405 evidence for the feature-gated ABI v3 path. This evidence does
-not establish complete sandboxing, DMA isolation, or multi-application
-execution. A v1 package must continue to follow the single-image ABI v2 rules
-above.
+host and F405 evidence for the feature-gated ABI v3 path. F405 evidence also
+covers the associated PSP/SysTick/PendSV context-switching and slot-specific
+MPU region-switching path. This evidence does not establish complete
+sandboxing, arbitrary DMA isolation, or a complete production
+multi-application lifecycle. A v1 package must continue to follow the
+single-image ABI v2 rules above.
 
 ## Relocatable package contract (format version 3, feature-gated loader)
 
@@ -215,9 +217,10 @@ the standalone relocation fixture package. The USB CDC console reported:
 This verifies the feature-gated format 3 stream, package validation, and
 application entry path on the reference hardware. The fixture later executed
 with a non-zero relocation delta in the manifest-declared second slot. Runtime
-slot reservation exists for the single loaded application; concurrent
-allocation, release after termination, and context switching remain future
-work.
+slot reservation exists for the single loaded application. The feature-gated
+ABI v3 scheduler and F405 backend separately provide declared context
+switching; concurrent allocation, release after termination, and production
+lifecycle policy remain future work.
 
 ## Post-MVP extensions
 

@@ -69,21 +69,25 @@ silently changing ABI v2. The implemented boundary is:
   function pointers;
 - MemManage, BusFault, UsageFault, and invalid exception returns are handled by
   a kernel-owned fault boundary;
-- shared memory and application scheduling remain unsupported until their
-  layouts and ownership rules are separately specified.
+- shared memory and general-purpose application lifecycle policy remain
+  unsupported until their layouts, ownership, and recovery rules are
+  separately specified.
 
 The SVC frame, service identifier encoding, PSP layout, fault recovery state,
 and application memory regions are specified in this document and covered by
-host tests plus the recorded F405 hardware evidence below. No ABI v4 or
-multi-application contract is enabled.
+host tests plus the recorded F405 hardware evidence below. AMRN format v4 and
+v5 are package-format revisions, not ABI revisions. No separate ABI v4 or
+production multi-application contract is enabled.
 
 ## Feature-gated ABI v3 boundary
 
 ABI v3 is feature-gated and is not the default kernel execution path. ABI v2
 remains the default. ABI v3 requires explicit feature selection and is still
-an experimental single-application isolation path. The processor-side fault
-cases and repeated invalid-PSP recovery are hardware-tested; watchdog and
-lifecycle policy, DMA isolation, and multi-application isolation remain open.
+an experimental F405 path. Its PSP/SysTick/PendSV context switching and
+slot-specific MPU region switching are hardware-verified for declared
+contexts, as are the processor-side fault cases and repeated invalid-PSP
+recovery. General lifecycle policy, DMA isolation, and production
+multi-application isolation remain open.
 
 The source code uses the central `abi-current` selector and the version-neutral
 `abi-mpu` and `abi-relocation` capabilities. These are the only ABI-related
@@ -124,17 +128,21 @@ Discovered -> Loaded -> Ready -> Running -> Faulted -> Recovering -> Terminated
 
 Each transition is explicit and invalid transitions are rejected. A declared
 slot must match the slot allocation recorded at load time. `Terminated` is a
-terminal state: the current runtime does not implicitly restart an application,
-schedule another application, or switch MPU contexts. Those behaviors require
-separate lifecycle, scheduler, and protection contracts.
+terminal state: the current runtime does not implicitly restart an application
+or expose general lifecycle orchestration. The feature-gated scheduler can
+explicitly select another declared ready context after a supported handoff or
+fault recovery; production lifecycle and protection policy remain separate
+contracts.
 
 ### Active context ownership foundation
 
-The runtime currently permits at most one active application context. A ready
-lifecycle must be explicitly activated before it can enter `Running`, and a
-second activation is rejected. The active context retains the package identity
-and manifest-owned slot allocation. Retirement is accepted only after the
-lifecycle reaches `Terminated`; no implicit restart or context switch exists.
+The lifecycle owner tracks at most one currently active application context. A
+ready lifecycle must be explicitly activated before it can enter `Running`,
+and a second activation through that owner is rejected. The active context
+retains the package identity and manifest-owned slot allocation. Retirement is
+accepted only after the lifecycle reaches `Terminated`; there is no implicit
+restart. The feature-gated scheduler can explicitly select another declared
+ready context after a supported handoff or fault recovery.
 The v4 loader creates the lifecycle after validated copy and relocation, then
 the launch path performs the `Loaded -> Ready -> Running` transition before
 MPU activation. Legacy v2/v3 package paths retain their existing launch
@@ -149,23 +157,24 @@ watchdog without a bounded feed owner.
 
 The runtime defines a hardware-neutral saved-context record containing the
 application PSP, `r4..r11`, `CONTROL`, and `EXC_RETURN`. Each scheduler record
-also retains the manifest-owned application slot that must accompany the CPU
-state during a future protected switch. A fixed-capacity context table enforces
-one running owner, bounded insertion, terminal exclusion, and
-round-robin-style selection of ready contexts. This is a scheduler contract
-only: SysTick does not yet request a switch, PendSV does not yet save or restore
-multiple contexts, and MPU regions are not switched between applications.
+also retains the manifest-owned application slot that accompanies the CPU
+state during a protected switch. A fixed-capacity context table enforces one
+running owner, bounded insertion, terminal exclusion, and round-robin-style
+selection of ready contexts. The feature-gated F405 path wires SysTick to
+bounded preemption requests, PendSV to save/restore, and slot selection to
+MPU reprogramming. F405 silicon has hardware-verified repeated PSP context
+switching and slot-specific MPU region switching.
 
 The scheduling contract also defines a board-independent tick budget. Each
 target profile declares the platform timer frequency and the quantum in timer
 ticks. The budget emits a one-shot PendSV request when its quantum expires, and
 the deferred handler remains responsible for the actual register save/restore.
 
-The optional `abi-context-switch` feature now provides target-compiled ARM
+The optional `abi-context-switch` feature provides target-compiled ARM
 save/restore primitives for the kernel-owned context record. The primitives do
 not select a context, validate a PSP, program the MPU, or enable an interrupt;
-they remain separate from the default one-context launch path until scheduler
-ownership and validation are integrated.
+those responsibilities remain in the scheduler and platform layers. The
+feature-gated path is separate from the default ABI v2 launch path.
 
 The scheduler facade now owns the bounded sequence around those primitives:
 SysTick records a preemption request, PendSV saves the active record, and the
@@ -212,7 +221,8 @@ The kernel fault boundary updates the shared runtime state atomically through
 state channel records ownership without exposing a mutable application pointer
 to exception handlers. F405 hardware has confirmed the complete transition
 with the v4 invalid-PSP application fixture; this proves lifecycle accounting
-and recovery entry, not restart, scheduling, or complete application isolation.
+and recovery entry, not automatic restart, production lifecycle policy, or
+complete application isolation.
 
 ### SVC gateway
 
@@ -254,9 +264,11 @@ decomposes its 64 KiB application pool into two aligned slots for v3:
 
 The v3 application linker contract places the current application in the
 manifest's active slot (slot 0). The loader and MPU validate that slot before
-copying or launching. Slot 1 is declared and validated by the target contract,
-but concurrent execution and context switching remain future work. The v2
-single-image linker contract remains unchanged for existing packages.
+copying or launching. Slot 1 is declared and validated by the target contract.
+The feature-gated ABI v3 scheduler can execute declared contexts and switch
+their PSP/MPU state on F405; production lifecycle, replacement, restart, and
+application-to-application policy remain future work. The v2 single-image
+linker contract remains unchanged for existing packages.
 
 The initial eight-region budget is:
 
@@ -271,16 +283,16 @@ The initial eight-region budget is:
 | 6 | Future shared service memory | reserved |
 | 7 | Future shared service memory | reserved |
 
-The planned MPU encoding treats application SRAM as normal cacheable,
+The MPU encoding treats application SRAM as normal cacheable,
 bufferable memory and the ordinary peripheral window as shareable device
 memory. These attributes are encoded by the board descriptor; writing the MPU
 registers and selecting the unprivileged context remain separate steps.
 
 This map is enabled only by the explicit `abi-mpu` feature and has been
-hardware-tested for the documented single-application fault cases. It is not
-the default kernel configuration, and the privileged background map and
-default-memory attributes must continue to prevent bypass of the no-access
-boundaries.
+hardware-tested for the documented per-context fault cases and slot-specific
+region switching. It is not the default kernel configuration, and the
+privileged background map and default-memory attributes must continue to
+prevent bypass of the no-access boundaries.
 
 ### ABI v3 package and linker contract
 
@@ -291,8 +303,9 @@ runtime stack reservations. The v2 package contract is defined in
 construction. The CLI can build and inspect ABI v3 packages, and the kernel has
 a feature-gated streaming validator/copy path. The default kernel remains
 ABI v2-only; the feature-gated path is experimental and its hardware evidence
-is complete for the documented single-application F405 cases. It does not
-enable concurrent applications or claim the remaining security guarantees.
+is complete for the documented F405 context-switch and single-context fault
+cases. It does not provide the complete production multi-application
+lifecycle or claim the remaining security guarantees.
 
 For a target selected through the manifest, the linker must emit:
 
@@ -347,8 +360,9 @@ application PSP.
 The feature-gated kernel now defines a bounded `FaultRecord` and diagnostic
 MemManage, BusFault, and UsageFault handlers. These handlers report the SCB
 status and return through a kernel-stack recovery frame to a bounded
-kernel-owned recovery loop. They do not return to an application or scheduler,
-and they do not change ABI v2 behavior.
+kernel-owned recovery loop. They retire the faulted context rather than
+returning to it; the feature-gated scheduler may then select another declared
+ready context. They do not change ABI v2 behavior.
 
 The additional kernel feature `abi-mpu` programs the descriptor-backed MPU
 map during bootstrap and provides the feature-gated PendSV transition into the
@@ -359,9 +373,10 @@ the kernel changes the code region to unprivileged read/execute and the data
 region to unprivileged read/write, execute-never, before entering the PSP
 context. This ordering prevents the protection map from blocking a valid
 kernel-owned load. The default kernel does not enable this path. It provides
-single-application processor-side isolation evidence, but it must not be
-treated as complete application isolation because DMA isolation, lifecycle
-policy, and multi-application isolation remain open.
+feature-gated F405 processor-side context and MPU-switching evidence, but it
+must not be treated as complete production application isolation because DMA
+isolation, lifecycle policy, and application-to-application policy remain
+open.
 
 The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
@@ -369,5 +384,5 @@ separate segments, prepares a kernel-owned launch frame, and materializes its
 basic exception frame inside the validated application stack reservation. Only
 the explicitly enabled `abi-mpu` path selects PSP, activates the descriptor
 backed MPU map, and enters through PendSV; the default kernel does none of
-these. ABI v3 host packages cannot be treated as isolated until fault recovery
-and F405 fault-injection evidence are complete.
+these. ABI v3 host packages cannot be treated as production-isolated because
+complete lifecycle, DMA, and application-to-application policy remain open.

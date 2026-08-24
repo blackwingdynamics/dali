@@ -287,7 +287,9 @@ target-scaffold.md
   adapter separately.
 - `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state,
   manifest-slot-bound scheduler records, and bounded context selection;
-  PendSV/SysTick handlers and MPU switching remain separate hardware work.
+  PendSV/SysTick handlers and MPU switching are implemented by the F405
+  backend; equivalent implementations for other MCU families remain future
+  platform work.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
 - `crates/dali-cli/src/commands/` owns top-level dispatch and groups related

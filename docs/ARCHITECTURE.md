@@ -48,21 +48,25 @@ The first milestone proves one complete path on a single reference board:
 The baseline ABI v2 application is a RAM-loaded native module, not a sandboxed
 process. The first application does not use interrupts or a scheduler; its
 only kernel service is the bounded logging entry defined by ABI v2. The
-feature-gated ABI v3 path adds processor-side isolation for one application;
-its remaining limitations are recorded below.
+feature-gated ABI v3 path adds processor-side isolation, PSP-based context
+switching, and MPU region switching for declared application contexts; its
+remaining limitations are recorded below.
 
-The first post-MVP isolation milestone is a feature-gated single-application
-F405 execution mode. It implements privileged kernel bootstrap, unprivileged
-application Thread mode, PSP ownership, MPU regions, SVC-based services, and a
-kernel-owned fault boundary. These processor-side mechanisms and their listed
-fault-injection cases have F405 evidence, but the result must not be described
-as a microkernel, secure boot, or complete sandbox: arbitrary DMA-controller
-and multi-application isolation remain open. The current lifecycle policy requires
-manual reset after termination, does not provide rollback on read-only storage,
-and arms the hardware watchdog before opaque storage-transport initialization,
-so a vendor HAL polling hang becomes bounded Safe Mode recovery. Block reads,
-repository loading, and application execution remain covered by the watchdog
-heartbeat and bounded storage/verification progress hooks.
+The first post-MVP isolation milestone is a feature-gated F405 execution mode.
+It implements privileged kernel bootstrap, unprivileged application Thread
+mode, PSP ownership, SysTick/PendSV context switching, slot-specific MPU
+region switching, SVC-based services, and a kernel-owned fault boundary. These
+processor-side mechanisms and their listed fault-injection cases have F405
+hardware evidence, but the result must not be described as a microkernel,
+secure boot, complete sandbox, or production multi-application isolation:
+arbitrary DMA-controller isolation, complete application lifecycle policy,
+and application-to-application policy remain open. The current lifecycle
+policy requires manual reset after termination, does not provide rollback on
+read-only storage, and arms the hardware watchdog before opaque
+storage-transport initialization, so a vendor HAL polling hang becomes
+bounded Safe Mode recovery. Block reads, repository loading, and application
+execution remain covered by the watchdog heartbeat and bounded
+storage/verification progress hooks.
 
 ## 4. Reference platform
 
@@ -142,10 +146,13 @@ The post-v4 multi-application phase adds a bounded, hardware-neutral package
 catalog at the loader boundary. It accepts only headers already validated
 against a target manifest, rejects duplicate identities and occupied slots,
 and selects by manifest slot rather than directory order or filename. The
-loader can now copy each accepted identity package into its own declared slot
-and retain bounded loaded-context metadata, but the runtime still enters only
-the first context. This does not enable concurrent application execution or
-context switching; legacy ABI paths keep the single-package policy.
+loader can copy each accepted identity package into its own declared slot and
+retain bounded loaded-context metadata. The feature-gated ABI v3 F405 path
+also provides hardware-verified SysTick/PendSV context switching and
+slot-specific MPU region switching for those declared contexts. This remains
+an experimental execution path: the default ABI v2 path is single-package,
+and production multi-application lifecycle, replacement, restart, and
+application-to-application policy are not complete.
 
 The hardware-independent `dali-amrn` crate exposes header decoding and payload
 validation separately as well as a contiguous-package convenience API. The
@@ -233,8 +240,10 @@ An MVP application must:
 
 Native execution in a shared address space is intentionally a baseline ABI v2
 limitation. ABI v3 provides a separate feature-gated processor-side boundary
-for one application. Its bounded F405 SDIO DMA policy is separate from general
-DMA isolation, and multi-application isolation remains open.
+with F405 hardware-verified PSP/SysTick/PendSV context switching and MPU
+region switching for declared contexts. Its bounded F405 SDIO DMA policy is
+separate from general DMA isolation, and complete production multi-application
+lifecycle and resource isolation remain open.
 
 ## 8. `.amrn` package format
 
@@ -272,10 +281,12 @@ The loader must reject:
 - a CRC32 mismatch;
 - an entry point outside the payload.
 
-Digital signatures, manifests, version compatibility, and anti-rollback exist
-in the feature-gated post-MVP repository path; they are not part of the
-baseline ABI v2 package contract. Encryption and pre-reset kernel-image Secure
-Boot remain future work.
+AMRN v5 digital signatures, manifests, version compatibility, revocation, and
+anti-rollback exist in the feature-gated post-MVP repository path; they are not
+part of the baseline ABI v2 package contract. F405 hardware evidence covers
+signed package verification and anti-rollback, while target-side revoked-key
+acceptance, production root-key custody enforcement, and pre-reset
+kernel-image Secure Boot remain future work.
 
 ## 9. RAM loading and execution
 
@@ -420,17 +431,19 @@ assembler. `load_repository_package()` is the boot handoff: it injects the F405
 adapter into the generic chain and then opens only the digest-selected package
 for the existing execution pipeline.
 
-### Future multi-application package selection
+### Production multi-application policy
 
 The legacy root-file path intentionally accepts exactly one root `.amrn`
 package and rejects ambiguous selection. The feature-gated Binary v2
 repository path already selects multiple executable Targets records within a
 bounded capacity and maps each verified package to a manifest-owned slot.
-Before that path can become a general multi-application policy, Dali must
-define lifecycle, replacement, and recovery behavior for missing, duplicate,
-incompatible, or already-reserved packages. The slot manager must consume
-validated selection; it must not infer ownership from directory order or
-package names.
+The feature-gated runtime can execute declared contexts through its
+hardware-verified scheduler and MPU switching path, but it is not yet a
+general production multi-application policy. Dali must still define lifecycle,
+replacement, restart, recovery, and application-to-application behavior for
+missing, duplicate, incompatible, or already-reserved packages. The slot
+manager must consume validated selection; it must not infer ownership from
+directory order or package names.
 
 ## 11. Future kernel architecture
 
@@ -441,7 +454,8 @@ After the MVP, the platform can grow toward:
 - service discovery and capability policy;
 - watchdog heartbeats and deadline monitoring;
 - application lifecycle management;
-- extension of the current MPU boundary to multiple applications where supported;
+- production multi-application lifecycle, ownership, and resource policy on
+  top of the current feature-gated MPU/context-switching capability;
 - signed packages and secure boot;
 - A/B updates and rollback;
 - `dali` CLI workflows.

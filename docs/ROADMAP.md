@@ -22,8 +22,10 @@ canonical records are [`docs/TESTING.md`](TESTING.md),
 
 The completed security claims are scoped to the configured STM32F405 path.
 They do not claim arbitrary DMA-controller isolation, confidentiality,
-multi-application isolation, or pre-reset Secure Boot. The baseline ABI v2
-application remains trusted native code.
+complete production multi-application isolation, or pre-reset Secure Boot.
+The feature-gated ABI v3 context-switching and MPU-switching path remains an
+experimental platform capability, while the baseline ABI v2 application
+remains trusted native code.
 
 ## Working rule
 

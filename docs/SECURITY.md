@@ -28,11 +28,13 @@ interrupts and provides only the bounded ABI v2 logging service.
 
 ## Current isolation boundary
 
-The feature-gated ABI v3 path provides a tested single-application processor
-boundary on the STM32F405: unprivileged Thread mode, PSP ownership, MPU code
-and data permissions, an SVC gateway, and kernel-owned fault recovery. This is
-not enabled by default and does not turn the baseline ABI v2 path into a
-sandbox.
+The feature-gated ABI v3 path provides a tested processor boundary on the
+STM32F405: unprivileged Thread mode, PSP ownership, MPU code and data
+permissions, an SVC gateway, and kernel-owned fault recovery. F405 silicon
+also hardware-verifies PSP/SysTick/PendSV context switching and slot-specific
+MPU region switching for declared application contexts. This path is not
+enabled by default and does not turn the baseline ABI v2 path into a sandbox
+or complete production multi-application isolation.
 
 The F405 evidence covers kernel/peripheral access rejection, execute-never
 rejection, invalid PSP entry, SVC rejection, precise BusFault decoding,
@@ -49,8 +51,10 @@ The following remain outside the current guarantee boundary:
 - production key custody, debug-lock policy, and power-loss recovery;
 - confidentiality for native application images.
 
-The configured feature-gated F405 repository path does provide signed
-AMRN/repository verification and durable generation anti-rollback checks. The
+The configured feature-gated F405 repository path provides AMRN v5
+signed-package/repository verification and durable generation anti-rollback
+checks. Trust-store revocation policy is implemented and host-tested; target-
+side revoked-developer-key acceptance remains a separate hardware test. The
 F405 evidence is limited to that configured path and must not be generalized
 to every target or package mode.
 
@@ -90,17 +94,18 @@ applying its generation admission policy. Existing trust-store verification
 continues to apply rotation overlap, signed revocation state, metadata expiry
 when trusted time is available, and durable generation rollback checks.
 
-## F405 isolation foundation (feature-gated, single-application hardware evidence)
+## F405 isolation foundation (feature-gated, context-switching hardware evidence)
 
-The first isolation milestone is limited to one F405 application. It uses
-the Cortex-M4 privilege model and MPU to prevent unprivileged application code
-from accessing kernel RAM, kernel runtime stack, or ordinary peripheral
-registers. Application services use an SVC gateway rather than direct
-privileged function calls.
+The first isolation milestone is limited to the F405 backend and its declared
+application contexts. It uses the Cortex-M4 privilege model and MPU to
+prevent unprivileged application code from accessing kernel RAM, kernel
+runtime stack, or ordinary peripheral registers. Application services use an
+SVC gateway rather than direct privileged function calls.
 
-The feature-gated ABI v3 path now implements the single-application MPU map,
-explicit system-fault exception enablement, unprivileged PSP launch, SVC
-logging gateway, and kernel-owned fault recovery.
+The feature-gated ABI v3 path now implements the per-context MPU map, explicit
+system-fault exception enablement, unprivileged PSP launch, SysTick/PendSV
+context switching, slot-specific MPU region switching, SVC logging gateway,
+and kernel-owned fault recovery.
 The fault-injection fixtures cover kernel-RAM reads and writes,
 peripheral-MMIO reads and writes, execute-never instruction fetches, invalid
 PSP exception-entry bounds, malformed SVC requests, and a precise BusFault.
