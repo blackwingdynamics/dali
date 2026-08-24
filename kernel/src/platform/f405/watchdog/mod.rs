@@ -5,7 +5,9 @@ use stm32f4xx_hal::{pac, watchdog::IndependentWatchdog};
 
 use crate::runtime::watchdog::{ResetCause, WatchdogBackend};
 
+/// Defines the IWDG CONTROLLER used by this module.
 const IWDG_CONTROLLER: &str = "IWDG";
+/// Defines the MAX HAL TIMEOUT MS used by this module.
 const MAX_HAL_TIMEOUT_MS: u32 = 32_767;
 
 /// Errors raised while configuring the F405 IWDG peripheral.
@@ -22,7 +24,9 @@ pub enum F405WatchdogError {
 
 /// F405 IWDG backend with the reset cause captured during early bootstrap.
 pub struct F405Watchdog {
+    /// Stores the watchdog associated with this bounded state.
     watchdog: IndependentWatchdog,
+    /// Stores the reset cause associated with this bounded state.
     reset_cause: ResetCause,
     #[cfg(feature = "watchdog-feed-failure-test")]
     feed_failure_pending: bool,

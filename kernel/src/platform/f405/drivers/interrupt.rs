@@ -11,13 +11,20 @@ use stm32f4xx_hal::{
 
 /// Concrete F405 input pin bound to one EXTI line and its callback hook.
 pub struct F405ExtiPin<const PORT: char, const PIN: u8> {
+    /// Stores the pin associated with this bounded state.
     pin: Pin<PORT, PIN, Input>,
+    /// Stores the exti associated with this bounded state.
     exti: EXTI,
+    /// Stores the callback associated with this bounded state.
     callback: Option<InterruptCallback>,
+    /// Stores the enabled associated with this bounded state.
     enabled: bool,
 }
 
 impl<const PORT: char, const PIN: u8> F405ExtiPin<PORT, PIN> {
+    /// Performs the `helper` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     const PENDING_MASK: u32 = 1_u32 << PIN;
 
     /// Binds a floating/input pin to the platform-owned EXTI and SYSCFG.
@@ -31,6 +38,12 @@ impl<const PORT: char, const PIN: u8> F405ExtiPin<PORT, PIN> {
         }
     }
 
+    /// Performs the `edge` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+    ///
+    /// # Errors
+    /// Returns a typed error when validation, state, or hardware access fails.
     fn edge(trigger: InterruptTrigger) -> DriverResult<Edge> {
         match trigger {
             InterruptTrigger::RisingEdge => Ok(Edge::Rising),

@@ -8,8 +8,11 @@ use stm32f4xx_hal::gpio::{DynamicPin, PinState};
 
 /// GPIO adapter that owns one dynamically configurable F405 pin.
 pub(crate) struct F405GpioPin<const PORT: char, const PIN: u8> {
+    /// Stores the pin associated with this bounded state.
     pin: DynamicPin<PORT, PIN>,
+    /// Stores the mode associated with this bounded state.
     mode: GpioMode,
+    /// Stores the output high associated with this bounded state.
     output_high: bool,
 }
 
@@ -24,10 +27,19 @@ impl<const PORT: char, const PIN: u8> F405GpioPin<PORT, PIN> {
         }
     }
 
+    /// Maps the `map pin error` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn map_pin_error(_: impl Copy) -> DriverError {
         DriverError::InvalidState
     }
 
+    /// Requires the `require output` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+    ///
+    /// # Errors
+    /// Returns a typed error when validation, state, or hardware access fails.
     fn require_output(&self) -> DriverResult<()> {
         if self.mode == GpioMode::Output {
             Ok(())

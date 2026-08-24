@@ -97,6 +97,9 @@ use stm32f4xx_hal::pac::interrupt;
 const USER_KEY_EXTI_MASK: u32 = 1_u32 << 13;
 
 #[cfg(feature = "usb-cdc")]
+/// Performs the `helper` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 #[interrupt]
 fn OTG_FS() {
     crate::logging::service_usb_irq();

@@ -13,7 +13,9 @@ use stm32f4xx_hal::{
 
 /// F405 SDIO transport implementing the generic driver contract.
 pub struct Stm32f405SdioTransport {
+    /// Stores the device associated with this bounded state.
     _device: RefCell<Sdio<SdCard>>,
+    /// Stores the raw associated with this bounded state.
     raw: RefCell<RawSdioReader>,
 }
 
