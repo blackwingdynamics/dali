@@ -17,6 +17,8 @@ pub enum DriverError {
     InvalidState,
     /// The underlying device is absent or disconnected.
     Disconnected,
+    /// The display is absent or cannot be addressed on its bus.
+    DisplayUnavailable,
     /// The hardware cannot complete the operation without blocking.
     WouldBlock,
     /// The serial peripheral detected a framing error.

@@ -37,6 +37,8 @@ pub struct TargetProfile {
     pub clock: ClockProfile,
     /// I2C bus configuration declared by the target manifest.
     pub i2c: I2cProfile,
+    /// Display configuration declared by the target manifest.
+    pub display: DisplayProfile,
     /// Acceptance probe configuration declared by the target manifest.
     pub driver_probe: DriverProbeProfile,
     /// Board memory regions used by the kernel and applications.
@@ -138,6 +140,25 @@ pub struct ClockProfile {
 pub struct I2cProfile {
     /// Target I2C bus frequency in hertz.
     pub bus_frequency_hz: u32,
+}
+
+/// I2C OLED display configuration declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DisplayProfile {
+    /// Display controller identifier.
+    pub controller: &'static str,
+    /// Logical I2C address used for display transactions.
+    pub i2c_address: u8,
+    /// Display pixel width.
+    pub width: usize,
+    /// Display pixel height.
+    pub height: usize,
+    /// Width of one text cell in pixels.
+    pub text_cell_width: usize,
+    /// Height of one text cell in pixels.
+    pub text_cell_height: usize,
+    /// Maximum timeout used by one display operation.
+    pub timeout_ticks: u32,
 }
 
 /// Hardware acceptance probe configuration declared by a target manifest.
@@ -346,6 +367,13 @@ mod tests {
         assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.number, 2);
+        assert_eq!(SUPPORTED_TARGETS[0].display.controller, "SSD1306");
+        assert_eq!(SUPPORTED_TARGETS[0].display.i2c_address, 0x3C);
+        assert_eq!(SUPPORTED_TARGETS[0].display.width, 128);
+        assert_eq!(SUPPORTED_TARGETS[0].display.height, 64);
+        assert_eq!(SUPPORTED_TARGETS[0].display.text_cell_width, 8);
+        assert_eq!(SUPPORTED_TARGETS[0].display.text_cell_height, 8);
+        assert_eq!(SUPPORTED_TARGETS[0].display.timeout_ticks, 100);
         assert!(SUPPORTED_TARGETS[0].status_led.active_high);
         assert!(SUPPORTED_TARGETS[0].capabilities.storage);
         assert!(SUPPORTED_TARGETS[0].capabilities.usb_console);

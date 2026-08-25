@@ -1,5 +1,7 @@
 //! F405 board metadata, type aliases, and compile-time contract checks.
 
+#[cfg(feature = "display-oled")]
+use super::super::drivers::ssd1306::F405Ssd1306;
 use super::super::drivers::{F405ExtiPin, F405GpioPin};
 #[cfg(feature = "abi-current")]
 use dali_targets::MemoryProfile;
@@ -60,6 +62,22 @@ const USER_KEY_PIN: u8 = TARGET_F405.user_key.pin;
 
 /// Board user-key input bound to the manifest-selected EXTI line.
 pub type UserKey = F405ExtiPin<USER_KEY_PORT, USER_KEY_PIN>;
+
+/// Optional F405 OLED type selected by the manifest-owned geometry.
+#[cfg(feature = "display-oled")]
+pub type OledDisplay = F405Ssd1306<
+    { TARGET_F405.display.width },
+    { TARGET_F405.display.height },
+    { TARGET_F405.display.width / TARGET_F405.display.text_cell_width },
+    { TARGET_F405.display.height / TARGET_F405.display.text_cell_height },
+>;
+
+/// Number of text columns derived from the manifest-owned OLED geometry.
+#[cfg(feature = "display-oled")]
+pub const DISPLAY_COLUMNS: usize = TARGET_F405.display.width / TARGET_F405.display.text_cell_width;
+/// Number of text rows derived from the manifest-owned OLED geometry.
+#[cfg(feature = "display-oled")]
+pub const DISPLAY_ROWS: usize = TARGET_F405.display.height / TARGET_F405.display.text_cell_height;
 
 /// SDIO pins owned by the kernel after board initialization.
 pub type SdioPins = (

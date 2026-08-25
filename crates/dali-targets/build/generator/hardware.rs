@@ -18,6 +18,19 @@ pub(super) fn generate_i2c(i2c: &I2c) -> String {
     )
 }
 
+pub(super) fn generate_display(display: &super::super::manifest::Display) -> String {
+    format!(
+        "DisplayProfile {{ controller: {}, i2c_address: {}, width: {}, height: {}, text_cell_width: {}, text_cell_height: {}, timeout_ticks: {} }}",
+        string_literal(&display.controller),
+        display.i2c_address,
+        display.width,
+        display.height,
+        display.text_cell_width,
+        display.text_cell_height,
+        display.timeout_ticks,
+    )
+}
+
 pub(super) fn generate_driver_probe(probe: &DriverProbe) -> String {
     format!(
         "DriverProbeProfile {{ uart_baud_rate_hz: {}, spi_clock_hz: {}, timeout_ticks: {}, polls_per_timeout_tick: {}, timer_timeout_divisor: {}, timer_evidence_poll_limit: {}, buffer_length: {}, spi_fill_byte: {}, spi_device_id: {}, i2c_address: {} }}",

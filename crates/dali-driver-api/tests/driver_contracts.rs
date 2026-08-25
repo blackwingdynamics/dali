@@ -3,15 +3,33 @@ mod mock;
 use core::sync::atomic::{AtomicU8, Ordering};
 
 use dali_driver_api::{
-    BaudRate, BoundedTimeout, CountDown, DataBits, DriverError, Duration, GpioMode, I2cAddress,
-    I2cDriver, InputPin, InterruptPin, InterruptTrigger, OutputPin, Parity, PinMode, SerialConfig,
-    SerialConfigure, SerialOwnership, SerialRead, SerialWrite, SpiBusOwnership, SpiDeviceId,
-    SpiDeviceSelect, SpiTransfer, StopBits, TimerDriver,
+    BaudRate, BoundedTimeout, CountDown, DataBits, DiagnosticsConsole, DisplayDriver, DriverError,
+    Duration, GpioMode, I2cAddress, I2cDriver, InputPin, InterruptPin, InterruptTrigger, OutputPin,
+    Parity, PinMode, SerialConfig, SerialConfigure, SerialOwnership, SerialRead, SerialWrite,
+    SpiBusOwnership, SpiDeviceId, SpiDeviceSelect, SpiTransfer, StopBits, TextPosition,
+    TimerDriver,
 };
-use mock::{I2cOperation, MockGpio, MockI2c, MockSerial, MockSpi, MockTimer};
+use mock::{
+    DisplayCommand, I2cOperation, MockDisplay, MockGpio, MockI2c, MockSerial, MockSpi, MockTimer,
+};
 
 const TIMER_LIMIT: Duration = Duration::from_ticks(100);
 const VALID_TIMEOUT: Duration = Duration::from_ticks(10);
+const DISPLAY_WIDTH: usize = 128;
+const DISPLAY_HEIGHT: usize = 64;
+const DISPLAY_COLUMNS: usize = 4;
+const DISPLAY_ROWS: usize = 2;
+const DISPLAY_BUFFER_CAPACITY: usize = DISPLAY_COLUMNS * DISPLAY_ROWS;
+const DISPLAY_COMMAND_CAPACITY: usize = 8;
+
+type TestDisplay = MockDisplay<
+    DISPLAY_WIDTH,
+    DISPLAY_HEIGHT,
+    DISPLAY_COLUMNS,
+    DISPLAY_ROWS,
+    DISPLAY_BUFFER_CAPACITY,
+    DISPLAY_COMMAND_CAPACITY,
+>;
 
 static CALLBACK_COUNT: AtomicU8 = AtomicU8::new(0);
 
@@ -310,4 +328,132 @@ fn timer_driver_reports_lifecycle_state() {
     assert!(timer.is_expired().unwrap());
     timer.stop().unwrap();
     assert!(!timer.is_running().unwrap());
+}
+
+#[test]
+fn display_text_is_clipped_to_the_typed_text_grid() {
+    let mut display = TestDisplay::new(TIMER_LIMIT);
+    display.initialize(VALID_TIMEOUT).unwrap();
+
+    display
+        .write_text(
+            TextPosition::new(DISPLAY_COLUMNS - 1, DISPLAY_ROWS - 1),
+            b"AB",
+            VALID_TIMEOUT,
+        )
+        .unwrap();
+
+    assert_eq!(display.buffer[DISPLAY_BUFFER_CAPACITY - 1], b'A');
+    assert_eq!(
+        display.buffer[..DISPLAY_BUFFER_CAPACITY - 1],
+        [0, 0, 0, 0, 0, 0, 0]
+    );
+    assert_eq!(display.dimensions().width(), DISPLAY_WIDTH);
+    assert_eq!(display.dimensions().height(), DISPLAY_HEIGHT);
+    assert_eq!(display.text_properties().columns(), DISPLAY_COLUMNS);
+    assert_eq!(display.text_properties().rows(), DISPLAY_ROWS);
+}
+
+#[test]
+fn display_records_the_bounded_command_sequence() {
+    let mut display = TestDisplay::new(TIMER_LIMIT);
+    display.initialize(VALID_TIMEOUT).unwrap();
+    display.clear(VALID_TIMEOUT).unwrap();
+    display
+        .write_text(TextPosition::new(0, 0), b"OK", VALID_TIMEOUT)
+        .unwrap();
+    display.flush(VALID_TIMEOUT).unwrap();
+
+    assert_eq!(
+        display.commands[..display.command_count],
+        [
+            Some(DisplayCommand::Initialize),
+            Some(DisplayCommand::Clear),
+            Some(DisplayCommand::WriteText),
+            Some(DisplayCommand::Flush),
+        ]
+    );
+}
+
+#[test]
+fn display_flush_propagates_bounded_timeout_and_bus_errors() {
+    let mut display = TestDisplay::new(TIMER_LIMIT);
+    display.initialize(VALID_TIMEOUT).unwrap();
+
+    display.timed_out = true;
+    assert_eq!(display.flush(VALID_TIMEOUT), Err(DriverError::Timeout));
+    display.timed_out = false;
+    display.bus_error = true;
+    assert_eq!(display.flush(VALID_TIMEOUT), Err(DriverError::BusError));
+}
+
+#[test]
+fn display_unavailable_state_can_be_recovered_with_reset_and_reinitialization() {
+    let mut display = TestDisplay::new(TIMER_LIMIT);
+    display.connected = false;
+    assert_eq!(
+        display.initialize(VALID_TIMEOUT),
+        Err(DriverError::DisplayUnavailable)
+    );
+
+    display.connected = true;
+    display.reset(VALID_TIMEOUT).unwrap();
+    display.initialize(VALID_TIMEOUT).unwrap();
+    assert_eq!(display.command_count, 2);
+}
+
+#[test]
+fn diagnostics_console_clips_lines_and_tracks_cursor() {
+    let mut console = DiagnosticsConsole::<DISPLAY_COLUMNS, DISPLAY_ROWS>::new();
+    console.write(b"12345");
+
+    assert_eq!(console.cursor(), TextPosition::new(DISPLAY_COLUMNS, 0));
+    assert!(console.overflowed());
+    assert_eq!(console.row(0), Some(b"1234"));
+}
+
+#[test]
+fn diagnostics_console_scrolls_deterministically() {
+    let mut console = DiagnosticsConsole::<DISPLAY_COLUMNS, DISPLAY_ROWS>::new();
+    console.write(b"1234\n5678\n9");
+
+    assert_eq!(console.row(0), Some(b"5678"));
+    assert_eq!(console.row(1), Some(b"9   "));
+    assert_eq!(console.cursor(), TextPosition::new(1, 1));
+}
+
+#[test]
+fn diagnostics_console_renders_a_bounded_command_sequence() {
+    let mut console = DiagnosticsConsole::<DISPLAY_COLUMNS, DISPLAY_ROWS>::new();
+    let mut display = TestDisplay::new(TIMER_LIMIT);
+    display.initialize(VALID_TIMEOUT).unwrap();
+    console.write(b"boot");
+
+    console.render(&mut display, VALID_TIMEOUT).unwrap();
+
+    assert_eq!(
+        &display.commands[..display.command_count],
+        &[
+            Some(DisplayCommand::Initialize),
+            Some(DisplayCommand::Clear),
+            Some(DisplayCommand::WriteText),
+            Some(DisplayCommand::WriteText),
+            Some(DisplayCommand::Flush),
+        ]
+    );
+}
+
+#[test]
+fn diagnostics_console_enters_headless_mode_on_display_loss() {
+    let mut console = DiagnosticsConsole::<DISPLAY_COLUMNS, DISPLAY_ROWS>::new();
+    let mut display = TestDisplay::new(TIMER_LIMIT);
+    display.initialize(VALID_TIMEOUT).unwrap();
+    display.connected = false;
+
+    console.write(b"ignored when unavailable");
+    console.render(&mut display, VALID_TIMEOUT).unwrap();
+
+    assert!(console.is_headless());
+    console.write(b"still bounded");
+    console.render(&mut display, VALID_TIMEOUT).unwrap();
 }

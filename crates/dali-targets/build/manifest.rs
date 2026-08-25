@@ -6,6 +6,7 @@ pub(super) struct Manifest {
     pub(super) artifacts: Option<Artifacts>,
     pub(super) clock: Clock,
     pub(super) i2c: I2c,
+    pub(super) display: Display,
     pub(super) driver_probe: DriverProbe,
     pub(super) memory: Memory,
     pub(super) status_led: Pin,
@@ -60,6 +61,17 @@ pub(super) struct Clock {
 #[derive(Debug, Deserialize)]
 pub(super) struct I2c {
     pub(super) bus_frequency_hz: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub(super) struct Display {
+    pub(super) controller: String,
+    pub(super) i2c_address: u8,
+    pub(super) width: usize,
+    pub(super) height: usize,
+    pub(super) text_cell_width: usize,
+    pub(super) text_cell_height: usize,
+    pub(super) timeout_ticks: u32,
 }
 
 #[derive(Debug, Deserialize)]

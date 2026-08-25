@@ -2,7 +2,7 @@
 
 #[cfg(feature = "board-stm32f405-sd")]
 mod board;
-mod drivers;
+pub(crate) mod drivers;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
 mod sdio;
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]

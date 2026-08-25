@@ -25,6 +25,28 @@ fn validate_peripheral_metadata(manifest: &Manifest) -> Result<(), Box<dyn std::
         )
         .into());
     }
+    if manifest.display.controller.is_empty()
+        || manifest.display.i2c_address > (u8::MAX >> 1)
+        || manifest.display.width == 0
+        || manifest.display.height == 0
+        || manifest.display.text_cell_width == 0
+        || manifest.display.text_cell_height == 0
+        || !manifest
+            .display
+            .width
+            .is_multiple_of(manifest.display.text_cell_width)
+        || !manifest
+            .display
+            .height
+            .is_multiple_of(manifest.display.text_cell_height)
+        || manifest.display.timeout_ticks == 0
+    {
+        return Err(format!(
+            "target manifest {} has an invalid display configuration",
+            manifest.profile.name
+        )
+        .into());
+    }
     if manifest.driver_probe.uart_baud_rate_hz == 0
         || manifest.driver_probe.spi_clock_hz == 0
         || manifest.driver_probe.timeout_ticks == 0

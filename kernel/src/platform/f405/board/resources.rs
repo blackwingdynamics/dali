@@ -2,8 +2,14 @@
 
 #[cfg(feature = "driver-hardware-test")]
 use super::super::drivers::F405DriverProbe;
+#[cfg(all(feature = "driver-hardware-test", not(feature = "display-oled")))]
+use super::super::drivers::F405I2c;
+#[cfg(feature = "display-oled")]
+use super::config::OledDisplay;
 use super::{SdioPins, StatusLed, UserKey};
 use crate::runtime::watchdog::WatchdogBackend;
+#[cfg(feature = "display-oled")]
+use dali_driver_api::{DiagnosticsConsole, Duration};
 use stm32f4xx_hal::{pac, rcc::Clocks, timer::SysDelay};
 
 #[cfg(feature = "abi-context-switch")]
@@ -28,6 +34,13 @@ pub struct Board {
     /// Test-only UART/SPI bounded-timeout resources.
     #[cfg(feature = "driver-hardware-test")]
     pub(super) driver_probe: Option<F405DriverProbe>,
+    #[cfg(all(feature = "driver-hardware-test", not(feature = "display-oled")))]
+    pub(super) i2c: Option<F405I2c>,
+    #[cfg(feature = "display-oled")]
+    pub(super) display: Option<OledDisplay>,
+    #[cfg(feature = "display-oled")]
+    pub(super) console:
+        DiagnosticsConsole<{ super::config::DISPLAY_COLUMNS }, { super::config::DISPLAY_ROWS }>,
     /// Hardware SDIO 4-bit pins for the on-board microSD socket.
     pub(super) sdio_pins: Option<SdioPins>,
     /// SDIO peripheral reserved for the storage driver.
@@ -51,6 +64,17 @@ pub(crate) enum TimerMode {
 }
 
 impl Board {
+    /// Queues and renders a bounded diagnostic line on the optional OLED.
+    #[cfg(feature = "display-oled")]
+    pub(crate) fn write_display_log(&mut self, bytes: &[u8]) {
+        self.console.write(bytes);
+        let Some(display) = self.display.as_mut() else {
+            return;
+        };
+        let timeout = Duration::from_ticks(dali_targets::TARGET_F405.display.timeout_ticks);
+        let _ = self.console.render(display, timeout);
+    }
+
     /// Transfers the SDIO resources to the storage driver.
     pub fn take_sdio_resources(&mut self) -> Option<(pac::SDIO, SdioPins, &Clocks)> {
         let peripheral = self.sdio.take()?;

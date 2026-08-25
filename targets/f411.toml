@@ -31,6 +31,15 @@ usb_hz = 48_000_000
 [i2c]
 bus_frequency_hz = 100_000
 
+[display]
+controller = "SSD1306"
+i2c_address = 0x3C
+width = 128
+height = 64
+text_cell_width = 8
+text_cell_height = 8
+timeout_ticks = 100
+
 [driver_probe]
 uart_baud_rate_hz = 115_200
 spi_clock_hz = 1_000_000

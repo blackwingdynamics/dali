@@ -38,6 +38,8 @@ watchdog-feed-failure-test = []
 driver-hardware-test = ["f405-serial-spi"]
 # Compile the F405 serial backend only for a build that explicitly accepts its test wiring.
 f405-serial-spi = ["dep:stm32f4xx-hal"]
+# Compile the optional F405 I2C OLED backend without changing the headless boot path.
+display-oled = ["f405-serial-spi"]
 
 [lints]
 workspace = true

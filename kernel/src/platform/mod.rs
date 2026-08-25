@@ -116,7 +116,7 @@ pub(crate) fn initialize() -> Platform {
 }
 
 /// Runs the target-only bounded UART/SPI acceptance probe.
-#[cfg(feature = "f405-serial-spi")]
+#[cfg(feature = "driver-hardware-test")]
 pub(crate) fn run_driver_timeout_probe(platform: &mut Platform) {
     platform.0.run_driver_timeout_probe();
 }
@@ -167,6 +167,12 @@ pub(crate) fn repository_verification_progress() -> bool {
 
 #[cfg(feature = "board-stm32f405-sd")]
 impl Platform {
+    /// Writes a bounded diagnostic line to the optional board display.
+    #[cfg(feature = "display-oled")]
+    pub(crate) fn write_display_log(&mut self, bytes: &[u8]) {
+        self.0.write_display_log(bytes);
+    }
+
     /// Sets the `set status led` operation for this subsystem.
     ///
     /// Arguments select the bounded state, buffer, or hardware operation described by the signature.

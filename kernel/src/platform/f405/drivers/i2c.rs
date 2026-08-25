@@ -103,6 +103,7 @@ impl F405I2c {
     }
 
     /// Returns whether a bounded operation completed a peripheral recovery.
+    #[cfg(feature = "driver-hardware-test")]
     pub(crate) fn recovery_observed(&mut self) -> bool {
         let observed = self.recovery_observed;
         self.recovery_observed = false;

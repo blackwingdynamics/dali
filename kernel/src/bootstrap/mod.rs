@@ -128,6 +128,8 @@ pub fn run() -> ! {
         logging::BOOT_SUBSYSTEM,
         format_args!("Hardware bootstrap complete"),
     );
+    #[cfg(feature = "display-oled")]
+    board.write_display_log(b"Hardware bootstrap complete\n");
 
     #[cfg(feature = "driver-hardware-test")]
     platform::run_driver_timeout_probe(&mut board);

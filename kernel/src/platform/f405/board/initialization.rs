@@ -2,8 +2,14 @@
 
 #[cfg(feature = "driver-hardware-test")]
 use super::super::drivers::F405DriverProbe;
+#[cfg(any(feature = "display-oled", feature = "driver-hardware-test"))]
+use super::super::drivers::{F405I2c, F405TimeoutConfig};
 use super::config::SdioPins;
 use super::resources::{Board, TimerMode};
+#[cfg(feature = "display-oled")]
+use dali_driver_api::DisplayDriver;
+#[cfg(any(feature = "display-oled", feature = "driver-hardware-test"))]
+use dali_driver_api::Duration;
 use dali_driver_api::{InterruptPin, InterruptTrigger};
 use dali_targets::TARGET_F405;
 use stm32f4xx_hal::{pac, prelude::*, time::Hertz};
@@ -50,11 +56,25 @@ pub fn initialize() -> Board {
         super::super::unmask_exti15_10_irq();
     }
 
+    #[cfg(any(feature = "display-oled", feature = "driver-hardware-test"))]
+    let i2c = F405I2c::new(
+        device.I2C1,
+        (
+            gpiob.pb6.into_alternate::<4>(),
+            gpiob.pb7.into_alternate::<4>(),
+        ),
+        &clocks,
+        F405TimeoutConfig::new(
+            Duration::from_ticks(TARGET_F405.display.timeout_ticks),
+            TARGET_F405.driver_probe.polls_per_timeout_tick,
+        ),
+        TARGET_F405.i2c.bus_frequency_hz,
+    );
+
     #[cfg(feature = "driver-hardware-test")]
     let driver_probe = F405DriverProbe::new(
         device.USART1,
         device.SPI1,
-        device.I2C1,
         (
             gpioa.pa9.into_alternate::<7>(),
             gpioa.pa10.into_alternate::<7>(),
@@ -64,13 +84,16 @@ pub fn initialize() -> Board {
             gpioa.pa6.into_alternate::<5>(),
             gpioa.pa7.into_alternate::<5>(),
         ),
-        (
-            gpiob.pb6.into_alternate::<4>(),
-            gpiob.pb7.into_alternate::<4>(),
-        ),
         &clocks,
         TARGET_F405.driver_probe,
     );
+
+    #[cfg(feature = "display-oled")]
+    let display = i2c.map(|bus| {
+        let mut display = super::config::OledDisplay::new(bus, TARGET_F405.display);
+        let _ = display.initialize(Duration::from_ticks(TARGET_F405.display.timeout_ticks));
+        display
+    });
 
     let sdio_pins: SdioPins = (
         gpioc.pc12,
@@ -102,6 +125,12 @@ pub fn initialize() -> Board {
         gpio_driver_log_emitted: false,
         #[cfg(feature = "driver-hardware-test")]
         driver_probe,
+        #[cfg(all(feature = "driver-hardware-test", not(feature = "display-oled")))]
+        i2c,
+        #[cfg(feature = "display-oled")]
+        display,
+        #[cfg(feature = "display-oled")]
+        console: dali_driver_api::DiagnosticsConsole::new(),
         sdio_pins: Some(sdio_pins),
         sdio: Some(device.SDIO),
         clocks,

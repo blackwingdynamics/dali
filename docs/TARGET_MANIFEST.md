@@ -39,6 +39,7 @@ Every manifest contains:
 - `[capabilities]` — explicit backend and runtime capability declarations;
 - `[clock]` — oscillator and bus frequencies;
 - `[i2c]` — I2C bus timing configuration;
+- `[display]` — optional I2C OLED controller and geometry configuration;
 - `[driver_probe]` — bounded hardware acceptance probe configuration;
 - `[memory]` — kernel, application, and runtime regions;
 - `[status_led]` — logical status LED mapping;
@@ -133,6 +134,23 @@ must consume that profile when configuring its peripheral.
 | Field | Type | Required | Meaning |
 | --- | --- | --- | --- |
 | `bus_frequency_hz` | integer | yes | Target I2C bus frequency in hertz. |
+
+## `[display]`
+
+The display profile describes an optional I2C OLED capability. The F405 OLED
+backend consumes this generated profile and falls back to headless operation
+when the configured controller is unavailable. SPI displays and ILI9341
+experiments are outside this contract.
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `controller` | string | yes | Supported controller identifier, such as `SSD1306` or `SH1106`. |
+| `i2c_address` | integer | yes | Seven-bit I2C address used by the display. |
+| `width` | integer | yes | Display width in pixels. |
+| `height` | integer | yes | Display height in pixels. |
+| `text_cell_width` | integer | yes | Text-cell width in pixels used to derive the bounded console columns. |
+| `text_cell_height` | integer | yes | Text-cell height in pixels used to derive the bounded console rows. |
+| `timeout_ticks` | integer | yes | Maximum timeout for one display operation. |
 
 ## `[driver_probe]`
 

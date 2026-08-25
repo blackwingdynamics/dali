@@ -14,13 +14,17 @@ impl Board {
             );
             return;
         };
+        #[cfg(feature = "display-oled")]
+        let i2c = self.display.as_mut().map(|display| display.bus_mut());
+        #[cfg(not(feature = "display-oled"))]
+        let i2c = self.i2c.as_mut();
         let F405DriverProbeResult {
             uart_timed_out,
             spi_timed_out,
             spi_recovered,
             i2c_completed,
             i2c_recovered,
-        } = probe.run();
+        } = probe.run(i2c);
         log_uart_probe_result(uart_timed_out);
         log_spi_probe_result(spi_timed_out, spi_recovered);
         log_i2c_probe_result(i2c_completed, i2c_recovered);

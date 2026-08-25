@@ -5,7 +5,7 @@ use super::{authentication, hardware};
 pub(super) fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, i2c: {i2c}, driver_probe: {driver_probe}, memory: {memory}, status_led: {led}, user_key: {user_key}, usb: {usb}, storage: {storage}, scheduler: {scheduler}, watchdog: {watchdog}, authentication: {authentication} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, i2c: {i2c}, display: {display}, driver_probe: {driver_probe}, memory: {memory}, status_led: {led}, user_key: {user_key}, usb: {usb}, storage: {storage}, scheduler: {scheduler}, watchdog: {watchdog}, authentication: {authentication} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
@@ -39,6 +39,7 @@ pub(super) fn generate_profile(manifest: &Manifest) -> String {
         capabilities = hardware::generate_capabilities(&manifest.capabilities),
         clock = hardware::generate_clock(&manifest.clock),
         i2c = hardware::generate_i2c(&manifest.i2c),
+        display = hardware::generate_display(&manifest.display),
         driver_probe = hardware::generate_driver_probe(&manifest.driver_probe),
         memory = hardware::generate_memory(&manifest.memory),
         led = hardware::generate_pin(&manifest.status_led),
