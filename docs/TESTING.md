@@ -161,6 +161,37 @@ external OLED device rendering result. Phase 2 is closed. Missing board
 revision, exact wiring, power source, and separately recorded firmware
 revision remain evidence metadata limitations, not failed I2C behavior.
 
+### Phase 3 F405 OLED and diagnostics-console acceptance — 2026-08-25
+
+Phase 3 hardware acceptance was completed on the WeAct Studio STM32F405RGT6
+Core Board with the manifest-configured SSD1306 I2C OLED profile. The OLED was
+connected through the board-owned I2C1 bus on PB6/PB7 and used the same
+manifest-driven timeout and address configuration as the F405 backend. The
+acceptance firmware retained one I2C1 singleton shared between the OLED and
+the optional driver probe.
+
+The expected result was successful bounded OLED initialization and rendering
+of the boot diagnostics console, with deterministic text-grid updates. A
+missing or non-responsive display was required to select headless operation
+without blocking kernel boot. The user-provided F405 Silicon Trace and
+physical acceptance result reported 100% success for the OLED and console
+path. The implementation does not emit a separate OLED trace marker; the
+existing boot trace remains the transport-visible evidence while display
+rendering is observed on the physical panel.
+
+- [x] Manifest-driven SSD1306 profile generated and consumed by the F405 backend.
+- [x] One I2C1 singleton shared between the OLED backend and acceptance probe.
+- [x] Bounded diagnostics console rendered on the physical F405 OLED.
+- [x] Display-unavailable path selected headless operation without freezing boot.
+- [x] Deterministic clipping, cursor tracking, scrolling, and overflow behavior
+  covered by 21 passing hardware-neutral driver tests.
+
+Result: Phase 3 OLED and diagnostics-console acceptance is closed based on the
+reported F405 Silicon Trace and physical display result. A separately archived
+raw OLED trace, board revision, exact wiring record, power source, and firmware
+revision were not supplied for this entry and remain evidence metadata
+limitations.
+
 The F405 backend maps bounded SDIO command/data timeouts to `CardRemoved`
 because this board exposes no card-detect GPIO. The recovery heartbeat retains
 the reader after a failed bring-up, probes at the configured interval, and

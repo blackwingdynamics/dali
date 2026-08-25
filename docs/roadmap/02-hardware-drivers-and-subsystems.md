@@ -42,18 +42,19 @@ observed backend and board configuration.
 
 ### Phase 3 — Small-form-factor I2C display and diagnostics console
 
-- [ ] Specify an SSD1306 or SH1106 128x64 I2C display backend.
-- [ ] Define a hardware-neutral OLED contract and bounded framebuffer or
+- [x] Specify an SSD1306 or SH1106 128x64 I2C display backend.
+- [x] Define a hardware-neutral OLED contract and bounded framebuffer or
   command-stream policy in `crates/dali-driver-api/`.
-- [ ] Extend target manifests with display controller, address, dimensions,
+- [x] Extend target manifests with display controller, address, dimensions,
   reset policy, and update-time limits; generate typed display metadata.
-- [ ] Implement the F405 I2C OLED adapter only behind the display capability.
-- [ ] Define and implement a bounded text-mode diagnostics console for boot
+- [x] Implement the F405 I2C OLED adapter only behind the display capability.
+- [x] Define and implement a bounded text-mode diagnostics console for boot
   status and diagnostic stream records.
-- [ ] Record target rendering, unavailable-display, and recovery evidence.
+- [x] Record target rendering, unavailable-display, and recovery evidence.
 
-This phase is a read-only proposal until separately approved. The SPI driver,
-ILI9341 experiments, USB CDC core servicing, SDIO, and Storage remain frozen.
+Phase 3 was completed on 2026-08-25. The F405 Silicon Trace and physical OLED
+acceptance are recorded in `docs/TESTING.md`. The SPI driver, ILI9341
+experiments, USB CDC core servicing, SDIO, and Storage remain frozen.
 
 #### Phase 3 action plan
 
@@ -92,9 +93,10 @@ ILI9341 experiments, USB CDC core servicing, SDIO, and Storage remain frozen.
    firmware revision, expected output, observed output, and result in
    `docs/TESTING.md` before closing Phase 3.
 
-The implementation order is contract and host tests, manifest/profile
-generation, F405 backend, console engine, then physical acceptance. SPI
-display code and ILI9341 experiments are out of scope for every step.
+The implementation order was contract and host tests, manifest/profile
+generation, F405 backend, console engine, then physical acceptance. All listed
+steps are complete; SPI display code and ILI9341 experiments remain out of
+scope.
 
 ### Phase 4 — Power and diagnostics
 

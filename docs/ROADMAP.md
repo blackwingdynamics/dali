@@ -9,7 +9,7 @@ acceptance boundary, and backlog.
 | --- | --- | --- |
 | [01 — Kernel Core and Security](roadmap/01-kernel-core-and-security.md) | **Completed** | F405 feature-gated core, MPU, bounded DMA policy, trust path, watchdog, and storage recovery |
 | [02 — Hardware Drivers and System Subsystems](roadmap/02-hardware-drivers-and-subsystems.md) | **Completed** | Driver contracts, F405 backend coverage, and bounded I2C recovery |
-| [03 — System GUI and Launcher](roadmap/03-system-gui-and-launcher.md) | **Planned** | Small-form-factor I2C OLED diagnostics console proposal |
+| [03 — System GUI and Launcher](roadmap/03-system-gui-and-launcher.md) | **Completed** | Manifest-driven I2C OLED diagnostics console with F405 evidence |
 | [04 — First-Stage Bootloader](roadmap/04-first-stage-bootloader.md) | **Future** | Pre-reset kernel-image verification and FSBL/ROM handoff |
 
 ## Current execution roadmap
@@ -38,13 +38,14 @@ display backend is introduced.
 
 ### Phase 3 — Small-form-factor I2C display and diagnostics console
 
-- [ ] Select and specify an SSD1306 or SH1106 128x64 I2C display contract.
-- [ ] Implement a bounded I2C OLED adapter only after Phase 2 acceptance.
-- [ ] Add a lightweight text console for boot status, memory, and diagnostics.
-- [ ] Record target rendering and unavailable-display recovery evidence.
+- [x] Select and specify an SSD1306 or SH1106 128x64 I2C display contract.
+- [x] Implement a bounded I2C OLED adapter only after Phase 2 acceptance.
+- [x] Add a lightweight text console for boot status, memory, and diagnostics.
+- [x] Record target rendering and unavailable-display recovery evidence.
 
-The Phase 3 proposal is read-only planning at this stage. It is limited to an
-I2C OLED and must not modify the frozen SPI/ILI9341 path.
+Phase 3 was completed on 2026-08-25 using the F405 Silicon Trace and physical
+OLED acceptance recorded in `docs/TESTING.md`. It remains limited to an I2C
+OLED and did not modify the frozen SPI/ILI9341 path.
 The detailed action sequence is maintained in
 [`docs/roadmap/02-hardware-drivers-and-subsystems.md`](roadmap/02-hardware-drivers-and-subsystems.md).
 
