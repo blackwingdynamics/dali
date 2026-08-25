@@ -62,6 +62,23 @@ impl F405TimerDriver {
         false
     }
 
+    /// Waits for one configured timer period within a finite poll budget.
+    #[cfg(feature = "driver-hardware-test")]
+    pub(crate) fn wait_for_timeout(&mut self, poll_limit: u32) -> bool {
+        if poll_limit == 0 {
+            return false;
+        }
+        let mut polls = 0;
+        while polls < poll_limit {
+            match self.is_expired() {
+                Ok(true) => return true,
+                Ok(false) => polls += 1,
+                Err(_) => return false,
+            }
+        }
+        false
+    }
+
     fn timeout_frequency(&self, timeout: Duration) -> DriverResult<u32> {
         self.validate_timeout(timeout)?;
         let frequency = self

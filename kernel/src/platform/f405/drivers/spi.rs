@@ -75,6 +75,16 @@ impl<SPI: Instance> F405Spi<SPI> {
         }
         Err(DriverError::Timeout)
     }
+
+    /// Disables the peripheral to create a bounded, recoverable stalled probe.
+    pub(crate) fn disable_for_probe(&mut self) {
+        self.spi.enable(false);
+    }
+
+    /// Re-enables the peripheral after the intentional stalled probe.
+    pub(crate) fn enable_for_probe(&mut self) {
+        self.spi.enable(true);
+    }
 }
 
 impl<SPI: Instance> BoundedTimeout for F405Spi<SPI> {

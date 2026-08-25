@@ -38,6 +38,8 @@ pub(crate) struct F405DriverProbeResult {
     pub(crate) uart_timed_out: bool,
     /// Whether the SPI receive path returned its bounded timeout.
     pub(crate) spi_timed_out: bool,
+    /// Whether the SPI transfer completed after the peripheral was restored.
+    pub(crate) spi_recovered: bool,
 }
 
 /// F405 UART and SPI adapters retained for the acceptance probe.
@@ -99,10 +101,11 @@ impl F405DriverProbe {
         let mut uart_byte = [0; PROBE_BUFFER_LENGTH];
         let uart_timed_out = self.run_uart_probe(&mut uart_byte);
         let mut spi_byte = [PROBE_SPI_FILL_BYTE; PROBE_BUFFER_LENGTH];
-        let spi_timed_out = self.run_spi_probe(&mut spi_byte);
+        let (spi_timed_out, spi_recovered) = self.run_spi_probe(&mut spi_byte);
         F405DriverProbeResult {
             uart_timed_out,
             spi_timed_out,
+            spi_recovered,
         }
     }
 
@@ -120,9 +123,9 @@ impl F405DriverProbe {
     }
 
     /// Runs the logically selected SPI timeout probe and balances its state.
-    fn run_spi_probe(&mut self, buffer: &mut [u8; PROBE_BUFFER_LENGTH]) -> bool {
+    fn run_spi_probe(&mut self, buffer: &mut [u8; PROBE_BUFFER_LENGTH]) -> (bool, bool) {
         if self.spi.acquire().is_err() {
-            return false;
+            return (false, false);
         }
         let selected = self
             .spi
@@ -130,14 +133,17 @@ impl F405DriverProbe {
             .is_ok();
         if !selected {
             let _ = self.spi.release();
-            return false;
+            return (false, false);
         }
-        let timed_out = selected
-            && matches!(
-                self.spi.transfer(buffer, PROBE_TIMEOUT),
-                Err(dali_driver_api::DriverError::Timeout)
-            );
+        self.spi.disable_for_probe();
+        let timed_out = matches!(
+            self.spi.transfer(buffer, PROBE_TIMEOUT),
+            Err(dali_driver_api::DriverError::Timeout)
+        );
+        self.spi.enable_for_probe();
+        let recovered = timed_out && self.spi.transfer(buffer, PROBE_TIMEOUT).is_ok();
         let deselected = selected && self.spi.deselect().is_ok();
-        timed_out && deselected && self.spi.release().is_ok()
+        let released = deselected && self.spi.release().is_ok();
+        (timed_out && released, recovered && released)
     }
 }

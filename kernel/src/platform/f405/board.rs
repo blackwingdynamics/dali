@@ -170,9 +170,10 @@ impl Board {
         let F405DriverProbeResult {
             uart_timed_out,
             spi_timed_out,
+            spi_recovered,
         } = probe.run();
         log_uart_probe_result(uart_timed_out);
-        log_spi_probe_result(spi_timed_out);
+        log_spi_probe_result(spi_timed_out, spi_recovered);
     }
 }
 
@@ -194,13 +195,29 @@ fn log_uart_probe_result(timed_out: bool) {
 
 /// Emits target-visible evidence for the bounded SPI transfer probe.
 #[cfg(feature = "driver-hardware-test")]
-fn log_spi_probe_result(timed_out: bool) {
-    let message = if timed_out {
-        "[DRIVER][SPI] Bounded timeout enforced"
+fn log_spi_probe_result(timed_out: bool, recovered: bool) {
+    if timed_out {
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][SPI] Stalled transfer timeout enforced"),
+        );
     } else {
-        "[DRIVER][SPI] Bounded transfer completed"
-    };
-    crate::logging::info(crate::logging::BOOT_SUBSYSTEM, format_args!("{}", message));
+        crate::logging::error(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][SPI] Stalled transfer did not time out"),
+        );
+    }
+    if recovered {
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][SPI] Recovery transfer completed"),
+        );
+    } else {
+        crate::logging::error(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][SPI] Recovery transfer failed"),
+        );
+    }
 }
 
 /// Takes singleton peripherals and initializes the STM32F405 board hardware.
