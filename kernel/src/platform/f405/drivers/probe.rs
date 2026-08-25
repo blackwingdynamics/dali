@@ -6,6 +6,7 @@ use dali_driver_api::{
     SerialOwnership, SerialRead, SpiBusOwnership, SpiDeviceId, SpiDeviceSelect, SpiTransfer,
     StopBits,
 };
+use dali_targets::{DriverProbeProfile, TARGET_F405};
 use stm32f4xx_hal::{
     gpio::{self, Alternate},
     pac,
@@ -15,25 +16,6 @@ use stm32f4xx_hal::{
     spi::{Mode, Phase, Polarity, SpiExt},
     time::Hertz,
 };
-
-/// UART baud rate used by the opt-in F405 driver acceptance probe.
-const PROBE_UART_BAUD_HZ: u32 = 115_200;
-/// SPI clock used by the opt-in F405 driver acceptance probe.
-const PROBE_SPI_CLOCK_HZ: u32 = 1_000_000;
-/// Maximum timeout accepted by the acceptance probe adapters.
-const PROBE_MAX_TIMEOUT_TICKS: u32 = 100;
-/// Number of hardware polls represented by one contract timeout tick.
-const PROBE_POLLS_PER_TIMEOUT_TICK: u32 = 1;
-/// Timeout used by each no-peer bounded-I/O probe.
-const PROBE_TIMEOUT: Duration = Duration::from_ticks(PROBE_MAX_TIMEOUT_TICKS);
-/// Number of bytes used by each no-peer receive probe.
-const PROBE_BUFFER_LENGTH: usize = 1;
-/// Initial byte sent by the SPI timeout probe.
-const PROBE_SPI_FILL_BYTE: u8 = 0xff;
-/// Logical device selector reserved by this no-peer SPI acceptance probe.
-const PROBE_SPI_DEVICE_ID: u8 = 0;
-/// Logical I2C target used by the bounded bus acceptance probe.
-const PROBE_I2C_ADDRESS: I2cAddress = I2cAddress::new(0x42);
 
 /// Result of the real peripheral timeout probes.
 pub(crate) struct F405DriverProbeResult {
@@ -55,6 +37,7 @@ pub(crate) struct F405DriverProbe {
     spi: F405Spi<pac::SPI1>,
     i2c: F405I2c,
     uart_config: SerialConfig,
+    probe_config: DriverProbeProfile,
 }
 
 impl F405DriverProbe {
@@ -77,15 +60,15 @@ impl F405DriverProbe {
             gpio::gpiob::PB7<Alternate<4>>,
         ),
         clocks: &Clocks,
-        i2c_bus_frequency_hz: u32,
+        probe_config: DriverProbeProfile,
     ) -> Option<Self> {
-        let baud_rate = BaudRate::from_bits_per_second(PROBE_UART_BAUD_HZ).ok()?;
+        let baud_rate = BaudRate::from_bits_per_second(probe_config.uart_baud_rate_hz).ok()?;
         let uart_config =
             SerialConfig::new(baud_rate, DataBits::Eight, Parity::None, StopBits::One);
         let serial = match usart.serial(
             uart_pins,
             HalSerialConfig::default()
-                .baudrate(PROBE_UART_BAUD_HZ.bps())
+                .baudrate(probe_config.uart_baud_rate_hz.bps())
                 .wordlength_8()
                 .parity_none(),
             clocks,
@@ -99,24 +82,35 @@ impl F405DriverProbe {
                 polarity: Polarity::IdleLow,
                 phase: Phase::CaptureOnFirstTransition,
             },
-            Hertz::from_raw(PROBE_SPI_CLOCK_HZ),
+            Hertz::from_raw(probe_config.spi_clock_hz),
             clocks,
         );
-        let timeout = F405TimeoutConfig::new(PROBE_TIMEOUT, PROBE_POLLS_PER_TIMEOUT_TICK);
-        let i2c = F405I2c::new(i2c, i2c_pins, clocks, timeout, i2c_bus_frequency_hz)?;
+        let timeout = F405TimeoutConfig::new(
+            Duration::from_ticks(probe_config.timeout_ticks),
+            probe_config.polls_per_timeout_tick,
+        );
+        let i2c = F405I2c::new(
+            i2c,
+            i2c_pins,
+            clocks,
+            timeout,
+            TARGET_F405.i2c.bus_frequency_hz,
+        )?;
         Some(Self {
             uart: F405Uart::new(serial, timeout, uart_config),
             spi: F405Spi::new(spi, timeout),
             i2c,
             uart_config,
+            probe_config,
         })
     }
 
     /// Runs one bounded no-peer receive test on each initialized peripheral.
     pub(crate) fn run(&mut self) -> F405DriverProbeResult {
-        let mut uart_byte = [0; PROBE_BUFFER_LENGTH];
+        let mut uart_byte = [0; TARGET_F405.driver_probe.buffer_length];
         let uart_timed_out = self.run_uart_probe(&mut uart_byte);
-        let mut spi_byte = [PROBE_SPI_FILL_BYTE; PROBE_BUFFER_LENGTH];
+        let mut spi_byte =
+            [self.probe_config.spi_fill_byte; TARGET_F405.driver_probe.buffer_length];
         let (spi_timed_out, spi_recovered) = self.run_spi_probe(&mut spi_byte);
         let (i2c_completed, i2c_recovered) = self.run_i2c_probe();
         F405DriverProbeResult {
@@ -129,26 +123,26 @@ impl F405DriverProbe {
     }
 
     /// Runs the owned UART timeout probe and always releases the UART.
-    fn run_uart_probe(&mut self, buffer: &mut [u8; PROBE_BUFFER_LENGTH]) -> bool {
+    fn run_uart_probe(&mut self, buffer: &mut [u8]) -> bool {
         if self.uart.acquire().is_err() {
             return false;
         }
         let timed_out = self.uart.configure(self.uart_config).is_ok()
             && matches!(
-                self.uart.read(buffer, PROBE_TIMEOUT),
+                self.uart.read(buffer, self.probe_timeout()),
                 Err(dali_driver_api::DriverError::Timeout)
             );
         timed_out && self.uart.release().is_ok()
     }
 
     /// Runs the logically selected SPI timeout probe and balances its state.
-    fn run_spi_probe(&mut self, buffer: &mut [u8; PROBE_BUFFER_LENGTH]) -> (bool, bool) {
+    fn run_spi_probe(&mut self, buffer: &mut [u8]) -> (bool, bool) {
         if self.spi.acquire().is_err() {
             return (false, false);
         }
         let selected = self
             .spi
-            .select(SpiDeviceId::new(PROBE_SPI_DEVICE_ID))
+            .select(SpiDeviceId::new(self.probe_config.spi_device_id))
             .is_ok();
         if !selected {
             let _ = self.spi.release();
@@ -156,11 +150,11 @@ impl F405DriverProbe {
         }
         self.spi.disable_for_probe();
         let timed_out = matches!(
-            self.spi.transfer(buffer, PROBE_TIMEOUT),
+            self.spi.transfer(buffer, self.probe_timeout()),
             Err(dali_driver_api::DriverError::Timeout)
         );
         self.spi.enable_for_probe();
-        let recovered = timed_out && self.spi.transfer(buffer, PROBE_TIMEOUT).is_ok();
+        let recovered = timed_out && self.spi.transfer(buffer, self.probe_timeout()).is_ok();
         let deselected = selected && self.spi.deselect().is_ok();
         let released = deselected && self.spi.release().is_ok();
         (timed_out && released, recovered && released)
@@ -168,19 +162,23 @@ impl F405DriverProbe {
 
     /// Runs a bounded I2C write-read transaction and records recovery state.
     fn run_i2c_probe(&mut self) -> (bool, bool) {
-        let mut response = [0; PROBE_BUFFER_LENGTH];
+        let mut response = [0; TARGET_F405.driver_probe.buffer_length];
         if self.i2c.acquire().is_err() {
             return (false, false);
         }
         let result = self.i2c.write_read(
-            PROBE_I2C_ADDRESS,
-            &[PROBE_SPI_FILL_BYTE],
+            I2cAddress::new(self.probe_config.i2c_address),
+            &[self.probe_config.spi_fill_byte],
             &mut response,
-            PROBE_TIMEOUT,
+            self.probe_timeout(),
         );
         let recovered = self.i2c.recovery_observed();
         let completed = result.is_ok() || matches!(result, Err(dali_driver_api::DriverError::Nack));
         let _ = self.i2c.release();
         (completed, recovered)
+    }
+
+    fn probe_timeout(&self) -> Duration {
+        Duration::from_ticks(self.probe_config.timeout_ticks)
     }
 }

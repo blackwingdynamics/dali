@@ -73,9 +73,9 @@ impl<const PORT: char, const PIN: u8> F405ExtiPin<PORT, PIN> {
 }
 
 #[cfg(feature = "driver-hardware-test")]
-impl F405ExtiPin<'C', 13> {
+impl<const PORT: char, const PIN: u8> F405ExtiPin<PORT, PIN> {
     /// Polls and acknowledges EXTI13 when the IRQ path did not service it.
-    pub(crate) fn poll_pc13_trigger(&mut self) -> DriverResult<bool> {
+    pub(crate) fn poll_user_key_trigger(&mut self) -> DriverResult<bool> {
         if !self.enabled {
             return Err(DriverError::InvalidState);
         }

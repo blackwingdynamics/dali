@@ -12,7 +12,7 @@ impl Board {
             return;
         }
         #[cfg(feature = "driver-hardware-test")]
-        let pending = self.user_key.poll_pc13_trigger();
+        let pending = self.user_key.poll_user_key_trigger();
         #[cfg(not(feature = "driver-hardware-test"))]
         let pending = self.user_key.take_pending();
         match pending {
@@ -20,7 +20,7 @@ impl Board {
                 #[cfg(feature = "driver-hardware-test")]
                 crate::logging::info(
                     crate::logging::BOOT_SUBSYSTEM,
-                    format_args!("[DRIVER][EXTI] PC13 interrupt triggered"),
+                    format_args!("[DRIVER][EXTI] User-key interrupt triggered"),
                 );
             }
             Ok(false) | Err(DriverError::InvalidState) => {}

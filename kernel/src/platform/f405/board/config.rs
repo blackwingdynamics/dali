@@ -53,10 +53,10 @@ const STATUS_LED_PIN: u8 = 2;
 /// Status LED output pin on the active-high PB2 LED.
 pub type StatusLed = F405GpioPin<STATUS_LED_PORT, STATUS_LED_PIN>;
 
-/// Port selected by the board wiring for the active-low user key.
-const USER_KEY_PORT: char = 'C';
-/// Pin selected by the board wiring for the active-low user key.
-const USER_KEY_PIN: u8 = 13;
+/// Port selected by the board manifest for the active-low user key.
+const USER_KEY_PORT: char = TARGET_F405.user_key.port;
+/// Pin selected by the board manifest for the active-low user key.
+const USER_KEY_PIN: u8 = TARGET_F405.user_key.pin;
 
 /// Board user-key input bound to the manifest-selected EXTI line.
 pub type UserKey = F405ExtiPin<USER_KEY_PORT, USER_KEY_PIN>;

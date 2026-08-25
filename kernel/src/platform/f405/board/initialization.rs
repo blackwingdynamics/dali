@@ -69,7 +69,7 @@ pub fn initialize() -> Board {
             gpiob.pb7.into_alternate::<4>(),
         ),
         &clocks,
-        TARGET_F405.i2c.bus_frequency_hz,
+        TARGET_F405.driver_probe,
     );
 
     let sdio_pins: SdioPins = (

@@ -3,13 +3,10 @@
 use super::super::drivers::F405TimerDriver;
 use super::{Board, SYSTEM_CLOCK_HZ, TimerMode};
 use dali_driver_api::{Duration, TimerDriver};
+use dali_targets::TARGET_F405;
 
 const SYSTICK_MIN_RELOAD: u32 = 1;
 const SYSTICK_MAX_RELOAD: u32 = 0x00FF_FFFF;
-#[cfg(feature = "driver-hardware-test")]
-const DRIVER_EVIDENCE_POLL_LIMIT: u32 = SYSTICK_MAX_RELOAD;
-#[cfg(feature = "driver-hardware-test")]
-const DRIVER_TIMEOUT_PROBE_DIVISOR: u32 = 10;
 
 /// Enables SysTick for the scheduler after the application context is ready.
 pub(crate) fn enable_scheduler_tick(board: &mut Board, tick_hz: u32) -> bool {
@@ -32,7 +29,12 @@ pub(crate) fn enable_scheduler_tick(board: &mut Board, tick_hz: u32) -> bool {
         return false;
     }
     #[cfg(feature = "driver-hardware-test")]
-    if !run_timeout_probe(&mut counter, tick_hz) {
+    if !run_timeout_probe(
+        &mut counter,
+        tick_hz,
+        TARGET_F405.driver_probe.timer_timeout_divisor,
+        TARGET_F405.driver_probe.timer_evidence_poll_limit,
+    ) {
         crate::logging::error(
             crate::logging::BOOT_SUBSYSTEM,
             format_args!("[DRIVER][TIMER] Hardware timer timeout probe failed"),
@@ -40,7 +42,7 @@ pub(crate) fn enable_scheduler_tick(board: &mut Board, tick_hz: u32) -> bool {
         return false;
     }
     #[cfg(feature = "driver-hardware-test")]
-    if !counter.wait_for_tick(DRIVER_EVIDENCE_POLL_LIMIT) {
+    if !counter.wait_for_tick(TARGET_F405.driver_probe.timer_evidence_poll_limit) {
         crate::logging::error(
             crate::logging::BOOT_SUBSYSTEM,
             format_args!("[DRIVER][TIMER] Hardware timer tick probe failed"),
@@ -58,15 +60,20 @@ pub(crate) fn enable_scheduler_tick(board: &mut Board, tick_hz: u32) -> bool {
 }
 
 #[cfg(feature = "driver-hardware-test")]
-fn run_timeout_probe(counter: &mut F405TimerDriver, tick_hz: u32) -> bool {
-    let timeout_ticks = tick_hz.checked_div(DRIVER_TIMEOUT_PROBE_DIVISOR);
+fn run_timeout_probe(
+    counter: &mut F405TimerDriver,
+    tick_hz: u32,
+    timeout_divisor: u32,
+    evidence_poll_limit: u32,
+) -> bool {
+    let timeout_ticks = tick_hz.checked_div(timeout_divisor);
     let Some(timeout_ticks) = timeout_ticks.filter(|ticks| *ticks != 0) else {
         return false;
     };
     if counter.start(Duration::from_ticks(timeout_ticks)).is_err() {
         return false;
     }
-    let expired = counter.wait_for_timeout(DRIVER_EVIDENCE_POLL_LIMIT);
+    let expired = counter.wait_for_timeout(evidence_poll_limit);
     let stopped = counter.stop().is_ok();
     if expired && stopped {
         crate::logging::info(

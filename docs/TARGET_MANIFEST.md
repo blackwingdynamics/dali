@@ -39,8 +39,10 @@ Every manifest contains:
 - `[capabilities]` — explicit backend and runtime capability declarations;
 - `[clock]` — oscillator and bus frequencies;
 - `[i2c]` — I2C bus timing configuration;
+- `[driver_probe]` — bounded hardware acceptance probe configuration;
 - `[memory]` — kernel, application, and runtime regions;
 - `[status_led]` — logical status LED mapping;
+- `[user_key]` — board user-key mapping;
 - `[usb]` — USB FS controller and data pins.
 
 `[storage]` is optional because a board profile may be described before its
@@ -132,6 +134,25 @@ must consume that profile when configuring its peripheral.
 | --- | --- | --- | --- |
 | `bus_frequency_hz` | integer | yes | Target I2C bus frequency in hertz. |
 
+## `[driver_probe]`
+
+The acceptance probe uses these target-owned values for its UART, SPI, I2C,
+timeout, and buffer configuration. They are generated into
+`DriverProbeProfile`; the probe implementation must not duplicate them.
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `uart_baud_rate_hz` | integer | yes | UART baud rate used by the probe. |
+| `spi_clock_hz` | integer | yes | SPI clock used by the probe. |
+| `timeout_ticks` | integer | yes | Maximum probe timeout in contract ticks. |
+| `polls_per_timeout_tick` | integer | yes | Hardware polls represented by one timeout tick. |
+| `timer_timeout_divisor` | integer | yes | Divisor used to derive the timer timeout probe duration. |
+| `timer_evidence_poll_limit` | integer | yes | SysTick polling budget used by the timer probe. |
+| `buffer_length` | integer | yes | Probe transfer buffer length in bytes. |
+| `spi_fill_byte` | integer | yes | Initial byte used by the SPI probe. |
+| `spi_device_id` | integer | yes | Logical SPI device identifier used by the probe. |
+| `i2c_address` | integer | yes | Logical I2C address used by the probe. |
+
 ## `[memory]`
 
 All origins are byte addresses and all lengths are byte counts. Regions must
@@ -200,6 +221,16 @@ updating `AMRN_FORMAT.md`, `ABI.md`, the linker scripts, tests, and roadmap.
 The status LED is expressed as a logical output. Applications must not depend
 on the physical polarity.
 
+## `[user_key]`
+
+The user-key mapping is generated into `UserKeyProfile` and consumed by the
+board-owned EXTI binding.
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `port` | string | yes | Single GPIO port letter. |
+| `pin` | integer | yes | GPIO pin number. |
+
 ## `[usb]`
 
 | Field | Type | Required | Meaning |
@@ -250,6 +281,20 @@ usb_hz = 48_000_000
 
 [i2c]
 bus_frequency_hz = 100_000
+
+[driver_probe]
+uart_baud_rate_hz = 115_200
+spi_clock_hz = 1_000_000
+timeout_ticks = 100
+polls_per_timeout_tick = 1
+buffer_length = 1
+spi_fill_byte = 0xff
+spi_device_id = 0
+i2c_address = 0x42
+
+[user_key]
+port = 'C'
+pin = 13
 
 [memory]
 kernel_origin = 0x2000_0000
