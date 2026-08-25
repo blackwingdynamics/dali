@@ -67,14 +67,56 @@ real console capture. Keep the two scenarios separate:
   `[STORAGE] Trust-store artifact write/flush/read-back test passed`.
 - [x] AMRN signature verification: the Silicon Trace recorded
   `[SECURITY] AMRN signature verified`.
-- [ ] Timer hardware timeout probe: a timeout-path result is still required.
-- [ ] Stalled SPI recovery: a stalled condition, timeout, recovery transfer,
-  and ownership-release trace is still required.
+- [x] Timer hardware timeout probe: the Silicon Trace recorded
+  `[DRIVER][TIMER] Hardware timer timeout enforced`.
+- [x] Stalled SPI recovery: the Silicon Trace recorded
+  `[DRIVER][SPI] Stalled transfer timeout enforced` and
+  `[DRIVER][SPI] Recovery transfer completed`; the probe then deselected the
+  device and released bus ownership before continuing boot.
 - [ ] Record board revision, wiring, power source, firmware revision, logging
   transport, expected trace, observed trace, and result.
 
-The timer integration and SPI transfer markers close only those two acceptance
-items. They do not close the separate timer-timeout or stalled-recovery items.
+#### F405 bounded-timeout acceptance run — 2026-08-25
+
+The release acceptance firmware from kernel revision `619c84d`, built with
+the `driver-hardware-test` feature, was flashed and verified on the WeAct
+Studio STM32F405RGT6 Core Board through a Raspberry Pi Pico 2 CMSIS-DAP probe.
+The F405 USB CDC console was `/dev/ttyACM0`; `/dev/ttyACM1` was not used.
+Board revision, exact SWD wiring, and power source were not recorded in this
+run.
+
+The expected trace included the existing timer and SPI success markers, a
+timer timeout result, and a stalled-SPI recovery sequence showing the stalled
+condition, timeout result, recovery transfer, and ownership release.
+
+The observed trace from the completed run was:
+
+```text
+[DRIVER][UART] Bounded timeout enforced
+[DRIVER][SPI] Stalled transfer timeout enforced
+[DRIVER][SPI] Recovery transfer completed
+[STORAGE] Trust-store artifact write/flush/read-back test passed
+[SECURITY] AMRN signature verified
+[SECURITY] Application lifecycle: Ready
+[SECURITY] Active application context: Running
+[DRIVER][TIMER] Hardware timer timeout enforced
+[DRIVER][TIMER] Hardware timer tick elapsed
+[APP] DMA application request rejected
+```
+
+This run confirms the UART bounded-timeout marker, stalled SPI timeout,
+recovery transfer, timer timeout, timer integration, storage and signed-loader
+path, application lifecycle, and DMA denial. The probe's bounded recovery path
+released SPI device and bus ownership before the kernel continued boot.
+
+Result: Partial record; the timer-timeout and stalled-SPI recovery acceptance
+items passed. Board revision, exact wiring, and power source remain to be
+recorded for the complete evidence record.
+
+The timer timeout and stalled-recovery markers close the two remaining Phase 1
+functional acceptance items. The separate evidence-record metadata item
+remains open until the board revision, exact wiring, and power source are
+recorded for this capture.
 
 The F405 backend maps bounded SDIO command/data timeouts to `CardRemoved`
 because this board exposes no card-detect GPIO. The recovery heartbeat retains

@@ -24,8 +24,8 @@ observed backend and board configuration.
 
 ### Phase 1 — F405 bounded-timeout acceptance
 
-- [ ] Capture Timer timeout integration and expiration evidence on the F405.
-- [ ] Capture external-SPI or intentionally stalled-SPI recovery evidence on the
+- [x] Capture Timer timeout integration and expiration evidence on the F405.
+- [x] Capture external-SPI or intentionally stalled-SPI recovery evidence on the
   F405.
 - [ ] Record the firmware revision, wiring, transport, expected trace, observed
   trace, and result in `docs/TESTING.md`.

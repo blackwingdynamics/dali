@@ -20,8 +20,8 @@ display backend is introduced.
 
 ### Phase 1 — F405 bounded-timeout acceptance
 
-- [ ] Capture F405 Timer timeout integration and expiration evidence.
-- [ ] Capture external-SPI or intentionally stalled-SPI recovery evidence.
+- [x] Capture F405 Timer timeout integration and expiration evidence.
+- [x] Capture external-SPI or intentionally stalled-SPI recovery evidence.
 - [ ] Record firmware revision, board wiring, transport, expected output, and
   observed output in `docs/TESTING.md`.
 
