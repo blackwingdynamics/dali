@@ -38,6 +38,7 @@ Every manifest contains:
 - `[profile.dfu]` — optional USB DFU identity and download configuration;
 - `[capabilities]` — explicit backend and runtime capability declarations;
 - `[clock]` — oscillator and bus frequencies;
+- `[i2c]` — I2C bus timing configuration;
 - `[memory]` — kernel, application, and runtime regions;
 - `[status_led]` — logical status LED mapping;
 - `[usb]` — USB FS controller and data pins.
@@ -120,6 +121,16 @@ must match the board's clock design.
 
 The manifest records values; the backend remains responsible for configuring
 PLL and prescaler registers correctly.
+
+## `[i2c]`
+
+I2C timing values are target configuration, not driver implementation
+constants. The build generates them into the typed `I2cProfile`; a backend
+must consume that profile when configuring its peripheral.
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `bus_frequency_hz` | integer | yes | Target I2C bus frequency in hertz. |
 
 ## `[memory]`
 
@@ -236,6 +247,9 @@ system_hz = 168_000_000
 pclk1_hz = 42_000_000
 pclk2_hz = 84_000_000
 usb_hz = 48_000_000
+
+[i2c]
+bus_frequency_hz = 100_000
 
 [memory]
 kernel_origin = 0x2000_0000

@@ -1,6 +1,8 @@
 //! F405 adapters for the hardware-neutral driver contracts.
 
 mod gpio;
+#[cfg(feature = "f405-serial-spi")]
+mod i2c;
 pub(crate) mod interrupt;
 #[cfg(feature = "f405-serial-spi")]
 mod probe;
@@ -14,6 +16,8 @@ mod timer;
 mod uart;
 
 pub(crate) use gpio::F405GpioPin;
+#[cfg(feature = "f405-serial-spi")]
+pub(crate) use i2c::F405I2c;
 pub(crate) use interrupt::F405ExtiPin;
 #[cfg(feature = "f405-serial-spi")]
 pub(crate) use probe::{F405DriverProbe, F405DriverProbeResult};

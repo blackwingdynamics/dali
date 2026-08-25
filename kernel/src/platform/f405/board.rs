@@ -171,9 +171,12 @@ impl Board {
             uart_timed_out,
             spi_timed_out,
             spi_recovered,
+            i2c_completed,
+            i2c_recovered,
         } = probe.run();
         log_uart_probe_result(uart_timed_out);
         log_spi_probe_result(spi_timed_out, spi_recovered);
+        log_i2c_probe_result(i2c_completed, i2c_recovered);
     }
 }
 
@@ -216,6 +219,28 @@ fn log_spi_probe_result(timed_out: bool, recovered: bool) {
         crate::logging::error(
             crate::logging::BOOT_SUBSYSTEM,
             format_args!("[DRIVER][SPI] Recovery transfer failed"),
+        );
+    }
+}
+
+/// Emits target-visible evidence for the bounded I2C transaction probe.
+#[cfg(feature = "driver-hardware-test")]
+fn log_i2c_probe_result(completed: bool, recovered: bool) {
+    if completed {
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][I2C] Bounded transfer completed"),
+        );
+    } else {
+        crate::logging::error(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][I2C] Bounded transfer timeout enforced"),
+        );
+    }
+    if recovered {
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[DRIVER][I2C] Bus recovered"),
         );
     }
 }
@@ -267,6 +292,7 @@ pub fn initialize() -> Board {
     let driver_probe = F405DriverProbe::new(
         device.USART1,
         device.SPI1,
+        device.I2C1,
         (
             gpioa.pa9.into_alternate::<7>(),
             gpioa.pa10.into_alternate::<7>(),
@@ -276,7 +302,12 @@ pub fn initialize() -> Board {
             gpioa.pa6.into_alternate::<5>(),
             gpioa.pa7.into_alternate::<5>(),
         ),
+        (
+            gpiob.pb6.into_alternate::<4>(),
+            gpiob.pb7.into_alternate::<4>(),
+        ),
         &clocks,
+        TARGET_F405.i2c.bus_frequency_hz,
     );
 
     let sdio_pins = (

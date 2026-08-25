@@ -34,6 +34,9 @@ pclk1_hz = 42_000_000
 pclk2_hz = 84_000_000
 usb_hz = 48_000_000
 
+[i2c]
+bus_frequency_hz = 100_000
+
 [scheduler]
 quantum_ticks = 1
 tick_hz = 1000

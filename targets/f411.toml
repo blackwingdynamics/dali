@@ -28,6 +28,9 @@ pclk1_hz = 50_000_000
 pclk2_hz = 100_000_000
 usb_hz = 48_000_000
 
+[i2c]
+bus_frequency_hz = 100_000
+
 [memory]
 flash = { origin = 0x0800_0000, length = 524_288 }
 kernel_origin = 0x2000_0000

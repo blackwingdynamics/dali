@@ -11,6 +11,7 @@ struct Manifest {
     profile: Profile,
     artifacts: Option<Artifacts>,
     clock: Clock,
+    i2c: I2c,
     memory: Memory,
     status_led: Pin,
     usb: Usb,
@@ -58,6 +59,11 @@ struct Clock {
     pclk1_hz: u32,
     pclk2_hz: u32,
     usb_hz: u32,
+}
+
+#[derive(Debug, Deserialize)]
+struct I2c {
+    bus_frequency_hz: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -217,6 +223,13 @@ fn read_manifest(path: &PathBuf) -> Result<Manifest, Box<dyn std::error::Error>>
 fn validate_manifests(manifests: &[Manifest]) -> Result<(), Box<dyn std::error::Error>> {
     for (index, manifest) in manifests.iter().enumerate() {
         validate_memory_regions(manifest)?;
+        if manifest.i2c.bus_frequency_hz == 0 {
+            return Err(format!(
+                "target manifest {} has an invalid I2C bus frequency",
+                manifest.profile.name
+            )
+            .into());
+        }
         if manifest.profile.name.is_empty()
             || manifest.profile.backend.is_empty()
             || manifest.profile.board.is_empty()
@@ -512,7 +525,7 @@ fn generate_registry(manifests: &[Manifest]) -> String {
 fn generate_profile(manifest: &Manifest) -> String {
     let profile = &manifest.profile;
     format!(
-        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage}, scheduler: {scheduler}, watchdog: {watchdog}, authentication: {authentication} }};",
+        "pub const {constant}: TargetProfile = TargetProfile {{ name: {name}, backend: {backend}, registry_constant: {constant_literal}, board: {board}, mcu: {mcu}, rust_target: {target}, kernel_binary: {kernel_binary}, kernel_elf: {kernel_elf}, probe_chip: {probe_chip}, dfu: {dfu}, application_supported: {application_supported}, amrn_target_id: {id}, abi_version: {abi}, capabilities: {capabilities}, clock: {clock}, i2c: {i2c}, memory: {memory}, status_led: {led}, usb: {usb}, storage: {storage}, scheduler: {scheduler}, watchdog: {watchdog}, authentication: {authentication} }};",
         constant = constant_name(&profile.name),
         constant_literal = string_literal(&constant_name(&profile.name)),
         name = string_literal(&profile.name),
@@ -545,6 +558,7 @@ fn generate_profile(manifest: &Manifest) -> String {
         abi = profile.abi_version,
         capabilities = generate_capabilities(&manifest.capabilities),
         clock = generate_clock(&manifest.clock),
+        i2c = generate_i2c(&manifest.i2c),
         memory = generate_memory(&manifest.memory),
         led = generate_pin(&manifest.status_led),
         usb = generate_usb(&manifest.usb),
@@ -640,6 +654,13 @@ fn generate_scheduler(scheduler: &Scheduler) -> String {
     format!(
         "SchedulerProfile {{ quantum_ticks: {}, tick_hz: {} }}",
         scheduler.quantum_ticks, scheduler.tick_hz
+    )
+}
+
+fn generate_i2c(i2c: &I2c) -> String {
+    format!(
+        "I2cProfile {{ bus_frequency_hz: {} }}",
+        i2c.bus_frequency_hz
     )
 }
 

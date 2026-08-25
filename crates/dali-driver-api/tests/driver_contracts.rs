@@ -3,12 +3,12 @@ mod mock;
 use core::sync::atomic::{AtomicU8, Ordering};
 
 use dali_driver_api::{
-    BaudRate, BoundedTimeout, CountDown, DataBits, DriverError, Duration, GpioMode, InputPin,
-    InterruptPin, InterruptTrigger, OutputPin, Parity, PinMode, SerialConfig, SerialConfigure,
-    SerialOwnership, SerialRead, SerialWrite, SpiBusOwnership, SpiDeviceId, SpiDeviceSelect,
-    SpiTransfer, StopBits, TimerDriver,
+    BaudRate, BoundedTimeout, CountDown, DataBits, DriverError, Duration, GpioMode, I2cAddress,
+    I2cDriver, InputPin, InterruptPin, InterruptTrigger, OutputPin, Parity, PinMode, SerialConfig,
+    SerialConfigure, SerialOwnership, SerialRead, SerialWrite, SpiBusOwnership, SpiDeviceId,
+    SpiDeviceSelect, SpiTransfer, StopBits, TimerDriver,
 };
-use mock::{MockGpio, MockSerial, MockSpi, MockTimer};
+use mock::{I2cOperation, MockGpio, MockI2c, MockSerial, MockSpi, MockTimer};
 
 const TIMER_LIMIT: Duration = Duration::from_ticks(100);
 const VALID_TIMEOUT: Duration = Duration::from_ticks(10);
@@ -149,6 +149,76 @@ fn timer_timeout_and_spi_stall_paths_remain_bounded_and_recoverable() {
     spi.deselect().unwrap();
     spi.release().unwrap();
     assert!(!spi.is_owned());
+}
+
+#[test]
+fn i2c_write_read_preserves_repeated_start_transaction() {
+    let mut i2c = MockI2c::<4>::new(TIMER_LIMIT);
+    let address = I2cAddress::new(0x42);
+    let mut response = [0; 2];
+    i2c.set_response(&[7, 8]).unwrap();
+    i2c.acquire().unwrap();
+
+    i2c.write_read(address, &[1, 2], &mut response, VALID_TIMEOUT)
+        .unwrap();
+
+    assert_eq!(response, [7, 8]);
+    assert_eq!(i2c.last_address, Some(address));
+    assert_eq!(i2c.last_write[..2], [1, 2]);
+    assert_eq!(i2c.last_write_len, 2);
+    assert_eq!(i2c.last_operation, Some(I2cOperation::WriteRead));
+    assert_eq!(i2c.write_read_calls, 1);
+    i2c.release().unwrap();
+}
+
+#[test]
+fn i2c_bounded_timeout_and_typed_bus_errors_propagate() {
+    let mut i2c = MockI2c::<2>::new(TIMER_LIMIT);
+    let address = I2cAddress::new(0x18);
+    let mut buffer = [0; 1];
+    i2c.acquire().unwrap();
+
+    assert_eq!(
+        i2c.read(address, &mut buffer, Duration::from_ticks(0)),
+        Err(DriverError::Timeout)
+    );
+    i2c.timed_out = true;
+    assert_eq!(
+        i2c.read(address, &mut buffer, VALID_TIMEOUT),
+        Err(DriverError::Timeout)
+    );
+    i2c.timed_out = false;
+    i2c.bus_error = true;
+    assert_eq!(
+        i2c.write(address, &[1], VALID_TIMEOUT),
+        Err(DriverError::BusError)
+    );
+    i2c.bus_error = false;
+    i2c.nack = true;
+    assert_eq!(
+        i2c.write(address, &[1], VALID_TIMEOUT),
+        Err(DriverError::Nack)
+    );
+    i2c.nack = false;
+    i2c.arbitration_lost = true;
+    assert_eq!(
+        i2c.write(address, &[1], VALID_TIMEOUT),
+        Err(DriverError::ArbitrationLost)
+    );
+    i2c.release().unwrap();
+}
+
+#[test]
+fn i2c_ownership_lifecycle_is_exclusive_and_balanced() {
+    let mut i2c = MockI2c::<2>::new(TIMER_LIMIT);
+
+    assert!(!i2c.is_owned());
+    assert_eq!(i2c.release(), Err(DriverError::InvalidState));
+    i2c.acquire().unwrap();
+    assert_eq!(i2c.acquire(), Err(DriverError::ResourceBusy));
+    assert!(i2c.is_owned());
+    i2c.release().unwrap();
+    assert!(!i2c.is_owned());
 }
 
 #[test]

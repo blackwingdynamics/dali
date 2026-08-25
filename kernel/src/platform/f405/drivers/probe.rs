@@ -1,9 +1,10 @@
 //! F405 bounded-I/O acceptance probe.
 
-use super::{F405Spi, F405TimeoutConfig, F405Uart};
+use super::{F405I2c, F405Spi, F405TimeoutConfig, F405Uart};
 use dali_driver_api::{
-    BaudRate, DataBits, Duration, Parity, SerialConfig, SerialConfigure, SerialOwnership,
-    SerialRead, SpiBusOwnership, SpiDeviceId, SpiDeviceSelect, SpiTransfer, StopBits,
+    BaudRate, DataBits, Duration, I2cAddress, I2cDriver, Parity, SerialConfig, SerialConfigure,
+    SerialOwnership, SerialRead, SpiBusOwnership, SpiDeviceId, SpiDeviceSelect, SpiTransfer,
+    StopBits,
 };
 use stm32f4xx_hal::{
     gpio::{self, Alternate},
@@ -31,6 +32,8 @@ const PROBE_BUFFER_LENGTH: usize = 1;
 const PROBE_SPI_FILL_BYTE: u8 = 0xff;
 /// Logical device selector reserved by this no-peer SPI acceptance probe.
 const PROBE_SPI_DEVICE_ID: u8 = 0;
+/// Logical I2C target used by the bounded bus acceptance probe.
+const PROBE_I2C_ADDRESS: I2cAddress = I2cAddress::new(0x42);
 
 /// Result of the real peripheral timeout probes.
 pub(crate) struct F405DriverProbeResult {
@@ -40,12 +43,17 @@ pub(crate) struct F405DriverProbeResult {
     pub(crate) spi_timed_out: bool,
     /// Whether the SPI transfer completed after the peripheral was restored.
     pub(crate) spi_recovered: bool,
+    /// Whether the I2C probe reached a bounded terminal result.
+    pub(crate) i2c_completed: bool,
+    /// Whether the I2C backend recovered its peripheral after a bus fault.
+    pub(crate) i2c_recovered: bool,
 }
 
 /// F405 UART and SPI adapters retained for the acceptance probe.
 pub(crate) struct F405DriverProbe {
     uart: F405Uart,
     spi: F405Spi<pac::SPI1>,
+    i2c: F405I2c,
     uart_config: SerialConfig,
 }
 
@@ -54,6 +62,7 @@ impl F405DriverProbe {
     pub(crate) fn new(
         usart: pac::USART1,
         spi: pac::SPI1,
+        i2c: pac::I2C1,
         uart_pins: (
             gpio::gpioa::PA9<Alternate<7>>,
             gpio::gpioa::PA10<Alternate<7>>,
@@ -63,7 +72,12 @@ impl F405DriverProbe {
             gpio::gpioa::PA6<Alternate<5>>,
             gpio::gpioa::PA7<Alternate<5>>,
         ),
+        i2c_pins: (
+            gpio::gpiob::PB6<Alternate<4>>,
+            gpio::gpiob::PB7<Alternate<4>>,
+        ),
         clocks: &Clocks,
+        i2c_bus_frequency_hz: u32,
     ) -> Option<Self> {
         let baud_rate = BaudRate::from_bits_per_second(PROBE_UART_BAUD_HZ).ok()?;
         let uart_config =
@@ -89,9 +103,11 @@ impl F405DriverProbe {
             clocks,
         );
         let timeout = F405TimeoutConfig::new(PROBE_TIMEOUT, PROBE_POLLS_PER_TIMEOUT_TICK);
+        let i2c = F405I2c::new(i2c, i2c_pins, clocks, timeout, i2c_bus_frequency_hz)?;
         Some(Self {
             uart: F405Uart::new(serial, timeout, uart_config),
             spi: F405Spi::new(spi, timeout),
+            i2c,
             uart_config,
         })
     }
@@ -102,10 +118,13 @@ impl F405DriverProbe {
         let uart_timed_out = self.run_uart_probe(&mut uart_byte);
         let mut spi_byte = [PROBE_SPI_FILL_BYTE; PROBE_BUFFER_LENGTH];
         let (spi_timed_out, spi_recovered) = self.run_spi_probe(&mut spi_byte);
+        let (i2c_completed, i2c_recovered) = self.run_i2c_probe();
         F405DriverProbeResult {
             uart_timed_out,
             spi_timed_out,
             spi_recovered,
+            i2c_completed,
+            i2c_recovered,
         }
     }
 
@@ -145,5 +164,23 @@ impl F405DriverProbe {
         let deselected = selected && self.spi.deselect().is_ok();
         let released = deselected && self.spi.release().is_ok();
         (timed_out && released, recovered && released)
+    }
+
+    /// Runs a bounded I2C write-read transaction and records recovery state.
+    fn run_i2c_probe(&mut self) -> (bool, bool) {
+        let mut response = [0; PROBE_BUFFER_LENGTH];
+        if self.i2c.acquire().is_err() {
+            return (false, false);
+        }
+        let result = self.i2c.write_read(
+            PROBE_I2C_ADDRESS,
+            &[PROBE_SPI_FILL_BYTE],
+            &mut response,
+            PROBE_TIMEOUT,
+        );
+        let recovered = self.i2c.recovery_observed();
+        let completed = result.is_ok() || matches!(result, Err(dali_driver_api::DriverError::Nack));
+        let _ = self.i2c.release();
+        (completed, recovered)
     }
 }

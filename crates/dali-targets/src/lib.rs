@@ -35,6 +35,8 @@ pub struct TargetProfile {
     pub capabilities: CapabilitiesProfile,
     /// Board clock metadata.
     pub clock: ClockProfile,
+    /// I2C bus configuration declared by the target manifest.
+    pub i2c: I2cProfile,
     /// Board memory regions used by the kernel and applications.
     pub memory: MemoryProfile,
     /// Logical status LED metadata.
@@ -125,6 +127,13 @@ pub struct ClockProfile {
     pub pclk2_hz: u32,
     /// USB clock domain frequency in hertz.
     pub usb_hz: u32,
+}
+
+/// I2C timing metadata declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct I2cProfile {
+    /// Target I2C bus frequency in hertz.
+    pub bus_frequency_hz: u32,
 }
 
 /// Bounded scheduler configuration declared by a target manifest.

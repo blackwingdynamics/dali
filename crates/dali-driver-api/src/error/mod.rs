@@ -31,6 +31,8 @@ pub enum DriverError {
     Nack,
     /// A shared bus transaction lost arbitration.
     ArbitrationLost,
+    /// The bus reported a protocol or electrical fault.
+    BusError,
 }
 
 /// Result type used by driver contracts.
