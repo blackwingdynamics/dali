@@ -49,10 +49,10 @@ branch returns DriverError::Timeout, and ownership can be released after the
 failed transfer. These tests do not prove F405 peripheral timing or external
 device recovery:
 
-~~~text
+```text
 cargo test -p dali-driver-api --test driver_contracts \
   timer_timeout_and_spi_stall_paths_remain_bounded_and_recoverable
-~~~
+```
 
 ### Phase 1 F405 acceptance record
 
