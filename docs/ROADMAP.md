@@ -8,8 +8,8 @@ acceptance boundary, and backlog.
 | Phase | Status | Scope |
 | --- | --- | --- |
 | [01 — Kernel Core and Security](roadmap/01-kernel-core-and-security.md) | **Completed** | F405 feature-gated core, MPU, bounded DMA policy, trust path, watchdog, and storage recovery |
-| [02 — Hardware Drivers and System Subsystems](roadmap/02-hardware-drivers-and-subsystems.md) | **Active** | Driver contracts, backend coverage, and lifecycle hardening |
-| [03 — System GUI and Launcher](roadmap/03-system-gui-and-launcher.md) | **Future** | Dali BIOS and bounded launcher services |
+| [02 — Hardware Drivers and System Subsystems](roadmap/02-hardware-drivers-and-subsystems.md) | **Completed** | Driver contracts, F405 backend coverage, and bounded I2C recovery |
+| [03 — System GUI and Launcher](roadmap/03-system-gui-and-launcher.md) | **Planned** | Small-form-factor I2C OLED diagnostics console proposal |
 | [04 — First-Stage Bootloader](roadmap/04-first-stage-bootloader.md) | **Future** | Pre-reset kernel-image verification and FSBL/ROM handoff |
 
 ## Current execution roadmap
@@ -22,24 +22,31 @@ display backend is introduced.
 
 - [x] Capture F405 Timer timeout integration and expiration evidence.
 - [x] Capture external-SPI or intentionally stalled-SPI recovery evidence.
-- [ ] Record firmware revision, board wiring, transport, expected output, and
-  observed output in `docs/TESTING.md`.
+- [x] Record the available F405 Silicon Trace and its unrecorded hardware
+  metadata limitations in `docs/TESTING.md`.
 
-### Phase 2 — Communication drivers and bus HAL
+### Phase 2 — Communication drivers and bus HAL — Completed 2026-08-25
 
-- [ ] Define a hardware-neutral I2C contract for bounded Write, Read, and
+- [x] Define a hardware-neutral I2C contract for bounded Write, Read, and
   Write-Read operations with repeated-start semantics.
-- [ ] Implement the F405 I2C backend with non-blocking, bounded bus-lockup
+- [x] Implement the F405 I2C backend with non-blocking, bounded bus-lockup
   recovery.
-- [ ] Add fixed-capacity host mocks and unit coverage for I2C ownership,
+- [x] Add fixed-capacity host mocks and unit coverage for I2C ownership,
   repeated-start, timeout, and bus-error behavior.
+- [x] Confirm the F405 I2C timeout and bus-recovery path with a real Silicon
+  Trace on 2026-08-25.
 
-### Phase 3 — Small-form-factor I2C display
+### Phase 3 — Small-form-factor I2C display and diagnostics console
 
 - [ ] Select and specify an SSD1306 or SH1106 128x64 I2C display contract.
 - [ ] Implement a bounded I2C OLED adapter only after Phase 2 acceptance.
 - [ ] Add a lightweight text console for boot status, memory, and diagnostics.
 - [ ] Record target rendering and unavailable-display recovery evidence.
+
+The Phase 3 proposal is read-only planning at this stage. It is limited to an
+I2C OLED and must not modify the frozen SPI/ILI9341 path.
+The detailed action sequence is maintained in
+[`docs/roadmap/02-hardware-drivers-and-subsystems.md`](roadmap/02-hardware-drivers-and-subsystems.md).
 
 ### Phase 4 — Power and diagnostic infrastructure
 

@@ -38,14 +38,32 @@ dali-kernel/
 │       ├── platform/mod.rs        # Platform facade and target entry points
 │       ├── platform/f405/          # F405-specific platform backend
 │       │   ├── mod.rs              # F405 target profile and IRQ bindings
-│       │   ├── board.rs            # F405 hardware resources and board API
+│       │   ├── board.rs            # Small F405 board backend facade
+│       │   ├── board/              # Board configuration and resource ownership
+│       │   │   ├── config.rs       # Target metadata and typed board aliases
+│       │   │   ├── resources.rs    # Board resources and ownership methods
+│       │   │   ├── initialization.rs # Singleton acquisition and setup
+│       │   │   ├── acceptance.rs   # Hardware acceptance probe logging
+│       │   │   ├── services.rs     # LED and delay services
+│       │   │   ├── input.rs        # Board-local input polling
+│       │   │   ├── scheduler.rs    # Board-local SysTick scheduler
+│       │   │   └── usb.rs          # USB FS resource ownership
+│       │   ├── drivers/            # F405 hardware driver adapters
+│       │   │   ├── mod.rs          # Platform driver exports
+│       │   │   ├── gpio.rs         # F405 GPIO adapter
+│       │   │   ├── interrupt.rs    # F405 EXTI adapter
+│       │   │   ├── uart.rs         # Bounded F405 UART adapter
+│       │   │   ├── spi.rs          # Bounded F405 SPI adapter
+│       │   │   ├── i2c.rs          # Bounded F405 I2C adapter
+│       │   │   ├── timeout.rs      # F405 polling timeout policy
+│       │   │   └── probe.rs        # F405 driver acceptance probe
 │       │   ├── sdio.rs             # F405 SDIO transport implementation
 │       │   ├── sdio_raw/           # F405 SDIO register transport
 │       │       ├── mod.rs          # DMA-backed raw block reader
 │       │       ├── init.rs         # Bounded SDIO card initialization
 │       │       ├── status.rs       # SDIO status and interrupt helpers
 │       │       └── write.rs        # Bounded CPU/FIFO block writes
-│       │   └── watchdog/           # F405 watchdog register adapter
+│       │   └── watchdog/            # F405 watchdog register adapter
 │       │       └── mod.rs          # IWDG and reset-cause implementation
 │       ├── bootstrap/             # Categorized kernel startup orchestration
 │       │   ├── startup/           # Logging, boot banner, and watchdog setup
@@ -111,6 +129,9 @@ dali-kernel/
 │   ├── dali-device/               # Hardware-neutral device records
 │   ├── dali-sdk/                  # Application ABI and SVC API
 │   ├── dali-targets/              # TOML validation and generated registry
+│   │   ├── src/lib.rs             # Public typed target-profile API
+│   │   ├── build.rs               # Build-script orchestration
+│   │   └── build/                 # Manifest loader, validation, and generators
 │   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
 │   ├── ARCHITECTURE.md, ABI.md, AMRN_FORMAT.md, HARDWARE.md
@@ -153,7 +174,7 @@ kernel/src/
 │   fault/{mod.rs,persistent.rs,scb.rs},launch/{mod.rs},
 │   mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs},
 │   privilege/{mod.rs,svc.rs},scheduling/{mod.rs}}
-├── platform/{mod.rs,f405/{mod.rs,board.rs,sdio.rs,sdio_raw/{mod.rs,init.rs,status.rs,write.rs}}}
+├── platform/{mod.rs,f405/{mod.rs,board.rs,board/{acceptance.rs,config.rs,initialization.rs,input.rs,resources.rs,scheduler.rs,services.rs,usb.rs},drivers/{mod.rs,gpio.rs,i2c.rs,i2c/operations.rs,interrupt.rs,probe.rs,spi.rs,timeout.rs,timer.rs,uart.rs},sdio.rs,sdio_raw/{mod.rs,dma.rs,init.rs,status.rs,write.rs},watchdog/mod.rs}}
 ├── bootstrap/{mod.rs,
 │   startup/{mod.rs,logging.rs,watchdog.rs},
 │   lifecycle/{mod.rs,heartbeat.rs,status.rs},
@@ -221,6 +242,9 @@ crates/dali-metadata/src/
 crates/dali-sdk/src/{lib.rs,svc.rs,svc_log.rs}
 crates/dali-targets/src/lib.rs
 crates/dali-targets/build.rs
+crates/dali-targets/build/{loader.rs,manifest.rs,render.rs,
+│   generator/{mod.rs,authentication.rs,hardware.rs,profile.rs},
+│   validation/{mod.rs,memory.rs,security.rs}}
 crates/dali-usb/src/{lib.rs,tests.rs}
 ```
 

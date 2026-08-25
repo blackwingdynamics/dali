@@ -22,28 +22,79 @@ observed backend and board configuration.
 
 ## Current execution order
 
-### Phase 1 — F405 bounded-timeout acceptance
+### Phase 1 — F405 bounded-timeout acceptance — Completed
 
 - [x] Capture Timer timeout integration and expiration evidence on the F405.
 - [x] Capture external-SPI or intentionally stalled-SPI recovery evidence on the
   F405.
-- [ ] Record the firmware revision, wiring, transport, expected trace, observed
-  trace, and result in `docs/TESTING.md`.
+- [x] Record the available firmware, transport, expected trace, observed trace,
+  result, and unrecorded board metadata in `docs/TESTING.md`.
 
-### Phase 2 — Communication drivers
+### Phase 2 — Communication drivers — Completed 2026-08-25
 
-- [ ] Define a hardware-neutral bounded I2C Write, Read, and Write-Read
+- [x] Define a hardware-neutral bounded I2C Write, Read, and Write-Read
   (repeated-start) contract.
-- [ ] Implement the F405 I2C backend with bounded bus-lockup recovery.
-- [ ] Add fixed-capacity I2C mocks and host tests for ownership, repeated-start,
+- [x] Implement the F405 I2C backend with bounded bus-lockup recovery.
+- [x] Add fixed-capacity I2C mocks and host tests for ownership, repeated-start,
   timeout, and bus errors.
+- [x] Confirm the F405 I2C timeout and bus-recovery path with the 2026-08-25
+  Silicon Trace recorded in `docs/TESTING.md`.
 
-### Phase 3 — Small-form-factor I2C display
+### Phase 3 — Small-form-factor I2C display and diagnostics console
 
 - [ ] Specify an SSD1306 or SH1106 128x64 I2C display backend.
-- [ ] Add a bounded I2C OLED driver and lightweight diagnostic text console
-  after the I2C acceptance gate.
-- [ ] Record target rendering and unavailable-display recovery evidence.
+- [ ] Define a hardware-neutral OLED contract and bounded framebuffer or
+  command-stream policy in `crates/dali-driver-api/`.
+- [ ] Extend target manifests with display controller, address, dimensions,
+  reset policy, and update-time limits; generate typed display metadata.
+- [ ] Implement the F405 I2C OLED adapter only behind the display capability.
+- [ ] Define and implement a bounded text-mode diagnostics console for boot
+  status and diagnostic stream records.
+- [ ] Record target rendering, unavailable-display, and recovery evidence.
+
+This phase is a read-only proposal until separately approved. The SPI driver,
+ILI9341 experiments, USB CDC core servicing, SDIO, and Storage remain frozen.
+
+#### Phase 3 action plan
+
+1. **Freeze the display contract.** Select SSD1306 or SH1106 after confirming
+   the module's I2C command and addressing mode. Define typed dimensions,
+   bounded initialization, bounded page/frame updates, reset behavior, and
+   `Unavailable`, `Timeout`, `BusError`, and `InvalidState` errors. The
+   contract must accept caller-owned text or framebuffer data and must not
+   expose F405 PAC/HAL types.
+2. **Add hardware-neutral API and host coverage.** Place the display trait and
+   bounded text/flush policy in `crates/dali-driver-api/`. Add fixed-capacity
+   host mocks only for contract tests covering dimensions, clipping, command
+   ordering, update bounds, timeout propagation, and unavailable-display
+   recovery. Host tests are not hardware evidence.
+3. **Extend target metadata.** Add a manifest-owned display capability with
+   controller, I2C address, width, height, addressing mode, reset policy, and
+   update timeout/buffer limits. Generate a typed display profile through
+   `crates/dali-targets/`; reject incomplete or unsupported combinations at
+   manifest validation time. No display value may be duplicated in kernel
+   policy code.
+4. **Implement the F405 backend.** Add the SSD1306/SH1106 adapter behind the
+   existing hardware-neutral I2C boundary. Keep all PAC/HAL ownership in
+   `kernel/src/platform/f405/` and use the already accepted bounded I2C
+   timeout and recovery path. A missing or failed OLED must return a bounded
+   error and must not stall boot or storage recovery.
+5. **Build the diagnostics console engine.** Define a bounded text-mode sink
+   with fixed rows, columns, line clipping, and deterministic cursor/update
+   behavior. Feed it boot status and diagnostic records through a small
+   hardware-neutral interface; do not couple it to USB CDC servicing or alter
+   the existing logging transport. Define overflow and unavailable-display
+   behavior explicitly.
+6. **Integrate and accept on hardware.** Add the display capability to the
+   F405 acceptance image, verify initialization, text rendering, bounded
+   update behavior, and unplugged/bus-fault recovery with Silicon Trace and
+   the physical OLED. Record board, display controller, I2C wiring, power,
+   firmware revision, expected output, observed output, and result in
+   `docs/TESTING.md` before closing Phase 3.
+
+The implementation order is contract and host tests, manifest/profile
+generation, F405 backend, console engine, then physical acceptance. SPI
+display code and ILI9341 experiments are out of scope for every step.
 
 ### Phase 4 — Power and diagnostics
 

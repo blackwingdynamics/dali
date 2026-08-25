@@ -118,6 +118,49 @@ functional acceptance items. The separate evidence-record metadata item
 remains open until the board revision, exact wiring, and power source are
 recorded for this capture.
 
+### Phase 2 F405 I2C acceptance record — 2026-08-25
+
+Phase 2 hardware acceptance was run on the WeAct Studio STM32F405RGT6 Core
+Board using the release acceptance firmware and a real Raspberry Pi Pico 2
+CMSIS-DAP probe. The active CDC console was `/dev/ttyACM0`; the device list
+reported it as `available`. The probe identifier was
+`2e8a:000c-0:D08DDA0AD07514B4`. The firmware source revision used for this
+capture was not recorded separately from the flashed acceptance image. Board
+revision, exact wiring, and power source were also not recorded.
+
+The expected I2C acceptance result was a bounded transfer timeout followed by
+peripheral bus recovery, while the existing boot, storage, security, and
+lifecycle markers continued normally. The observed I2C trace was:
+
+```text
+[DRIVER][I2C] Bounded transfer timeout enforced
+[DRIVER][I2C] Bus recovered
+```
+
+The complete relevant console output also recorded:
+
+```text
+[DRIVER][UART] Bounded timeout enforced
+[DRIVER][SPI] Stalled transfer timeout enforced
+[DRIVER][SPI] Recovery transfer completed
+[DRIVER][I2C] Bounded transfer timeout enforced
+[DRIVER][I2C] Bus recovered
+[STORAGE] Trust-store artifact write/flush/read-back test passed
+[SECURITY] AMRN signature verified
+[SECURITY] Application lifecycle: Ready
+[SECURITY] Active application context: Running
+[DRIVER][TIMER] Hardware timer timeout enforced
+[DRIVER][TIMER] Hardware timer tick elapsed
+[APP] DMA application request rejected
+```
+
+Result: the F405 I2C bounded-timeout and bus-recovery acceptance is confirmed
+by real Silicon Trace. Repeated-start semantics remain covered by the
+hardware-neutral contract and host tests; this trace does not claim an
+external OLED device rendering result. Phase 2 is closed. Missing board
+revision, exact wiring, power source, and separately recorded firmware
+revision remain evidence metadata limitations, not failed I2C behavior.
+
 The F405 backend maps bounded SDIO command/data timeouts to `CardRemoved`
 because this board exposes no card-detect GPIO. The recovery heartbeat retains
 the reader after a failed bring-up, probes at the configured interval, and
