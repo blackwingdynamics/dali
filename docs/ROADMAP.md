@@ -3,13 +3,13 @@
 This file is the roadmap gateway. Each phase has its own status, scope,
 acceptance boundary, and backlog.
 
-## Current status — 2026-08-25
+## Current status — 2026-08-26
 
 | Phase | Status | Scope |
 | --- | --- | --- |
 | [01 — Kernel Core and Security](roadmap/01-kernel-core-and-security.md) | **Completed** | F405 feature-gated core, MPU, bounded DMA policy, trust path, watchdog, and storage recovery |
-| [02 — Hardware Drivers and System Subsystems](roadmap/02-hardware-drivers-and-subsystems.md) | **Completed** | Driver contracts, F405 backend coverage, and bounded I2C recovery |
-| [03 — System GUI and Launcher](roadmap/03-system-gui-and-launcher.md) | **Completed** | Manifest-driven I2C OLED diagnostics console with F405 evidence |
+| [02 — Hardware Drivers and System Subsystems](roadmap/02-hardware-drivers-and-subsystems.md) | **Completed, device validation pending** | Driver contracts, F405 backend coverage, and bounded I2C recovery; physical I2C device interoperability awaits laboratory measurement |
+| [03 — System GUI and Launcher](roadmap/03-system-gui-and-launcher.md) | **Implementation complete, hardware validation pending** | Manifest-driven I2C OLED diagnostics console; physical OLED ACK and rendering evidence awaits laboratory measurement |
 | [04 — First-Stage Bootloader](roadmap/04-first-stage-bootloader.md) | **Future** | Pre-reset kernel-image verification and FSBL/ROM handoff |
 
 ## Current execution roadmap
@@ -43,9 +43,11 @@ display backend is introduced.
 - [x] Add a lightweight text console for boot status, memory, and diagnostics.
 - [x] Record target rendering and unavailable-display recovery evidence.
 
-Phase 3 was completed on 2026-08-25 using the F405 Silicon Trace and physical
-OLED acceptance recorded in `docs/TESTING.md`. It remains limited to an I2C
-OLED and did not modify the frozen SPI/ILI9341 path.
+The Phase 3 implementation is complete, but physical OLED acceptance is
+pending. The F405 Silicon Trace confirms the boot path and bounded I2C error
+handling; it does not yet confirm an ACK from a connected OLED or rendering on
+the physical panel. The work remains limited to an I2C OLED and did not modify
+the frozen SPI/ILI9341 path.
 The detailed action sequence is maintained in
 [`docs/roadmap/02-hardware-drivers-and-subsystems.md`](roadmap/02-hardware-drivers-and-subsystems.md).
 
@@ -55,6 +57,24 @@ The detailed action sequence is maintained in
 - [ ] Define and implement Ustari-based wired read-only `sysinfo`, `mem`, `ps`,
   and `dmesg` diagnostics.
 - [ ] Add host, target, and hardware evidence for each diagnostic response.
+
+### Current work — repository quality and structure
+
+This is the active development track while laboratory hardware validation is
+pending.
+
+- [ ] Reconcile architecture, roadmap, testing, and file-structure
+  documentation with the implemented repository.
+- [ ] Inventory large files, mixed responsibilities, misplaced modules, and
+  obsolete or duplicated code without changing runtime behavior.
+- [ ] Split oversized implementation files only along explicit ownership and
+  responsibility boundaries.
+- [ ] Preserve public APIs, generated output, boot order, frozen subsystem
+  boundaries, and hardware evidence claims during refactoring.
+- [ ] Validate each atomic refactoring with formatting, focused tests,
+  workspace checks, and `git diff --check`.
+- [ ] Keep the I2C physical acceptance item open until laboratory equipment is
+  available and a real F405 trace confirms device ACK and OLED rendering.
 
 ## Active safety boundaries
 

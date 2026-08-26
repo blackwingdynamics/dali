@@ -1,6 +1,6 @@
 # Hardware Drivers and System Subsystems
 
-Status: **Active**.
+Status: **Active — repository quality work; I2C device validation pending**.
 
 The current implementation target is the WeAct STM32F405RGT6 board. Hardware
 specific facts remain in the F405 platform boundary and target manifest;
@@ -52,9 +52,11 @@ observed backend and board configuration.
   status and diagnostic stream records.
 - [x] Record target rendering, unavailable-display, and recovery evidence.
 
-Phase 3 was completed on 2026-08-25. The F405 Silicon Trace and physical OLED
-acceptance are recorded in `docs/TESTING.md`. The SPI driver, ILI9341
-experiments, USB CDC core servicing, SDIO, and Storage remain frozen.
+The Phase 3 implementation is complete, but physical OLED acceptance is still
+pending. The available F405 trace confirms boot progress and bounded I2C
+failure/recovery handling; it does not confirm a connected device ACK or
+physical OLED rendering. The SPI driver, ILI9341 experiments, USB CDC core
+servicing, SDIO, and Storage remain frozen.
 
 #### Phase 3 action plan
 
@@ -94,9 +96,27 @@ experiments, USB CDC core servicing, SDIO, and Storage remain frozen.
    `docs/TESTING.md` before closing Phase 3.
 
 The implementation order was contract and host tests, manifest/profile
-generation, F405 backend, console engine, then physical acceptance. All listed
-steps are complete; SPI display code and ILI9341 experiments remain out of
-scope.
+generation, F405 backend, console engine, then physical acceptance. The code
+steps are complete; physical I2C device validation awaits laboratory equipment
+and remains open. SPI display code and ILI9341 experiments remain out of scope.
+
+### Current work — documentation and codebase organization
+
+While I2C laboratory validation is pending, the active track is repository
+quality work:
+
+- [ ] Reconcile architecture, roadmap, testing, and file-structure documents
+  with the current implementation and evidence boundary.
+- [ ] Inventory large files, mixed responsibilities, misplaced modules, and
+  obsolete or duplicated code.
+- [ ] Split large implementation files only at explicit ownership boundaries;
+  preserve behavior, public APIs, generated output, and boot order.
+- [ ] Keep refactoring separate from behavioral changes and frozen subsystem
+  paths.
+- [ ] Validate every atomic refactoring with formatting, focused tests,
+  workspace checks, and `git diff --check`.
+- [ ] Close I2C device acceptance only after laboratory measurement confirms
+  a real F405 device ACK and OLED rendering.
 
 ### Phase 4 — Power and diagnostics
 
