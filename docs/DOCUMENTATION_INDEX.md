@@ -22,7 +22,7 @@ Read the documents in this order:
 11. [MVP Acceptance](MVP_ACCEPTANCE.md) — the physical STM32F405 end-to-end acceptance procedure.
 12. [Versioning](VERSIONING.md) — component versions, ABI compatibility, and release tags.
 13. [Security](SECURITY.md) — current guarantees, non-guarantees, and post-MVP security work.
-14. [Package Distribution](PACKAGE_DISTRIBUTION.md) — the normative multi-developer trust, metadata, update, and acceptance contract.
+14. [Package Distribution](PACKAGE_DISTRIBUTION.md) — index for the normative multi-developer trust, metadata, update, and acceptance contract.
 15. [Ustari Protocol](USTARI_PROTOCOL.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.
 16. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
 17. [Target Profiles](TARGET_PROFILES.md) — declarative board metadata and kernel mapping ownership.

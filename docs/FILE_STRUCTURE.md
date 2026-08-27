@@ -141,6 +141,7 @@ dali-kernel/
 │   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
 │   ├── PACKAGE_DISTRIBUTION.md, METADATA_BINARY_V2.md, RELOCATION.md, FILE_STRUCTURE.md
+│   ├── package-distribution/       # Categorized package, trust, and acceptance docs
 │   ├── testing/                   # Categorized testing procedures and evidence
 │   ├── cli/                        # CLI guides and command references
 │   ├── drivers/                    # Driver contracts and boundaries
