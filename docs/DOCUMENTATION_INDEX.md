@@ -8,7 +8,7 @@ The repository coding-agent contract is documented in the root [AGENTS.md](../AG
 
 Read the documents in this order:
 
-1. [Architecture](ARCHITECTURE.md) — project vision, MVP boundary, runtime layers, and core contracts.
+1. [Architecture](ARCHITECTURE.md) — index for categorized project vision, MVP boundary, runtime layers, and core contracts.
 2. [File Structure](FILE_STRUCTURE.md) — repository layout and prioritized file sequence.
 3. [Roadmap](ROADMAP.md) — phase gateway, status, and acceptance boundaries;
    detailed phase plans are in [docs/roadmap](roadmap/).

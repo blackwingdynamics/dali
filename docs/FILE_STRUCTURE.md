@@ -135,6 +135,7 @@ dali-kernel/
 │   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
 │   ├── ARCHITECTURE.md, ABI.md, AMRN_FORMAT.md, HARDWARE.md
+│   ├── architecture/             # Categorized architecture and protocol docs
 │   ├── ROADMAP.md, TESTING.md, MVP_ACCEPTANCE.md, SECURITY.md
 │   ├── CODING_STANDARDS.md, DEVELOPMENT.md, VERSIONING.md
 │   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
