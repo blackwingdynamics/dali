@@ -223,7 +223,7 @@ The peripheral region must be power-of-two-sized and aligned; it is used to make
 ordinary peripheral registers inaccessible to unprivileged applications.
 
 Do not change the application region for the current AMRN v1 contract without
-updating `AMRN_FORMAT.md`, `ABI.md`, the linker scripts, tests, and roadmap.
+updating `amrn-format/README.md`, `ABI.md`, the linker scripts, tests, and roadmap.
 
 ## Pin tables
 

@@ -134,7 +134,8 @@ dali-kernel/
 │   │   └── build/                 # Manifest loader, validation, and generators
 │   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
-│   ├── ABI.md, AMRN_FORMAT.md, HARDWARE.md
+│   ├── ABI.md, HARDWARE.md
+│   ├── amrn-format/               # Categorized AMRN format documentation
 │   ├── architecture/             # Categorized architecture and protocol docs
 │   ├── development/              # Setup, build, flash, and debugging docs
 │   ├── ROADMAP.md, MVP_ACCEPTANCE.md, SECURITY.md

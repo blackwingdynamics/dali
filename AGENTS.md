@@ -30,7 +30,7 @@ multi-application isolation. See `docs/SECURITY.md`, `docs/ABI.md`, and
 Read the relevant documents before making a change:
 
 - `docs/architecture/README.md` — system boundaries and MVP scope;
-- `docs/AMRN_FORMAT.md` — package bytes and validation rules;
+- `docs/amrn-format/README.md` — package bytes and validation rules;
 - `docs/ABI.md` — kernel/application execution contract;
 - `docs/HARDWARE.md` — board, pins, clock, and SRAM layout;
 - `docs/CODING_STANDARDS.md` — code, comments, unsafe, testing, and review rules;

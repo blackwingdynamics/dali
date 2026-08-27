@@ -106,7 +106,7 @@ has a fixed 64-byte header, separate code and initialized-data file segments,
 explicit zero-data and PSP stack reservations, target-defined code/data
 origins, and a CRC32 over both file segments. The current F405 linker contract
 uses 32 KiB code and 32 KiB data regions. This contract is documented in
-`docs/AMRN_FORMAT.md`; it does not authorize the current v1 parser or builder
+`docs/amrn-format/README.md`; it does not authorize the current v1 parser or builder
 to accept or emit ABI v3 packages.
 
 ## 5. Compatibility rules

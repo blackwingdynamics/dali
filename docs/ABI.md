@@ -299,7 +299,7 @@ prevent bypass of the no-access boundaries.
 ABI v3 packages use AMRN format version `2`; the format revision is required
 because the v1 fixed header cannot represent separate code/data segments and
 runtime stack reservations. The v2 package contract is defined in
-`docs/AMRN_FORMAT.md`. The `dali-amrn` crate provides host-side parsing and
+`docs/amrn-format/README.md`. The `dali-amrn` crate provides host-side parsing and
 construction. The CLI can build and inspect ABI v3 packages, and the kernel has
 a feature-gated streaming validator/copy path. The default kernel remains
 ABI v2-only; the feature-gated path is experimental and its hardware evidence
@@ -328,7 +328,7 @@ deferred.
 
 Format version 3 is the movable ABI v3 contract. Its host-side header,
 relocation-entry validation, CLI extraction, package emission, and inspection
-are defined in docs/AMRN_FORMAT.md and implemented in dali-amrn::v3 and the
+are defined in docs/amrn-format/README.md and implemented in dali-amrn::v3 and the
 CLI. The kernel accepts and applies it only with the explicit
 `abi-relocation` feature; the default kernel path remains unchanged. The
 current feature-gated loader still uses the target manifest's declared origins
