@@ -140,7 +140,11 @@ dali-kernel/
 │   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
 │   ├── PACKAGE_DISTRIBUTION.md, METADATA_BINARY_V2.md, RELOCATION.md, FILE_STRUCTURE.md
+│   ├── testing/                   # Categorized testing procedures and evidence
 │   ├── cli/                        # CLI guides and command references
+│   ├── drivers/                    # Driver contracts and boundaries
+│   ├── architecture/               # Future architecture and protocol RFCs
+│   ├── roadmap/                    # Detailed phase plans
 │   └── changelog/                  # Archived generated release changelogs
 ├── scripts/
 │   ├── console.sh, archive-changelog.sh, check-commit-message.sh
@@ -323,6 +327,8 @@ target-scaffold.md
   documentation lives in `docs/cli/commands/`.
 - `apps/` contains independently built validation applications and fixtures;
   these are not kernel modules.
+- `docs/testing/` contains the categorized testing procedures and evidence
+  records indexed by `docs/TESTING.md`.
 
 ## Generated and local-only content
 

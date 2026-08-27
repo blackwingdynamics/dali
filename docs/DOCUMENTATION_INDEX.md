@@ -18,7 +18,7 @@ Read the documents in this order:
 7. [Hardware](HARDWARE.md) — STM32F405 MVP board, pins, clock, SD wiring, and electrical assumptions.
 8. [Development](DEVELOPMENT.md) — build, flash, logging, and debugging workflow.
 9. [Application Workflow](APPLICATION_WORKFLOW.md) — build, package, install, and validate an application.
-10. [Testing](TESTING.md) — host tests, parser tests, and hardware acceptance tests.
+10. [Testing](TESTING.md) — navigation index for categorized host, target, and hardware testing documentation.
 11. [MVP Acceptance](MVP_ACCEPTANCE.md) — the physical STM32F405 end-to-end acceptance procedure.
 12. [Versioning](VERSIONING.md) — component versions, ABI compatibility, and release tags.
 13. [Security](SECURITY.md) — current guarantees, non-guarantees, and post-MVP security work.
