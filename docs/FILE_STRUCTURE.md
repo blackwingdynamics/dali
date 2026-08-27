@@ -134,18 +134,17 @@ dali-kernel/
 │   │   └── build/                 # Manifest loader, validation, and generators
 │   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
-│   ├── ARCHITECTURE.md, ABI.md, AMRN_FORMAT.md, HARDWARE.md
-│   ├── architecture/             # Categorized architecture and protocol docs
-│   ├── ROADMAP.md, TESTING.md, MVP_ACCEPTANCE.md, SECURITY.md
-│   ├── CODING_STANDARDS.md, DEVELOPMENT.md, VERSIONING.md
+│   ├── ABI.md, AMRN_FORMAT.md, HARDWARE.md
+│   ├── ROADMAP.md, MVP_ACCEPTANCE.md, SECURITY.md
+│   ├── CODING_STANDARDS.md, VERSIONING.md
 │   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
 │   ├── PACKAGE_DISTRIBUTION.md, METADATA_BINARY_V2.md, RELOCATION.md, FILE_STRUCTURE.md
-│   ├── package-distribution/       # Categorized package, trust, and acceptance docs
+│   ├── package-distribution/      # Categorized package, trust, and acceptance docs
 │   ├── testing/                   # Categorized testing procedures and evidence
+│   ├── development/               # Setup, build, flash, and debugging docs
 │   ├── cli/                        # CLI guides and command references
 │   ├── drivers/                    # Driver contracts and boundaries
-│   ├── architecture/               # Future architecture and protocol RFCs
 │   ├── roadmap/                    # Detailed phase plans
 │   └── changelog/                  # Archived generated release changelogs
 ├── scripts/
@@ -330,7 +329,7 @@ target-scaffold.md
 - `apps/` contains independently built validation applications and fixtures;
   these are not kernel modules.
 - `docs/testing/` contains the categorized testing procedures and evidence
-  records indexed by `docs/TESTING.md`.
+  records indexed by `docs/testing/README.md`.
 
 ## Generated and local-only content
 

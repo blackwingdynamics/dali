@@ -17,7 +17,7 @@ generic contracts must remain hardware-agnostic.
 - Kernel-owned watchdog servicing around opaque storage and verification work.
 
 F405 hardware records for these paths are maintained in
-[`docs/TESTING.md`](../TESTING.md). Driver claims must remain specific to the
+[`docs/testing/README.md`](../testing/README.md). Driver claims must remain specific to the
 observed backend and board configuration.
 
 ## Current execution order
@@ -28,7 +28,7 @@ observed backend and board configuration.
 - [x] Capture external-SPI or intentionally stalled-SPI recovery evidence on the
   F405.
 - [x] Record the available firmware, transport, expected trace, observed trace,
-  result, and unrecorded board metadata in `docs/TESTING.md`.
+  result, and unrecorded board metadata in `docs/testing/README.md`.
 
 ### Phase 2 — Communication drivers — Completed 2026-08-25
 
@@ -38,7 +38,7 @@ observed backend and board configuration.
 - [x] Add fixed-capacity I2C mocks and host tests for ownership, repeated-start,
   timeout, and bus errors.
 - [x] Confirm the F405 I2C timeout and bus-recovery path with the 2026-08-25
-  Silicon Trace recorded in `docs/TESTING.md`.
+  Silicon Trace recorded in `docs/testing/README.md`.
 
 ### Phase 3 — Small-form-factor I2C display and diagnostics console
 
@@ -93,7 +93,7 @@ servicing, SDIO, and Storage remain frozen.
    update behavior, and unplugged/bus-fault recovery with Silicon Trace and
    the physical OLED. Record board, display controller, I2C wiring, power,
    firmware revision, expected output, observed output, and result in
-   `docs/TESTING.md` before closing Phase 3.
+   `docs/testing/README.md` before closing Phase 3.
 
 The implementation order was contract and host tests, manifest/profile
 generation, F405 backend, console engine, then physical acceptance. The code

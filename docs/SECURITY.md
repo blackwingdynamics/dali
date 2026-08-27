@@ -71,7 +71,7 @@ to every target or package mode.
 Security claims must be added only after the corresponding mechanism and test evidence exist.
 
 The future multi-developer package ecosystem is defined in
-`docs/PACKAGE_DISTRIBUTION.md`. That document is the source of truth for the
+`docs/package-distribution/README.md`. That document is the source of truth for the
 Dali root, repository metadata roles, developer delegations, signed trust-store
 updates, revocation, rotation, rollback, and offline installation. The current
 F405 static release trust-anchor path is a precursor to that design and must

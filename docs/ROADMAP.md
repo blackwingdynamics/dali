@@ -23,7 +23,7 @@ display backend is introduced.
 - [x] Capture F405 Timer timeout integration and expiration evidence.
 - [x] Capture external-SPI or intentionally stalled-SPI recovery evidence.
 - [x] Record the available F405 Silicon Trace and its unrecorded hardware
-  metadata limitations in `docs/TESTING.md`.
+  metadata limitations in `docs/testing/README.md`.
 
 ### Phase 2 — Communication drivers and bus HAL — Completed 2026-08-25
 
@@ -88,7 +88,7 @@ pending.
 
 Completion requires implementation, relevant host/target validation, and
 hardware evidence when the behavior depends on a physical target. The
-canonical records are [`docs/TESTING.md`](TESTING.md),
+canonical records are [`docs/testing/README.md`](testing/README.md),
 [`docs/MVP_ACCEPTANCE.md`](MVP_ACCEPTANCE.md), and
 [`docs/SECURITY.md`](SECURITY.md).
 

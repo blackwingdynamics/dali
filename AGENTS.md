@@ -23,19 +23,19 @@ contains feature-gated ABI v3 single-application processor-side isolation and
 AMRN v3/v4 loader paths; these are not the default MVP configuration and must
 not be described as complete sandboxing, secure boot, DMA isolation, or
 multi-application isolation. See `docs/SECURITY.md`, `docs/ABI.md`, and
-`docs/TESTING.md` for the current evidence boundary.
+`docs/testing/README.md` for the current evidence boundary.
 
 ## 2. Source of truth
 
 Read the relevant documents before making a change:
 
-- `docs/ARCHITECTURE.md` — system boundaries and MVP scope;
+- `docs/architecture/README.md` — system boundaries and MVP scope;
 - `docs/AMRN_FORMAT.md` — package bytes and validation rules;
 - `docs/ABI.md` — kernel/application execution contract;
 - `docs/HARDWARE.md` — board, pins, clock, and SRAM layout;
 - `docs/CODING_STANDARDS.md` — code, comments, unsafe, testing, and review rules;
 - `docs/ROADMAP.md` — atomic implementation order;
-- `docs/TESTING.md` — test strategy;
+- `docs/testing/README.md` — test strategy;
 - `docs/MVP_ACCEPTANCE.md` — physical acceptance procedure;
 - `docs/VERSIONING.md` — version and compatibility rules;
 - `CONTRIBUTING.md` — branch, commit, PR, and CI rules.

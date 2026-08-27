@@ -18,7 +18,7 @@ The MVP passes only when the kernel reads and executes an independently built `.
 
 This is the baseline release acceptance procedure. It does not replace the
 feature-gated ABI v3 isolation and AMRN v4 hardware evidence recorded in
-`docs/TESTING.md`.
+`docs/testing/README.md`.
 
 This test does not prove:
 

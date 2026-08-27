@@ -99,13 +99,13 @@ cargo build-kernel
 cargo test -p dali -p dali-app-hello -p dali-cli
 ```
 
-The complete development and hardware workflow is documented in [DEVELOPMENT.md](docs/DEVELOPMENT.md).
+The complete development and hardware workflow is documented in [development documentation](docs/development/README.md).
 
 ## Documentation
 
 Start with the [Documentation Index](docs/DOCUMENTATION_INDEX.md). Key documents are:
 
-- [Architecture](docs/ARCHITECTURE.md)
+- [Architecture](docs/architecture/README.md)
 - [Roadmap](docs/ROADMAP.md)
 - [AMRN Format](docs/AMRN_FORMAT.md)
 - [Kernel–Application ABI](docs/ABI.md)

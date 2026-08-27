@@ -1,8 +1,7 @@
 # Dali OS Architecture
 
 This directory contains the architecture documentation organized by topic.
-The original `docs/ARCHITECTURE.md` remains the stable entry point and now
-provides navigation to these documents.
+This file is the stable entry point and navigation index for these documents.
 
 ## Navigation
 

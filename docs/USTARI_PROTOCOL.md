@@ -283,7 +283,7 @@ may do. The device enforces both for telemetry, parameters, lifecycle,
 package upload/activation, Trust Store administration, and safety commands.
 
 Package identity, developer delegation, Trust Store updates, and package
-signatures remain governed by `docs/PACKAGE_DISTRIBUTION.md` and AMRN. Ustari
+signatures remain governed by `docs/package-distribution/README.md` and AMRN. Ustari
 may transport these operations but may not weaken their validation or make a
 transport connection an enrollment authority.
 

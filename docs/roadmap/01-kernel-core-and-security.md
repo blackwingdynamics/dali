@@ -29,7 +29,7 @@ the baseline ABI v2 MVP into a general-purpose secure kernel.
 ## Evidence boundary
 
 The F405 evidence and commands are maintained in
-[`docs/TESTING.md`](../TESTING.md). Host tests validate hardware-neutral
+[`docs/testing/README.md`](../testing/README.md). Host tests validate hardware-neutral
 contracts; they are not hardware evidence.
 
 The completed claims are intentionally bounded. They do not claim arbitrary

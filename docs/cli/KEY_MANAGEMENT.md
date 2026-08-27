@@ -153,7 +153,7 @@ trailer must be rejected before SRAM copy and application entry.
 
 Record the board, kernel commit, target profile, key identifier, package hash,
 SD card/filesystem, power source, console channel, expected output, observed
-output, and result in `docs/TESTING.md` or the associated acceptance record.
+output, and result in `docs/testing/README.md` or the associated acceptance record.
 
 ## Rotation and incident response
 

@@ -1,10 +1,10 @@
 # Testing Documentation
 
 This directory contains the testing strategy, validation procedures, and
-recorded evidence previously maintained in `docs/TESTING.md`.
+recorded evidence previously maintained in the former top-level testing guide.
 
-`docs/TESTING.md` remains the top-level navigation index for compatibility with
-existing links. The documents below preserve the original testing material by
+This file is the testing documentation entry point and navigation index. The
+documents below preserve the original testing material by
 category:
 
 1. [Host tests](host.md) — hardware-neutral contracts, parser tests, and host

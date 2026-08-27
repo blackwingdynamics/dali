@@ -304,7 +304,7 @@ The current parser validates only structure and bounded lengths; it does not
 make unsigned v4 packages secure. The v5 loader adds feature-gated signature
 verification and static target trust-anchor selection. The complete
 multi-developer trust chain, metadata roles, and update policy are defined by
-`docs/PACKAGE_DISTRIBUTION.md` and are not implemented by this envelope alone.
+`docs/package-distribution/README.md` and are not implemented by this envelope alone.
 The `SignatureVerifier` trait is the hardware-neutral boundary for an audited
 host signer and a target trust-store verifier; it does not provide a default
 or bypass implementation. The `dali-crypto` facade now provides a bounded

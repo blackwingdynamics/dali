@@ -145,7 +145,7 @@ anchor is the RFC8032 test vector and is enabled only by `abi-test-fixtures`;
 the release manifest contains a generated public anchor and has hardware
 verification evidence. This static target-profile mechanism is the precursor
 to the multi-developer repository trust contract in
-`docs/PACKAGE_DISTRIBUTION.md`; it is not that contract's dynamic trust store.
+`docs/package-distribution/README.md`; it is not that contract's dynamic trust store.
 
 AMRN format version `4` defines package identity and selection metadata. It
 remains ABI v3-compatible: format v4 changes the container header and

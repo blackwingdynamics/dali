@@ -1,9 +1,8 @@
 # Package Distribution Documentation
 
-The canonical source remains [`../PACKAGE_DISTRIBUTION.md`](../PACKAGE_DISTRIBUTION.md)
-until the split content has been reviewed and approved. The files below are
-topic-oriented copies prepared for compatibility comparison; the source file
-has not been changed.
+This file is the stable entry point and navigation index for the package
+distribution and trust contract. The files below contain its topic-oriented
+sections.
 
 ## Prepared sections
 
