@@ -228,7 +228,7 @@ Use typed error enums with enough information to identify the failed operation. 
 - Logging must not make a critical path unbounded or block indefinitely.
 
 The MVP application has no scheduler or application-owned interrupts. Its only
-service is the bounded logging ABI defined in `docs/ABI.md`.
+service is the bounded logging ABI defined in `docs/abi/README.md`.
 
 ## 10. Module and API boundaries
 

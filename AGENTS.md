@@ -22,7 +22,7 @@ signed, encrypted, dynamically linked, or interrupt-owning. The repository also
 contains feature-gated ABI v3 single-application processor-side isolation and
 AMRN v3/v4 loader paths; these are not the default MVP configuration and must
 not be described as complete sandboxing, secure boot, DMA isolation, or
-multi-application isolation. See `docs/SECURITY.md`, `docs/ABI.md`, and
+multi-application isolation. See `docs/SECURITY.md`, `docs/abi/README.md`, and
 `docs/testing/README.md` for the current evidence boundary.
 
 ## 2. Source of truth
@@ -31,7 +31,7 @@ Read the relevant documents before making a change:
 
 - `docs/architecture/README.md` — system boundaries and MVP scope;
 - `docs/amrn-format/README.md` — package bytes and validation rules;
-- `docs/ABI.md` — kernel/application execution contract;
+- `docs/abi/README.md` — kernel/application execution contract;
 - `docs/HARDWARE.md` — board, pins, clock, and SRAM layout;
 - `docs/CODING_STANDARDS.md` — code, comments, unsafe, testing, and review rules;
 - `docs/ROADMAP.md` — atomic implementation order;

@@ -108,7 +108,7 @@ Start with the [Documentation Index](docs/DOCUMENTATION_INDEX.md). Key documents
 - [Architecture](docs/architecture/README.md)
 - [Roadmap](docs/ROADMAP.md)
 - [AMRN Format](docs/amrn-format/README.md)
-- [Kernel–Application ABI](docs/ABI.md)
+- [Kernel–Application ABI](docs/abi/README.md)
 - [Coding Standards](docs/CODING_STANDARDS.md)
 - [Contributing](CONTRIBUTING.md)
 
