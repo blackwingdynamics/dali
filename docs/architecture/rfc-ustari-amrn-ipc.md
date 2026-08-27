@@ -86,7 +86,7 @@ messages must not reach service code and must not cause an unbounded retry.
 ## Ustari message profile for local IPC
 
 The local IPC profile should reuse the semantic message identifiers and typed
-error model from [`USTARI_PROTOCOL.md`](../USTARI_PROTOCOL.md), while allowing
+error model from [`ustari-protocol/README.md`](../ustari-protocol/README.md), while allowing
 a local framing profile instead of a physical transport frame.
 
 The eventual profile must define:

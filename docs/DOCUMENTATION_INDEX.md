@@ -23,7 +23,7 @@ Read the documents in this order:
 12. [Versioning](VERSIONING.md) — component versions, ABI compatibility, and release tags.
 13. [Security](SECURITY.md) — current guarantees, non-guarantees, and post-MVP security work.
 14. [Package Distribution](package-distribution/README.md) — normative multi-developer trust, metadata, update, and acceptance contract.
-15. [Ustari Protocol](USTARI_PROTOCOL.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.
+15. [Ustari Protocol](ustari-protocol/README.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.
 16. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
 17. [Target Profiles](TARGET_PROFILES.md) — declarative board metadata and kernel mapping ownership.
 18. [Target Manifest Reference](TARGET_MANIFEST.md) — complete TOML schema, field rules, and F405 example.
@@ -33,4 +33,4 @@ Read the documents in this order:
     - [Timers](drivers/timer.md) — countdown, timeout, and SysTick policy.
     - [UART and SPI](drivers/serial.md) — bounded serial contracts and buffer rules.
 
-The architecture and MVP documents are the source of truth until the more detailed specifications are created.
+The categorized documentation indexes and their topic files are the source of truth for their respective areas.

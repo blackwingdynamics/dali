@@ -71,7 +71,7 @@ typed response or acknowledgement.
 ### USTARI_FULL
 
 `USTARI_FULL` is the profile for USB CDC, UART, and Wi-Fi/BLE bridges. It uses
-the canonical Ustari v1 frame contract from [`USTARI_PROTOCOL.md`](../USTARI_PROTOCOL.md):
+the canonical Ustari v1 frame contract from [`ustari-protocol/README.md`](../ustari-protocol/README.md):
 
 - 12-byte fixed header;
 - little-endian multi-byte fields;
@@ -117,7 +117,7 @@ not zero bytes on the physical link.
 
 ## Frame and message contract
 
-The canonical v1 frame remains defined by `docs/USTARI_PROTOCOL.md` and is
+The canonical v1 frame remains defined by `docs/ustari-protocol/README.md` and is
 the source of truth for the full profile. Its fixed header carries magic,
 version, flags, message ID, channel ID, sequence number, and payload length.
 The outer CRC detects accidental corruption only.
