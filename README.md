@@ -103,7 +103,7 @@ The complete development and hardware workflow is documented in [development doc
 
 ## Documentation
 
-Start with the [Documentation Index](docs/DOCUMENTATION_INDEX.md). Key documents are:
+Start with the [Documentation Index](docs/README.md). Key documents are:
 
 - [Architecture](docs/architecture/README.md)
 - [Roadmap](docs/roadmap/README.md)

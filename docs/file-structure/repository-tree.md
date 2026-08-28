@@ -218,7 +218,7 @@ dali-kernel/
 │   │   ├── build-package-and-inspect.md
 │   │   ├── cli-install-and-deploy.md
 │   │   └── boundaries-and-troubleshooting.md
-│   ├── DOCUMENTATION_INDEX.md
+│   ├── README.md                    # Documentation navigation index
 │   ├── relocation/
 │   │   ├── README.md
 │   │   ├── overview-and-direction.md
