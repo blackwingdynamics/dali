@@ -26,7 +26,7 @@ Read the documents in this order:
 15. [Ustari Protocol](ustari-protocol/README.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.
 16. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
 17. [Target Profiles](TARGET_PROFILES.md) — declarative board metadata and kernel mapping ownership.
-18. [Target Manifest Reference](TARGET_MANIFEST.md) — complete TOML schema, field rules, and F405 example.
+18. [Target Manifest Reference](target-manifest/README.md) — complete TOML schema, field rules, and F405 example.
 19. [Platform Backend Contract](PLATFORM_BACKENDS.md) — ownership boundaries and the workflow for adding a target backend.
 20. [Driver Architecture](drivers/README.md) — no-heap, bounded, hardware-neutral driver principles.
     - [GPIO and EXTI](drivers/gpio.md) — pin modes, level access, and interrupt polling.

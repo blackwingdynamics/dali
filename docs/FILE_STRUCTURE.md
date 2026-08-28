@@ -141,7 +141,8 @@ dali-kernel/
 │   ├── development/              # Setup, build, flash, and debugging docs
 │   ├── ROADMAP.md, MVP_ACCEPTANCE.md, SECURITY.md
 │   ├── CODING_STANDARDS.md, VERSIONING.md
-│   ├── TARGET_MANIFEST.md, TARGET_PROFILES.md
+│   ├── TARGET_PROFILES.md
+│   ├── target-manifest/            # Categorized target manifest documentation
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
 │   ├── METADATA_BINARY_V2.md, RELOCATION.md, FILE_STRUCTURE.md
 │   ├── package-distribution/      # Categorized package, trust, and acceptance docs
