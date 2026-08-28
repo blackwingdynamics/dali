@@ -38,7 +38,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Validate internal Markdown links
+      - name: Validate Markdown documentation
         run: python3 scripts/check-docs.py
 
   host:

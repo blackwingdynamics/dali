@@ -21,7 +21,7 @@ approval.
   evidence, guarantees, and limitations.
 - [x] Apply consistent heading hierarchy, link style, command formatting, and
   status vocabulary.
-- [ ] Keep all code, logs, errors, and documentation text in English.
+- [x] Keep all code, logs, errors, and documentation text in English.
 
 ## 3. Automated documentation validation
 
