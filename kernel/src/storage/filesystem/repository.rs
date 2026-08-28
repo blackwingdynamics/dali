@@ -57,8 +57,7 @@ impl RepositoryMetadataFormat {
 
 /// FAT32-backed logical repository storage.
 ///
-/// The device is copied into each filesystem pass. On the F405 path this is
-/// a reference to `WritableBlockDeviceAdapter`, so the adapter retains no
+/// The device is copied into each filesystem pass. The adapter retains no
 /// board or controller-specific type.
 #[derive(Clone, Copy)]
 pub struct FatRepositoryStorage<D> {

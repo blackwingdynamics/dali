@@ -7,6 +7,7 @@ use crate::{
     logging, platform,
 };
 
+#[cfg(feature = "sdio")]
 use super::recovery::{
     BOOT_RETRY_LOG_INTERVAL, initialize_with_recovery, read_block_with_recovery,
 };
@@ -16,7 +17,14 @@ use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]
 /// Performs the `initialize` operation for this subsystem.
-pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -> StorageRuntime {
+pub fn initialize<B>(
+    board: &mut platform::Platform<B>,
+    boot_mode: status::BootMode,
+) -> StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     // Keep the watchdog service available in Safe Mode so recovery remains
     // stable after a watchdog reset instead of entering another reset loop.
     super::super::startup::install_watchdog(board);
@@ -242,9 +250,13 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
 }
 
 #[cfg(not(feature = "sdio"))]
-pub fn initialize(
-    _board: &mut platform::Platform,
+pub fn initialize<B>(
+    _board: &mut platform::Platform<B>,
     _boot_mode: status::BootMode,
-) -> super::StorageRuntime {
+) -> super::StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     super::StorageRuntime::from_status(status::StorageStatus::NotDetected)
 }

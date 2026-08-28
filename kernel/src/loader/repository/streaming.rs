@@ -12,7 +12,7 @@ use crate::storage::repository::{RepositoryDocument, RepositoryStreamStorage};
 
 /// Maximum target record retained while selecting executable packages.
 pub const MAX_STREAMING_TARGET_RECORD_BYTES: usize = 512;
-/// Minimum caller-owned chunk size recommended for F405 repository reads.
+/// Minimum caller-owned chunk size recommended for repository reads.
 pub const STREAMING_METADATA_CHUNK_BYTES: usize = 512;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -224,7 +224,7 @@ struct ParsedTargets<const CAPACITY: usize> {
 ///
 /// The streaming verifier contains curve arithmetic state for every
 /// authorized signature. Keeping it in the repository workspace prevents the
-/// cryptographic state from expanding the F405 boot stack.
+/// cryptographic state from expanding the bounded boot stack.
 pub(crate) type TargetVerifierWorkspace = MaybeUninit<dali_metadata::StreamingRoleVerifier>;
 
 impl<const CAPACITY: usize> VerifiedBinaryTargets<CAPACITY> {

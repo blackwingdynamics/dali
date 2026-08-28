@@ -24,19 +24,14 @@ fn rejects_non_power_of_two_or_misaligned_regions() {
 
 #[test]
 fn describes_the_manifest_memory_boundaries() {
-    let layout = super::IsolationLayout::from_memory(dali_targets::TARGET_F405.memory);
+    let target = dali_targets::SUPPORTED_TARGETS[0];
+    let layout = super::IsolationLayout::from_memory(target.memory);
     assert!(layout.is_some());
     let Some(layout) = layout else {
         return;
     };
-    assert_eq!(
-        layout.kernel.base,
-        dali_targets::TARGET_F405.memory.kernel_origin
-    );
-    assert_eq!(
-        layout.application.length,
-        dali_targets::TARGET_F405.memory.application_length
-    );
+    assert_eq!(layout.kernel.base, target.memory.kernel_origin);
+    assert_eq!(layout.application.length, target.memory.application_length);
     assert_eq!(
         layout.kernel.access,
         super::descriptor::MpuAccess::PrivilegedOnly
@@ -62,15 +57,14 @@ fn describes_the_manifest_memory_boundaries() {
 
 #[test]
 fn builds_application_regions_for_a_declared_nonzero_slot() {
-    let Some(isolation) = dali_targets::TARGET_F405.memory.isolation else {
+    let target = dali_targets::SUPPORTED_TARGETS[0];
+    let Some(isolation) = target.memory.isolation else {
         return;
     };
     let Some(slot) = isolation.slots.get(1).copied() else {
         return;
     };
-    let Some(layout) =
-        super::IsolationLayout::from_memory_for_slot(dali_targets::TARGET_F405.memory, slot)
-    else {
+    let Some(layout) = super::IsolationLayout::from_memory_for_slot(target.memory, slot) else {
         return;
     };
     assert_eq!(layout.application_code.base, slot.code_origin);

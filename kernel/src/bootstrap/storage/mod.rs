@@ -16,6 +16,10 @@ use crate::platform;
 
 #[cfg(feature = "sdio")]
 /// Performs the `poll_runtime` operation for this subsystem.
-pub(super) fn poll_runtime(runtime: &mut StorageRuntime, board: &mut platform::Platform) {
+pub(super) fn poll_runtime<B>(runtime: &mut StorageRuntime<B>, board: &mut platform::Platform<B>)
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     recovery::poll_runtime(runtime, board);
 }

@@ -24,9 +24,13 @@ const _: () = assert!(
 );
 
 /// Performs the `delay_before_reinitialization` operation for this subsystem.
-fn delay_before_reinitialization(board: &mut platform::Platform) {
-    board.delay_ms(REINITIALIZATION_DELAY_MS);
-    if let Err(error) = platform::service_watchdog() {
+fn delay_before_reinitialization<B>(board: &mut platform::Platform<B>)
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
+    let _ = board.delay_ms(REINITIALIZATION_DELAY_MS);
+    if let Err(error) = board.service_watchdog() {
         logging::error(
             logging::BOOT_SUBSYSTEM,
             format_args!(
@@ -38,14 +42,16 @@ fn delay_before_reinitialization(board: &mut platform::Platform) {
 }
 
 /// Attempts initialization again for a bounded card-reinsert window.
-pub(super) fn initialize_with_recovery<R>(
+pub(super) fn initialize_with_recovery<R, B>(
     reader: &mut R,
-    board: &mut platform::Platform,
+    board: &mut platform::Platform<B>,
     retry_log_interval: u32,
     retry_log_count: &mut u32,
 ) -> Result<(), StorageError>
 where
     R: StorageLifecycleControl,
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
     let mut attempt = 0;
     loop {
@@ -79,14 +85,16 @@ where
 }
 
 /// Retries the first block read once after a bounded card reinitialization.
-pub(super) fn read_block_with_recovery<R>(
+pub(super) fn read_block_with_recovery<R, B>(
     reader: &mut R,
-    board: &mut platform::Platform,
+    board: &mut platform::Platform<B>,
     block: &mut Block,
     retry_log_count: &mut u32,
 ) -> Result<(), StorageError>
 where
     R: BlockReader + StorageLifecycleControl,
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
     match reader.read_block(crate::drivers::BlockAddress::new(0), block) {
         Ok(()) => Ok(()),
@@ -103,10 +111,13 @@ where
 }
 
 /// Performs the `poll_runtime` operation for this subsystem.
-pub(super) fn poll_runtime(
-    runtime: &mut super::super::StorageRuntime,
-    board: &mut platform::Platform,
-) {
+pub(super) fn poll_runtime<B>(
+    runtime: &mut super::super::StorageRuntime<B>,
+    board: &mut platform::Platform<B>,
+) where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     let Some(reader) = runtime.recovery_reader.as_mut() else {
         return;
     };

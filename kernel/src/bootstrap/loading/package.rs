@@ -6,9 +6,9 @@ use crate::{drivers::StorageError, logging, platform};
 #[cfg(feature = "sdio")]
 /// Performs the `load` operation for this subsystem.
 /// Performs the `load` operation for this subsystem.
-pub fn load<D>(
+pub fn load<D, B>(
     device: D,
-    board: &mut platform::Platform,
+    board: &mut platform::Platform<B>,
     committed_generation: Option<crate::storage::durable::coordinator::DurableGeneration>,
     #[cfg(feature = "abi-current")] slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     #[cfg(feature = "abi-mpu")]
@@ -16,6 +16,8 @@ pub fn load<D>(
 ) -> status::StorageStatus
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
     #[cfg(not(feature = "abi-context-switch"))]
     let _ = board;
@@ -32,7 +34,7 @@ where
     #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
     let package = crate::loader::load_current_abi(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]
-    let package = if platform::APPLICATION_EXECUTION_SUPPORTED {
+    let package = if B::application_execution_supported() {
         crate::loader::load_amrn_file(device)
     } else {
         crate::loader::validate_amrn_file(device)
@@ -50,7 +52,7 @@ where
                 format_args!("[SECURITY] AMRN signature verified"),
             );
             #[cfg(not(feature = "abi-current"))]
-            if platform::APPLICATION_EXECUTION_SUPPORTED {
+            if B::application_execution_supported() {
                 crate::loader::start_application(package);
             }
             #[cfg(feature = "abi-current")]

@@ -13,7 +13,11 @@ use super::status::{
 use crate::{bootstrap::StorageRuntime, platform};
 
 /// Displays the storage status and polls retained storage during recovery.
-pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
+pub fn run<B>(mut board: platform::Platform<B>, mut storage: StorageRuntime<B>) -> !
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     let mut led_on = false;
     let mut elapsed_ms = 0;
     let safe_mode = matches!(storage.status(), StorageStatus::SafeMode);
@@ -46,12 +50,12 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
         match storage.status() {
             #[cfg(feature = "sdio")]
             StorageStatus::Ready => {
-                board.set_status_led(true);
+                let _ = board.set_status_led(true);
             }
             StorageStatus::Idle => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;
-                    board.set_status_led(led_on);
+                    let _ = board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
             }
@@ -59,7 +63,7 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
             StorageStatus::NotDetected => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;
-                    board.set_status_led(led_on);
+                    let _ = board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
             }
@@ -67,14 +71,14 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
             StorageStatus::Removed => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;
-                    board.set_status_led(led_on);
+                    let _ = board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
             }
             StorageStatus::SafeMode => {
                 if elapsed_ms >= SAFE_MODE_BLINK_PERIOD_MS {
                     led_on = !led_on;
-                    board.set_status_led(led_on);
+                    let _ = board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
             }
@@ -82,7 +86,7 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
             StorageStatus::Failure => {
                 if elapsed_ms >= FAST_BLINK_PERIOD_MS {
                     led_on = !led_on;
-                    board.set_status_led(led_on);
+                    let _ = board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
                 if failure_log_elapsed_ms >= FAILURE_LOG_PERIOD_MS {
@@ -94,7 +98,7 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
                 }
             }
         }
-        let watchdog_refreshed = match platform::service_watchdog() {
+        let watchdog_refreshed = match board.service_watchdog() {
             Ok(()) => true,
             Err(error) => {
                 crate::logging::error(
@@ -114,7 +118,7 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
             );
             safe_mode_log_elapsed_ms = 0;
         }
-        board.delay_ms(HEARTBEAT_PERIOD_MS);
+        let _ = board.delay_ms(HEARTBEAT_PERIOD_MS);
         elapsed_ms = elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
         safe_mode_log_elapsed_ms = safe_mode_log_elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
         #[cfg(feature = "sdio")]

@@ -8,12 +8,18 @@ mod storage;
 use crate::{logging, platform};
 
 /// Storage state and the reader retained for runtime card recovery.
-pub(super) struct StorageRuntime {
+pub(super) struct StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
+    /// Associates storage state with the selected backend type.
+    marker: core::marker::PhantomData<B>,
     /// Stores the `status` value for this bounded state.
     status: lifecycle::status::StorageStatus,
     #[cfg(feature = "sdio")]
     /// Stores the `recovery_reader` value for this bounded state.
-    recovery_reader: Option<platform::PlatformSdioReader>,
+    recovery_reader: Option<B::StorageReader>,
     #[cfg(feature = "sdio")]
     /// Stores the `recovery_retry_log_count` value for this bounded state.
     recovery_retry_log_count: u32,
@@ -22,7 +28,11 @@ pub(super) struct StorageRuntime {
     recovery_probe_count: u32,
 }
 
-impl StorageRuntime {
+impl<B> StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     /// Builds storage recovery state with an attached SDIO reader.
     pub(super) const fn from_status(status: lifecycle::status::StorageStatus) -> Self {
         Self::new(status)
@@ -31,6 +41,7 @@ impl StorageRuntime {
     /// Creates storage recovery state without an attached reader.
     pub(super) const fn new(status: lifecycle::status::StorageStatus) -> Self {
         Self {
+            marker: core::marker::PhantomData,
             status,
             #[cfg(feature = "sdio")]
             recovery_reader: None,
@@ -45,9 +56,10 @@ impl StorageRuntime {
     /// Creates storage recovery state with an attached SDIO reader.
     pub(super) const fn with_recovery_reader(
         status: lifecycle::status::StorageStatus,
-        reader: platform::PlatformSdioReader,
+        reader: B::StorageReader,
     ) -> Self {
         Self {
+            marker: core::marker::PhantomData,
             status,
             recovery_reader: Some(reader),
             recovery_retry_log_count: 0,
@@ -62,7 +74,7 @@ impl StorageRuntime {
 
     #[cfg(feature = "sdio")]
     /// Performs the `poll_recovery` operation for this subsystem.
-    pub(super) fn poll_recovery(&mut self, board: &mut platform::Platform) {
+    pub(super) fn poll_recovery(&mut self, board: &mut platform::Platform<B>) {
         storage::poll_runtime(self, board);
     }
 
@@ -74,11 +86,21 @@ impl StorageRuntime {
 }
 
 /// Runs the kernel bootstrap sequence and enters the heartbeat loop.
-pub fn run() -> ! {
-    let mut board = platform::initialize();
+pub fn run<B>() -> !
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
+    let mut board = platform::Platform::<B>::initialize().unwrap_or_else(|_| {
+        loop {
+            cortex_m::asm::wfi();
+        }
+    });
     #[cfg(feature = "abi-mpu")]
-    if let Some(layout) = platform::ISOLATION_LAYOUT {
-        platform::mpu::configure_hardware(layout);
+    if let Some(layout) =
+        crate::security::mpu::IsolationLayout::from_memory(platform::Platform::<B>::memory())
+    {
+        crate::security::mpu::configure_hardware(layout);
     }
 
     startup::initialize_logging();
@@ -122,7 +144,10 @@ pub fn run() -> ! {
     startup::emit_boot_banner();
     logging::info(
         logging::BOOT_SUBSYSTEM,
-        format_args!("[BOOT] System clock: {} MHz", platform::SYSTEM_CLOCK_MHZ),
+        format_args!(
+            "[BOOT] System clock: {} MHz",
+            platform::Platform::<B>::info().target.clock.system_hz / 1_000_000
+        ),
     );
     logging::info(
         logging::BOOT_SUBSYSTEM,
@@ -143,7 +168,7 @@ pub fn run() -> ! {
     }
 
     // Keep a visible indication active while storage initialization is in progress.
-    board.set_status_led(true);
+    let _ = board.set_status_led(true);
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Starting storage initialization"),

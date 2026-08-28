@@ -92,6 +92,7 @@ where
     }
 }
 
+/// Validates the root AMRN package without copying or executing its payload.
 pub fn validate_amrn_file<D>(device: D) -> Result<ValidatedPayload, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -100,6 +101,7 @@ where
         .map_err(LoaderError::Filesystem)?
 }
 
+/// Validates and copies the root AMRN package into the application region.
 pub fn load_amrn_file<D>(device: D) -> Result<ValidatedPayload, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -107,6 +109,7 @@ where
     storage::filesystem::with_amrn_file(device, load_file).map_err(LoaderError::Filesystem)?
 }
 
+/// Transfers control to a validated native application entry point.
 pub fn start_application(payload: ValidatedPayload) -> ! {
     let entry_address = payload.entry_address | 1;
     let entry: unsafe extern "C" fn(*const ServiceTable) -> ! = unsafe {

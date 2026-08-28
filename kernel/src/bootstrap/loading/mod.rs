@@ -2,4 +2,5 @@
 
 mod package;
 
+#[cfg(feature = "sdio")]
 pub(super) use package::load;

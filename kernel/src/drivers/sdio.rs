@@ -8,31 +8,7 @@ use super::{
 };
 use crate::storage::durable::BlockDevice;
 
-/// Hardware-facing SDIO transport implemented by a platform backend.
-pub trait SdioTransport {
-    /// Initializes the card and returns its addressable block count.
-    fn initialize(&mut self) -> Result<u32, StorageError>;
-
-    /// Reads one complete block from the initialized card.
-    fn read_block(&mut self, address: BlockAddress, block: &mut Block) -> Result<(), StorageError>;
-
-    /// Writes one complete block to the initialized card.
-    #[cfg(feature = "storage-write")]
-    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError>;
-
-    /// Waits until the card has completed previously accepted writes.
-    #[cfg(feature = "storage-write")]
-    fn flush(&mut self) -> Result<(), StorageError>;
-}
-
-/// Lifecycle controls exposed by a reinitializable SDIO block reader.
-pub trait StorageLifecycleControl {
-    /// Initializes or reinitializes the underlying storage medium.
-    fn initialize(&mut self) -> Result<(), StorageError>;
-
-    /// Reinitializes a medium after removal or transport failure.
-    fn reinitialize(&mut self) -> Result<(), StorageError>;
-}
+pub use dali_kernel_api::storage::{SdioTransport, StorageLifecycleControl};
 
 /// Adapts any SDIO transport to the generic bounded block-reader contract.
 pub struct SdioBlockReader<T> {

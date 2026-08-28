@@ -2,20 +2,7 @@
 
 use dali_targets::WatchdogProfile;
 
-/// Reset source reported by a platform watchdog backend.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ResetCause {
-    /// Power was applied or the reset state was otherwise cleared.
-    PowerOn,
-    /// An external reset input caused the restart.
-    External,
-    /// Software explicitly requested the reset.
-    Software,
-    /// The hardware watchdog expired.
-    Watchdog,
-    /// The platform could not classify the reset source.
-    Unknown,
-}
+pub use dali_kernel_api::{ResetCause, WatchdogBackend};
 
 /// Kernel-owned source allowed to feed the watchdog.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -109,24 +96,6 @@ impl WatchdogContract {
             WatchdogState::Armed(_) => Err(WatchdogError::UnauthorizedOwner),
         }
     }
-}
-
-/// Platform adapter implemented by each hardware watchdog backend.
-pub trait WatchdogBackend {
-    /// Backend-specific register or HAL error.
-    type Error;
-
-    /// Arms the hardware using validated target metadata.
-    fn arm(&mut self, profile: WatchdogProfile) -> Result<(), Self::Error>;
-
-    /// Feeds the already-armed hardware watchdog.
-    fn feed(&mut self) -> Result<(), Self::Error>;
-
-    /// Reads the reset source before normal bootstrap clears it.
-    fn reset_cause(&self) -> ResetCause;
-
-    /// Clears the latched reset source after it has been recorded.
-    fn clear_reset_cause(&mut self);
 }
 
 /// Errors returned by the runtime wrapper around a platform backend.
