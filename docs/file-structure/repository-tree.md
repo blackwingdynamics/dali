@@ -272,6 +272,7 @@ dali-kernel/
 │   └── changelog/                  # Archived generated release changelogs
 ├── scripts/
 │   ├── console.sh, archive-changelog.sh, check-commit-message.sh
+│   ├── check-docs.py, format-docs.py
 │   ├── setup-arch.sh, setup-debian.sh, setup-fedora.sh
 │   ├── setup-macos.sh, setup-windows.ps1
 │   ├── prepare-f405-binary-v2-sd.sh # Build, sign, verify, and copy an F405 bundle

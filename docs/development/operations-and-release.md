@@ -32,6 +32,8 @@ Before a release or external evaluation:
 
 - run the applicable formatting, workspace, kernel, test, and documentation
   checks;
+- run `just docs-format` when Markdown formatting changes are needed, then
+  confirm the result with `just docs-format-check` and `just docs-check`;
 - inspect the staged file list and `git diff --check` output;
 - review version, ABI, AMRN, target-profile, security, and evidence changes;
 - follow the [release checklist](../versioning/release-checklist.md) and

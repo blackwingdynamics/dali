@@ -123,6 +123,14 @@ diff-check:
 docs-check:
     python3 scripts/check-docs.py
 
+# Apply conservative formatting to Markdown documentation.
+docs-format:
+    python3 scripts/format-docs.py
+
+# Check Markdown formatting without modifying files.
+docs-format-check:
+    python3 scripts/format-docs.py --check
+
 # Remove Cargo build artifacts.
 clean:
     cargo clean
