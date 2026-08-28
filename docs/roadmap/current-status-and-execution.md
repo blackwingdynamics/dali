@@ -68,6 +68,8 @@ pending.
   documentation with the implemented repository.
 - [ ] Inventory large files, mixed responsibilities, misplaced modules, and
   obsolete or duplicated code without changing runtime behavior.
+- [ ] Execute the per-file refactoring and hardware-evidence gates in
+  [07 — Codebase Refactoring and Hardware Evidence Gates](07-codebase-refactoring-and-hardware-gates.md).
 - [ ] Split oversized implementation files only along explicit ownership and
   responsibility boundaries.
 - [ ] Preserve public APIs, generated output, boot order, frozen subsystem
