@@ -10,8 +10,7 @@ Read the documents in this order:
 
 1. [Architecture](architecture/README.md) — categorized project vision, MVP boundary, runtime layers, and core contracts.
 2. [File Structure](file-structure/README.md) — repository layout and prioritized file sequence.
-3. [Roadmap](ROADMAP.md) — phase gateway, status, and acceptance boundaries;
-   detailed phase plans are in [docs/roadmap](roadmap/).
+3. [Roadmap](roadmap/README.md) — phase gateway, status, and acceptance boundaries.
 4. [Coding Standards](coding-standards/README.md) — mandatory code, comment, safety, and review rules.
 5. [AMRN Format](amrn-format/README.md) — binary package layout and validation rules.
 6. [ABI](abi/README.md) — kernel-to-application execution contract.

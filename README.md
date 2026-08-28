@@ -106,7 +106,7 @@ The complete development and hardware workflow is documented in [development doc
 Start with the [Documentation Index](docs/DOCUMENTATION_INDEX.md). Key documents are:
 
 - [Architecture](docs/architecture/README.md)
-- [Roadmap](docs/ROADMAP.md)
+- [Roadmap](docs/roadmap/README.md)
 - [AMRN Format](docs/amrn-format/README.md)
 - [Kernel–Application ABI](docs/abi/README.md)
 - [Coding Standards](docs/coding-standards/README.md)

@@ -1,5 +1,3 @@
-# Dali OS Roadmap
-
 This file is the roadmap gateway. Each phase has its own status, scope,
 acceptance boundary, and backlog.
 
@@ -7,10 +5,10 @@ acceptance boundary, and backlog.
 
 | Phase | Status | Scope |
 | --- | --- | --- |
-| [01 — Kernel Core and Security](roadmap/01-kernel-core-and-security.md) | **Completed** | F405 feature-gated core, MPU, bounded DMA policy, trust path, watchdog, and storage recovery |
-| [02 — Hardware Drivers and System Subsystems](roadmap/02-hardware-drivers-and-subsystems.md) | **Completed, device validation pending** | Driver contracts, F405 backend coverage, and bounded I2C recovery; physical I2C device interoperability awaits laboratory measurement |
-| [03 — System GUI and Launcher](roadmap/03-system-gui-and-launcher.md) | **Implementation complete, hardware validation pending** | Manifest-driven I2C OLED diagnostics console; physical OLED ACK and rendering evidence awaits laboratory measurement |
-| [04 — First-Stage Bootloader](roadmap/04-first-stage-bootloader.md) | **Future** | Pre-reset kernel-image verification and FSBL/ROM handoff |
+| [01 — Kernel Core and Security](01-kernel-core-and-security.md) | **Completed** | F405 feature-gated core, MPU, bounded DMA policy, trust path, watchdog, and storage recovery |
+| [02 — Hardware Drivers and System Subsystems](02-hardware-drivers-and-subsystems.md) | **Completed, device validation pending** | Driver contracts, F405 backend coverage, and bounded I2C recovery; physical I2C device interoperability awaits laboratory measurement |
+| [03 — System GUI and Launcher](03-system-gui-and-launcher.md) | **Implementation complete, hardware validation pending** | Manifest-driven I2C OLED diagnostics console; physical OLED ACK and rendering evidence awaits laboratory measurement |
+| [04 — First-Stage Bootloader](04-first-stage-bootloader.md) | **Future** | Pre-reset kernel-image verification and FSBL/ROM handoff |
 
 ## Current execution roadmap
 
@@ -49,7 +47,7 @@ handling; it does not yet confirm an ACK from a connected OLED or rendering on
 the physical panel. The work remains limited to an I2C OLED and did not modify
 the frozen SPI/ILI9341 path.
 The detailed action sequence is maintained in
-[`docs/roadmap/02-hardware-drivers-and-subsystems.md`](roadmap/02-hardware-drivers-and-subsystems.md).
+[02 — Hardware Drivers and System Subsystems](02-hardware-drivers-and-subsystems.md).
 
 ### Phase 4 — Power and diagnostic infrastructure
 
@@ -75,32 +73,3 @@ pending.
   workspace checks, and `git diff --check`.
 - [ ] Keep the I2C physical acceptance item open until laboratory equipment is
   available and a real F405 trace confirms device ACK and OLED rendering.
-
-## Active safety boundaries
-
-- [x] SDIO implementation and storage behavior remain at the Known-Good
-  baseline; no changes are permitted in `kernel/src/platform/f405/sdio_raw/`,
-  `kernel/src/storage/`, or SDIO manifest limits during these phases.
-- [x] USB CDC core servicing and polling loops are frozen.
-- [x] ILI9341 and all SPI display experiments are frozen.
-
-## Evidence rules
-
-Completion requires implementation, relevant host/target validation, and
-hardware evidence when the behavior depends on a physical target. The
-canonical records are [`docs/testing/README.md`](testing/README.md),
-[`docs/mvp-acceptance/README.md`](mvp-acceptance/README.md), and
-[`docs/security/README.md`](security/README.md).
-
-The completed security claims are scoped to the configured STM32F405 path.
-They do not claim arbitrary DMA-controller isolation, confidentiality,
-complete production multi-application isolation, or pre-reset Secure Boot.
-The feature-gated ABI v3 context-switching and MPU-switching path remains an
-experimental platform capability, while the baseline ABI v2 application
-remains trusted native code.
-
-## Working rule
-
-Keep each phase atomic, preserve hardware-agnostic contracts, and obtain
-explicit approval before changing architecture, boot path, storage layout,
-loader mode, ABI, or package layout.

@@ -157,7 +157,15 @@ dali-kernel/
 │   │   ├── debugging-and-troubleshooting.md
 │   │   ├── setup-and-console.md
 │   │   └── workspace-and-commands.md
-│   ├── ROADMAP.md
+│   ├── roadmap/                    # Roadmap gateway and detailed phase plans
+│   │   ├── README.md
+│   │   ├── current-status-and-execution.md
+│   │   ├── safety-evidence-and-working-rules.md
+│   │   ├── 01-kernel-core-and-security.md
+│   │   ├── 02-hardware-drivers-and-subsystems.md
+│   │   ├── 03-system-gui-and-launcher.md
+│   │   ├── 04-first-stage-bootloader.md
+│   │   └── 05-interactive-shell-telemetry-and-control.md
 │   ├── security/
 │   │   ├── README.md
 │   │   ├── baseline-and-current-boundary.md
@@ -233,7 +241,6 @@ dali-kernel/
 │   │   └── repository-tree.md
 │   ├── cli/                        # CLI guides and command references
 │   ├── drivers/                    # Driver contracts and boundaries
-│   ├── roadmap/                    # Detailed phase plans
 │   └── changelog/                  # Archived generated release changelogs
 ├── scripts/
 │   ├── console.sh, archive-changelog.sh, check-commit-message.sh

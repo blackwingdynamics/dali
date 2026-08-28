@@ -8,7 +8,7 @@ Read:
 
 1. [Architecture](docs/architecture/README.md)
 2. [Coding Standards](docs/coding-standards/README.md)
-3. [Roadmap](docs/ROADMAP.md)
+3. [Roadmap](docs/roadmap/README.md)
 4. [Testing](docs/testing/README.md)
 5. [Development](docs/development/README.md)
 

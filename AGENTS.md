@@ -34,7 +34,7 @@ Read the relevant documents before making a change:
 - `docs/abi/README.md` — kernel/application execution contract;
 - `docs/HARDWARE.md` — board, pins, clock, and SRAM layout;
 - `docs/coding-standards/README.md` — code, comments, unsafe, testing, and review rules;
-- `docs/ROADMAP.md` — atomic implementation order;
+- `docs/roadmap/README.md` — atomic implementation order;
 - `docs/testing/README.md` — test strategy;
 - `docs/mvp-acceptance/README.md` — physical acceptance procedure;
 - `docs/versioning/README.md` — version and compatibility rules;
