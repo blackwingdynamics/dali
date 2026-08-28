@@ -10,6 +10,8 @@
 mod architecture;
 #[cfg(feature = "board-stm32f405-sd")]
 mod backend;
+#[cfg(feature = "abi-current")]
+mod exceptions;
 #[cfg(feature = "board-stm32f405-sd")]
 mod logging;
 #[cfg(feature = "abi-mpu")]

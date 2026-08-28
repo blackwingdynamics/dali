@@ -105,87 +105,27 @@ pub(crate) fn report_persistent() {
     );
 }
 
-#[unsafe(export_name = "MemoryManagement")]
-#[unsafe(naked)]
-/// Naked entry wrapper for memory-management faults.
-unsafe extern "C" fn memory_management_handler() {
-    // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
-    // exception return value while transferring control to the kernel handler.
-    core::arch::naked_asm!(
-        "tst lr, #4",
-        "ite eq",
-        "mrseq r0, msp",
-        "mrsne r0, psp",
-        "mov r1, lr",
-        "b {handler}",
-        handler = sym handle_memory_management,
-    );
-}
-
-#[unsafe(export_name = "BusFault")]
-#[unsafe(naked)]
-/// Naked entry wrapper for bus faults.
-unsafe extern "C" fn bus_fault_handler() {
-    // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
-    // exception return value while transferring control to the kernel handler.
-    core::arch::naked_asm!(
-        "tst lr, #4",
-        "ite eq",
-        "mrseq r0, msp",
-        "mrsne r0, psp",
-        "mov r1, lr",
-        "b {handler}",
-        handler = sym handle_bus_fault,
-    );
-}
-
-#[unsafe(export_name = "UsageFault")]
-#[unsafe(naked)]
-/// Naked entry wrapper for usage faults.
-unsafe extern "C" fn usage_fault_handler() {
-    // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
-    // exception return value while transferring control to the kernel handler.
-    core::arch::naked_asm!(
-        "tst lr, #4",
-        "ite eq",
-        "mrseq r0, msp",
-        "mrsne r0, psp",
-        "mov r1, lr",
-        "b {handler}",
-        handler = sym handle_usage_fault,
-    );
-}
-
-#[unsafe(export_name = "HardFault")]
-#[unsafe(naked)]
-/// Naked entry wrapper for hard faults.
-unsafe extern "C" fn hard_fault_handler() {
-    // SAFETY: The wrapper preserves only the architectural exception-return
-    // value. The Rust handler validates it before reading either stack pointer.
-    core::arch::naked_asm!(
-        "mov r0, lr",
-        "b {handler}",
-        handler = sym handle_hard_fault,
-    );
-}
-
 /// Handles a memory-management fault after the naked wrapper selects its frame.
-extern "C" fn handle_memory_management(frame_address: u32, exception_return: u32) -> ! {
+#[unsafe(export_name = "dali_kernel_handle_memory_management")]
+pub(crate) extern "C" fn handle_memory_management(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::MemManage, frame_address, exception_return)
 }
 
 /// Handles a bus fault after the naked wrapper selects its frame.
-extern "C" fn handle_bus_fault(frame_address: u32, exception_return: u32) -> ! {
+#[unsafe(export_name = "dali_kernel_handle_bus_fault")]
+pub(crate) extern "C" fn handle_bus_fault(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::BusFault, frame_address, exception_return)
 }
 
 /// Handles a usage fault after the naked wrapper selects its frame.
-extern "C" fn handle_usage_fault(frame_address: u32, exception_return: u32) -> ! {
+#[unsafe(export_name = "dali_kernel_handle_usage_fault")]
+pub(crate) extern "C" fn handle_usage_fault(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::UsageFault, frame_address, exception_return)
 }
 
 /// Handles a hard fault and classifies bus-fault status when available.
-extern "C" fn handle_hard_fault(exception_return: u32) -> ! {
+#[unsafe(export_name = "dali_kernel_handle_hard_fault")]
+pub(crate) extern "C" fn handle_hard_fault(exception_return: u32) -> ! {
     let status = self::scb::read_cfsr();
     let kind = if status & BUSFAULT_STATUS_MASK != 0 {
         FaultKind::BusFault

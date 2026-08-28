@@ -8,30 +8,9 @@ use crate::logging;
 use crate::security::fault::{self, FaultKind, FaultRecord};
 use dali_sdk::svc::{ExceptionFrame, ServiceId, ServiceStatus};
 
-#[unsafe(export_name = "SVCall")]
-#[unsafe(naked)]
-/// Naked SVC entry wrapper for the application service gateway.
-unsafe extern "C" fn svcall_handler() {
-    // SAFETY: The wrapper preserves the application register used as scratch,
-    // selects the hardware-stacked frame before changing MSP, and restores the
-    // original EXC_RETURN before returning to the processor.
-    core::arch::naked_asm!(
-        "tst lr, #4",
-        "ite eq",
-        "mrseq r0, msp",
-        "mrsne r0, psp",
-        "push {{r4, lr}}",
-        "mov r4, lr",
-        "mov r1, r4",
-        "bl {handler}",
-        "pop {{r4, lr}}",
-        "bx lr",
-        handler = sym handle_svc,
-    );
-}
-
 /// Validates an SVC frame and dispatches the requested service.
-fn handle_svc(frame_address: u32, exception_return: u32) {
+#[unsafe(export_name = "dali_kernel_handle_svc")]
+pub(crate) extern "C" fn handle_svc(frame_address: u32, exception_return: u32) {
     if !valid_exception_return(exception_return) {
         fault::report(FaultRecord::without_frame(
             FaultKind::InvalidExceptionReturn,

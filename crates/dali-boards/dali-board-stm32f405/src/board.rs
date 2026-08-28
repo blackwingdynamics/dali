@@ -45,7 +45,7 @@ pub type SdioPins = config::SdioPins;
 /// Memory layout selected by the F405 target profile.
 pub const MEMORY_PROFILE: dali_targets::MemoryProfile = config::MEMORY_PROFILE;
 #[cfg(feature = "abi-mpu")]
-pub use config::activate_application_regions;
+pub use config::{activate_application_regions, configure_memory_protection};
 pub use initialization::initialize;
 pub use resources::Board;
 pub use services::{delay_ms, set_status_led};
