@@ -1,3 +1,5 @@
+# Application Workflow Overview and Layout
+
 This document describes how a Dali OS application payload becomes an AMRN
 cartridge and how the kernel currently consumes that cartridge.
 

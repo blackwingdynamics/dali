@@ -1,3 +1,5 @@
+# Versioning Overview and SemVer
+
 Dali OS has several versioned contracts. They must not be treated as one number because a kernel release, an AMRN format revision, and an application ABI change have different compatibility consequences.
 
 ## 1. Versioned components

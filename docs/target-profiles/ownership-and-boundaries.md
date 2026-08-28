@@ -1,3 +1,5 @@
+# Target Profile Ownership and Boundaries
+
 Target profiles are declared in repository-level TOML manifests under
 `targets/`. The manifest is the source of truth for manufacturer-provided
 board metadata and the Dali compatibility identifiers consumed by host tools.

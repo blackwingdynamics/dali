@@ -1,3 +1,5 @@
+# Platform Backend Ownership and Boundaries
+
 This document defines how Dali OS can accept additional MCU and board targets
 without duplicating hardware facts throughout the kernel or changing the
 kernel's hardware-neutral policy.
