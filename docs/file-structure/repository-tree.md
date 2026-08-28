@@ -135,20 +135,73 @@ dali-kernel/
 ├── docs/
 │   ├── HARDWARE.md
 │   ├── abi/                        # Categorized kernel-application ABI docs
-│   ├── amrn-format/               # Categorized AMRN format documentation
-│   ├── architecture/             # Categorized architecture and protocol docs
-│   ├── development/              # Setup, build, flash, and debugging docs
+│   │   ├── README.md
+│   │   ├── fault-boundary.md, isolation-overview.md
+│   │   ├── memory-and-package-contract.md, mvp-and-safety.md
+│   │   └── runtime-foundations.md
+│   ├── amrn-format/                # Categorized AMRN format documentation
+│   │   ├── README.md
+│   │   ├── abi-v3.md, identity-and-signatures.md
+│   │   ├── mvp-format.md, payload-and-integrity.md
+│   │   └── relocatable-format.md
+│   ├── architecture/               # Categorized architecture and protocol docs
+│   │   ├── README.md
+│   │   ├── application-model.md, future-architecture.md
+│   │   ├── mvp-and-platform.md, packages-and-execution.md
+│   │   ├── rfc-ustari-amrn-ipc.md, runtime-and-kernel.md
+│   │   ├── storage-and-repository.md, ustari_application_protocol.md
+│   │   └── vision-and-scope.md
+│   ├── development/                # Setup, build, flash, and debugging docs
+│   │   ├── README.md
+│   │   ├── build-flash-and-simulation.md
+│   │   ├── debugging-and-troubleshooting.md
+│   │   ├── setup-and-console.md
+│   │   └── workspace-and-commands.md
 │   ├── ROADMAP.md, SECURITY.md
 │   ├── mvp-acceptance/             # Categorized MVP acceptance documentation
+│   │   ├── README.md
+│   │   ├── recorded-evidence.md
+│   │   └── scope-and-procedure.md
 │   ├── VERSIONING.md
 │   ├── coding-standards/           # Categorized coding policy documentation
+│   │   ├── README.md
+│   │   ├── additional-constraints.md
+│   │   ├── comments-and-documentation.md
+│   │   ├── language-hardcoding-and-discipline.md
+│   │   ├── modules-naming-and-logging.md
+│   │   ├── safety-errors-and-realtime.md
+│   │   └── testing-review-and-prohibited-practices.md
 │   ├── TARGET_PROFILES.md
 │   ├── target-manifest/            # Categorized target manifest documentation
+│   │   ├── README.md
+│   │   ├── clock-bus-and-display.md, memory-pins-and-key.md
+│   │   ├── overview-and-structure.md, profile-and-artifacts.md
+│   │   ├── usb-storage-and-example.md
+│   │   └── validation-and-generation.md
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
 │   ├── METADATA_BINARY_V2.md, RELOCATION.md
 │   ├── package-distribution/      # Categorized package, trust, and acceptance docs
+│   │   ├── README.md
+│   │   ├── acceptance-and-trust-updates.md, frozen-profile-decisions.md
+│   │   ├── goals-and-threat-model.md, keys-and-repository.md
+│   │   ├── metadata-format.md, modes-validation-and-order.md
+│   │   └── trust-hierarchy.md
 │   ├── testing/                   # Categorized testing procedures and evidence
+│   │   ├── README.md
+│   │   ├── evidence-boundary.md, f405-silicon.md, host.md
+│   │   ├── mvp-acceptance.md, signed-packages.md
+│   │   └── target.md
 │   ├── ustari-protocol/            # Categorized Ustari protocol documentation
+│   │   ├── README.md
+│   │   ├── acceptance-and-compatibility.md, frames-and-messages.md
+│   │   ├── implementation-phases.md, package-and-safety.md
+│   │   ├── security-and-authorization.md, status-and-contract.md
+│   │   └── streaming-and-transport.md
+│   ├── file-structure/             # Categorized repository structure documentation
+│   │   ├── README.md
+│   │   ├── generated-and-local-content.md, implementation-inventory.md
+│   │   ├── ownership-boundaries.md
+│   │   └── repository-tree.md
 │   ├── cli/                        # CLI guides and command references
 │   ├── drivers/                    # Driver contracts and boundaries
 │   ├── roadmap/                    # Detailed phase plans
