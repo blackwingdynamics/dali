@@ -65,6 +65,7 @@ where
     Ok(Ok(()))
 }
 
+/// Performs the `finish_multi_file_operation` operation for this subsystem.
 fn finish_multi_file_operation<D, E>(
     manager: &FilesystemManager<D>,
     raw_file: embedded_sdmmc::RawFile,
@@ -86,6 +87,7 @@ where
     }
 }
 
+/// Performs the `collect_amrn_names` operation for this subsystem.
 fn collect_amrn_names<D>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,

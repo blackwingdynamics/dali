@@ -29,7 +29,9 @@ pub enum CatalogError {
 
 /// Fixed-capacity catalog used before package loading begins.
 pub struct PackageCatalog<const CAPACITY: usize> {
+    /// Stores the `entries` value for this bounded state.
     entries: [Option<DiscoveredPackage>; CAPACITY],
+    /// Stores the `length` value for this bounded state.
     length: usize,
 }
 
@@ -107,10 +109,12 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
             .copied()
     }
 
+    /// Performs the `has_identity` operation for this subsystem.
     fn has_identity(&self, package_id: [u8; 16]) -> bool {
         self.find_by_identity(package_id).is_some()
     }
 
+    /// Performs the `has_slot` operation for this subsystem.
     fn has_slot(&self, slot_id: u8) -> bool {
         self.entries[..self.length]
             .iter()

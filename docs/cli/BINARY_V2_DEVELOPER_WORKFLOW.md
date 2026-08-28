@@ -265,7 +265,7 @@ echo "$DALI_DEVELOPER_KEY_ID"
 The same ID must be authorized by delegation and referenced by the Targets
 metadata for this package.
 
-## 8. Build and inspect the AMRN package
+## 8. Build and inspect the AMRN cartridge
 
 ```bash
 cd "$DALI_ROOT/apps/dali-app-relocation-fixture"
@@ -425,7 +425,7 @@ For one valid package, the console should include:
 [INFO][SECURITY] [SECURITY] Active application context: Running
 ```
 
-Multi-package acceptance requires two real signed AMRN packages, two matching
+Multi-package acceptance requires two real signed AMRN cartridges, two matching
 Targets records, and distinct valid slots. Copying one package twice is not a
 multi-package test. With two valid records, the expected loader line is:
 

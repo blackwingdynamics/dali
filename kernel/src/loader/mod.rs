@@ -58,6 +58,7 @@ pub enum LoaderError {
     UnsupportedServices(u32),
 }
 
+/// Performs the `read_exact` operation for this subsystem.
 pub(crate) fn read_exact<D>(
     file: &AmrnFile<'_, D>,
     buffer: &mut [u8],

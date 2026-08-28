@@ -2,6 +2,7 @@
 
 use dali_targets::IsolationSlot;
 
+/// Defines the SLOT MASK BITS used by this module.
 const SLOT_MASK_BITS: usize = u32::BITS as usize;
 
 /// Addressable memory segment owned by an application slot.
@@ -16,7 +17,9 @@ pub enum SlotRegion {
 /// A selected application slot and its stable manifest index.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SlotAllocation {
+    /// Stores the index associated with this bounded state.
     index: usize,
+    /// Stores the slot associated with this bounded state.
     slot: IsolationSlot,
 }
 
@@ -64,7 +67,9 @@ pub enum SlotManagerError {
 /// values supplied by the target manifest; no address arithmetic or filename
 /// convention can create a slot.
 pub struct SlotManager {
+    /// Stores the slots associated with this bounded state.
     slots: &'static [IsolationSlot],
+    /// Stores the occupied associated with this bounded state.
     occupied: u32,
 }
 

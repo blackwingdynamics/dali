@@ -7,36 +7,68 @@ use stm32f4xx_hal::{
     sdio::{CSD, CardCapacity, SD},
 };
 
+/// Defines the POWER SETTLE CYCLES used by this module.
 const POWER_SETTLE_CYCLES: u32 = 336_000;
+/// Defines the COMMAND POLL LIMIT used by this module.
 const COMMAND_POLL_LIMIT: u32 = 1_000_000;
+/// Defines the OCR POLL LIMIT used by this module.
 const OCR_POLL_LIMIT: u32 = 1_000_000;
+/// Defines the VOLTAGE WINDOW used by this module.
 const VOLTAGE_WINDOW: u32 = 1 << 20;
+/// Defines the OCR HIGH CAPACITY used by this module.
 const OCR_HIGH_CAPACITY: u32 = 1 << 30;
+/// Defines the OCR POWER UP used by this module.
 const OCR_POWER_UP: u32 = 1 << 31;
+/// Defines the CMD IDLE used by this module.
 const CMD_IDLE: u8 = 0;
+/// Defines the CMD SEND IF COND used by this module.
 const CMD_SEND_IF_COND: u8 = 8;
+/// Defines the CMD APP used by this module.
 const CMD_APP: u8 = 55;
+/// Defines the CMD SD SEND OP COND used by this module.
 const CMD_SD_SEND_OP_COND: u8 = 41;
+/// Defines the CMD ALL SEND CID used by this module.
 const CMD_ALL_SEND_CID: u8 = 2;
+/// Defines the CMD SEND RELATIVE ADDRESS used by this module.
 const CMD_SEND_RELATIVE_ADDRESS: u8 = 3;
+/// Defines the CMD SEND CSD used by this module.
 const CMD_SEND_CSD: u8 = 9;
+/// Defines the CMD SELECT CARD used by this module.
 const CMD_SELECT_CARD: u8 = 7;
+/// Defines the CMD SET BLOCK LENGTH used by this module.
 const CMD_SET_BLOCK_LENGTH: u8 = 16;
+/// Defines the CMD SET BUS WIDTH used by this module.
 const CMD_SET_BUS_WIDTH: u8 = 6;
+/// Defines the CMD8 ARGUMENT used by this module.
 const CMD8_ARGUMENT: u32 = 0x1AA;
+/// Defines the CMD8 PATTERN used by this module.
 const CMD8_PATTERN: u32 = 0xAA;
+/// Defines the CMD8 VOLTAGE MASK used by this module.
 const CMD8_VOLTAGE_MASK: u32 = 0xF00;
+/// Defines the CMD8 VOLTAGE 27 36 used by this module.
 const CMD8_VOLTAGE_27_36: u32 = 0x100;
+/// Defines the BUS WIDTH 4 used by this module.
 const BUS_WIDTH_4: u32 = 2;
+/// Defines the RCA MASK used by this module.
 const RCA_MASK: u32 = 0xFFFF_0000;
 
 #[derive(Clone, Copy)]
+/// Internal Response classification for the bounded kernel path.
 pub(super) enum Response {
+    /// Represents the `None` response case.
     None,
+    /// Represents the `Short` response case.
     Short,
+    /// Represents the `Long` response case.
     Long,
 }
 
+/// Initializes the `initialize` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+///
+/// # Errors
+/// Returns a typed error when validation, state, or hardware access fails.
 pub(super) fn initialize() -> Result<(CardCapacity, u32, u32), StorageError> {
     let registers = RawSdioReader::registers();
     power_on(registers);
@@ -80,6 +112,9 @@ pub(super) fn initialize() -> Result<(CardCapacity, u32, u32), StorageError> {
     Ok((capacity, block_count, rca))
 }
 
+/// Powers the `power on` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 fn power_on(registers: &pac::sdio::RegisterBlock) {
     // SAFETY: 3 is the PAC-defined PWRCTRL value for SDIO power-on.
     registers
@@ -94,6 +129,9 @@ fn power_on(registers: &pac::sdio::RegisterBlock) {
     });
 }
 
+/// Sets the `set transfer clock` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 fn set_transfer_clock(registers: &pac::sdio::RegisterBlock) {
     registers.clkcr.modify(|_, writer| {
         writer
@@ -106,6 +144,12 @@ fn set_transfer_clock(registers: &pac::sdio::RegisterBlock) {
     });
 }
 
+/// Initializes the `initialize card` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+///
+/// # Errors
+/// Returns a typed error when validation, state, or hardware access fails.
 fn initialize_card(registers: &pac::sdio::RegisterBlock) -> Result<u32, StorageError> {
     for _ in 0..OCR_POLL_LIMIT {
         send(registers, CMD_APP, 0, Response::Short)?;
@@ -122,6 +166,9 @@ fn initialize_card(registers: &pac::sdio::RegisterBlock) -> Result<u32, StorageE
     Err(StorageError::Timeout)
 }
 
+/// Sends the `send allow crc` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 fn send_allow_crc(
     registers: &pac::sdio::RegisterBlock,
     index: u8,
@@ -131,6 +178,9 @@ fn send_allow_crc(
     send_inner(registers, index, argument, response, true)
 }
 
+/// Sends the `send` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 pub(super) fn send(
     registers: &pac::sdio::RegisterBlock,
     index: u8,
@@ -140,6 +190,9 @@ pub(super) fn send(
     send_inner(registers, index, argument, response, false)
 }
 
+/// Sends the `send inner` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 fn send_inner(
     registers: &pac::sdio::RegisterBlock,
     index: u8,
@@ -192,6 +245,9 @@ fn send_inner(
     Err(StorageError::Timeout)
 }
 
+/// Reports the `report command failure` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 fn report_command_failure(index: u8, error: StorageError) {
     if matches!(error, StorageError::NotReady | StorageError::Timeout) {
         return;

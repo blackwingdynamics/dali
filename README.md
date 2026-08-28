@@ -2,7 +2,7 @@
   <img src="docs/assets/dali-logo.svg" alt="Dali OS logo" width="220">
 </p>
 
-<!-- # Dali OS -->
+# Dali OS
 
 Dali OS is a Rust-based embedded operating system for STM32 microcontrollers and future autonomous or industrial devices.
 
@@ -11,8 +11,9 @@ The project is named after Dali, the Georgian goddess of the hunt. Its applicati
 ## Status
 
 Dali OS `0.1.0-alpha.1` is the first accepted F405 MVP release. The project
-also contains a feature-gated ABI v3 single-application isolation path and an
-AMRN v4 identity/relocation loader; these remain post-MVP platform features.
+also contains a feature-gated ABI v3 processor-isolation and multi-context
+execution path, plus AMRN format v4 identity/relocation and format v5 signed
+package paths; these remain post-MVP platform features.
 
 The accepted baseline targets the WeAct Studio STM32F405RGT6 Core Board and
 proves that the kernel can:
@@ -24,12 +25,13 @@ proves that the kernel can:
 - transfer control to the documented application entry point.
 
 The baseline ABI v2 application is trusted native code. The feature-gated F405
-path provides hardware-evidenced processor-side MPU isolation for one
-application, bounded kernel-owned SDIO DMA policy, signed AMRN/repository
-verification, anti-rollback admission, watchdog Safe Mode recovery, and
-bounded storage-card recovery. These are scoped implementation claims, not
-complete sandboxing, arbitrary DMA isolation, pre-reset Secure Boot, or
-multi-application isolation.
+path provides hardware-evidenced ABI v3 PSP/SysTick/PendSV context switching,
+MPU region switching, faulted-context retirement, bounded kernel-owned SDIO
+DMA policy, AMRN v5 signed package/repository verification, anti-rollback
+admission, watchdog Safe Mode recovery, and bounded storage-card recovery.
+These are scoped implementation claims, not complete sandboxing, arbitrary DMA
+isolation, pre-reset Secure Boot, production multi-application lifecycle
+policy, or general multi-target portability.
 
 The `dali.secure-boot.v1` image contract is implemented and host-tested, but
 pre-reset ROM/first-stage bootloader enforcement remains future work.
@@ -97,24 +99,24 @@ cargo build-kernel
 cargo test -p dali -p dali-app-hello -p dali-cli
 ```
 
-The complete development and hardware workflow is documented in [DEVELOPMENT.md](docs/DEVELOPMENT.md).
+The complete development and hardware workflow is documented in [development documentation](docs/development/README.md).
 
 ## Documentation
 
-Start with the [Documentation Index](docs/DOCUMENTATION_INDEX.md). Key documents are:
+Start with the [Documentation Index](docs/README.md). Key documents are:
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Roadmap](docs/ROADMAP.md)
-- [AMRN Format](docs/AMRN_FORMAT.md)
-- [Kernel–Application ABI](docs/ABI.md)
-- [Coding Standards](docs/CODING_STANDARDS.md)
+- [Architecture](docs/architecture/README.md)
+- [Roadmap](docs/roadmap/README.md)
+- [AMRN Format](docs/amrn-format/README.md)
+- [Kernel–Application ABI](docs/abi/README.md)
+- [Coding Standards](docs/coding-standards/README.md)
 - [Contributing](CONTRIBUTING.md)
 
 Changes are tracked in the [Changelog](CHANGELOG.md).
 
 ## Contributing
 
-Contributions must follow [CONTRIBUTING.md](CONTRIBUTING.md) and [CODING_STANDARDS.md](docs/CODING_STANDARDS.md). All changes are expected to include appropriate tests, hardware evidence, or documentation updates.
+Contributions must follow [CONTRIBUTING.md](CONTRIBUTING.md) and [coding standards](docs/coding-standards/README.md). All changes are expected to include appropriate tests, hardware evidence, or documentation updates.
 
 ## License
 

@@ -36,10 +36,14 @@ pub const AMRN_EXTENSION: &[u8] = b"AMRN";
 pub const MAX_ROOT_AMRN_FILES: usize = 4;
 // These bounds are defined by the FAT long-file-name representation and the
 // UTF-8 encoding used by `embedded-sdmmc`.
+/// Defines the `FAT_LFN_MAX_CHARACTERS` bound used by this subsystem.
 const FAT_LFN_MAX_CHARACTERS: usize = 255;
+/// Defines the `UTF8_MAX_BYTES_PER_CHARACTER` bound used by this subsystem.
 const UTF8_MAX_BYTES_PER_CHARACTER: usize = 3;
+/// Defines the `LFN_BUFFER_BYTES` bound used by this subsystem.
 const LFN_BUFFER_BYTES: usize = FAT_LFN_MAX_CHARACTERS * UTF8_MAX_BYTES_PER_CHARACTER;
 
+/// Defines the `DEFAULT_TIMESTAMP` bound used by this subsystem.
 const DEFAULT_TIMESTAMP: Timestamp = Timestamp {
     year_since_1970: 56,
     zero_indexed_month: 0,
@@ -78,10 +82,14 @@ impl RootDirectoryReport {
     }
 }
 
+/// Defines the `MAX_OPEN_DIRECTORIES` bound used by this subsystem.
 const MAX_OPEN_DIRECTORIES: usize = 4;
+/// Defines the `MAX_OPEN_FILES` bound used by this subsystem.
 const MAX_OPEN_FILES: usize = 4;
+/// Defines the `MAX_OPEN_VOLUMES` bound used by this subsystem.
 const MAX_OPEN_VOLUMES: usize = 1;
 
+/// Names the bounded `FilesystemManager` type used by this subsystem.
 type FilesystemManager<D> =
     VolumeManager<D, KernelTimeSource, MAX_OPEN_DIRECTORIES, MAX_OPEN_FILES, MAX_OPEN_VOLUMES>;
 
@@ -90,9 +98,13 @@ pub struct AmrnFile<'a, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
+    /// Stores the `manager` value for this bounded state.
     manager: &'a FilesystemManager<D>,
+    /// Stores the `raw_file` value for this bounded state.
     raw_file: RawFile,
+    /// Stores the `length` value for this bounded state.
     length: u32,
+    /// Stores the `name` value for this bounded state.
     name: ShortFileName,
 }
 
@@ -125,6 +137,7 @@ impl<'a, D> AmrnFile<'a, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
+    /// Constructs or updates `from_content_addressed` for this subsystem.
     pub(crate) fn from_content_addressed(
         manager: &'a FilesystemManager<D>,
         raw_file: RawFile,
@@ -230,10 +243,13 @@ where
 }
 
 #[derive(Clone, Copy)]
+/// Represents the private `PackageCandidate` state for this subsystem.
 struct PackageCandidate {
+    /// Stores the discovered short filename.
     name: ShortFileName,
 }
 
+/// Performs the `find_single_amrn` operation for this subsystem.
 fn find_single_amrn<D>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,
@@ -268,6 +284,7 @@ where
     }
 }
 
+/// Performs the `finish_file_operation` operation for this subsystem.
 fn finish_file_operation<D, R, E>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,
@@ -293,6 +310,7 @@ where
     }
 }
 
+/// Performs the `is_amrn_entry` operation for this subsystem.
 fn is_amrn_entry(entry: &DirEntry, long_name: Option<&str>) -> bool {
     if entry.name.extension().eq_ignore_ascii_case(AMRN_EXTENSION) {
         return true;

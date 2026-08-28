@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![warn(clippy::missing_docs_in_private_items)]
 
 pub(crate) mod abi;
 mod bootstrap;
@@ -18,6 +19,7 @@ mod security;
 use cortex_m_rt::entry;
 use panic_halt as _;
 
+/// Starts the kernel entry sequence.
 #[entry]
 fn main() -> ! {
     bootstrap::run()

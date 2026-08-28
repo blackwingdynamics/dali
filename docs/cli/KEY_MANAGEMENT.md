@@ -122,7 +122,7 @@ unset DALI_SIGNING_KEY_HEX
 In CI, use the CI secret store instead of a checked-out seed file. Do not use
 `echo` to display the variable, do not include it in command traces, and do
 not place it in a shell history entry. The CLI reads the seed only to create
-the DSIG envelope; the seed is not written into the AMRN package.
+the DSIG envelope; the seed is not written into the AMRN cartridge.
 
 Inspect the package before deployment:
 
@@ -153,7 +153,7 @@ trailer must be rejected before SRAM copy and application entry.
 
 Record the board, kernel commit, target profile, key identifier, package hash,
 SD card/filesystem, power source, console channel, expected output, observed
-output, and result in `docs/TESTING.md` or the associated acceptance record.
+output, and result in `docs/testing/README.md` or the associated acceptance record.
 
 ## Rotation and incident response
 

@@ -24,7 +24,7 @@ repository's documented hardware procedure.
 The CLI validates host-side package data. It does not establish that a kernel
 can initialize storage, load the package, transfer control, emit logs, or
 drive the application LED. Those claims require the procedures in
-docs/MVP_ACCEPTANCE.md.
+docs/mvp-acceptance/README.md.
 
 ## CI workflow
 

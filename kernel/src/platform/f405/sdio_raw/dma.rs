@@ -1,6 +1,9 @@
 use super::*;
 
 impl RawSdioReader {
+    /// Configures the `configure dma` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(super) fn configure_dma(registers: &pac::sdio::RegisterBlock, words: &mut [u32]) {
         let rcc = Self::rcc();
         rcc.ahb1enr.modify(|_, writer| writer.dma2en().enabled());
@@ -60,6 +63,9 @@ impl RawSdioReader {
         stream.cr.modify(|_, writer| writer.en().set_bit());
     }
 
+    /// Performs the `receive block` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(super) fn receive_block(
         registers: &pac::sdio::RegisterBlock,
         words: &mut [u32],
@@ -89,6 +95,9 @@ impl RawSdioReader {
         }
     }
 
+    /// Finishes the `finish dma tail` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn finish_dma_tail(
         registers: &pac::sdio::RegisterBlock,
         words: &mut [u32],
@@ -109,17 +118,26 @@ impl RawSdioReader {
         Ok(())
     }
 
+    /// Stops the `stop dma` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(super) fn stop_dma() {
         let stream = &Self::dma2().st[DMA_STREAM_INDEX];
         stream.cr.modify(|_, writer| writer.en().clear_bit());
         while stream.cr.read().en().bit() {}
     }
 
+    /// Performs the `rcc` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn rcc() -> &'static pac::rcc::RegisterBlock {
         // SAFETY: RCC is a singleton peripheral accessed only for DMA2 clock setup.
         unsafe { &*pac::RCC::ptr() }
     }
 
+    /// Performs the `dma2` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn dma2() -> &'static pac::dma2::RegisterBlock {
         // SAFETY: DMA2 stream 3 is exclusively owned by the SDIO block reader.
         unsafe { &*pac::DMA2::ptr() }

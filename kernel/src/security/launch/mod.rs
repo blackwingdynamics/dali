@@ -1,6 +1,6 @@
 //! Kernel-generated ABI v3 launch-frame validation.
 
-use dali::svc::ExceptionFrame;
+use dali_sdk::svc::ExceptionFrame;
 
 const THUMB_STATE_BIT: u32 = 1 << 24;
 const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;

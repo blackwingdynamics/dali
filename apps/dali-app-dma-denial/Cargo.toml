@@ -7,14 +7,14 @@ publish = false
 [workspace]
 
 [dependencies]
-dali = { path = "../../crates/dali-sdk", features = ["abi-current"] }
+dali_sdk = { package = "dali", path = "../../crates/dali-sdk", features = ["abi-current"] }
 
 [build-dependencies]
 dali-targets = { path = "../../crates/dali-targets" }
 
 [features]
 embedded-payload = []
-abi-current = ["dali/abi-current"]
+abi-current = ["dali_sdk/abi-current"]
 
 [lib]
 path = "src/lib.rs"

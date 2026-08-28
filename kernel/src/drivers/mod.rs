@@ -27,6 +27,7 @@ mod adapter_tests;
 /// contract and never need to depend on filesystem policy.
 #[cfg(not(feature = "storage-write"))]
 pub struct BlockDeviceAdapter<R> {
+    /// Stores the reader associated with this bounded state.
     reader: RefCell<R>,
 }
 

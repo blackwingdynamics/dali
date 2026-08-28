@@ -9,25 +9,40 @@ use crate::{logging, platform};
 
 /// Storage state and the reader retained for runtime card recovery.
 pub(super) struct StorageRuntime {
+    /// Stores the `status` value for this bounded state.
     status: lifecycle::status::StorageStatus,
     #[cfg(feature = "sdio")]
+    /// Stores the `recovery_reader` value for this bounded state.
     recovery_reader: Option<platform::PlatformSdioReader>,
+    #[cfg(feature = "sdio")]
+    /// Stores the `recovery_retry_log_count` value for this bounded state.
+    recovery_retry_log_count: u32,
+    #[cfg(feature = "sdio")]
+    /// Stores the `recovery_probe_count` value for this bounded state.
+    recovery_probe_count: u32,
 }
 
 impl StorageRuntime {
+    /// Builds storage recovery state with an attached SDIO reader.
     pub(super) const fn from_status(status: lifecycle::status::StorageStatus) -> Self {
         Self::new(status)
     }
 
+    /// Creates storage recovery state without an attached reader.
     pub(super) const fn new(status: lifecycle::status::StorageStatus) -> Self {
         Self {
             status,
             #[cfg(feature = "sdio")]
             recovery_reader: None,
+            #[cfg(feature = "sdio")]
+            recovery_retry_log_count: 0,
+            #[cfg(feature = "sdio")]
+            recovery_probe_count: 0,
         }
     }
 
     #[cfg(feature = "sdio")]
+    /// Creates storage recovery state with an attached SDIO reader.
     pub(super) const fn with_recovery_reader(
         status: lifecycle::status::StorageStatus,
         reader: platform::PlatformSdioReader,
@@ -35,19 +50,24 @@ impl StorageRuntime {
         Self {
             status,
             recovery_reader: Some(reader),
+            recovery_retry_log_count: 0,
+            recovery_probe_count: 0,
         }
     }
 
+    /// Returns the current storage lifecycle status.
     pub(super) const fn status(&self) -> lifecycle::status::StorageStatus {
         self.status
     }
 
     #[cfg(feature = "sdio")]
+    /// Performs the `poll_recovery` operation for this subsystem.
     pub(super) fn poll_recovery(&mut self, board: &mut platform::Platform) {
         storage::poll_runtime(self, board);
     }
 
     #[cfg(feature = "sdio")]
+    /// Reports whether the bounded recovery poll interval has elapsed.
     pub(super) const fn recovery_poll_due(&self, elapsed_ms: u32) -> bool {
         elapsed_ms >= crate::drivers::lifecycle::policy::RECOVERY_POLL_PERIOD_MS
     }
@@ -92,6 +112,13 @@ pub fn run() -> ! {
         );
     }
 
+    #[cfg(feature = "driver-hardware-test")]
+    unsafe {
+        // SAFETY: All test-build interrupt handlers are linked, and USB/logging
+        // ownership is initialized before EXTI events can emit diagnostics.
+        cortex_m::interrupt::enable();
+    }
+
     startup::emit_boot_banner();
     logging::info(
         logging::BOOT_SUBSYSTEM,
@@ -101,6 +128,11 @@ pub fn run() -> ! {
         logging::BOOT_SUBSYSTEM,
         format_args!("Hardware bootstrap complete"),
     );
+    #[cfg(feature = "display-oled")]
+    board.write_display_log(b"Hardware bootstrap complete\n");
+
+    #[cfg(feature = "driver-hardware-test")]
+    platform::run_driver_timeout_probe(&mut board);
 
     #[cfg(feature = "abi-context-switch")]
     if let Err(error) = crate::security::scheduling::initialize() {

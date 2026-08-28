@@ -9,17 +9,29 @@ mod tests;
 
 pub use recovery::recover;
 
+/// Defines the `MAGIC` bound used by this subsystem.
 const MAGIC: [u8; 4] = *b"DLCT";
+/// Defines the `FORMAT_VERSION` bound used by this subsystem.
 const FORMAT_VERSION: u8 = 1;
+/// Defines the `ACTIVE_SLOT_A` bound used by this subsystem.
 const ACTIVE_SLOT_A: u8 = 0;
+/// Defines the `ACTIVE_SLOT_B` bound used by this subsystem.
 const ACTIVE_SLOT_B: u8 = 1;
+/// Defines the `STATE_OFFSET` bound used by this subsystem.
 const STATE_OFFSET: usize = 0x05;
+/// Defines the `SLOT_OFFSET` bound used by this subsystem.
 const SLOT_OFFSET: usize = 0x06;
+/// Defines the `SEQUENCE_OFFSET` bound used by this subsystem.
 const SEQUENCE_OFFSET: usize = 0x08;
+/// Defines the `BUNDLE_VERSION_OFFSET` bound used by this subsystem.
 const BUNDLE_VERSION_OFFSET: usize = 0x10;
+/// Defines the `BUNDLE_LENGTH_OFFSET` bound used by this subsystem.
 const BUNDLE_LENGTH_OFFSET: usize = 0x18;
+/// Defines the `BUNDLE_DIGEST_OFFSET` bound used by this subsystem.
 const BUNDLE_DIGEST_OFFSET: usize = 0x20;
+/// Defines the `CRC_OFFSET` bound used by this subsystem.
 const CRC_OFFSET: usize = 0x40;
+/// Defines the `RESERVED_OFFSET` bound used by this subsystem.
 const RESERVED_OFFSET: usize = 0x44;
 
 /// Maximum candidate size accepted by the durable repository contract.
@@ -35,6 +47,7 @@ pub enum JournalSlot {
 }
 
 impl JournalSlot {
+    /// Performs the `encode` operation for this subsystem.
     fn encode(self) -> u8 {
         match self {
             Self::A => ACTIVE_SLOT_A,
@@ -42,6 +55,7 @@ impl JournalSlot {
         }
     }
 
+    /// Constructs or updates `decode` for this subsystem.
     fn decode(value: u8) -> Result<Self, JournalError> {
         match value {
             ACTIVE_SLOT_A => Ok(Self::A),

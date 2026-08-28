@@ -31,8 +31,11 @@ pub enum ContextState {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/// Internal ContextSlot record used by the bounded kernel path.
 struct ContextSlot {
+    /// Stores the context associated with this bounded state.
     context: ScheduledContext,
+    /// Stores the state associated with this bounded state.
     state: ContextState,
 }
 
@@ -54,7 +57,9 @@ pub enum ContextTableError {
 /// This table does not perform an exception return or write MPU registers. It
 /// only owns the bounded selection contract that those hardware paths consume.
 pub struct ContextTable<const CAPACITY: usize> {
+    /// Stores the slots associated with this bounded state.
     slots: [Option<ContextSlot>; CAPACITY],
+    /// Stores the active associated with this bounded state.
     active: Option<ContextId>,
 }
 
@@ -161,6 +166,12 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
         Ok(())
     }
 
+    /// Performs the `slot` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+    ///
+    /// # Errors
+    /// Returns a typed error when validation, state, or hardware access fails.
     fn slot(&self, id: ContextId) -> Result<&ContextSlot, ContextTableError> {
         self.slots
             .get(id.index())
@@ -168,6 +179,12 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
             .ok_or(ContextTableError::InvalidId)
     }
 
+    /// Performs the `slot mut` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+    ///
+    /// # Errors
+    /// Returns a typed error when validation, state, or hardware access fails.
     fn slot_mut(&mut self, id: ContextId) -> Result<&mut ContextSlot, ContextTableError> {
         self.slots
             .get_mut(id.index())

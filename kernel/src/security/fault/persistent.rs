@@ -2,7 +2,7 @@
 
 use core::cell::UnsafeCell;
 
-use dali::svc::ExceptionFrame;
+use dali_sdk::svc::ExceptionFrame;
 
 use super::FaultKind;
 

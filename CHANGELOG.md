@@ -2,7 +2,7 @@
 
 All notable changes to Dali OS are documented in this file.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and released versions follow the rules in [VERSIONING.md](docs/VERSIONING.md). Release entries are generated automatically from Conventional Commits.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and released versions follow the rules in [versioning documentation](docs/versioning/README.md). Release entries are generated automatically from Conventional Commits.
 
 ## [Unreleased]
 

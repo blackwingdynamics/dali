@@ -45,6 +45,7 @@ where
     }
 }
 
+/// Performs the `stream_file` operation for this subsystem.
 fn stream_file<D, F>(
     manager: &FilesystemManager<D>,
     file: embedded_sdmmc::RawFile,

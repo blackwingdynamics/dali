@@ -3,6 +3,12 @@
 use crate::drivers::StorageError;
 use stm32f4xx_hal::pac;
 
+/// Performs the `status error` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+///
+/// # Errors
+/// Returns a typed error when validation, state, or hardware access fails.
 pub(super) fn status_error(status: &pac::sdio::sta::R) -> Result<(), StorageError> {
     if status.ctimeout().bit_is_set() || status.dtimeout().bit_is_set() {
         Err(StorageError::Timeout)
@@ -15,6 +21,9 @@ pub(super) fn status_error(status: &pac::sdio::sta::R) -> Result<(), StorageErro
     }
 }
 
+/// Clears the `clear interrupts` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 pub(super) fn clear_interrupts(register: &pac::sdio::ICR) {
     register.write(|writer| {
         writer

@@ -15,6 +15,7 @@ use super::StorageRuntime;
 use crate::platform;
 
 #[cfg(feature = "sdio")]
+/// Performs the `poll_runtime` operation for this subsystem.
 pub(super) fn poll_runtime(runtime: &mut StorageRuntime, board: &mut platform::Platform) {
     recovery::poll_runtime(runtime, board);
 }

@@ -6,7 +6,7 @@
 
 use crate::logging;
 use crate::security::fault::{self, FaultKind, FaultRecord};
-use dali::svc::{ExceptionFrame, ServiceId, ServiceStatus};
+use dali_sdk::svc::{ExceptionFrame, ServiceId, ServiceStatus};
 
 #[unsafe(export_name = "SVCall")]
 #[unsafe(naked)]
@@ -82,13 +82,15 @@ fn dispatch(frame: &mut ExceptionFrame, slot: dali_targets::IsolationSlot) {
     let status = match ServiceId::from_raw(frame.r0) {
         Some(ServiceId::Log) => dispatch_log(frame, slot),
         #[cfg(feature = "abi-test-fixtures")]
-        None if frame.r0 == dali::svc::TEST_INVALID_PSP_SERVICE => dispatch_invalid_psp(slot),
+        None if frame.r0 == dali_sdk::svc::TEST_INVALID_PSP_SERVICE => dispatch_invalid_psp(slot),
         #[cfg(feature = "abi-test-fixtures")]
-        None if frame.r0 == dali::svc::TEST_NO_FRAME_HARDFAULT_SERVICE => {
+        None if frame.r0 == dali_sdk::svc::TEST_NO_FRAME_HARDFAULT_SERVICE => {
             dispatch_no_frame_hardfault(slot)
         }
         #[cfg(feature = "dma-test-fixture")]
-        None if frame.r0 == dali::svc::TEST_DMA_REQUEST_SERVICE => dispatch_dma_request_denied(),
+        None if frame.r0 == dali_sdk::svc::TEST_DMA_REQUEST_SERVICE => {
+            dispatch_dma_request_denied()
+        }
         None => ServiceStatus::rejected(),
     };
     frame.r0 = status.0;
@@ -132,7 +134,7 @@ fn dispatch_no_frame_hardfault(slot: dali_targets::IsolationSlot) -> ServiceStat
 fn dispatch_log(frame: &ExceptionFrame, slot: dali_targets::IsolationSlot) -> ServiceStatus {
     let message = frame.r1 as usize;
     let length = frame.r2 as usize;
-    if length > dali::MAX_LOG_MESSAGE_BYTES || !contains(slot, message, length) {
+    if length > dali_sdk::MAX_LOG_MESSAGE_BYTES || !contains(slot, message, length) {
         return ServiceStatus::rejected();
     }
 
@@ -152,12 +154,12 @@ fn contains(slot: dali_targets::IsolationSlot, start: usize, length: usize) -> b
     if start > u32::MAX as usize || length > u32::MAX as usize {
         return false;
     }
-    dali::svc::contains_range(
+    dali_sdk::svc::contains_range(
         start as u32,
         length as u32,
         slot.code_origin,
         slot.code_length,
-    ) || dali::svc::contains_range(
+    ) || dali_sdk::svc::contains_range(
         start as u32,
         length as u32,
         slot.data_origin,

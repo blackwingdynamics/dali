@@ -3,10 +3,15 @@
 use core::fmt::Arguments;
 
 #[cfg(feature = "usb-cdc")]
+/// Groups the private helpers for this subsystem.
 mod buffer {
+    /// Defines the `LOG_LINE_CAPACITY` bound used by this subsystem.
     pub(crate) const LOG_LINE_CAPACITY: usize = 128;
+    /// Defines the `LOG_QUEUE_CAPACITY` bound used by this subsystem.
     pub(crate) const LOG_QUEUE_CAPACITY: usize = 32;
+    /// Names the bounded `LogLine` type used by this subsystem.
     pub(crate) type LogLine = dali_usb::LogLine<LOG_LINE_CAPACITY>;
+    /// Names the bounded `LogQueue` type used by this subsystem.
     pub(crate) type LogQueue = dali_usb::LogQueue<LOG_LINE_CAPACITY, LOG_QUEUE_CAPACITY>;
 }
 mod rtt;
@@ -17,12 +22,15 @@ pub(crate) mod usb_cdc;
 use buffer::{LogLine, LogQueue};
 
 #[cfg(feature = "usb-cdc")]
+/// Stores the shared `mut` state used by this subsystem.
 static mut USB_LOG_QUEUE: LogQueue = LogQueue::new();
 
 #[cfg(feature = "usb-cdc")]
+/// Defines the `USB_OVERFLOW_WARNING` bound used by this subsystem.
 const USB_OVERFLOW_WARNING: &str =
     "[WARN][LOG] USB log queue overflow; oldest messages were dropped\r\n";
 #[cfg(feature = "usb-cdc")]
+/// Defines the `USB_FLUSH_FAILURE_WARNING` bound used by this subsystem.
 const USB_FLUSH_FAILURE_WARNING: &str =
     "[WARN][USB] CDC transport flush failed; queued delivery may be delayed\r\n";
 
@@ -49,6 +57,7 @@ pub enum Level {
 }
 
 impl Level {
+    /// Performs the `label` operation for this subsystem.
     pub(super) fn label(self) -> &'static str {
         match self {
             Self::Error => "ERROR",
@@ -103,6 +112,7 @@ pub fn log(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
 }
 
 #[cfg(feature = "usb-cdc")]
+/// Performs the `drain_usb_queue` operation for this subsystem.
 fn drain_usb_queue(link: dali_usb::LinkState, sink: &mut dyn dali_usb::ByteSink) {
     // SAFETY: This runs in the OTG_FS handler while main-context queue updates
     // are masked by the interrupt-free critical section.

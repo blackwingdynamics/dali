@@ -1,19 +1,26 @@
 [package]
 name = "dali-kernel"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2024"
 publish = false
 
 [features]
 default = ["board-stm32f405-sd", "usb-cdc"]
 sdio = [
+    "dep:stm32f4xx-hal",
     "stm32f4xx-hal/sdio",
     "stm32f4xx-hal/sdio-host",
     "stm32f4xx-hal/stm32f405",
 ]
 board-stm32f405-sd = ["sdio"]
 log-colors = []
-usb-cdc = ["stm32f4xx-hal/otg-fs", "stm32f4xx-hal/usb_fs", "dep:usb-device", "dep:usbd-serial"]
+usb-cdc = [
+    "dep:stm32f4xx-hal",
+    "stm32f4xx-hal/otg-fs",
+    "stm32f4xx-hal/usb_fs",
+    "dep:usb-device",
+    "dep:usbd-serial",
+]
 abi-current = []
 abi-mpu = ["abi-current"]
 abi-context-switch = ["abi-mpu"]
@@ -27,6 +34,12 @@ storage-interruption-test = ["storage-write"]
 storage-rollback-test = ["storage-write"]
 # Hardware acceptance only: stop F405 IWDG refresh and wait for reset.
 watchdog-feed-failure-test = []
+# Hardware acceptance only: emit target-visible GPIO, timer, UART, and SPI evidence.
+driver-hardware-test = ["f405-serial-spi"]
+# Compile the F405 serial backend only for a build that explicitly accepts its test wiring.
+f405-serial-spi = ["dep:stm32f4xx-hal"]
+# Compile the optional F405 I2C OLED backend without changing the headless boot path.
+display-oled = ["f405-serial-spi"]
 
 [lints]
 workspace = true
@@ -35,14 +48,15 @@ workspace = true
 dali-amrn = { path = "../crates/dali-amrn" }
 dali-crypto = { path = "../crates/dali-crypto", optional = true }
 dali-metadata = { path = "../crates/dali-metadata", optional = true }
-dali = { path = "../crates/dali-sdk" }
+dali_sdk = { package = "dali", path = "../crates/dali-sdk" }
+dali-driver-api = { path = "../crates/dali-driver-api" }
 dali-usb = { path = "../crates/dali-usb" }
 dali-targets = { path = "../crates/dali-targets" }
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
 embedded-sdmmc = { version = "=0.10.0", default-features = false }
 fugit = "=0.3.9"
-stm32f4xx-hal = { version = "0.20", default-features = false }
+stm32f4xx-hal = { version = "0.20", default-features = false, optional = true }
 panic-halt = "1.0"
 rtt-target = "0.6"
 usb-device = { version = "=0.3.2", optional = true }

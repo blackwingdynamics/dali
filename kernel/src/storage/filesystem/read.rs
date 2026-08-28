@@ -103,6 +103,7 @@ where
     close_directories(&manager, [root, first, directory], directory_count, result)
 }
 
+/// Performs the `read_named_file` operation for this subsystem.
 fn read_named_file<D>(
     manager: &FilesystemManager<D>,
     directory: embedded_sdmmc::RawDirectory,
@@ -128,6 +129,7 @@ where
     close_file_with_error(manager, file, result)
 }
 
+/// Performs the `stream_named_file` operation for this subsystem.
 fn stream_named_file<D, F>(
     manager: &FilesystemManager<D>,
     directory: embedded_sdmmc::RawDirectory,
@@ -165,6 +167,7 @@ where
     close_file_with_error(manager, file, result)
 }
 
+/// Performs the `close_file_with_error` operation for this subsystem.
 pub(crate) fn close_file_with_error<D, R>(
     manager: &FilesystemManager<D>,
     file: RawFile,
@@ -186,6 +189,7 @@ where
     }
 }
 
+/// Performs the `close_directories` operation for this subsystem.
 pub(crate) fn close_directories<D, R>(
     manager: &FilesystemManager<D>,
     directories: [embedded_sdmmc::RawDirectory; 3],
@@ -207,6 +211,7 @@ where
     }
 }
 
+/// Performs the `read_exact` operation for this subsystem.
 fn read_exact<D>(
     manager: &FilesystemManager<D>,
     file: RawFile,
@@ -226,6 +231,7 @@ where
     Ok(())
 }
 
+/// Performs the `close_root` operation for this subsystem.
 pub(crate) fn close_root<D, R>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,

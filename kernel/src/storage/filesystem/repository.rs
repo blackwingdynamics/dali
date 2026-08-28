@@ -17,14 +17,21 @@ use super::{
     stream_repository_file, stream_root_file, write_trust_store_artifact,
 };
 
+/// Defines the `PACKAGE_NAME_BYTES` bound used by this subsystem.
 const PACKAGE_NAME_BYTES: usize = 64 + 5;
+/// Defines the `DELEGATION_NAME_BYTES` bound used by this subsystem.
 const DELEGATION_NAME_BYTES: usize = 64 + 5;
+/// Defines the `METADATA_NAME_BYTES` bound used by this subsystem.
 const METADATA_NAME_BYTES: usize = 16;
+/// Defines the `DELEGATIONS_DIRECTORY` bound used by this subsystem.
 const DELEGATIONS_DIRECTORY: &str = "delegat";
+/// Defines the `BUNDLE_MANIFEST_NAME` bound used by this subsystem.
 const BUNDLE_MANIFEST_NAME: &str = "bundle.manifest";
 
+/// Names the bounded `RepositoryChunkPet` type used by this subsystem.
 type RepositoryChunkPet = fn() -> Result<(), crate::drivers::StorageError>;
 
+/// Performs the `no_repository_chunk_pet` operation for this subsystem.
 fn no_repository_chunk_pet() -> Result<(), crate::drivers::StorageError> {
     Ok(())
 }
@@ -39,6 +46,7 @@ pub enum RepositoryMetadataFormat {
 }
 
 impl RepositoryMetadataFormat {
+    /// Returns the filename suffix for the selected metadata encoding.
     const fn extension(self) -> &'static [u8] {
         match self {
             Self::JsonV1 => b".json",
@@ -54,8 +62,11 @@ impl RepositoryMetadataFormat {
 /// board or controller-specific type.
 #[derive(Clone, Copy)]
 pub struct FatRepositoryStorage<D> {
+    /// Stores the `device` value for this bounded state.
     device: D,
+    /// Stores the `metadata_format` value for this bounded state.
     metadata_format: RepositoryMetadataFormat,
+    /// Stores the `chunk_pet` value for this bounded state.
     chunk_pet: RepositoryChunkPet,
 }
 
@@ -87,6 +98,7 @@ impl<D> FatRepositoryStorage<D> {
         }
     }
 
+    /// Performs the `stream_fixed_metadata` operation for this subsystem.
     fn stream_fixed_metadata<F>(
         &self,
         stem: &[u8],
@@ -165,6 +177,7 @@ where
     finish_content_addressed(&manager, [root, packages, packages], raw_file, result)
 }
 
+/// Performs the `finish_content_addressed` operation for this subsystem.
 fn finish_content_addressed<D, R, E>(
     manager: &FilesystemManager<D>,
     directories: [embedded_sdmmc::RawDirectory; 3],
@@ -286,6 +299,7 @@ where
     }
 }
 
+/// Performs the `append_metadata_suffix` operation for this subsystem.
 fn append_metadata_suffix<'a>(
     stem: &[u8],
     format: RepositoryMetadataFormat,
@@ -294,6 +308,7 @@ fn append_metadata_suffix<'a>(
     append_suffix(stem, format.extension(), output)
 }
 
+/// Performs the `stream_file` operation for this subsystem.
 fn stream_file<D, F>(
     device: D,
     first_directory: &str,
@@ -318,6 +333,7 @@ where
     )
 }
 
+/// Performs the `append_package_suffix` operation for this subsystem.
 fn append_package_suffix<'a>(
     digest: &[u8; 32],
     output: &'a mut [u8; PACKAGE_NAME_BYTES],
@@ -331,6 +347,7 @@ fn append_package_suffix<'a>(
     append_suffix_at(length, b".amrn", output)
 }
 
+/// Performs the `append_suffix` operation for this subsystem.
 fn append_suffix<'a>(
     prefix: &[u8],
     suffix: &[u8],
@@ -343,6 +360,7 @@ fn append_suffix<'a>(
     append_suffix_at(prefix.len(), suffix, output)
 }
 
+/// Performs the `append_suffix_at` operation for this subsystem.
 fn append_suffix_at<'a>(
     offset: usize,
     suffix: &[u8],
@@ -358,6 +376,7 @@ fn append_suffix_at<'a>(
     str::from_utf8(&output[..end]).map_err(|_| embedded_sdmmc::Error::InvalidOffset)
 }
 
+/// Converts a nibble into its lowercase hexadecimal digit.
 const fn hex_digit(value: u8) -> u8 {
     match value {
         0..=9 => b'0' + value,
@@ -384,6 +403,7 @@ mod tests {
     }
 }
 
+/// Maps a durable artifact to its trust-store representation.
 const fn trust_store_artifact(artifact: DurableArtifact) -> TrustStoreArtifact {
     match artifact {
         DurableArtifact::SlotA => TrustStoreArtifact::Active,

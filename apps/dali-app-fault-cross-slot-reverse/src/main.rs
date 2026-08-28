@@ -33,7 +33,7 @@ const _: () = assert!(TARGET_SLOT_CODE_ORIGIN != 0);
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]
 pub unsafe extern "C" fn amiran_entry() -> ! {
-    let _ = dali::log(TEST_MESSAGE);
+    let _ = dali_sdk::log(TEST_MESSAGE);
     let _value = unsafe {
         // SAFETY: This read intentionally targets the other manifest-owned
         // application slot to verify unprivileged MPU isolation.

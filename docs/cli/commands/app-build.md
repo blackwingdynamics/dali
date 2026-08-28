@@ -16,7 +16,7 @@ The command must run from an initialized application directory. It reads:
 - `application.name` for the Cargo binary name;
 - `build.target_profile` for the stable profile name from `dali target list`;
 - `build.profile` for `dev` or `release` selection.
-- `build.abi_version` for the application package contract; when omitted, the
+- `build.abi_version` for the application cartridge contract; when omitted, the
   target profile's ABI version is used.
 
 The generated project defaults to `f405` and the `dev`
@@ -25,12 +25,12 @@ does not embed a board-specific target mapping.
 
 ## Output
 
-The optional build.format_version field selects the AMRN package format. ABI
+The optional build.format_version field selects the AMRN cartridge format. ABI
 v3 defaults to format version 2; setting it to 3 enables the relocatable
 package pipeline.
 
 For ABI v2, the command runs Cargo with the `embedded-payload` feature, uses
-`cargo objcopy` to write the native payload, and then creates the AMRN package
+`cargo objcopy` to write the native payload, and then creates the AMRN cartridge
 from that payload. It writes:
 
 ```text
@@ -42,7 +42,7 @@ For the default `dev` profile, Cargo uses the `debug` output directory, so the
 concrete path is `target/<target-profile>/debug/<application-name>.bin`.
 
 The `.bin` file is the intermediate native payload. The `.amrn` file is the
-deployable package. `dali app package` remains available when repackaging an
+deployable cartridge. `dali app package` remains available when repackaging an
 existing payload without rebuilding it.
 
 For ABI v3, the command enables the `abi-current` feature, selects `memory.v3.x`,

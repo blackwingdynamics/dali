@@ -35,10 +35,18 @@ pub struct TargetProfile {
     pub capabilities: CapabilitiesProfile,
     /// Board clock metadata.
     pub clock: ClockProfile,
+    /// I2C bus configuration declared by the target manifest.
+    pub i2c: I2cProfile,
+    /// Display configuration declared by the target manifest.
+    pub display: DisplayProfile,
+    /// Acceptance probe configuration declared by the target manifest.
+    pub driver_probe: DriverProbeProfile,
     /// Board memory regions used by the kernel and applications.
     pub memory: MemoryProfile,
     /// Logical status LED metadata.
     pub status_led: PinProfile,
+    /// User-key mapping declared by the target manifest.
+    pub user_key: UserKeyProfile,
     /// USB FS data-pin metadata.
     pub usb: UsbProfile,
     /// Storage bus metadata.
@@ -125,6 +133,66 @@ pub struct ClockProfile {
     pub pclk2_hz: u32,
     /// USB clock domain frequency in hertz.
     pub usb_hz: u32,
+}
+
+/// I2C timing metadata declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct I2cProfile {
+    /// Target I2C bus frequency in hertz.
+    pub bus_frequency_hz: u32,
+}
+
+/// I2C OLED display configuration declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DisplayProfile {
+    /// Display controller identifier.
+    pub controller: &'static str,
+    /// Logical I2C address used for display transactions.
+    pub i2c_address: u8,
+    /// Display pixel width.
+    pub width: usize,
+    /// Display pixel height.
+    pub height: usize,
+    /// Width of one text cell in pixels.
+    pub text_cell_width: usize,
+    /// Height of one text cell in pixels.
+    pub text_cell_height: usize,
+    /// Maximum timeout used by one display operation.
+    pub timeout_ticks: u32,
+}
+
+/// Hardware acceptance probe configuration declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct DriverProbeProfile {
+    /// UART baud rate used by the acceptance probe.
+    pub uart_baud_rate_hz: u32,
+    /// SPI clock used by the acceptance probe.
+    pub spi_clock_hz: u32,
+    /// Maximum timeout in contract ticks used by the acceptance probe.
+    pub timeout_ticks: u32,
+    /// Hardware polls represented by one acceptance-probe timeout tick.
+    pub polls_per_timeout_tick: u32,
+    /// Divisor used to derive the timer timeout acceptance probe duration.
+    pub timer_timeout_divisor: u32,
+    /// Maximum SysTick polling budget used by the timer acceptance probe.
+    pub timer_evidence_poll_limit: u32,
+    /// Number of bytes allocated for one-byte acceptance transfers.
+    pub buffer_length: usize,
+    /// Initial byte used by the SPI acceptance probe.
+    pub spi_fill_byte: u8,
+    /// Logical SPI device identifier used by the acceptance probe.
+    pub spi_device_id: u8,
+    /// Logical I2C address used by the acceptance probe.
+    pub i2c_address: u8,
+}
+
+/// User-key port and pin mapping declared by a target manifest.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UserKeyProfile {
+    /// GPIO port letter.
+    pub port: char,
+    /// GPIO pin number.
+    pub pin: u8,
 }
 
 /// Bounded scheduler configuration declared by a target manifest.
@@ -298,6 +366,15 @@ mod tests {
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
+        assert_eq!(SUPPORTED_TARGETS[0].status_led.number, 2);
+        assert_eq!(SUPPORTED_TARGETS[0].display.controller, "SSD1306");
+        assert_eq!(SUPPORTED_TARGETS[0].display.i2c_address, 0x3C);
+        assert_eq!(SUPPORTED_TARGETS[0].display.width, 128);
+        assert_eq!(SUPPORTED_TARGETS[0].display.height, 64);
+        assert_eq!(SUPPORTED_TARGETS[0].display.text_cell_width, 8);
+        assert_eq!(SUPPORTED_TARGETS[0].display.text_cell_height, 8);
+        assert_eq!(SUPPORTED_TARGETS[0].display.timeout_ticks, 100);
+        assert!(SUPPORTED_TARGETS[0].status_led.active_high);
         assert!(SUPPORTED_TARGETS[0].capabilities.storage);
         assert!(SUPPORTED_TARGETS[0].capabilities.usb_console);
         assert!(SUPPORTED_TARGETS[0].capabilities.mpu);

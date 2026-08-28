@@ -26,19 +26,27 @@ pub(crate) trait UsbResetDelay {
     fn delay_ms(&mut self, milliseconds: u32);
 }
 
+/// Names the bounded `ActiveBus` type used by this subsystem.
 type ActiveBus = <crate::platform::UsbResources as UsbResources>::Bus;
 
+/// Defines the `USB_VENDOR_ID` bound used by this subsystem.
 const USB_VENDOR_ID: u16 = 0x1209;
+/// Defines the `USB_PRODUCT_ID` bound used by this subsystem.
 const USB_PRODUCT_ID: u16 = 0xDA11;
+/// Defines the `ENDPOINT_MEMORY_WORDS` bound used by this subsystem.
 const ENDPOINT_MEMORY_WORDS: usize = 1_024;
 
 // The endpoint arena is kept in the board's DMA-visible buffer section so a
 // future CCM migration cannot move USB transport memory into CCM by accident.
 #[unsafe(link_section = ".dma_buffer")]
+/// Stores the shared `mut` state used by this subsystem.
 static mut ENDPOINT_MEMORY: [u32; ENDPOINT_MEMORY_WORDS] = [0; ENDPOINT_MEMORY_WORDS];
+/// Stores the shared `mut` state used by this subsystem.
 static mut USB_BUS: Option<UsbBusAllocator<ActiveBus>> = None;
+/// Stores the shared `USB_SERIAL` state used by this subsystem.
 static USB_SERIAL: Mutex<RefCell<Option<SerialPort<'static, ActiveBus>>>> =
     Mutex::new(RefCell::new(None));
+/// Stores the shared `USB_DEVICE` state used by this subsystem.
 static USB_DEVICE: Mutex<RefCell<Option<UsbDevice<'static, ActiveBus>>>> =
     Mutex::new(RefCell::new(None));
 
@@ -128,7 +136,9 @@ where
     }
 }
 
+/// Represents the private `UsbSink` state for this subsystem.
 struct UsbSink<'a> {
+    /// Stores the `serial` value for this bounded state.
     serial: &'a mut SerialPort<'static, ActiveBus>,
 }
 

@@ -25,6 +25,7 @@ where
     close_root(&manager, root, Some(file), result)
 }
 
+/// Performs the `close_root` operation for this subsystem.
 fn close_root<D>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,

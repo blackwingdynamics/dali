@@ -1,6 +1,6 @@
 # First-Stage Bootloader
 
-Status: **Future backlog**.
+Status: **Future**.
 
 The current F405 startup image begins at the application flash boundary. The
 existing `dali.secure-boot.v1` contract is a hardware-neutral policy and codec;

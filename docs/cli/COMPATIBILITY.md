@@ -12,9 +12,9 @@ CLI compatibility depends on more than the executable version:
 
 The AMRN format and ABI specifications are the source of truth:
 
-- AMRN format: ../AMRN_FORMAT.md
+- AMRN format: ../amrn-format/README.md
 - ABI: ../ABI.md
-- Versioning: ../VERSIONING.md
+- Versioning: ../versioning/README.md
 
 ## Current MVP profile
 

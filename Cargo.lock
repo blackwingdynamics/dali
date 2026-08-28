@@ -166,22 +166,22 @@ dependencies = [
 
 [[package]]
 name = "dali"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 
 [[package]]
 name = "dali-amrn"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 
 [[package]]
 name = "dali-app-hello"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "dali",
 ]
 
 [[package]]
 name = "dali-cli"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "dali-amrn",
  "dali-crypto",
@@ -195,7 +195,7 @@ dependencies = [
 
 [[package]]
 name = "dali-crypto"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "ed25519-dalek",
  "sha2",
@@ -203,17 +203,22 @@ dependencies = [
 
 [[package]]
 name = "dali-device"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
+
+[[package]]
+name = "dali-driver-api"
+version = "0.1.0-alpha.2"
 
 [[package]]
 name = "dali-kernel"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
  "dali",
  "dali-amrn",
  "dali-crypto",
+ "dali-driver-api",
  "dali-metadata",
  "dali-targets",
  "dali-usb",
@@ -228,7 +233,7 @@ dependencies = [
 
 [[package]]
 name = "dali-metadata"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "dali-amrn",
  "dali-crypto",
@@ -237,7 +242,7 @@ dependencies = [
 
 [[package]]
 name = "dali-targets"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "serde",
  "toml",
@@ -245,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "dali-usb"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 
 [[package]]
 name = "deranged"

@@ -16,7 +16,7 @@
 2. Add one implementation module under src/commands/.
 3. Add command-specific host tests.
 4. Add one documentation file under docs/cli/commands/.
-5. Update COMMANDS.md, WORKFLOWS.md, and FILE_STRUCTURE.md when needed.
+5. Update COMMANDS.md, WORKFLOWS.md, and the file-structure documentation when needed.
 6. Update the roadmap before implementation if the capability changes scope.
 7. Run the complete host and target validation set.
 

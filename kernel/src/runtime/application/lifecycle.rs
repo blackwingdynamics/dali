@@ -44,7 +44,9 @@ pub enum ApplicationState {
 pub enum LifecycleError {
     /// The requested transition is not valid for the current state.
     InvalidTransition {
+        /// Lifecycle state from which the invalid transition was requested.
         state: ApplicationState,
+        /// Event that was rejected by the lifecycle state machine.
         event: LifecycleEvent,
     },
     /// The reserved slot does not match the package's declared slot.
@@ -73,9 +75,13 @@ pub enum LifecycleEvent {
 /// Kernel-owned lifecycle record for one application identity and slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ApplicationLifecycle {
+    /// Stores the identity associated with this bounded state.
     identity: ApplicationIdentity,
+    /// Stores the declared slot associated with this bounded state.
     declared_slot: u8,
+    /// Stores the allocation associated with this bounded state.
     allocation: Option<SlotAllocation>,
+    /// Stores the state associated with this bounded state.
     state: ApplicationState,
 }
 

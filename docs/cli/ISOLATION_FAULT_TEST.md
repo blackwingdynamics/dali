@@ -242,7 +242,7 @@ breakpoints at `dali_kernel::security::fault::handle_hard_fault` and
 `dali_kernel::security::fault::handle_with_frame`, continue, and inspect the
 registers and `CFSR`, `HFSR`, and `BFAR` values when the fault is reached.
 The decoded `PC`, `LR`, and address were observed on the target and are
-recorded in `docs/TESTING.md`; this confirms the precise BusFault boundary.
+recorded in `docs/testing/README.md`; this confirms the precise BusFault boundary.
 
 ## Invalid-execution test
 

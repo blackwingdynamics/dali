@@ -5,6 +5,7 @@ use crate::runtime::memory::{DmaBuffer, dma::CURRENT_POLICY, dma::DmaOwner};
 use stm32f4xx_hal::pac;
 use stm32f4xx_hal::sdio::CardCapacity;
 
+/// Internal dma helpers for the surrounding subsystem.
 mod dma;
 mod init;
 mod status;
@@ -12,15 +13,25 @@ mod status;
 mod write;
 use status::{clear_interrupts, status_error};
 
+/// Defines the BLOCK BYTES used by this module.
 const BLOCK_BYTES: usize = 512;
+/// Defines the BLOCK SIZE EXPONENT used by this module.
 const BLOCK_SIZE_EXPONENT: u8 = 9;
+/// Defines the DATA TIMEOUT CYCLES used by this module.
 const DATA_TIMEOUT_CYCLES: u32 = u32::MAX;
+/// Defines the COMMAND POLL LIMIT used by this module.
 const COMMAND_POLL_LIMIT: u32 = u32::MAX;
+/// Defines the DATA WORD COUNT used by this module.
 const DATA_WORD_COUNT: u16 = 128;
+/// Defines the DMA STREAM INDEX used by this module.
 const DMA_STREAM_INDEX: usize = 3;
+/// Defines the DMA CHANNEL used by this module.
 const DMA_CHANNEL: u8 = 4;
+/// Defines the DMA WORD SIZE used by this module.
 const DMA_WORD_SIZE: u8 = 2;
+/// Defines the CMD SET BLOCK LENGTH used by this module.
 const CMD_SET_BLOCK_LENGTH: u8 = 16;
+/// Defines the CMD READ SINGLE BLOCK used by this module.
 const CMD_READ_SINGLE_BLOCK: u8 = 17;
 #[cfg(feature = "storage-write")]
 const CMD_WRITE_SINGLE_BLOCK: u8 = 24;
@@ -36,12 +47,14 @@ const CARD_STATE_MASK: u32 = 0xF << 9;
 const CARD_STATUS_POLL_LIMIT: u32 = 1_000_000;
 
 #[repr(C, align(4))]
+/// Internal AlignedDmaWords record used by the bounded kernel path.
 struct AlignedDmaWords([u32; DATA_WORD_COUNT as usize]);
 
 // SDIO DMA cannot access the F405 CCM region where the kernel stack lives.
 // Keep the transfer words in the manifest-generated DMA-visible SRAM section.
 #[used]
 #[unsafe(link_section = ".dma_buffer")]
+/// Kernel-owned static storage for DMA WORDS.
 static mut DMA_WORDS: AlignedDmaWords = AlignedDmaWords([0; DATA_WORD_COUNT as usize]);
 
 #[cfg(feature = "dma-test-fixture")]
@@ -85,7 +98,9 @@ const DMA_TRACE_COMPLETE: u32 = 0xD1A0_0002;
 
 /// Reads SDIO blocks without the HAL half-full FIFO tail deadlock.
 pub(crate) struct RawSdioReader {
+    /// Stores the high capacity associated with this bounded state.
     high_capacity: bool,
+    /// Stores the relative address associated with this bounded state.
     relative_address: u32,
 }
 
@@ -205,6 +220,12 @@ impl RawSdioReader {
         }
         Err(StorageError::Timeout)
     }
+    /// Builds the `command argument` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+    ///
+    /// # Errors
+    /// Returns a typed error when validation, state, or hardware access fails.
     fn command_argument(&self, address: BlockAddress) -> Result<u32, StorageError> {
         if self.high_capacity {
             Ok(address.value())
@@ -215,11 +236,17 @@ impl RawSdioReader {
                 .ok_or(StorageError::InvalidBlockAddress)
         }
     }
+    /// Performs the `registers` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn registers() -> &'static pac::sdio::RegisterBlock {
         // SAFETY: The SDIO peripheral is initialized once by the HAL and is
         // exclusively accessed by this driver while storage operations run.
         unsafe { &*pac::SDIO::ptr() }
     }
+    /// Sends the `send command` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn send_command(
         registers: &pac::sdio::RegisterBlock,
         index: u8,
@@ -243,9 +270,15 @@ impl RawSdioReader {
             }
         }
     }
+    /// Starts the `start read command` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn start_read_command(registers: &pac::sdio::RegisterBlock, argument: u32) {
         Self::write_command(registers, CMD_READ_SINGLE_BLOCK, argument);
     }
+    /// Writes the `write command` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn write_command(registers: &pac::sdio::RegisterBlock, index: u8, argument: u32) {
         clear_interrupts(&registers.icr);
         registers.arg.write(|writer| writer.cmdarg().bits(argument));
@@ -261,6 +294,9 @@ impl RawSdioReader {
                 .enabled()
         });
     }
+    /// Starts the `start receive` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     fn start_receive(registers: &pac::sdio::RegisterBlock) {
         registers
             .dtimer

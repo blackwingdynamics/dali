@@ -134,13 +134,13 @@ See [commands/target-info.md](commands/target-info.md).
 
 ### dali package
 
-Creates an AMRN package from a linked native payload.
+Creates an AMRN cartridge from a linked native payload.
 
 See commands/package.md.
 
 ### dali inspect
 
-Validates an AMRN package and prints its decoded fields without modifying the
+Validates an AMRN cartridge and prints its decoded fields without modifying the
 input.
 
 See commands/inspect.md.
@@ -160,6 +160,19 @@ The private output is created with restrictive permissions where supported and
 existing files are never overwritten. The public output is a manifest-ready
 trust-anchor fragment. See [Key management](KEY_MANAGEMENT.md) for the
 security boundary and release procedure.
+
+### dali metadata
+
+Creates, registers, publishes, or verifies repository metadata and bundle
+records. The top-level usage contract exposes these metadata groups:
+
+```text
+dali metadata delegation create ...
+dali metadata bundle {generate|inspect|verify} ...
+```
+
+Use the [Binary v2 developer workflow](BINARY_V2_DEVELOPER_WORKFLOW.md) for
+the ordered repository, authorization, signing, and verification procedure.
 
 ## Application commands
 

@@ -3,6 +3,7 @@
 use crate::runtime::watchdog::WatchdogRuntime;
 use crate::{logging, platform};
 
+/// Performs the `initialize` operation for this subsystem.
 pub fn initialize(board: &mut platform::Platform) -> Option<platform::WatchdogRuntime> {
     let Some(profile) = platform::WATCHDOG_PROFILE else {
         logging::info(

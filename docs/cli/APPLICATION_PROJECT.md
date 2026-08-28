@@ -53,8 +53,9 @@ repository aligned with the same linker contract.
 
 `memory.v3.x` is a target-manifest-generated ABI v3 code/data layout artifact.
 It is selected when `build.abi_version = 3`; the default remains the target's
-declared ABI version. ABI v3 packaging is host-validated, but the F405 kernel
-does not execute ABI v3 packages until the MPU launch path is complete.
+declared ABI version. ABI v3 packaging is host-validated, and the feature-
+gated F405 kernel executes the documented MPU launch path. This remains an
+experimental target-specific capability rather than the default ABI v2 path.
 
 `dali.toml` is the Dali project manifest. It owns application metadata and
 build configuration that must remain configurable:

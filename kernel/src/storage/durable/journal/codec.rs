@@ -59,6 +59,7 @@ impl CommitJournalRecord {
     }
 }
 
+/// Performs the `validate_fields` operation for this subsystem.
 fn validate_fields(record: &CommitJournalRecord) -> Result<(), JournalError> {
     if record.sequence == 0 {
         return Err(JournalError::InvalidSequence);
@@ -75,6 +76,7 @@ fn validate_fields(record: &CommitJournalRecord) -> Result<(), JournalError> {
     Ok(())
 }
 
+/// Performs the `decode_state` operation for this subsystem.
 fn decode_state(value: u8) -> Result<CommitJournalState, JournalError> {
     match value {
         1 => Ok(CommitJournalState::Prepared),
@@ -83,22 +85,27 @@ fn decode_state(value: u8) -> Result<CommitJournalState, JournalError> {
     }
 }
 
+/// Performs the `write_u32` operation for this subsystem.
 fn write_u32(output: &mut [u8], offset: usize, value: u32) {
     output[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
 
+/// Performs the `write_u64` operation for this subsystem.
 fn write_u64(output: &mut [u8], offset: usize, value: u64) {
     output[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
 }
 
+/// Performs the `read_u32` operation for this subsystem.
 fn read_u32(input: &[u8], offset: usize) -> u32 {
     u32::from_le_bytes(input[offset..offset + 4].try_into().unwrap_or([0; 4]))
 }
 
+/// Performs the `read_u64` operation for this subsystem.
 fn read_u64(input: &[u8], offset: usize) -> u64 {
     u64::from_le_bytes(input[offset..offset + 8].try_into().unwrap_or([0; 8]))
 }
 
+/// Performs the `crc32` operation for this subsystem.
 fn crc32(bytes: &[u8]) -> u32 {
     let mut crc = u32::MAX;
     for byte in bytes {

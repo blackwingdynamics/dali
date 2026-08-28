@@ -3,7 +3,7 @@
 use core::cell::UnsafeCell;
 
 #[cfg(feature = "board-stm32f405-sd")]
-mod f405;
+pub(crate) mod f405;
 
 /// Stable operations supplied by a selected platform backend.
 pub(crate) trait Backend: Sized {
@@ -72,6 +72,7 @@ pub(crate) enum WatchdogServiceError {
     Feed,
 }
 
+/// Internal WatchdogStorage record used by the bounded kernel path.
 struct WatchdogStorage(UnsafeCell<Option<WatchdogRuntime>>);
 
 // SAFETY: The storage is accessed only inside a critical section. The
@@ -79,6 +80,7 @@ struct WatchdogStorage(UnsafeCell<Option<WatchdogRuntime>>);
 // callers can create mutable access concurrently.
 unsafe impl Sync for WatchdogStorage {}
 
+/// Kernel-owned static storage for WATCHDOG STORAGE.
 static WATCHDOG_STORAGE: WatchdogStorage = WatchdogStorage(UnsafeCell::new(None));
 
 /// Watchdog profile supplied by the selected target manifest.
@@ -96,14 +98,27 @@ pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targe
     .release_trust_anchors;
 
 #[cfg(feature = "board-stm32f405-sd")]
+/// Defines the SYSTEM CLOCK MHZ used by this module.
 pub(crate) const SYSTEM_CLOCK_MHZ: u32 = <f405::Board as Backend>::SYSTEM_CLOCK_MHZ;
 
 #[cfg(feature = "sdio")]
+/// Performs the `helper` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 pub(crate) type PlatformSdioReader = <f405::Board as Backend>::SdioReader;
 
 #[cfg(feature = "board-stm32f405-sd")]
+/// Initializes the `initialize` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 pub(crate) fn initialize() -> Platform {
     Platform(<f405::Board as Backend>::initialize())
+}
+
+/// Runs the target-only bounded UART/SPI acceptance probe.
+#[cfg(feature = "driver-hardware-test")]
+pub(crate) fn run_driver_timeout_probe(platform: &mut Platform) {
+    platform.0.run_driver_timeout_probe();
 }
 
 /// Arms and installs the single kernel-owned watchdog before storage loading.
@@ -152,18 +167,43 @@ pub(crate) fn repository_verification_progress() -> bool {
 
 #[cfg(feature = "board-stm32f405-sd")]
 impl Platform {
+    /// Writes a bounded diagnostic line to the optional board display.
+    #[cfg(feature = "display-oled")]
+    pub(crate) fn write_display_log(&mut self, bytes: &[u8]) {
+        self.0.write_display_log(bytes);
+    }
+
+    /// Sets the `set status led` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(crate) fn set_status_led(&mut self, on: bool) {
         self.0.set_status_led(on);
     }
 
+    /// Polls the `poll user key` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
+    pub(crate) fn poll_user_key(&mut self) {
+        self.0.poll_user_key();
+    }
+
+    /// Performs the `delay ms` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(crate) fn delay_ms(&mut self, milliseconds: u32) {
         self.0.delay_ms(milliseconds);
     }
 
+    /// Performs the `reset cause` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(crate) fn reset_cause(&self) -> crate::runtime::watchdog::ResetCause {
         self.0.reset_cause()
     }
 
+    /// Takes the `take watchdog` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(crate) fn take_watchdog(&mut self) -> Option<f405::F405Watchdog> {
         self.0.take_watchdog()
     }
@@ -174,25 +214,40 @@ impl Platform {
     }
 
     #[cfg(feature = "sdio")]
+    /// Takes the `take sdio reader` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(crate) fn take_sdio_reader(&mut self) -> Option<<f405::Board as Backend>::SdioReader> {
         self.0.take_sdio_reader()
     }
 
     #[cfg(feature = "usb-cdc")]
+    /// Takes the `take usb resources` operation for this subsystem.
+    ///
+    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
     pub(crate) fn take_usb_resources(&mut self) -> Option<UsbResources> {
         <f405::Board as Backend>::take_usb_resources(&mut self.0)
     }
 }
 
 #[cfg(feature = "usb-cdc")]
+/// Performs the `helper` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 pub(crate) type UsbResources = <f405::Board as Backend>::UsbResources;
 
 #[cfg(feature = "usb-cdc")]
+/// Performs the `unmask usb irq` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 pub(crate) fn unmask_usb_irq() {
     <f405::Board as Backend>::unmask_usb_irq();
 }
 
 #[cfg(feature = "usb-cdc")]
+/// Performs the `pend usb irq` operation for this subsystem.
+///
+/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
 pub(crate) fn pend_usb_irq() {
     <f405::Board as Backend>::pend_usb_irq();
 }

@@ -2,6 +2,10 @@
 
 #[cfg(feature = "sdio")]
 use super::status::FAST_BLINK_PERIOD_MS;
+#[cfg(feature = "sdio")]
+/// Defines the `FAILURE_LOG_PERIOD_MS` bound used by this subsystem.
+/// Defines the `FAILURE_LOG_PERIOD_MS` bound used by this subsystem.
+const FAILURE_LOG_PERIOD_MS: u32 = 2_000;
 use super::status::{
     HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SAFE_MODE_LOG_PERIOD_MS, SLOW_BLINK_PERIOD_MS,
     StorageStatus,
@@ -14,6 +18,8 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
     let mut elapsed_ms = 0;
     let safe_mode = matches!(storage.status(), StorageStatus::SafeMode);
     let mut safe_mode_log_elapsed_ms = 0;
+    #[cfg(feature = "sdio")]
+    let mut failure_log_elapsed_ms = 0;
     #[cfg(feature = "sdio")]
     if matches!(storage.status(), StorageStatus::Removed) {
         crate::logging::info(
@@ -29,6 +35,7 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
     }
 
     loop {
+        board.poll_user_key();
         #[cfg(feature = "sdio")]
         if matches!(storage.status(), StorageStatus::Removed)
             && storage.recovery_poll_due(elapsed_ms)
@@ -78,6 +85,13 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
                     board.set_status_led(led_on);
                     elapsed_ms = 0;
                 }
+                if failure_log_elapsed_ms >= FAILURE_LOG_PERIOD_MS {
+                    crate::logging::warn(
+                        crate::logging::BOOT_SUBSYSTEM,
+                        format_args!("[STORAGE] Storage recovery fault heartbeat active"),
+                    );
+                    failure_log_elapsed_ms = 0;
+                }
             }
         }
         let watchdog_refreshed = match platform::service_watchdog() {
@@ -103,5 +117,9 @@ pub fn run(mut board: platform::Platform, mut storage: StorageRuntime) -> ! {
         board.delay_ms(HEARTBEAT_PERIOD_MS);
         elapsed_ms = elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
         safe_mode_log_elapsed_ms = safe_mode_log_elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
+        #[cfg(feature = "sdio")]
+        if matches!(storage.status(), StorageStatus::Failure) {
+            failure_log_elapsed_ms = failure_log_elapsed_ms.saturating_add(HEARTBEAT_PERIOD_MS);
+        }
     }
 }

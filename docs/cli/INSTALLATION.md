@@ -23,7 +23,7 @@ The installed executable is dali. The Cargo package remains dali-cli.
 dali inspect --input <package.amrn>
 ~~~
 
-A valid package prints AMRN package valid and its decoded contract fields.
+A valid package prints AMRN cartridge valid and its decoded contract fields.
 
 ## Update or remove
 

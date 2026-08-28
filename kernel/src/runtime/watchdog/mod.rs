@@ -55,7 +55,9 @@ pub enum WatchdogState {
 /// Validates watchdog metadata and tracks its single kernel feed owner.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WatchdogContract {
+    /// Stores the profile associated with this bounded state.
     profile: WatchdogProfile,
+    /// Stores the state associated with this bounded state.
     state: WatchdogState,
 }
 
@@ -138,7 +140,9 @@ pub enum WatchdogRuntimeError<E> {
 
 /// Couples one platform watchdog backend to the kernel ownership contract.
 pub struct WatchdogRuntime<B> {
+    /// Stores the backend associated with this bounded state.
     backend: B,
+    /// Stores the contract associated with this bounded state.
     contract: WatchdogContract,
 }
 

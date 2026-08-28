@@ -9,7 +9,7 @@ Dali OS is a `no_std` Rust operating system and embedded runtime for STM32 micro
 The first milestone is deliberately narrow:
 
 1. boot a Rust kernel on the STM32F405RGT6 WeAct Studio Core Board;
-2. initialize the clock, PB2 status LED, and RTT logging;
+2. initialize the clock, PB2 status LED, PC13 user key, and RTT logging;
 3. read a FAT16/FAT32 SD card over SDIO;
 4. discover an `.amrn` package in the card root;
 5. validate a fixed 32-byte AMRN header and CRC32 payload checksum;
@@ -22,22 +22,22 @@ signed, encrypted, dynamically linked, or interrupt-owning. The repository also
 contains feature-gated ABI v3 single-application processor-side isolation and
 AMRN v3/v4 loader paths; these are not the default MVP configuration and must
 not be described as complete sandboxing, secure boot, DMA isolation, or
-multi-application isolation. See `docs/SECURITY.md`, `docs/ABI.md`, and
-`docs/TESTING.md` for the current evidence boundary.
+multi-application isolation. See `docs/security/README.md`, `docs/abi/README.md`, and
+`docs/testing/README.md` for the current evidence boundary.
 
 ## 2. Source of truth
 
 Read the relevant documents before making a change:
 
-- `docs/ARCHITECTURE.md` — system boundaries and MVP scope;
-- `docs/AMRN_FORMAT.md` — package bytes and validation rules;
-- `docs/ABI.md` — kernel/application execution contract;
-- `docs/HARDWARE.md` — board, pins, clock, and SRAM layout;
-- `docs/CODING_STANDARDS.md` — code, comments, unsafe, testing, and review rules;
-- `docs/ROADMAP.md` — atomic implementation order;
-- `docs/TESTING.md` — test strategy;
-- `docs/MVP_ACCEPTANCE.md` — physical acceptance procedure;
-- `docs/VERSIONING.md` — version and compatibility rules;
+- `docs/architecture/README.md` — system boundaries and MVP scope;
+- `docs/amrn-format/README.md` — package bytes and validation rules;
+- `docs/abi/README.md` — kernel/application execution contract;
+- `docs/hardware/README.md` — board, pins, clock, and SRAM layout;
+- `docs/coding-standards/README.md` — code, comments, unsafe, testing, and review rules;
+- `docs/roadmap/README.md` — atomic implementation order;
+- `docs/testing/README.md` — test strategy;
+- `docs/mvp-acceptance/README.md` — physical acceptance procedure;
+- `docs/versioning/README.md` — version and compatibility rules;
 - `CONTRIBUTING.md` — branch, commit, PR, and CI rules.
 
 If code and documentation disagree, stop and resolve the contract before implementing. Do not silently choose a new behavior.
@@ -97,7 +97,7 @@ Any exception must be reviewed, named, documented, and justified by the relevant
 - board: WeAct Studio STM32F405RGT6 Core Board;
 - target: `thumbv7em-none-eabihf`;
 - clock target: 168 MHz;
-- status LED: PB2;
+- status LED: PB2, active-high; user key: PC13, active-low with pull-up;
 - SD interface: hardware SDIO in 4-bit mode.
 
 ### SRAM
@@ -262,6 +262,19 @@ docs(amrn): define the CRC32 field
 ```
 
 Keep commits atomic. Do not combine unrelated formatting, dependencies, behavior, or documentation changes.
+
+### Branch-to-main documentation gate
+
+Before merging an active feature branch into `main`, compare the branch's
+implementation, tests, and hardware evidence with the repository
+documentation. Every user-visible behavior, contract change, acceptance
+result, limitation, and security claim introduced on the branch must be
+reflected in the appropriate `docs/` file and, when applicable, the relevant
+roadmap checklist. Replace stale claims rather than appending contradictory
+text. If the branch work is not accurately documented, update the
+documentation and validate it before merging; do not merge first and defer
+the documentation audit to `main`. This is a merge-gate audit, not a
+requirement to reread every document for each individual commit.
 
 Changelogs are generated from commit history by `git-cliff`. Do not edit release changelogs manually. Release tags use `vX.Y.Z` or `vX.Y.Z-alpha.N`; the release workflow creates the archived changelog and GitHub Release.
 
