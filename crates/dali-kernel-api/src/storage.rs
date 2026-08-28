@@ -88,7 +88,9 @@ pub trait BlockTransportFlush {
 /// Writes complete fixed-size blocks to a storage medium.
 pub trait BlockWriter {
     /// Writes one complete block to the selected sector.
-    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError>;
+    fn write_block(&mut self, _address: BlockAddress, _block: &Block) -> Result<(), StorageError> {
+        Err(StorageError::Unsupported)
+    }
 }
 
 /// Hardware-facing SDIO transport implemented by a board backend.
@@ -100,12 +102,14 @@ pub trait SdioTransport {
     fn read_block(&mut self, address: BlockAddress, block: &mut Block) -> Result<(), StorageError>;
 
     /// Writes one complete block to the initialized medium.
-    #[cfg(feature = "storage-write")]
-    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError>;
+    fn write_block(&mut self, _address: BlockAddress, _block: &Block) -> Result<(), StorageError> {
+        Err(StorageError::Unsupported)
+    }
 
     /// Flushes previously accepted writes to durable media.
-    #[cfg(feature = "storage-write")]
-    fn flush(&mut self) -> Result<(), StorageError>;
+    fn flush(&mut self) -> Result<(), StorageError> {
+        Err(StorageError::Unsupported)
+    }
 }
 
 /// Lifecycle controls exposed by a reinitializable board transport.

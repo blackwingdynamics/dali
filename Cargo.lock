@@ -269,6 +269,8 @@ version = "0.1.0-alpha.2"
 dependencies = [
  "dali-driver-api",
  "dali-targets",
+ "dali-usb",
+ "usb-device",
 ]
 
 [[package]]

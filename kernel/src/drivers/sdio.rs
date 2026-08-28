@@ -1,6 +1,5 @@
 //! Hardware-neutral SDIO block-reader contract.
 
-#[cfg(feature = "storage-write")]
 use super::BlockTransportFlush;
 use super::{
     Block, BlockAddress, BlockReader, StorageError,
@@ -174,7 +173,6 @@ where
     }
 }
 
-#[cfg(feature = "storage-write")]
 impl<T> BlockTransportFlush for SdioBlockReader<T>
 where
     T: SdioTransport,
@@ -195,7 +193,6 @@ where
     }
 }
 
-#[cfg(feature = "storage-write")]
 impl<T> super::BlockWriter for SdioBlockReader<T>
 where
     T: SdioTransport,

@@ -1,6 +1,6 @@
 //! Hardware-neutral board backend contracts.
 
-use crate::storage::{BlockReader, StorageLifecycleControl};
+use crate::storage::{BlockReader, BlockTransportFlush, BlockWriter, StorageLifecycleControl};
 use dali_targets::WatchdogProfile;
 use dali_targets::{CapabilitiesProfile, IsolationSlot, MemoryProfile, TargetProfile};
 
@@ -110,7 +110,13 @@ pub trait BoardBackend {
     /// Board-owned watchdog backend.
     type Watchdog;
     /// Board-owned storage reader and lifecycle controller.
-    type StorageReader: BlockReader + StorageLifecycleControl;
+    type StorageReader: BlockReader
+        + StorageLifecycleControl
+        + BlockWriter
+        + BlockTransportFlush<Error = crate::storage::StorageError>;
+    /// Board-owned USB resources used by the optional CDC logger.
+    #[cfg(feature = "usb-cdc")]
+    type UsbResources: crate::usb::UsbResources;
 
     /// Returns memory-protection operations when the backend provides them.
     fn memory_protection_operations() -> Option<MemoryProtectionOperations> {
@@ -148,6 +154,28 @@ pub trait BoardBackend {
 
     /// Reports whether native application execution is supported.
     fn application_execution_supported() -> bool;
+
+    /// Transfers USB resources to the kernel logging owner.
+    #[cfg(feature = "usb-cdc")]
+    fn take_usb_resources(&mut self) -> Option<Self::UsbResources>;
+
+    /// Enables the backend USB interrupt after logger initialization.
+    #[cfg(feature = "usb-cdc")]
+    fn unmask_usb_irq();
+
+    /// Pends the backend USB interrupt after a log enqueue.
+    #[cfg(feature = "usb-cdc")]
+    fn pend_usb_irq();
+
+    /// Enables the backend scheduler tick after application activation.
+    #[cfg(feature = "abi-context-switch")]
+    fn enable_scheduler_tick(&mut self, _tick_hz: u32) -> bool {
+        false
+    }
+
+    /// Runs an optional bounded hardware acceptance probe.
+    #[cfg(feature = "driver-hardware-test")]
+    fn run_driver_timeout_probe(&mut self) {}
 }
 
 /// Board-provided lifecycle services consumed by the kernel bootstrap.

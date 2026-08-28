@@ -8,10 +8,15 @@ license = "MIT OR Apache-2.0"
 
 [features]
 storage-write = []
+abi-context-switch = []
+driver-hardware-test = []
+usb-cdc = ["dep:usb-device"]
 
 [dependencies]
 dali-driver-api = { path = "../dali-driver-api" }
 dali-targets = { path = "../dali-targets" }
+dali-usb = { path = "../dali-usb" }
+usb-device = { version = "=0.3.2", optional = true, default-features = false }
 
 [lints]
 workspace = true

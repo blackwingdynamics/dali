@@ -46,19 +46,29 @@ impl SdioTransport for Stm32f405SdioTransport {
             .map_err(classify_timeout)
     }
 
-    #[cfg(feature = "storage-write")]
     /// Writes through the HAL CPU/FIFO path without programming DMA2.
     ///
     /// This is the supported F405 write path. The HAL implementation is
     /// bounded by the peripheral's transfer and status handling.
+    #[cfg(feature = "storage-write")]
     fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
         cortex_m::interrupt::free(|_| self.raw.borrow_mut().write_block(address, block))
             .map_err(classify_timeout)
     }
 
+    #[cfg(not(feature = "storage-write"))]
+    fn write_block(&mut self, _address: BlockAddress, _block: &Block) -> Result<(), StorageError> {
+        Err(StorageError::Unsupported)
+    }
+
     #[cfg(feature = "storage-write")]
     fn flush(&mut self) -> Result<(), StorageError> {
         cortex_m::interrupt::free(|_| self.raw.borrow_mut().flush()).map_err(classify_timeout)
+    }
+
+    #[cfg(not(feature = "storage-write"))]
+    fn flush(&mut self) -> Result<(), StorageError> {
+        Err(StorageError::Unsupported)
     }
 }
 
@@ -109,6 +119,32 @@ impl BlockReader for SdioBlockReader {
 
     fn block_count(&self) -> Result<u32, StorageError> {
         self.block_count.ok_or(StorageError::NotReady)
+    }
+}
+
+impl dali_kernel_api::storage::BlockWriter for SdioBlockReader {
+    #[cfg(not(feature = "storage-write"))]
+    fn write_block(&mut self, _address: BlockAddress, _block: &Block) -> Result<(), StorageError> {
+        Err(StorageError::Unsupported)
+    }
+
+    #[cfg(feature = "storage-write")]
+    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
+        self.transport.write_block(address, block)
+    }
+}
+
+impl dali_kernel_api::storage::BlockTransportFlush for SdioBlockReader {
+    type Error = StorageError;
+
+    #[cfg(not(feature = "storage-write"))]
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        Err(StorageError::Unsupported)
+    }
+
+    #[cfg(feature = "storage-write")]
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        self.transport.flush()
     }
 }
 

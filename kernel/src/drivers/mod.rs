@@ -6,15 +6,15 @@ pub mod block;
 pub mod lifecycle;
 pub mod sdio;
 
-#[cfg(feature = "storage-write")]
 pub use block::BlockTransportFlush;
-#[cfg(feature = "storage-write")]
 pub use block::BlockWriter;
 pub use block::{BLOCK_SIZE, Block, BlockAddress, BlockReader, FlushableBlockDevice, StorageError};
 use embedded_sdmmc::{
     Block as FilesystemBlock, BlockCount, BlockDevice as FilesystemBlockDevice, BlockIdx,
 };
 pub use sdio::{SdioBlockReader, SdioTransport, StorageLifecycleControl};
+
+/// Storage capabilities required by the selected bootstrap path.
 
 #[cfg(all(test, not(feature = "storage-write")))]
 #[path = "tests/adapters.rs"]
