@@ -26,7 +26,7 @@ for block reads. Before programming DMA2, the kernel validates that buffer
 against the target manifest's DMA-visible region and retains exclusive mutable
 ownership for the transfer. This protects the current kernel SDIO path; it is
 not a claim of general application or peripheral DMA isolation. It is the
-current AMRN package target; AMRN target
+current AMRN cartridge target; AMRN target
 compatibility remains defined by `amrn-format/README.md`.
 
 The manufacturer and target metadata for this board is declared in

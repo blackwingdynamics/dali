@@ -4,7 +4,7 @@
 dali
     |
     v
-.amrn package + CRC32 integrity check
+.amrn cartridge + CRC32 integrity check
     |
     v
 Dali OS application loader
@@ -35,8 +35,8 @@ an 8.3 short entry, so short-name-only enumeration would miss packages. The
 filesystem layer exposes a read-only stream for the single package selected by
 the MVP loader policy. Zero matching files is `NotFound`; more than one
 matching regular file is `Unsupported`. The loader never silently chooses
-between multiple legacy application packages. The feature-gated v4 loader now
-enumerates bounded root packages, validates their identity/slot metadata, and
+between multiple legacy application cartridges. The feature-gated v4 loader now
+enumerates bounded root cartridges, validates their identity/slot metadata, and
 reopens only the deterministic selection for the full load pass.
 
 The post-v4 multi-application phase adds a bounded, hardware-neutral package

@@ -13,7 +13,7 @@ fixture produced these application relocation kinds:
 This proves that relocation records can be retained and that both code and
 writable-data references are observable. The CLI extraction step recognizes
 these records, but each kind still needs a bounded patch decoder, patch test,
-and rejection test before it can be emitted to or applied from an AMRN package.
+and rejection test before it can be emitted to or applied from an AMRN cartridge.
 
 Build and inspect the fixture from its directory:
 

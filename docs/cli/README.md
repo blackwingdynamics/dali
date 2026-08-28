@@ -1,7 +1,7 @@
 # Dali CLI Documentation
 
 Dali is the host-side command-line tool for creating and validating Dali OS
-application packages. The Cargo package is named dali-cli; the installed
+application cartridges. The Cargo package is named dali-cli; the installed
 executable is named dali.
 
 ## Supported commands
@@ -10,8 +10,8 @@ executable is named dali.
 | --- | --- | --- |
 | dali doctor | Check host toolchain and embedded build prerequisites | Supported |
 | dali target list | List supported Dali application targets | Supported |
-| dali package | Wrap a linked native payload in an AMRN package | Supported |
-| dali inspect | Validate and display an AMRN package | Supported |
+| dali package | Wrap a linked native payload in an AMRN cartridge | Supported |
+| dali inspect | Validate and display an AMRN cartridge | Supported |
 | dali key generate | Generate an Ed25519 release trust-anchor pair | Supported |
 | dali app new | Create a Dali application scaffold | Supported |
 | dali app init | Initialize the current directory as a Dali application | Supported |

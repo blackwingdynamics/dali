@@ -134,13 +134,13 @@ See [commands/target-info.md](commands/target-info.md).
 
 ### dali package
 
-Creates an AMRN package from a linked native payload.
+Creates an AMRN cartridge from a linked native payload.
 
 See commands/package.md.
 
 ### dali inspect
 
-Validates an AMRN package and prints its decoded fields without modifying the
+Validates an AMRN cartridge and prints its decoded fields without modifying the
 input.
 
 See commands/inspect.md.

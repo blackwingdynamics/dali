@@ -21,8 +21,8 @@ before the application is considered accepted.
 
 - `FormatError` or `DeviceError(Unsupported)` means the card layout or
   filesystem is outside the currently supported FAT contract.
-- `No AMRN package found; entering kernel heartbeat` means the card is valid
-  but no application package is present in its root; the kernel remains in its
+- `No AMRN cartridge found; entering kernel heartbeat` means the card is valid
+  but no application cartridge is present in its root; the kernel remains in its
   idle heartbeat state and does not treat this as a boot failure.
 - `No storage medium detected; entering kernel heartbeat` means no configured
   storage medium is available; the kernel remains in its idle heartbeat state

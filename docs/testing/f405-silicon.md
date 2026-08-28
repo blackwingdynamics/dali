@@ -83,7 +83,7 @@ F405 scope.
 - [x] On 2026-08-20, F405 hardware repeated the slot0 invalid-PSP fixture with
   the explicit `abi-test-fixtures` kernel feature. The release image logged
   `UsageFault 0x00040000`, `Faulted`, `Recovering`, and `Terminated` after the
-  signed AMRN package launched; no application restart was observed before the
+  signed AMRN cartridge launched; no application restart was observed before the
   test ended. This records application lifecycle recovery, not the separate
   watchdog-duration proof after termination.
 

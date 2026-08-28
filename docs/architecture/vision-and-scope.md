@@ -2,11 +2,11 @@
 
 Dali OS is a small, modular, real-time-oriented embedded platform written in Rust for STM32 microcontrollers and, eventually, industrial machines and autonomous vehicles.
 
-The name comes from Dali, the Georgian hunting goddess who could take the form of a bird or animal. The application package format is named `.amrn` — Amiran Native package — after Amirani, Dali's son. The project uses this mythology as part of its identity while keeping the technical platform understandable to an international audience.
+The name comes from Dali, the Georgian hunting goddess who could take the form of a bird or animal. The application cartridge format is named `.amrn` — Amiran Native — after Amirani, Dali's son. The project uses this mythology as part of its identity while keeping the technical platform understandable to an international audience.
 
 The central architectural idea is:
 
-> The kernel is the stable platform. Applications are independently built native packages loaded by the kernel.
+> The kernel is the stable platform. Applications are independently built native payloads delivered in cartridges and loaded by the kernel.
 
 ## 2. Scope
 

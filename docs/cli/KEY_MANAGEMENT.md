@@ -122,7 +122,7 @@ unset DALI_SIGNING_KEY_HEX
 In CI, use the CI secret store instead of a checked-out seed file. Do not use
 `echo` to display the variable, do not include it in command traces, and do
 not place it in a shell history entry. The CLI reads the seed only to create
-the DSIG envelope; the seed is not written into the AMRN package.
+the DSIG envelope; the seed is not written into the AMRN cartridge.
 
 Inspect the package before deployment:
 

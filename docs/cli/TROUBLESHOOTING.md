@@ -10,7 +10,7 @@ Run the installation procedure and verify the configured Cargo binary path.
 Confirm that the path exists and points to the intended payload or package.
 Use an absolute path while diagnosing path ambiguity.
 
-## invalid AMRN package
+## invalid AMRN cartridge
 
 Run dali inspect on the exact artifact copied from the build output. Do not
 rename a Rust source file or raw payload to .amrn; create the package with

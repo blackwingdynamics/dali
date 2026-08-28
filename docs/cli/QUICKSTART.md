@@ -1,7 +1,7 @@
 # Dali CLI Quickstart
 
-This procedure creates a package from an already linked native payload and
-validates the resulting AMRN file.
+This procedure creates a Dali cartridge from an already linked native payload
+and validates the resulting AMRN file.
 
 ## 1. Build the application payload
 
@@ -12,9 +12,9 @@ just app-build
 ~~~
 
 The input must be a linked native payload for the documented target and load
-address. A Rust source file is not a valid input to dali package.
+address. A Rust source file is not a valid input to `dali package`.
 
-## 2. Create the package
+## 2. Create the cartridge
 
 ~~~text
 dali package \
@@ -35,8 +35,8 @@ just package-hello
 dali inspect --input <application.amrn>
 ~~~
 
-The command must report AMRN package valid before the package is installed on
-hardware.
+The command must report AMRN cartridge valid before the cartridge is installed
+on hardware.
 
 ## 4. Continue to hardware
 

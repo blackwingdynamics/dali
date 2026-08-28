@@ -18,6 +18,12 @@ Dali OS documentation.
   power, transport, expected trace, and observed trace recorded.
 - Use `guarantee` only for behavior supported by implementation and evidence.
 - Use `limitation` or `unverified` for behavior that is not yet accepted.
+- Use `cartridge` as the canonical Dali OS term for a deployable `.amrn`
+  artifact.
+- Use `application payload` for executable code contained by a cartridge.
+- Do not call a `.amrn` artifact an application or package in user-facing
+  documentation. Reserve `package` for packaging operations, Cargo package
+  identity, or specifications that explicitly define package semantics.
 
 ## Interface and hardware names
 

@@ -6,7 +6,7 @@ Status: **Future — implementation not started**.
 
 This RFC proposes Ustari as the typed application-layer IPC language between
 an AMRN application and the Dali kernel SVC gateway. The proposal does not
-replace the existing SVC ABI, AMRN package format, Trust Store, MPU policy, or
+replace the existing SVC ABI, AMRN cartridge format, Trust Store, MPU policy, or
 platform driver contracts. It defines a future message boundary that can be
 implemented above those mechanisms.
 

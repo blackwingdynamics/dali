@@ -44,7 +44,7 @@ The following are forbidden in kernel runtime paths unless a boot-time invariant
 - ignored `Result` values;
 - converting meaningful errors into an unexplained `bool` or `None`.
 
-Use typed error enums with enough information to identify the failed operation. Preserve the original cause where practical. Malformed SD data and AMRN packages must be rejected gracefully.
+Use typed error enums with enough information to identify the failed operation. Preserve the original cause where practical. Malformed SD data and AMRN cartridges must be rejected gracefully.
 
 ## 9. Embedded and real-time rules
 

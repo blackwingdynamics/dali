@@ -1,7 +1,7 @@
 # Application Workflow Documentation
 
 This directory is the canonical source for the application workflow. The
-content is organized by topic so package construction, deployment, and loader
+content is organized by topic so cartridge construction, deployment, and loader
 validation can be read independently.
 
 ## Prepared sections

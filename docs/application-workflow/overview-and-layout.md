@@ -1,7 +1,7 @@
-This document describes how a Dali OS application becomes an AMRN package and
-how the kernel currently consumes that package.
+This document describes how a Dali OS application payload becomes an AMRN
+cartridge and how the kernel currently consumes that cartridge.
 
-The current workflow validates package construction and loader input. The
+The current workflow validates cartridge construction and loader input. The
 loader now contains the bounded SRAM-copy and ABI entry-transfer path for the
 F405 MVP target. The first physical loader and PB2 LED execution result has
 been observed; the complete MVP acceptance procedure remains broader than this
@@ -21,7 +21,7 @@ raw native payload binary
         |
         | dali package
         v
-AMRN package (.amrn)
+AMRN cartridge (.amrn)
         |
         | copy to the SD-card root
         v
@@ -32,7 +32,7 @@ kernel filesystem scan and bounded AMRN validation
 copy to application SRAM and call the native entry point
 ```
 
-The `.amrn` file contains native machine code and the AMRN header. It does not
+The `.amrn` cartridge contains native machine code and the AMRN header. It does not
 contain Rust source code and it is not a Cargo project.
 
 ## Application layout

@@ -180,7 +180,7 @@ The kernel provides a feature-gated repository loader over these traits.
 caller-owned buffers. It reads the five fixed roles, selects every executable
 Targets record for the configured target profile within the execution capacity,
 and verifies each selected delegation, revocation state, content-addressed
-AMRN package, and shared Root -> Timestamp -> Snapshot -> Targets -> Delegation
+AMRN cartridge, and shared Root -> Timestamp -> Snapshot -> Targets -> Delegation
 -> Revocation -> Package Record -> AMRN chain. After successful verification,
 `load_repository_package()` opens the same lowercase SHA-256 package path and
 passes it to the existing slot/relocation execution loader. The F405 target has

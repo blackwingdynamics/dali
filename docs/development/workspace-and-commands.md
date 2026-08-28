@@ -13,7 +13,7 @@ production CDC servicing remain in the kernel logging backend.
 explicit AMRN v1 header decoding, payload bounds, entry validation, and CRC32
 verification so the kernel and CLI can share the format contract.
 
-The host CLI can wrap a raw payload in a contract-valid AMRN package:
+The host CLI can wrap a raw payload in a contract-valid AMRN cartridge:
 
 ```text
 cargo run -p dali-cli --bin dali -- package \

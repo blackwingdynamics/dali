@@ -29,7 +29,7 @@ The equivalent repository recipe is:
 just app-build
 ```
 
-## Create an AMRN package
+## Create an AMRN cartridge
 
 The package command adds the documented AMRN v1 header, records the payload
 length and entry metadata, and calculates the CRC32 over the payload:
@@ -55,7 +55,7 @@ just package-hello
 The generated package is written under the target directory and is ignored by
 Git as a build artifact.
 
-## Inspect an AMRN package
+## Inspect an AMRN cartridge
 
 Use the host CLI to validate an existing package against the AMRN contract and
 print its decoded fields:

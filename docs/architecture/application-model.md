@@ -1,6 +1,8 @@
 # 7. Application model
 
-An `.amrn` package is an independently built native ARM application package. In the MVP it contains a payload linked for a predefined SRAM execution address and a fixed entry-point ABI.
+An `.amrn` cartridge is an independently built native ARM artifact containing
+an application payload. In the MVP it contains a payload linked for a
+predefined SRAM execution address and a fixed entry-point ABI.
 
 The initial lifecycle is:
 

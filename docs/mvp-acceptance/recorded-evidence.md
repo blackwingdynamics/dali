@@ -21,7 +21,7 @@ log capture, reconnect behavior, and the full documented LED observation.
 On 2026-08-15, a subsequent F405 run produced an SDIO initialization timeout
 and the documented slow storage-status blink. After powering down the board,
 reseating the SD card, and restarting it, the same firmware completed SDIO
-initialization, read block zero, validated the AMRN package, and delivered all
+initialization, read block zero, validated the AMRN cartridge, and delivered all
 three application log records. The corrected three-flash/long-pause application
 pattern was also observed on the refreshed package. This is evidence that the
 software path can recover after a clean card reseat; it also records that the

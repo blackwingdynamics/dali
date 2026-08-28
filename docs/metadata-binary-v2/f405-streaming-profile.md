@@ -7,7 +7,7 @@ targets. The F405 profile uses a 512-byte I/O chunk and bounded verifier state:
 - targets records are length-prefixed and processed one at a time;
 - only the selected target, delegation, references, and revocation decision
   are retained;
-- the AMRN package is verified through a streamed header/payload pass;
+- the AMRN cartridge is verified through a streamed header/payload pass;
 - no heap allocation is permitted.
 
 The shared `BinaryEnvelopeStreamParser` in `dali-metadata` implements the
@@ -31,7 +31,7 @@ the typed Root, Timestamp, Snapshot, Delegation, and Revocation body parsers.
 It compares the first-pass and replay SHA-256 digests and rejects malformed or
 tampered bodies before returning typed metadata. This is a chain primitive;
 storage orchestration, Targets selection, Root trust-anchor provisioning, and
-AMRN package streaming remain loader integration work.
+AMRN cartridge streaming remain loader integration work.
 
 Typed role-body streaming parsers now cover Root, Timestamp, Snapshot,
 Delegation, and Revocation. Each parser uses a bounded queue and emits typed

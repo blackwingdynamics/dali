@@ -1,7 +1,9 @@
-# AMRN Package Format Documentation
+# AMRN Cartridge Format Documentation
 
-This file is the stable entry point and navigation index for the AMRN package
-format documentation. The files below contain its topic-oriented sections.
+This file is the stable entry point and navigation index for the AMRN cartridge
+format documentation. A `.amrn` file is a Dali cartridge: a deployable artifact
+that can add executable functionality to Dali OS. The files below contain its
+topic-oriented sections.
 
 ## Prepared sections
 

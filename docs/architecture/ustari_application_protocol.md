@@ -5,7 +5,7 @@ Status: **Future — approved architecture; implementation pending**.
 Ustari is Dali OS's canonical native application protocol for commands,
 telemetry, diagnostics, and package transfer. The kernel speaks typed binary
 Ustari frames; host tools translate those frames into text, tables, or GUI
-views. Ustari does not replace a physical transport, the AMRN package format,
+views. Ustari does not replace a physical transport, the AMRN cartridge format,
 the Trust Store, Secure Boot, MPU policy, watchdog, or local actuator safety.
 
 This document records the accepted architecture for the future shell and
@@ -171,7 +171,7 @@ adequate session design.
       directional key.
 - [ ] Reject encrypted commands before session establishment and invalid
       authentication tags without exposing sensitive details.
-- [ ] Keep AMRN package keys separate from Ustari session keys.
+- [ ] Keep AMRN cartridge keys separate from Ustari session keys.
 
 ### Sequence and replay protection
 

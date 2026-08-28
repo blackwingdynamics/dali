@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Create a contract-valid AMRN package from an already linked native payload.
+Create a contract-valid AMRN cartridge from an already linked native payload.
 
 ## Inputs
 

@@ -13,7 +13,7 @@ pub struct ServiceTable {
 
 The exact ABI must be identical in the kernel and demo application. The application is linked for `0x20008000` and its complete image is copied to the reserved SRAM region before the jump.
 
-The MVP ABI version is `2`. AMRN packages must declare this version in the
+The MVP ABI version is `2`. AMRN cartridges must declare this version in the
 header, and the kernel must reject packages requiring another ABI version.
 
 ## Rules

@@ -49,7 +49,7 @@ The CLI is responsible for:
 
 - generating local developer keys;
 - creating signing requests without exposing private keys;
-- building and signing AMRN packages;
+- building and signing AMRN cartridges;
 - generating and inspecting metadata bundles;
 - verifying packages and metadata before installation; and
 - producing deterministic, reviewable release artifacts.

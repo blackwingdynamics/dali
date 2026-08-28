@@ -10,7 +10,7 @@ The distribution system must:
 5. support offline devices that receive a bounded update bundle over storage;
 6. detect modified, substituted, truncated, stale, and replayed metadata;
 7. support developer-key rotation, expiry, revocation, and incident response;
-8. preserve the existing AMRN package validation and memory-safety boundaries;
+8. preserve the existing AMRN cartridge validation and memory-safety boundaries;
 9. make repository and target metadata reproducible and reviewable; and
 10. fail closed when trust, compatibility, or freshness cannot be established.
 

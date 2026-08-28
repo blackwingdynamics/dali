@@ -105,7 +105,7 @@ boundaries. A shell command must not create an alternative loader, bypass
 anti-rollback, or grant an application kernel-owned resources.
 
 - [ ] Define a read-only application metadata and lifecycle contract.
-- [ ] Implement `app list` for valid, signed AMRN packages discovered from
+- [ ] Implement `app list` for valid, signed AMRN cartridges discovered from
       the approved repository and trust-store path.
 - [ ] Implement `app start <name>` only through an authorized lifecycle
       service and the existing loader policy.
@@ -197,7 +197,7 @@ existing security and memory boundaries.
 
 | Command | Intended behavior | Safety boundary |
 | --- | --- | --- |
-| `app list` | List valid signed AMRN packages | Existing trust-store and anti-rollback policy |
+| `app list` | List valid signed AMRN cartridges | Existing trust-store and anti-rollback policy |
 | `app start <name>` | Load and start an authorized application | Existing loader, MPU, ABI, and lifecycle policy |
 | `app stop <id>` | Stop and revoke an application context | Bounded retirement and resource cleanup |
 | `app inspect <name>` | Show verified metadata and memory boundaries | No bypass of signature or package validation |
