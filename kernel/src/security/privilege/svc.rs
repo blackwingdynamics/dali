@@ -121,7 +121,7 @@ fn dispatch_invalid_psp(slot: dali_targets::IsolationSlot) -> ServiceStatus {
         // SAFETY: This path is compiled only for the non-production fixture
         // kernel. The deliberately invalid value tests exception-entry fault
         // handling; production builds do not expose this service.
-        cortex_m::register::psp::write(invalid_psp);
+        let _ = crate::platform::set_process_stack_pointer(invalid_psp);
     }
     ServiceStatus::accepted()
 }

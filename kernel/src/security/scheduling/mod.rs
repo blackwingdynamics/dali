@@ -98,14 +98,10 @@ pub(crate) fn recover_faulted_context() -> ! {
 
     match result {
         Ok(Ok(Some(()))) => {
-            cortex_m::peripheral::SCB::set_pendsv();
-            loop {
-                cortex_m::asm::wfi();
-            }
+            crate::platform::request_context_switch();
+            crate::platform::wait_for_registered_interrupt();
         }
-        _ => loop {
-            cortex_m::asm::wfi();
-        },
+        _ => crate::platform::wait_for_registered_interrupt(),
     }
 }
 
@@ -195,7 +191,7 @@ pub(crate) fn on_systick() {
     };
     scheduler.on_tick();
     if scheduler.switch_requested() {
-        cortex_m::peripheral::SCB::set_pendsv();
+        crate::platform::request_context_switch();
     }
 }
 

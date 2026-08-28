@@ -11,6 +11,11 @@
 use dali_kernel_api::BoardInfo;
 use dali_kernel_api::{ArchitectureBackend, BoardBackend, BoardError, ResetCause, WatchdogBackend};
 
+/// Architecture operations registered by the selected firmware composition.
+static ARCHITECTURE: critical_section::Mutex<
+    core::cell::RefCell<Option<dali_kernel_api::ArchitectureOperations>>,
+> = critical_section::Mutex::new(core::cell::RefCell::new(None));
+
 #[cfg(any(
     feature = "abi-current",
     feature = "abi-mpu",
@@ -76,6 +81,12 @@ where
 {
     /// Initializes the externally selected backend.
     pub(crate) fn initialize() -> Result<Self, BoardError> {
+        critical_section::with(|cs| {
+            let mut architecture = ARCHITECTURE.borrow(cs).borrow_mut();
+            if architecture.is_none() {
+                *architecture = Some(B::Architecture::operations());
+            }
+        });
         #[cfg(any(
             feature = "abi-current",
             feature = "abi-mpu",
@@ -125,7 +136,65 @@ where
     {
         B::Architecture::enable_interrupts();
     }
+}
 
+/// Requests a deferred context switch through the installed architecture.
+#[cfg(any(feature = "abi-context-switch", feature = "abi-mpu"))]
+pub(crate) fn request_context_switch() {
+    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
+        (operations.request_context_switch)();
+    }
+}
+
+/// Waits through the installed architecture after bootstrap registration.
+#[cfg(feature = "abi-current")]
+pub(crate) fn wait_for_registered_interrupt() -> ! {
+    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
+        (operations.wait_for_interrupt)();
+    }
+    loop {
+        core::hint::spin_loop();
+    }
+}
+
+/// Reads the registered architecture process stack pointer.
+#[cfg(feature = "abi-current")]
+pub(crate) fn process_stack_pointer() -> Option<u32> {
+    critical_section::with(|cs| {
+        ARCHITECTURE
+            .borrow(cs)
+            .borrow()
+            .map(|operations| (operations.read_process_stack_pointer)())
+    })
+}
+
+/// Writes the registered architecture process stack pointer.
+#[cfg(feature = "abi-current")]
+pub(crate) unsafe fn set_process_stack_pointer(value: u32) -> bool {
+    let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) else {
+        return false;
+    };
+    // SAFETY: The caller validates the target stack invariant.
+    unsafe { (operations.write_process_stack_pointer)(value) };
+    true
+}
+
+/// Reads the registered architecture main stack pointer.
+#[cfg(feature = "abi-current")]
+pub(crate) fn main_stack_pointer() -> Option<u32> {
+    critical_section::with(|cs| {
+        ARCHITECTURE
+            .borrow(cs)
+            .borrow()
+            .map(|operations| (operations.read_main_stack_pointer)())
+    })
+}
+
+impl<B> Platform<B>
+where
+    B: BoardBackend,
+    B::Watchdog: WatchdogBackend,
+{
     /// Sets the backend-owned status indicator.
     pub(crate) fn set_status_led(&mut self, on: bool) -> Result<(), BoardError> {
         self.backend.set_status_led(on)

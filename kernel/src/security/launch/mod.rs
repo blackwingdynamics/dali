@@ -80,12 +80,12 @@ pub(crate) fn enter(frame: LaunchFrame) -> ! {
     unsafe {
         // SAFETY: `prepare` validated the PSP frame address and the kernel is
         // still using MSP, so writing PSP cannot corrupt the active kernel stack.
-        cortex_m::register::psp::write(frame.psp);
+        if !crate::platform::set_process_stack_pointer(frame.psp) {
+            crate::platform::wait_for_registered_interrupt();
+        }
     }
-    cortex_m::peripheral::SCB::set_pendsv();
-    loop {
-        cortex_m::asm::wfi();
-    }
+    crate::platform::request_context_switch();
+    crate::platform::wait_for_registered_interrupt()
 }
 
 /// Returns from an application fault to a kernel-owned recovery loop.
@@ -139,7 +139,7 @@ extern "C" fn fault_recovery() -> ! {
     #[cfg(not(all(feature = "abi-context-switch", target_arch = "arm")))]
     match crate::runtime::application::policy::CURRENT.fault_recovery() {
         crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
-            cortex_m::asm::wfi();
+            crate::platform::wait_for_registered_interrupt();
         },
     }
 }

@@ -8,7 +8,7 @@ pub mod board;
 pub mod dma;
 pub mod storage;
 
-pub use architecture::ArchitectureBackend;
+pub use architecture::{ArchitectureBackend, ArchitectureOperations};
 pub use board::{
     BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionProvider, ResetCause,
     WatchdogBackend,

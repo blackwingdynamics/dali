@@ -190,9 +190,9 @@ fn raw_frame_address(address: u32, exception_return: u32) -> u32 {
         return 0;
     }
     if exception_return & (1 << 2) != 0 {
-        cortex_m::register::psp::read()
+        crate::platform::process_stack_pointer().unwrap_or(0)
     } else {
-        cortex_m::register::msp::read()
+        crate::platform::main_stack_pointer().unwrap_or(0)
     }
 }
 
