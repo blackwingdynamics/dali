@@ -81,6 +81,10 @@ where
     S: RepositoryStreamStorage,
     P: BinaryRoleBodyParser,
 {
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Reading repository role: {:?}", document),
+    );
     let mut envelope = BinaryEnvelopeStreamParser::new(expected_role);
     let mut digest = dali_crypto::Sha256Accumulator::new();
     let mut decode_error = false;
@@ -101,6 +105,10 @@ where
             Ok(())
         })
         .map_err(StreamedRoleError::Storage)?;
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Repository role read complete: {:?}, {} bytes", document, length),
+    );
     if decode_error {
         return Err(StreamedRoleError::Decode);
     }
