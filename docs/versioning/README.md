@@ -11,3 +11,5 @@ process.
 - [Compatibility rules](compatibility-rules.md)
 - [Release tags and breaking changes](release-tags-and-breaking-changes.md)
 - [Release checklist](release-checklist.md)
+- [Documentation versioning and compatibility](documentation-versioning.md)
+- [Release and external review readiness](release-readiness.md)

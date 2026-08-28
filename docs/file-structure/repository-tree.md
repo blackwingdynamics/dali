@@ -189,8 +189,10 @@ dali-kernel/
 │   │   ├── overview-and-semver.md
 │   │   ├── amrn-and-abi.md
 │   │   ├── compatibility-rules.md
+│   │   ├── documentation-versioning.md
 │   │   ├── release-tags-and-breaking-changes.md
-│   │   └── release-checklist.md
+│   │   ├── release-checklist.md
+│   │   └── release-readiness.md
 │   ├── coding-standards/           # Categorized coding policy documentation
 │   │   ├── README.md
 │   │   ├── additional-constraints.md

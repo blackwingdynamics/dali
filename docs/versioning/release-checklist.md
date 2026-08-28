@@ -10,3 +10,7 @@ Before publishing a release:
 - [x] Release notes identify kernel, SDK, CLI, and format changes.
 - [x] The release tag follows the documented format.
 - [x] CI passes on the release commit.
+
+For the expanded release and external-evaluation gate, use the [release and
+external review readiness](release-readiness.md) checklist. It includes links,
+examples, known limitations, migration notes, and the evidence boundary.

@@ -66,12 +66,12 @@ approval.
 
 ## 7. Release and maintenance readiness
 
-- [ ] Define documentation versioning and compatibility expectations.
-- [ ] Require documentation updates for public behavior, contract, evidence,
+- [x] Define documentation versioning and compatibility expectations.
+- [x] Require documentation updates for public behavior, contract, evidence,
   and security-claim changes.
-- [ ] Add a release documentation checklist covering links, examples, known
+- [x] Add a release documentation checklist covering links, examples, known
   limitations, and migration notes.
-- [ ] Review the documentation set before startup-funding or external technical
+- [x] Review the documentation set before startup-funding or external technical
   evaluation submissions.
 
 ## Completion criteria

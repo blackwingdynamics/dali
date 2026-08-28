@@ -66,7 +66,7 @@ reference a more authoritative contract.
 | Target profiles | Generated profile ownership | [Target profile index](target-profiles/README.md) |
 | Testing | Validation strategy and evidence | [Testing index](testing/README.md) |
 | Ustari protocol | Future protocol contract | [Ustari index](ustari-protocol/README.md) |
-| Versioning | Compatibility and release rules | [Versioning index](versioning/README.md) |
+| Versioning | Documentation compatibility, release tags, and readiness | [Versioning index](versioning/README.md) |
 
 The implementation source, target manifests, generated profiles, and recorded
 Silicon Trace remain authoritative for their respective technical facts. This
