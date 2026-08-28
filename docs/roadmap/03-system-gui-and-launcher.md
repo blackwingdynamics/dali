@@ -1,6 +1,6 @@
 # System GUI and Launcher
 
-Status: **Future / Dali BIOS backlog**.
+Status: **Future — Dali BIOS backlog**.
 
 This phase is intentionally outside the current kernel and driver acceptance
 scope. It must not change the ABI, storage layout, boot contract, or security

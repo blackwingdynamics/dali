@@ -134,7 +134,7 @@ quality work:
 
 ## Slice 1 — GPIO and timers contract
 
-Status: **Planned**.
+Status: **Future**.
 
 This slice defines hardware-neutral driver contracts only. It does not select
 an MCU register map, move board facts out of the F405 platform boundary, or

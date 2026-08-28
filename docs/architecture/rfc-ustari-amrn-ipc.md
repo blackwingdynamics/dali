@@ -1,6 +1,6 @@
 # RFC: Ustari-Based AMRN IPC Messaging
 
-Status: **Proposed future architecture; implementation not started**.
+Status: **Future — implementation not started**.
 
 ## Summary
 

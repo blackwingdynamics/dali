@@ -1,6 +1,6 @@
 # Kernel Core and Security
 
-Status: **Completed for the feature-gated STM32F405 scope**.
+Status: **Completed — feature-gated STM32F405 scope**.
 
 This document records what is implemented and evidenced. It does not expand
 the baseline ABI v2 MVP into a general-purpose secure kernel.

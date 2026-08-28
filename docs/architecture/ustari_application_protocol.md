@@ -1,6 +1,6 @@
 # Ustari Application Protocol
 
-Status: **Approved future architecture; implementation pending**.
+Status: **Future — approved architecture; implementation pending**.
 
 Ustari is Dali OS's canonical native application protocol for commands,
 telemetry, diagnostics, and package transfer. The kernel speaks typed binary

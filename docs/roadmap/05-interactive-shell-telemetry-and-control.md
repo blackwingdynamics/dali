@@ -1,6 +1,6 @@
 # Dali OS Interactive Shell, Remote Telemetry, and Control Ecosystem
 
-Status: **Future architecture backlog**.
+Status: **Future**.
 
 This document describes a future control and observability ecosystem. It does
 not modify the current thirteen-step roadmap, the MVP boot path, the ABI, the
