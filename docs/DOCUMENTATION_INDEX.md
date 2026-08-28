@@ -17,7 +17,7 @@ Read the documents in this order:
 6. [ABI](abi/README.md) — kernel-to-application execution contract.
 7. [Hardware](HARDWARE.md) — STM32F405 MVP board, pins, clock, SD wiring, and electrical assumptions.
 8. [Development](development/README.md) — build, flash, logging, and debugging workflow.
-9. [Application Workflow](APPLICATION_WORKFLOW.md) — build, package, install, and validate an application.
+9. [Application Workflow](application-workflow/README.md) — build, package, install, and validate an application.
 10. [Testing](testing/README.md) — categorized host, target, and hardware testing documentation.
 11. [MVP Acceptance](mvp-acceptance/README.md) — the physical STM32F405 end-to-end acceptance procedure.
 12. [Versioning](VERSIONING.md) — component versions, ABI compatibility, and release tags.

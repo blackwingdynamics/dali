@@ -178,7 +178,13 @@ dali-kernel/
 │   │   ├── overview-and-structure.md, profile-and-artifacts.md
 │   │   ├── usb-storage-and-example.md
 │   │   └── validation-and-generation.md
-│   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
+│   ├── application-workflow/
+│   │   ├── README.md
+│   │   ├── overview-and-layout.md
+│   │   ├── build-package-and-inspect.md
+│   │   ├── cli-install-and-deploy.md
+│   │   └── boundaries-and-troubleshooting.md
+│   ├── DOCUMENTATION_INDEX.md
 │   ├── RELOCATION.md
 │   ├── metadata-binary-v2/          # Categorized Metadata Binary v2 docs
 │   │   ├── README.md
