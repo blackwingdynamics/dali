@@ -162,7 +162,13 @@ dali-kernel/
 │   │   ├── README.md
 │   │   ├── recorded-evidence.md
 │   │   └── scope-and-procedure.md
-│   ├── VERSIONING.md
+│   ├── versioning/
+│   │   ├── README.md
+│   │   ├── overview-and-semver.md
+│   │   ├── amrn-and-abi.md
+│   │   ├── compatibility-rules.md
+│   │   ├── release-tags-and-breaking-changes.md
+│   │   └── release-checklist.md
 │   ├── coding-standards/           # Categorized coding policy documentation
 │   │   ├── README.md
 │   │   ├── additional-constraints.md

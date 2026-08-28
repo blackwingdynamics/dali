@@ -14,7 +14,7 @@ The AMRN format and ABI specifications are the source of truth:
 
 - AMRN format: ../amrn-format/README.md
 - ABI: ../ABI.md
-- Versioning: ../VERSIONING.md
+- Versioning: ../versioning/README.md
 
 ## Current MVP profile
 

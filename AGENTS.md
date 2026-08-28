@@ -37,7 +37,7 @@ Read the relevant documents before making a change:
 - `docs/ROADMAP.md` — atomic implementation order;
 - `docs/testing/README.md` — test strategy;
 - `docs/mvp-acceptance/README.md` — physical acceptance procedure;
-- `docs/VERSIONING.md` — version and compatibility rules;
+- `docs/versioning/README.md` — version and compatibility rules;
 - `CONTRIBUTING.md` — branch, commit, PR, and CI rules.
 
 If code and documentation disagree, stop and resolve the contract before implementing. Do not silently choose a new behavior.
