@@ -22,6 +22,21 @@ pub const ARMV7M_SAVED_CONTEXT: SavedContextLayout = SavedContextLayout {
     exception_return: 40,
 };
 
+/// Fault-status register exposed through an architecture backend.
+#[derive(Clone, Copy)]
+pub enum FaultRegister {
+    /// Configurable fault status.
+    Configurable,
+    /// Hard-fault status.
+    Hard,
+    /// Memory-management fault address.
+    MemoryAddress,
+    /// Bus-fault address.
+    BusAddress,
+    /// System-handler control and state.
+    SystemHandlerControl,
+}
+
 /// Function table installed by the selected firmware composition.
 #[derive(Clone, Copy)]
 pub struct ArchitectureOperations {
@@ -37,6 +52,12 @@ pub struct ArchitectureOperations {
     pub write_process_stack_pointer: unsafe fn(u32),
     /// Reads the main stack pointer.
     pub read_main_stack_pointer: fn() -> u32,
+    /// Reads an architecture fault-status register.
+    pub read_fault_register: fn(FaultRegister) -> u32,
+    /// Writes an architecture fault-status register when supported.
+    pub write_fault_register: fn(FaultRegister, u32),
+    /// Returns from a prepared fault-recovery frame.
+    pub recover_to_kernel: unsafe fn(u32) -> !,
 }
 
 /// Low-level operations required by kernel bootstrap and scheduling policy.

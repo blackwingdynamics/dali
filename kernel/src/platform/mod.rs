@@ -48,7 +48,11 @@ pub(crate) fn board_info() -> Option<BoardInfo> {
 }
 
 /// Returns the target profile registered by the selected firmware composition.
-#[cfg(any(feature = "abi-current", feature = "abi-context-switch"))]
+#[cfg(any(
+    feature = "abi-authentication",
+    feature = "repository-loader",
+    feature = "abi-context-switch"
+))]
 pub(crate) fn target_profile() -> Option<&'static dali_targets::TargetProfile> {
     board_info().map(|info| info.target)
 }
@@ -109,6 +113,8 @@ where
 {
     /// Initializes the externally selected backend.
     pub(crate) fn initialize() -> Result<Self, BoardError> {
+        let _ = read_fault_register as fn(dali_kernel_api::FaultRegister) -> u32;
+        let _ = recover_to_kernel as unsafe fn(u32) -> !;
         critical_section::with(|cs| {
             let mut architecture = ARCHITECTURE.borrow(cs).borrow_mut();
             if architecture.is_none() {
@@ -224,6 +230,41 @@ pub(crate) fn main_stack_pointer() -> Option<u32> {
             .borrow()
             .map(|operations| (operations.read_main_stack_pointer)())
     })
+}
+
+/// Reads a fault register through the selected architecture backend.
+#[inline]
+pub fn read_fault_register(register: dali_kernel_api::FaultRegister) -> u32 {
+    critical_section::with(|cs| {
+        ARCHITECTURE
+            .borrow(cs)
+            .borrow()
+            .map_or(0, |operations| (operations.read_fault_register)(register))
+    })
+}
+
+/// Writes a fault register through the selected architecture backend.
+#[cfg(feature = "abi-test-fixtures")]
+pub(crate) fn write_fault_register(register: dali_kernel_api::FaultRegister, value: u32) {
+    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
+        (operations.write_fault_register)(register, value);
+    }
+}
+
+/// Returns from a prepared fault-recovery frame through the backend.
+///
+/// # Safety
+///
+/// `frame_address` must point to a validated kernel-owned recovery frame.
+#[inline(never)]
+pub unsafe fn recover_to_kernel(frame_address: u32) -> ! {
+    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
+        // SAFETY: The caller has built a validated kernel-owned recovery frame.
+        unsafe { (operations.recover_to_kernel)(frame_address) };
+    }
+    loop {
+        core::hint::spin_loop();
+    }
 }
 
 /// Configures the initial protection map through the selected backend.

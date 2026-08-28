@@ -11,7 +11,8 @@ pub mod storage;
 pub mod usb;
 
 pub use architecture::{
-    ARMV7M_SAVED_CONTEXT, ArchitectureBackend, ArchitectureOperations, SavedContextLayout,
+    ARMV7M_SAVED_CONTEXT, ArchitectureBackend, ArchitectureOperations, FaultRegister,
+    SavedContextLayout,
 };
 pub use board::{
     BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionOperations, ResetCause,

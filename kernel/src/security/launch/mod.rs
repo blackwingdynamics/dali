@@ -6,12 +6,8 @@ use dali_sdk::svc::ExceptionFrame;
 const THUMB_STATE_BIT: u32 = 1 << 24;
 /// Exception return selector for an unprivileged PSP basic frame.
 const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
-/// Exception return selector for a privileged MSP basic frame.
-const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
 /// Link value used by non-returning synthetic frames.
 const NON_RETURNING_LINK: u32 = 0;
-/// CONTROL value selecting privileged Thread mode with MSP.
-const CONTROL_PRIVILEGED_MSP: u32 = 0;
 
 /// A validated basic exception frame and its architectural return selector.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -95,21 +91,9 @@ pub(crate) fn recover() -> ! {
     };
     let frame_address = (&frame as *const ExceptionFrame) as usize as u32;
     unsafe {
-        // SAFETY: `frame` is a live kernel-stack object. This non-returning
-        // sequence changes MSP to that object, restores privileged Thread mode,
-        // and immediately exception-returns before the object can be dropped.
-        core::arch::asm!(
-            "msr MSP, {frame_address}",
-            "mov r0, {control}",
-            "msr CONTROL, r0",
-            "isb",
-            "mov lr, {exception_return}",
-            "bx lr",
-            frame_address = in(reg) frame_address,
-            control = const CONTROL_PRIVILEGED_MSP,
-            exception_return = const EXC_RETURN_THREAD_MSP_BASIC,
-            options(noreturn),
-        );
+        // SAFETY: `frame` is a live kernel-stack object and the backend
+        // performs the architecture-specific exception return.
+        crate::platform::recover_to_kernel(frame_address);
     }
 }
 
@@ -135,9 +119,9 @@ extern "C" fn fault_recovery() -> ! {
     crate::security::scheduling::recover_faulted_context();
     #[cfg(not(all(feature = "abi-context-switch", target_arch = "arm")))]
     match crate::runtime::application::policy::CURRENT.fault_recovery() {
-        crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
+        crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => {
             crate::platform::wait_for_registered_interrupt();
-        },
+        }
     }
 }
 

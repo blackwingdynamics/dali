@@ -1,6 +1,6 @@
 //! Cortex-M architecture operations for the STM32F405 firmware composition.
 
-use dali_kernel_api::{ArchitectureBackend, ArchitectureOperations};
+use dali_kernel_api::{ArchitectureBackend, ArchitectureOperations, FaultRegister};
 
 /// Cortex-M implementation of the kernel architecture contract.
 pub struct CortexMArchitecture;
@@ -14,6 +14,9 @@ impl ArchitectureBackend for CortexMArchitecture {
             read_process_stack_pointer: Self::read_process_stack_pointer,
             write_process_stack_pointer: Self::write_process_stack_pointer,
             read_main_stack_pointer: Self::read_main_stack_pointer,
+            read_fault_register: Self::read_fault_register,
+            write_fault_register: Self::write_fault_register,
+            recover_to_kernel: Self::recover_to_kernel,
         }
     }
 
@@ -47,5 +50,53 @@ impl CortexMArchitecture {
 
     fn read_main_stack_pointer() -> u32 {
         cortex_m::register::msp::read()
+    }
+
+    fn read_fault_register(register: FaultRegister) -> u32 {
+        let address = match register {
+            FaultRegister::Configurable => 0xE000_ED28_usize,
+            FaultRegister::Hard => 0xE000_ED2C_usize,
+            FaultRegister::MemoryAddress => 0xE000_ED34_usize,
+            FaultRegister::BusAddress => 0xE000_ED38_usize,
+            FaultRegister::SystemHandlerControl => 0xE000_ED24_usize,
+        };
+        // SAFETY: These are fixed, aligned ARMv7-M SCB registers.
+        unsafe { core::ptr::read_volatile(address as *const u32) }
+    }
+
+    fn write_fault_register(register: FaultRegister, value: u32) {
+        if matches!(register, FaultRegister::SystemHandlerControl) {
+            // SAFETY: This is the fixed, aligned ARMv7-M SHCSR register.
+            unsafe { core::ptr::write_volatile(0xE000_ED24_usize as *mut u32, value) };
+        }
+    }
+
+    #[cfg(target_arch = "arm")]
+    unsafe fn recover_to_kernel(frame_address: u32) -> ! {
+        const CONTROL_PRIVILEGED_MSP: u32 = 0;
+        const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
+        // SAFETY: The kernel supplies an address for a live, validated frame
+        // on its own stack and invokes this only during fault recovery.
+        unsafe {
+            core::arch::asm!(
+                "msr MSP, r0",
+                "mov r0, {control}",
+                "msr CONTROL, r0",
+                "isb",
+                "mov lr, {exception_return}",
+                "bx lr",
+                in("r0") frame_address,
+                control = const CONTROL_PRIVILEGED_MSP,
+                exception_return = const EXC_RETURN_THREAD_MSP_BASIC,
+                options(noreturn),
+            );
+        }
+    }
+
+    #[cfg(not(target_arch = "arm"))]
+    unsafe fn recover_to_kernel(_frame_address: u32) -> ! {
+        loop {
+            core::hint::spin_loop();
+        }
     }
 }
