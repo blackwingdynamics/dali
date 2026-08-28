@@ -3,7 +3,7 @@
 #[cfg(feature = "display-oled")]
 use super::super::drivers::ssd1306::F405Ssd1306;
 use super::super::drivers::{F405ExtiPin, F405GpioPin};
-#[cfg(feature = "abi-current")]
+#[cfg(any(feature = "abi-current", feature = "abi-mpu"))]
 use dali_targets::MemoryProfile;
 use dali_targets::TARGET_F405;
 use stm32f4xx_hal::gpio;
@@ -24,6 +24,14 @@ pub fn activate_application_regions(slot: dali_targets::IsolationSlot) -> bool {
     };
     crate::mpu::activate_application_regions(layout);
     true
+}
+
+/// Programs the F405 MPU map for the backend-selected memory contract.
+#[cfg(feature = "abi-mpu")]
+pub fn configure_memory_protection(memory: MemoryProfile) {
+    if let Some(layout) = crate::mpu::IsolationLayout::from_memory(memory) {
+        crate::mpu::configure_hardware(layout);
+    }
 }
 
 /// System clock target derived from the declarative F405 target profile.

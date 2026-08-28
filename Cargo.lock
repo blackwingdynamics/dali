@@ -246,8 +246,6 @@ dependencies = [
 name = "dali-kernel"
 version = "0.1.0-alpha.2"
 dependencies = [
- "cortex-m",
- "cortex-m-rt",
  "critical-section",
  "dali",
  "dali-amrn",

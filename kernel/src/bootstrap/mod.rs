@@ -98,11 +98,7 @@ where
         }
     });
     #[cfg(feature = "abi-mpu")]
-    if let Some(layout) =
-        crate::security::mpu::IsolationLayout::from_memory(platform::Platform::<B>::memory())
-    {
-        crate::security::mpu::configure_hardware(layout);
-    }
+    let _ = platform::configure_memory_protection(platform::Platform::<B>::info().memory);
 
     startup::initialize_logging();
     let reset_cause = board.reset_cause();

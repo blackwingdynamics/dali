@@ -7,7 +7,7 @@
 //! retained for source compatibility with existing backend implementations.
 
 pub use dali_kernel_api::{
-    BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionProvider, ResetCause,
+    BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionOperations, ResetCause,
     WatchdogBackend,
 };
 pub use dali_kernel_api::{board, dma, storage};

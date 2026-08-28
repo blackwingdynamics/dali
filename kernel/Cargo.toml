@@ -40,8 +40,6 @@ dali-driver-api = { path = "../crates/dali-driver-api" }
 dali-usb = { path = "../crates/dali-usb" }
 dali-targets = { path = "../crates/dali-targets" }
 dali-kernel-api = { path = "../crates/dali-kernel-api" }
-cortex-m = "0.7"
-cortex-m-rt = "0.7"
 critical-section = "1.2"
 embedded-sdmmc = { version = "=0.10.0", default-features = false }
 fugit = "=0.3.9"

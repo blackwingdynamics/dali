@@ -10,6 +10,6 @@ pub mod storage;
 
 pub use architecture::{ArchitectureBackend, ArchitectureOperations};
 pub use board::{
-    BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionProvider, ResetCause,
+    BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionOperations, ResetCause,
     WatchdogBackend,
 };

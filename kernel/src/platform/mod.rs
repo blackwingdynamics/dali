@@ -16,6 +16,12 @@ static ARCHITECTURE: critical_section::Mutex<
     core::cell::RefCell<Option<dali_kernel_api::ArchitectureOperations>>,
 > = critical_section::Mutex::new(core::cell::RefCell::new(None));
 
+/// Memory-protection operations registered by the selected backend.
+#[cfg(feature = "abi-mpu")]
+static MEMORY_PROTECTION: critical_section::Mutex<
+    core::cell::RefCell<Option<dali_kernel_api::MemoryProtectionOperations>>,
+> = critical_section::Mutex::new(core::cell::RefCell::new(None));
+
 #[cfg(any(
     feature = "abi-current",
     feature = "abi-mpu",
@@ -85,6 +91,13 @@ where
             let mut architecture = ARCHITECTURE.borrow(cs).borrow_mut();
             if architecture.is_none() {
                 *architecture = Some(B::Architecture::operations());
+            }
+        });
+        #[cfg(feature = "abi-mpu")]
+        critical_section::with(|cs| {
+            let mut protection = MEMORY_PROTECTION.borrow(cs).borrow_mut();
+            if protection.is_none() {
+                *protection = B::memory_protection_operations();
             }
         });
         #[cfg(any(
@@ -188,6 +201,27 @@ pub(crate) fn main_stack_pointer() -> Option<u32> {
             .borrow()
             .map(|operations| (operations.read_main_stack_pointer)())
     })
+}
+
+/// Configures the initial protection map through the selected backend.
+#[cfg(feature = "abi-mpu")]
+pub(crate) fn configure_memory_protection(memory: dali_targets::MemoryProfile) -> bool {
+    let Some(operations) = critical_section::with(|cs| *MEMORY_PROTECTION.borrow(cs).borrow())
+    else {
+        return false;
+    };
+    (operations.configure)(memory);
+    true
+}
+
+/// Activates application permissions through the selected backend.
+#[cfg(feature = "abi-mpu")]
+pub(crate) fn activate_application_regions(slot: dali_targets::IsolationSlot) -> bool {
+    let Some(operations) = critical_section::with(|cs| *MEMORY_PROTECTION.borrow(cs).borrow())
+    else {
+        return false;
+    };
+    (operations.activate_application_regions)(slot)
 }
 
 impl<B> Platform<B>

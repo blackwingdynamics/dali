@@ -2,7 +2,7 @@
 
 use crate::storage::{BlockReader, StorageLifecycleControl};
 use dali_targets::WatchdogProfile;
-use dali_targets::{CapabilitiesProfile, MemoryProfile, TargetProfile};
+use dali_targets::{CapabilitiesProfile, IsolationSlot, MemoryProfile, TargetProfile};
 
 /// A bounded memory region supplied by a selected board profile.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -90,13 +90,13 @@ pub struct BoardInfo {
     pub memory: MemoryProfile,
 }
 
-/// Hardware-neutral memory-protection programming boundary.
-pub trait MemoryProtectionProvider {
-    /// Backend-specific failure type.
-    type Error;
-
-    /// Enables the protection configuration for one validated application.
-    fn activate_application_regions(&mut self, memory: MemoryProfile) -> Result<(), Self::Error>;
+/// Hardware-neutral memory-protection operations supplied by a backend.
+#[derive(Clone, Copy)]
+pub struct MemoryProtectionOperations {
+    /// Programs the initial privileged protection map.
+    pub configure: fn(MemoryProfile),
+    /// Activates user permissions for one validated application slot.
+    pub activate_application_regions: fn(IsolationSlot) -> bool,
 }
 
 /// Common board lifecycle contract consumed by kernel orchestration.
@@ -111,6 +111,11 @@ pub trait BoardBackend {
     type Watchdog;
     /// Board-owned storage reader and lifecycle controller.
     type StorageReader: BlockReader + StorageLifecycleControl;
+
+    /// Returns memory-protection operations when the backend provides them.
+    fn memory_protection_operations() -> Option<MemoryProtectionOperations> {
+        None
+    }
 
     /// Returns immutable board metadata without touching hardware.
     fn info() -> BoardInfo;

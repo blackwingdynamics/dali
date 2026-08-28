@@ -14,9 +14,6 @@ type TargetScheduler = Scheduler<MAX_CONTEXT_CAPACITY>;
 /// Static scheduler storage used during the kernel lifecycle.
 static SCHEDULER_STORAGE: SchedulerStorage<TargetScheduler> = SchedulerStorage::new();
 
-#[cfg(feature = "abi-context-switch")]
-use cortex_m_rt::exception;
-
 /// Errors returned while initializing the target scheduler state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum SchedulerInitializationError {
@@ -197,7 +194,7 @@ pub(crate) fn on_systick() {
 
 #[cfg(feature = "abi-context-switch")]
 /// Dispatches the platform scheduler tick interrupt.
-#[exception]
-fn SysTick() {
+#[unsafe(export_name = "SysTick")]
+extern "C" fn systick_handler() {
     on_systick();
 }

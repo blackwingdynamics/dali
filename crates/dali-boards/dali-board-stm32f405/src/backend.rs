@@ -29,6 +29,20 @@ impl dali_kernel_api::BoardBackend for board::Board {
     type Watchdog = crate::F405Watchdog;
     type StorageReader = sdio::SdioBlockReader;
 
+    fn memory_protection_operations() -> Option<dali_kernel_api::MemoryProtectionOperations> {
+        #[cfg(feature = "abi-mpu")]
+        {
+            Some(dali_kernel_api::MemoryProtectionOperations {
+                configure: board::configure_memory_protection,
+                activate_application_regions: board::activate_application_regions,
+            })
+        }
+        #[cfg(not(feature = "abi-mpu"))]
+        {
+            None
+        }
+    }
+
     fn info() -> dali_kernel_api::BoardInfo {
         dali_kernel_api::BoardInfo {
             backend: "stm32f405",
