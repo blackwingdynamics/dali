@@ -157,7 +157,12 @@ dali-kernel/
 │   │   ├── debugging-and-troubleshooting.md
 │   │   ├── setup-and-console.md
 │   │   └── workspace-and-commands.md
-│   ├── ROADMAP.md, SECURITY.md
+│   ├── ROADMAP.md
+│   ├── security/
+│   │   ├── README.md
+│   │   ├── baseline-and-current-boundary.md
+│   │   ├── remaining-work-and-production-trust.md
+│   │   └── f405-isolation-foundation.md
 │   ├── mvp-acceptance/             # Categorized MVP acceptance documentation
 │   │   ├── README.md
 │   │   ├── recorded-evidence.md

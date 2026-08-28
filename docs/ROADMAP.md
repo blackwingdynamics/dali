@@ -90,7 +90,7 @@ Completion requires implementation, relevant host/target validation, and
 hardware evidence when the behavior depends on a physical target. The
 canonical records are [`docs/testing/README.md`](testing/README.md),
 [`docs/mvp-acceptance/README.md`](mvp-acceptance/README.md), and
-[`docs/SECURITY.md`](SECURITY.md).
+[`docs/security/README.md`](security/README.md).
 
 The completed security claims are scoped to the configured STM32F405 path.
 They do not claim arbitrary DMA-controller isolation, confidentiality,

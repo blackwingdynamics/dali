@@ -36,7 +36,7 @@ Reports are especially important for:
 - CI, release, and package-generation workflows;
 - any behavior that could compromise a connected device or actuator.
 
-The project security model and current non-guarantees are documented in [docs/SECURITY.md](docs/SECURITY.md).
+The project security model and current non-guarantees are documented in [docs/security/README.md](docs/security/README.md).
 
 ## Response
 

@@ -21,7 +21,7 @@ Read the documents in this order:
 10. [Testing](testing/README.md) — categorized host, target, and hardware testing documentation.
 11. [MVP Acceptance](mvp-acceptance/README.md) — the physical STM32F405 end-to-end acceptance procedure.
 12. [Versioning](versioning/README.md) — component versions, ABI compatibility, and release tags.
-13. [Security](SECURITY.md) — current guarantees, non-guarantees, and post-MVP security work.
+13. [Security](security/README.md) — current guarantees, non-guarantees, and post-MVP security work.
 14. [Application Relocation](relocation/README.md) — movable ABI v3 application design and evidence boundaries.
 15. [Package Distribution](package-distribution/README.md) — normative multi-developer trust, metadata, update, and acceptance contract.
 16. [Ustari Protocol](ustari-protocol/README.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.

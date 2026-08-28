@@ -22,7 +22,7 @@ signed, encrypted, dynamically linked, or interrupt-owning. The repository also
 contains feature-gated ABI v3 single-application processor-side isolation and
 AMRN v3/v4 loader paths; these are not the default MVP configuration and must
 not be described as complete sandboxing, secure boot, DMA isolation, or
-multi-application isolation. See `docs/SECURITY.md`, `docs/abi/README.md`, and
+multi-application isolation. See `docs/security/README.md`, `docs/abi/README.md`, and
 `docs/testing/README.md` for the current evidence boundary.
 
 ## 2. Source of truth
