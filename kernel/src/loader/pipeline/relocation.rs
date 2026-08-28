@@ -18,12 +18,13 @@ const RELOCATION_BYTES: usize = v3::RELOCATION_ENTRY_SIZE;
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract, allocation) = parse_target_header(&header, slot_manager)?;
+    let (header, contract, allocation) = parse_target_header(&header, slot_manager, target)?;
     let relocation_offset = u32::try_from(v3::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.code_size))
@@ -77,8 +78,8 @@ where
 fn parse_target_header(
     bytes: &[u8; v3::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<(v3::Header, v3::Contract, SlotAllocation), super::LoaderError> {
-    let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
         .isolation

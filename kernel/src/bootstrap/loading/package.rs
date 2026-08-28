@@ -32,7 +32,7 @@ where
     let package =
         crate::loader::load_repository_package(device, slot_manager, committed_generation);
     #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
-    let package = crate::loader::load_current_abi(device, slot_manager);
+    let package = crate::loader::load_current_abi::<D, B>(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]
     let package = if B::application_execution_supported() {
         crate::loader::load_amrn_file(device)

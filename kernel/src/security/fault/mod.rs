@@ -274,7 +274,7 @@ fn read_application_frame(frame_address: u32, exception_return: u32) -> Option<E
     if !valid_application_exception_return(exception_return) {
         return None;
     }
-    let memory = crate::platform::MEMORY_PROFILE.isolation?;
+    let memory = crate::platform::memory_profile()?.isolation?;
     let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
     let frame_end = frame_address.checked_add(frame_size)?;

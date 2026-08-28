@@ -3,7 +3,50 @@
 //! A firmware composition crate must provide the selected board services. The
 //! kernel core does not select, import, or name any board backend.
 
+#[cfg(any(
+    feature = "abi-current",
+    feature = "abi-mpu",
+    feature = "abi-context-switch"
+))]
+use dali_kernel_api::BoardInfo;
 use dali_kernel_api::{BoardBackend, BoardError, ResetCause, WatchdogBackend};
+
+#[cfg(any(
+    feature = "abi-current",
+    feature = "abi-mpu",
+    feature = "abi-context-switch"
+))]
+/// Backend metadata registered during kernel bootstrap.
+static BOARD_INFO: critical_section::Mutex<core::cell::RefCell<Option<BoardInfo>>> =
+    critical_section::Mutex::new(core::cell::RefCell::new(None));
+
+/// Returns metadata registered by the selected firmware composition.
+#[cfg(any(
+    feature = "abi-current",
+    feature = "abi-mpu",
+    feature = "abi-context-switch"
+))]
+pub(crate) fn board_info() -> Option<BoardInfo> {
+    critical_section::with(|cs| *BOARD_INFO.borrow(cs).borrow())
+}
+
+/// Returns the target profile registered by the selected firmware composition.
+#[cfg(any(feature = "abi-current", feature = "abi-context-switch"))]
+pub(crate) fn target_profile() -> Option<&'static dali_targets::TargetProfile> {
+    board_info().map(|info| info.target)
+}
+
+/// Returns the memory profile registered by the selected firmware composition.
+#[cfg(any(feature = "abi-current", feature = "abi-mpu"))]
+pub(crate) fn memory_profile() -> Option<dali_targets::MemoryProfile> {
+    board_info().map(|info| info.memory)
+}
+
+/// Returns scheduler metadata registered by the selected firmware composition.
+#[cfg(feature = "abi-context-switch")]
+pub(crate) fn scheduler_profile() -> Option<dali_targets::SchedulerProfile> {
+    target_profile().and_then(|target| target.scheduler)
+}
 
 /// Failure returned by the kernel-owned watchdog service boundary.
 #[derive(Debug)]
@@ -33,6 +76,17 @@ where
 {
     /// Initializes the externally selected backend.
     pub(crate) fn initialize() -> Result<Self, BoardError> {
+        #[cfg(any(
+            feature = "abi-current",
+            feature = "abi-mpu",
+            feature = "abi-context-switch"
+        ))]
+        critical_section::with(|cs| {
+            let mut info = BOARD_INFO.borrow(cs).borrow_mut();
+            if info.is_none() {
+                *info = Some(B::info());
+            }
+        });
         Ok(Self {
             backend: B::initialize()?,
             watchdog: None,

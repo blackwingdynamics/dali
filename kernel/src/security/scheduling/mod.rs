@@ -8,7 +8,8 @@ use crate::runtime::scheduling::{
 };
 
 /// Scheduler type sized from the active platform context profile.
-type TargetScheduler = Scheduler<{ crate::platform::CONTEXT_CAPACITY }>;
+const MAX_CONTEXT_CAPACITY: usize = 2;
+type TargetScheduler = Scheduler<MAX_CONTEXT_CAPACITY>;
 
 /// Static scheduler storage used during the kernel lifecycle.
 static SCHEDULER_STORAGE: SchedulerStorage<TargetScheduler> = SchedulerStorage::new();
@@ -39,7 +40,7 @@ pub(crate) enum SchedulerAccessError {
 /// Initializes scheduler state once from the selected target profile.
 pub(crate) fn initialize() -> Result<(), SchedulerInitializationError> {
     let profile =
-        crate::platform::SCHEDULER_PROFILE.ok_or(SchedulerInitializationError::MissingProfile)?;
+        crate::platform::scheduler_profile().ok_or(SchedulerInitializationError::MissingProfile)?;
     let scheduler = TargetScheduler::new(profile.quantum_ticks)
         .map_err(SchedulerInitializationError::Scheduler)?;
     SCHEDULER_STORAGE
@@ -183,10 +184,6 @@ pub(crate) unsafe extern "C" fn pendsv_handler() -> ! {
 /// attempting an exception return before application contexts are wired.
 #[cfg(feature = "abi-context-switch")]
 pub(crate) fn on_systick() {
-    if crate::platform::service_watchdog().is_err() {
-        // The watchdog service removes its runtime after a feed failure, so
-        // the armed hardware watchdog performs the bounded recovery reset.
-    }
     let scheduler = unsafe {
         // SAFETY: SysTick is a single exception context. PendSV is the only
         // other scheduler access path and remains deferred until this handler

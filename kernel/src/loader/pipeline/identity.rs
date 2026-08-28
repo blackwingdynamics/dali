@@ -28,12 +28,13 @@ const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract, allocation) = parse_target_header(&header, slot_manager)?;
+    let (header, contract, allocation) = parse_target_header(&header, slot_manager, target)?;
     if !super::supports_required_services(header.metadata.required_services) {
         return Err(super::LoaderError::UnsupportedServices(
             header.metadata.required_services,
@@ -93,8 +94,8 @@ where
 pub(super) fn parse_target_header(
     bytes: &[u8; v4::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<(v4::Header, v3::Contract, SlotAllocation), super::LoaderError> {
-    let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
         .isolation

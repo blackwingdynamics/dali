@@ -104,12 +104,13 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (contract, allocation) = target_contract(&header, slot_manager)?;
+    let (contract, allocation) = target_contract(&header, slot_manager, target)?;
     let header =
         v2::parse_header(&header, contract).map_err(super::LoaderError::CurrentAbiPackage)?;
     let expected_length = package_length(header).ok_or(super::LoaderError::CurrentAbiPackage(
@@ -164,8 +165,8 @@ where
 fn target_contract(
     bytes: &[u8; v2::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<(v2::Contract, SlotAllocation), super::LoaderError> {
-    let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
         .isolation

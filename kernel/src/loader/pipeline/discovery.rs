@@ -14,12 +14,12 @@ use super::execution::LoadedApplications;
 pub(crate) fn load_files<D>(
     device: &D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedApplications<{ filesystem::MAX_ROOT_AMRN_FILES }>, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let mut catalog = PackageCatalog::<{ filesystem::MAX_ROOT_AMRN_FILES }>::new();
-    let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
         .isolation
@@ -47,7 +47,7 @@ where
             .select_after(previous_slot)
             .ok_or(super::identity::v4_error(v4::Error::InvalidHeader))?;
         let selected_identity = selected.header.metadata.package_id;
-        load_selected_file(device, selected_identity, slot_manager, &mut loaded)?;
+        load_selected_file(device, selected_identity, slot_manager, &mut loaded, target)?;
         previous_slot = Some(selected.slot.id);
     }
     Ok(loaded)
@@ -59,6 +59,7 @@ fn load_selected_file<D>(
     selected_identity: [u8; 16],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     loaded: &mut LoadedApplications<{ filesystem::MAX_ROOT_AMRN_FILES }>,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -71,7 +72,7 @@ where
             return Ok(());
         }
         file.rewind().map_err(super::LoaderError::Filesystem)?;
-        let application = super::identity::load_file(file, slot_manager)?;
+        let application = super::identity::load_file(file, slot_manager, target)?;
         found = true;
         if !loaded.push(application) {
             return Err(super::LoaderError::PackageCatalog(

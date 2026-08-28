@@ -18,13 +18,16 @@ pub(crate) type LoadedPackages =
 
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
 /// Loads the current ABI package set from the storage root.
-pub(crate) fn load_current_abi<D>(
+pub(crate) fn load_current_abi<D, B>(
     device: D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<LoadedPackages, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
+    let target = B::info().target;
     let device = crate::drivers::BlockDeviceRef::new(&device);
     let mut versions = [0; storage::filesystem::MAX_ROOT_AMRN_FILES];
     let mut package_count = 0;
@@ -46,7 +49,7 @@ where
     match package_count {
         0 => Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)),
         1 => storage::filesystem::with_amrn_file(device, |file| {
-            load_current_abi_file(file, slot_manager)
+            load_current_abi_file(file, slot_manager, target)
         })
         .map_err(LoaderError::Filesystem)?,
         _ => {
@@ -55,7 +58,7 @@ where
                 .iter()
                 .all(|version| *version == dali_amrn::v4::FORMAT_VERSION)
             {
-                return pipeline::discovery::load_files(&device, slot_manager);
+                return pipeline::discovery::load_files(&device, slot_manager, target);
             }
             Err(LoaderError::Filesystem(embedded_sdmmc::Error::Unsupported))
         }
@@ -67,6 +70,7 @@ where
 fn load_current_abi_file<D>(
     file: storage::filesystem::AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedPackages, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -75,13 +79,15 @@ where
     read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
     file.rewind().map_err(LoaderError::Filesystem)?;
     match version[4] {
-        dali_amrn::v2::FORMAT_VERSION => pipeline::execution::load_file(file, slot_manager)
+        dali_amrn::v2::FORMAT_VERSION => pipeline::execution::load_file(file, slot_manager, target)
             .map(pipeline::execution::LoadedApplications::single),
         #[cfg(feature = "abi-relocation")]
-        dali_amrn::v3::FORMAT_VERSION => pipeline::relocation::load_file(file, slot_manager)
-            .map(pipeline::execution::LoadedApplications::single),
+        dali_amrn::v3::FORMAT_VERSION => {
+            pipeline::relocation::load_file(file, slot_manager, target)
+                .map(pipeline::execution::LoadedApplications::single)
+        }
         #[cfg(feature = "abi-relocation")]
-        dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager)
+        dali_amrn::v4::FORMAT_VERSION => pipeline::identity::load_file(file, slot_manager, target)
             .map(pipeline::execution::LoadedApplications::single),
         #[cfg(feature = "abi-authentication")]
         dali_amrn::v5::FORMAT_VERSION => pipeline::signed::load_file(file, slot_manager)
