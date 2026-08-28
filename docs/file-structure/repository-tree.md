@@ -185,7 +185,13 @@ dali-kernel/
 │   │   ├── cli-install-and-deploy.md
 │   │   └── boundaries-and-troubleshooting.md
 │   ├── DOCUMENTATION_INDEX.md
-│   ├── RELOCATION.md
+│   ├── relocation/
+│   │   ├── README.md
+│   │   ├── overview-and-direction.md
+│   │   ├── format-and-safety.md
+│   │   ├── build-and-load-pipeline.md
+│   │   ├── slot-manager-and-evidence.md
+│   │   └── linker-evidence-and-non-goals.md
 │   ├── metadata-binary-v2/          # Categorized Metadata Binary v2 docs
 │   │   ├── README.md
 │   │   ├── common-prefix-and-role-bodies.md
