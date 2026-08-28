@@ -10,7 +10,7 @@ approval.
 
 - [x] Maintain one canonical `README.md` index for each documentation domain.
 - [x] Verify that every document has one clear owner, scope, and source of truth.
-- [ ] Remove stale paths, duplicate guidance, and contradictory claims.
+- [x] Remove stale paths, duplicate guidance, and contradictory claims.
 - [x] Keep `docs/file-structure/repository-tree.md` synchronized with the real
   repository.
 
