@@ -16,6 +16,8 @@ mod exceptions;
 mod logging;
 #[cfg(feature = "abi-mpu")]
 mod mpu;
+#[cfg(feature = "abi-context-switch")]
+mod scheduling;
 mod watchdog;
 
 pub use architecture::CortexMArchitecture;

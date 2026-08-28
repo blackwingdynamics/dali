@@ -1,5 +1,27 @@
 //! Hardware-neutral CPU architecture operations.
 
+/// Stable layout of the kernel-owned saved context passed to an architecture
+/// backend during a context restore.
+#[derive(Clone, Copy)]
+pub struct SavedContextLayout {
+    /// Offset of the saved process stack pointer.
+    pub psp: usize,
+    /// Offset of the first callee-saved register.
+    pub callee_saved: usize,
+    /// Offset of the saved CONTROL register.
+    pub control: usize,
+    /// Offset of the saved exception-return selector.
+    pub exception_return: usize,
+}
+
+/// ARMv7-M saved context layout used by the current scheduler ABI.
+pub const ARMV7M_SAVED_CONTEXT: SavedContextLayout = SavedContextLayout {
+    psp: 0,
+    callee_saved: 4,
+    control: 36,
+    exception_return: 40,
+};
+
 /// Function table installed by the selected firmware composition.
 #[derive(Clone, Copy)]
 pub struct ArchitectureOperations {

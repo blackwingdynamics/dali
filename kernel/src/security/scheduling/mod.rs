@@ -111,9 +111,9 @@ pub(crate) unsafe extern "C" fn prepare_pendsv(
     psp: u32,
     control: u32,
     exception_return: u32,
-) -> *const SavedContext {
+) -> *const u32 {
     let saved = unsafe {
-        // SAFETY: The naked PendSV wrapper passes a pointer to its aligned,
+        // SAFETY: The board-owned PendSV wrapper passes a pointer to its aligned,
         // complete `r4..r11` scratch area on the kernel MSP.
         *(saved_registers as *const [u32; CALLEE_SAVED_REGISTER_COUNT])
     };
@@ -123,7 +123,7 @@ pub(crate) unsafe extern "C" fn prepare_pendsv(
             if !crate::platform::activate_application_regions(incoming.slot()) {
                 return Err(SchedulerError::ProtectionUnavailable);
             }
-            return scheduler.context_cpu_ptr(incoming_id);
+            return Ok(scheduler.context_cpu_ptr(incoming_id)? as *const u32);
         }
         let active = scheduler.active_context()?;
         let saved_context = ScheduledContext::new(
@@ -141,34 +141,15 @@ pub(crate) unsafe extern "C" fn prepare_pendsv(
                 if !crate::platform::activate_application_regions(incoming.slot()) {
                     return Err(SchedulerError::ProtectionUnavailable);
                 }
-                scheduler.context_cpu_ptr(selection.incoming)
+                Ok(scheduler.context_cpu_ptr(selection.incoming)? as *const u32)
             }
-            None => scheduler.active_cpu_ptr(),
+            None => Ok(scheduler.active_cpu_ptr()? as *const u32),
         }
     });
     match result {
         Ok(Ok(pointer)) => pointer,
         Ok(Err(_)) | Err(_) => crate::security::launch::recover(),
     }
-}
-
-/// Privileged PendSV wrapper for scheduler-owned save/select/restore.
-#[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
-#[unsafe(naked)]
-#[unsafe(export_name = "PendSV")]
-pub(crate) unsafe extern "C" fn pendsv_handler() -> ! {
-    core::arch::naked_asm!(
-        "stmdb sp!, {{r4-r11}}",
-        "mrs r1, psp",
-        "mrs r2, control",
-        "mov r3, lr",
-        "mov r0, sp",
-        "bl {prepare}",
-        "add sp, #32",
-        "b {restore}",
-        prepare = sym prepare_pendsv,
-        restore = sym crate::runtime::scheduling::context_switch::restore_selected,
-    );
 }
 
 /// Accounts for one target-provided SysTick interrupt.
