@@ -170,7 +170,8 @@ dali-kernel/
 │   │   ├── 02-hardware-drivers-and-subsystems.md
 │   │   ├── 03-system-gui-and-launcher.md
 │   │   ├── 04-first-stage-bootloader.md
-│   │   └── 05-interactive-shell-telemetry-and-control.md
+│   │   ├── 05-interactive-shell-telemetry-and-control.md
+│   │   └── 06-documentation-quality-and-enterprise-readiness.md
 │   ├── security/
 │   │   ├── README.md
 │   │   ├── baseline-and-current-boundary.md

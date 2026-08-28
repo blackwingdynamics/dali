@@ -1,7 +1,7 @@
 This file is the roadmap gateway. Each phase has its own status, scope,
 acceptance boundary, and backlog.
 
-## Current status — 2026-08-26
+## Current status — 2026-08-28
 
 | Phase | Status | Scope |
 | --- | --- | --- |
@@ -73,3 +73,8 @@ pending.
   workspace checks, and `git diff --check`.
 - [ ] Keep the I2C physical acceptance item open until laboratory equipment is
   available and a real F405 trace confirms device ACK and OLED rendering.
+
+### Current work — documentation quality and enterprise readiness
+
+- [ ] **Active:** Execute the documentation quality and enterprise-readiness
+  roadmap in [06 — Documentation Quality and Enterprise Readiness](06-documentation-quality-and-enterprise-readiness.md).
