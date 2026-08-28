@@ -179,7 +179,13 @@ dali-kernel/
 │   │   ├── usb-storage-and-example.md
 │   │   └── validation-and-generation.md
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md
-│   ├── METADATA_BINARY_V2.md, RELOCATION.md
+│   ├── RELOCATION.md
+│   ├── metadata-binary-v2/          # Categorized Metadata Binary v2 docs
+│   │   ├── README.md
+│   │   ├── common-prefix-and-role-bodies.md
+│   │   ├── decision-and-envelope.md
+│   │   ├── f405-streaming-profile.md
+│   │   └── migration-and-compatibility.md
 │   ├── package-distribution/      # Categorized package, trust, and acceptance docs
 │   │   ├── README.md
 │   │   ├── acceptance-and-trust-updates.md, frozen-profile-decisions.md
