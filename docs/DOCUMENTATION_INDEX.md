@@ -25,7 +25,7 @@ Read the documents in this order:
 15. [Package Distribution](package-distribution/README.md) — normative multi-developer trust, metadata, update, and acceptance contract.
 16. [Ustari Protocol](ustari-protocol/README.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.
 17. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
-18. [Target Profiles](TARGET_PROFILES.md) — declarative board metadata and kernel mapping ownership.
+18. [Target Profiles](target-profiles/README.md) — declarative board metadata and kernel mapping ownership.
 19. [Target Manifest Reference](target-manifest/README.md) — complete TOML schema, field rules, and F405 example.
 20. [Platform Backend Contract](PLATFORM_BACKENDS.md) — ownership boundaries and the workflow for adding a target backend.
 21. [Driver Architecture](drivers/README.md) — no-heap, bounded, hardware-neutral driver principles.

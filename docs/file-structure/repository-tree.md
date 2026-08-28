@@ -195,7 +195,11 @@ dali-kernel/
 │   │   ├── modules-naming-and-logging.md
 │   │   ├── safety-errors-and-realtime.md
 │   │   └── testing-review-and-prohibited-practices.md
-│   ├── TARGET_PROFILES.md
+│   ├── target-profiles/             # Target profile ownership and manifest docs
+│   │   ├── README.md
+│   │   ├── ownership-and-boundaries.md
+│   │   ├── manifest-contract.md
+│   │   └── validation-and-generation.md
 │   ├── target-manifest/            # Categorized target manifest documentation
 │   │   ├── README.md
 │   │   ├── clock-bus-and-display.md, memory-pins-and-key.md
