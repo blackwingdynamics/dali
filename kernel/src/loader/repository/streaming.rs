@@ -16,14 +16,23 @@ pub const MAX_STREAMING_TARGET_RECORD_BYTES: usize = 512;
 pub const STREAMING_METADATA_CHUNK_BYTES: usize = 512;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/// Internal implementation state for `Phase`.
 enum Phase {
+    /// Internal implementation item.
     MetadataHeader,
+    /// Internal implementation item.
     DelegationCount,
+    /// Internal implementation item.
     DelegationLength,
+    /// Internal implementation item.
     DelegationBytes,
+    /// Internal implementation item.
     PackageCount,
+    /// Internal implementation item.
     RecordLength,
+    /// Internal implementation item.
     RecordBytes,
+    /// Internal implementation item.
     Complete,
 }
 
@@ -183,19 +192,31 @@ where
 /// Bounded set of authenticated Targets records sharing one serialized document.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct VerifiedBinaryTargets<const CAPACITY: usize> {
+    /// Internal field `targets`.
     targets: [Option<TargetPackage>; CAPACITY],
+    /// Internal field `selected_count`.
     selected_count: usize,
+    /// Internal field `document_length`.
     document_length: u32,
+    /// Internal field `digest`.
     digest: dali_metadata::Sha256Digest,
+    /// Internal field `envelope`.
     envelope: dali_metadata::StreamedEnvelope,
+    /// Internal field `version`.
     version: u64,
 }
 
+/// Internal implementation state for `ParsedTargets`.
 struct ParsedTargets<const CAPACITY: usize> {
+    /// Internal field `length`.
     length: u32,
+    /// Internal field `envelope`.
     envelope: dali_metadata::StreamedEnvelope,
+    /// Internal field `version`.
     version: u64,
+    /// Internal field `targets`.
     targets: [Option<TargetPackage>; CAPACITY],
+    /// Internal field `digest`.
     digest: dali_metadata::Sha256Digest,
 }
 
@@ -230,6 +251,7 @@ impl<const CAPACITY: usize> VerifiedBinaryTargets<CAPACITY> {
         })
     }
 
+    /// Internal helper for `first`.
     fn first(&self) -> Option<VerifiedBinaryTarget> {
         self.iter().next()
     }
@@ -280,6 +302,7 @@ where
 }
 
 #[inline(never)]
+/// Internal helper for `parse_targets_first_pass`.
 fn parse_targets_first_pass<S, const CAPACITY: usize>(
     storage: &mut S,
     mut selector: BinaryTargetsStreamParser<CAPACITY>,
@@ -337,6 +360,7 @@ where
 }
 
 #[inline(never)]
+/// Internal helper for `replay_targets`.
 fn replay_targets<S>(
     storage: &mut S,
     context: TargetReplayContext<'_>,
@@ -398,13 +422,21 @@ where
     Ok(())
 }
 
+/// Internal implementation state for `TargetReplayContext`.
 struct TargetReplayContext<'a> {
+    /// Internal field `chunk`.
     chunk: &'a mut [u8],
+    /// Internal field `envelope`.
     envelope: &'a dali_metadata::StreamedEnvelope,
+    /// Internal field `document_digest`.
     document_digest: dali_metadata::Sha256Digest,
+    /// Internal field `role`.
     role: RoleDefinition,
+    /// Internal field `keys`.
     keys: &'a [RoleKey],
+    /// Internal field `progress`.
     progress: fn() -> bool,
+    /// Internal field `verifier_workspace`.
     verifier_workspace: &'a mut TargetVerifierWorkspace,
 }
 
@@ -438,45 +470,74 @@ where
         .map_err(StreamingTargetSelectionError::Parse)
 }
 
+/// Internal implementation state for `BinaryTargetsStreamParser`.
 struct BinaryTargetsStreamParser<const CAPACITY: usize> {
+    /// Internal field `wanted`.
     wanted: Option<PackageId>,
+    /// Internal field `target_profile`.
     target_profile: Option<dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>>,
+    /// Internal field `envelope`.
     envelope: [u8; BINARY_ENVELOPE_HEADER_BYTES],
+    /// Internal field `envelope_length`.
     envelope_length: usize,
+    /// Internal field `body_length`.
     body_length: usize,
+    /// Internal field `body_seen`.
     body_seen: usize,
+    /// Internal field `total_length`.
     total_length: usize,
+    /// Internal field `total_seen`.
     total_seen: usize,
+    /// Internal field `phase`.
     phase: Phase,
+    /// Internal field `version`.
     version: u64,
+    /// Internal field `field`.
     field: [u8; 16],
+    /// Internal field `field_length`.
     field_length: usize,
+    /// Internal field `field_need`.
     field_need: usize,
+    /// Internal field `delegations_left`.
     delegations_left: u16,
+    /// Internal field `delegation_bytes_left`.
     delegation_bytes_left: usize,
+    /// Internal field `packages_left`.
     packages_left: u32,
+    /// Internal field `record_length`.
     record_length: usize,
+    /// Internal field `record_seen`.
     record_seen: usize,
+    /// Internal field `candidate_id`.
     candidate_id: [u8; 16],
+    /// Internal field `candidate_length`.
     candidate_length: usize,
+    /// Internal field `selected`.
     selected: bool,
+    /// Internal field `record`.
     record: [u8; MAX_STREAMING_TARGET_RECORD_BYTES],
+    /// Internal field `record_buffered`.
     record_buffered: usize,
+    /// Internal field `selected_targets`.
     selected_targets: [Option<TargetPackage>; CAPACITY],
+    /// Internal field `selected_count`.
     selected_count: usize,
 }
 
 impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
+    /// Internal helper for `for_package`.
     fn for_package(wanted: PackageId) -> Self {
         Self::new(Some(wanted), None)
     }
 
+    /// Internal helper for `for_profile`.
     fn for_profile(
         target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
     ) -> Self {
         Self::new(None, Some(target_profile))
     }
 
+    /// Internal helper for `new`.
     fn new(
         wanted: Option<PackageId>,
         target_profile: Option<
@@ -512,6 +573,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         }
     }
 
+    /// Internal helper for `feed`.
     fn feed(&mut self, bytes: &[u8]) -> Result<(), StreamingTargetsError> {
         for byte in bytes {
             self.total_seen = self
@@ -535,6 +597,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         Ok(())
     }
 
+    /// Internal helper for `finish_envelope_header`.
     fn finish_envelope_header(&mut self) -> Result<(), StreamingTargetsError> {
         if self.envelope[..4] != BINARY_MAGIC
             || self.envelope[4] != BINARY_FORMAT_VERSION
@@ -559,6 +622,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         Ok(())
     }
 
+    /// Internal helper for `feed_body`.
     fn feed_body(&mut self, bytes: &[u8]) -> Result<(), StreamingTargetsError> {
         for byte in bytes {
             self.body_seen = self
@@ -574,6 +638,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         Ok(())
     }
 
+    /// Internal helper for `consume_body_byte`.
     fn consume_body_byte(&mut self, byte: u8) -> Result<(), StreamingTargetsError> {
         match self.phase {
             Phase::MetadataHeader => {
@@ -671,17 +736,20 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         }
     }
 
+    /// Internal helper for `read_field`.
     fn read_field(&mut self, byte: u8, _next: Phase) {
         self.field[self.field_length] = byte;
         self.field_length += 1;
     }
 
+    /// Internal helper for `reset_field`.
     fn reset_field(&mut self, need: usize, phase: Phase) {
         self.field_length = 0;
         self.field_need = need;
         self.phase = phase;
     }
 
+    /// Internal helper for `consume_record_byte`.
     fn consume_record_byte(&mut self, byte: u8) -> Result<(), StreamingTargetsError> {
         if self.candidate_length < self.candidate_id.len() {
             self.candidate_id[self.candidate_length] = byte;
@@ -707,6 +775,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         Ok(())
     }
 
+    /// Internal helper for `finish_record`.
     fn finish_record(&mut self) -> Result<(), StreamingTargetsError> {
         if self.selected {
             let target = parse_binary_target_record(&self.record[..self.record_buffered])
@@ -735,6 +804,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         Ok(())
     }
 
+    /// Internal helper for `finish`.
     fn finish(self) -> Result<[Option<TargetPackage>; CAPACITY], StreamingTargetsError> {
         if self.envelope_length != BINARY_ENVELOPE_HEADER_BYTES
             || self.body_seen != self.body_length
@@ -746,6 +816,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
         Ok(self.selected_targets)
     }
 
+    /// Internal helper for `finish_body`.
     fn finish_body(self) -> Result<[Option<TargetPackage>; CAPACITY], StreamingTargetsError> {
         if self.phase != Phase::Complete {
             return Err(StreamingTargetsError::UnexpectedEnd);
@@ -754,6 +825,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
     }
 }
 
+/// Internal helper for `role_number`.
 const fn role_number(role: MetadataRole) -> u8 {
     match role {
         MetadataRole::Root => 1,
@@ -767,14 +839,17 @@ const fn role_number(role: MetadataRole) -> u8 {
     }
 }
 
+/// Internal helper for `read_u16`.
 fn read_u16(bytes: &[u8]) -> u16 {
     u16::from_le_bytes([bytes[0], bytes[1]])
 }
 
+/// Internal helper for `read_u32`.
 fn read_u32(bytes: &[u8]) -> u32 {
     u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
 }
 
+/// Internal helper for `read_u64`.
 fn read_u64(bytes: &[u8]) -> u64 {
     u64::from_le_bytes([
         bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],

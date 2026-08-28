@@ -41,6 +41,7 @@ impl PackageInstallationAuthorization {
         }
     }
 
+    /// Internal helper for `generation`.
     fn generation(self) -> DurableGeneration {
         self.generation
     }

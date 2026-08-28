@@ -88,11 +88,13 @@ pub(crate) const WATCHDOG_PROFILE: Option<dali_targets::WatchdogProfile> =
     dali_targets::TARGET_F405.watchdog;
 
 #[cfg(all(feature = "abi-authentication", feature = "abi-test-fixtures"))]
+/// Trust anchors selected by the active target profile.
 pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targets::TARGET_F405
     .authentication
     .development_trust_anchors;
 
 #[cfg(all(feature = "abi-authentication", not(feature = "abi-test-fixtures")))]
+/// Trust anchors selected by the active target profile.
 pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targets::TARGET_F405
     .authentication
     .release_trust_anchors;
@@ -209,6 +211,7 @@ impl Platform {
     }
 
     #[cfg(feature = "abi-context-switch")]
+    /// Enables the board scheduler tick at the requested bounded frequency.
     pub(crate) fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
         self.0.enable_scheduler_tick(tick_hz)
     }

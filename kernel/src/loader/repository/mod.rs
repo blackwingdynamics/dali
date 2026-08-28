@@ -210,12 +210,14 @@ where
         .map_err(RepositoryLoaderError::Verification)
 }
 
+/// Internal helper for `parse_envelope`.
 fn parse_envelope<'a, E>(
     bytes: &'a [u8],
 ) -> Result<dali_metadata::SignedEnvelope<'a>, RepositoryLoaderError<E>> {
     parse_signed_envelope(bytes).map_err(|_| RepositoryLoaderError::Decode)
 }
 
+/// Internal helper for `find_target`.
 fn find_target<E>(
     targets: &dali_metadata::TargetsMetadata,
     package_id: PackageId,

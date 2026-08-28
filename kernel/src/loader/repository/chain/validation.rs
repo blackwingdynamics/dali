@@ -1,3 +1,4 @@
+/// Internal helper for `role`.
 fn role<E>(
     root: &RootMetadata,
     expected_role: MetadataRole,
@@ -10,6 +11,7 @@ fn role<E>(
         .ok_or(BinaryRepositoryError::MissingRecord)
 }
 
+/// Internal helper for `map_root_error`.
 fn map_root_error<E>(error: StreamedRoleError<E>) -> BinaryRepositoryError<E> {
     match error {
         StreamedRoleError::UnknownTrustAnchor => BinaryRepositoryError::UnknownTrustAnchor,
@@ -17,6 +19,7 @@ fn map_root_error<E>(error: StreamedRoleError<E>) -> BinaryRepositoryError<E> {
     }
 }
 
+/// Internal helper for `map_role_error`.
 fn map_role_error<E>(error: StreamedRoleError<E>) -> BinaryRepositoryError<E> {
     match error {
         StreamedRoleError::Storage(error) => BinaryRepositoryError::RoleStorage(error),
@@ -28,6 +31,7 @@ fn map_role_error<E>(error: StreamedRoleError<E>) -> BinaryRepositoryError<E> {
     }
 }
 
+/// Internal helper for `same_reference`.
 fn same_reference(
     expected_version: u64,
     expected_length: u32,
@@ -41,6 +45,7 @@ fn same_reference(
         && expected_digest == actual_digest
 }
 
+/// Internal helper for `validate_target_delegation`.
 fn validate_target_delegation<E>(
     target: dali_metadata::TargetPackage,
     delegation: &dali_metadata::DelegationMetadata,

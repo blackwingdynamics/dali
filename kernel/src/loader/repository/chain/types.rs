@@ -87,12 +87,14 @@ pub(crate) union RepositoryMetadataScratch {
 }
 
 impl RepositoryScratch {
+/// Internal helper for `root_parser`.
     fn root_parser(&mut self) -> &mut BinaryRootBodyStreamParser {
         // SAFETY: the loader activates one parser variant at a time and all
         // variants are ManuallyDrop because the union storage is reused.
         unsafe { self.root_parser.assume_init_mut() }
     }
 
+/// Internal helper for `target_verifier`.
     unsafe fn target_verifier(&mut self) -> &mut MaybeUninit<StreamingRoleVerifier> {
         // SAFETY: the target verifier variant is active for role replay.
         unsafe { &mut *core::ptr::addr_of_mut!(self.target_verifier) }
@@ -100,23 +102,27 @@ impl RepositoryScratch {
 }
 
 impl RepositoryMetadataScratch {
+/// Internal helper for `snapshot`.
     unsafe fn snapshot(&mut self) -> &mut MaybeUninit<dali_metadata::SnapshotMetadata> {
         // SAFETY: the snapshot variant is active during timestamp/snapshot
         // verification and reference checks.
         unsafe { &mut *core::ptr::addr_of_mut!(self.snapshot) }
     }
 
+/// Internal helper for `delegation`.
     unsafe fn delegation(&mut self) -> &mut MaybeUninit<dali_metadata::DelegationMetadata> {
         // SAFETY: the delegation variant is active during one package pass.
         unsafe { &mut *core::ptr::addr_of_mut!(self.delegation) }
     }
 
+/// Internal helper for `bundle_parser`.
     unsafe fn bundle_parser(&mut self) -> &mut BinaryBundleBodyStreamParser {
         // SAFETY: the bundle parser variant is active during bundle verification.
         unsafe { self.bundle.assume_init_mut() }
     }
 }
 
+/// Internal helper for `reset_parser`.
 fn reset_parser<P>(slot: &mut P, parser: P) -> &mut P {
     // SAFETY: parser slots are ManuallyDrop union storage and are initialized
     // before each sequential role pass.
@@ -161,7 +167,9 @@ pub struct BinaryRepositoryAuthorization {
 /// Bounded authorization set for one repository verification pass.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BinaryRepositoryAuthorizations {
+/// Internal field `entries`.
     entries: [Option<BinaryRepositoryAuthorization>; MAX_BINARY_REPOSITORY_PACKAGES],
+/// Internal field `length`.
     length: usize,
     /// Durable generation selected by boot recovery.
     pub committed_generation: Option<dali_metadata::TrustStoreRecord>,
@@ -201,6 +209,7 @@ impl BinaryRepositoryAuthorizations {
             .copied()
     }
 
+/// Internal helper for `push`.
     fn push(&mut self, authorization: BinaryRepositoryAuthorization) -> Result<(), ()> {
         let Some(entry) = self.entries.get_mut(self.length) else {
             return Err(());

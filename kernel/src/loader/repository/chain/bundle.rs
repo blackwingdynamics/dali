@@ -2,6 +2,7 @@ use dali_metadata::BundleManifestSummary;
 use super::RepositoryGenerationAdmission;
 
 #[inline(never)]
+/// Internal helper for `admit_bundle_manifest`.
 fn admit_bundle_manifest<S>(
     storage: &mut S,
     root: &RootMetadata,
@@ -39,6 +40,7 @@ where
     Ok(summary)
 }
 
+/// Internal helper for `map_bundle_error`.
 fn map_bundle_error<E>(error: BinaryRepositoryError<E>) -> BinaryRepositoryError<E> {
     match error {
         BinaryRepositoryError::RoleStorage(error) => BinaryRepositoryError::BundleRoleStorage(error),
@@ -48,6 +50,7 @@ fn map_bundle_error<E>(error: BinaryRepositoryError<E>) -> BinaryRepositoryError
     }
 }
 
+/// Internal helper for `validate_bundle_admission`.
 fn validate_bundle_admission<E>(
     summary: BundleManifestSummary,
     request: RepositoryLoadRequest,

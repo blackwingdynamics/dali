@@ -14,6 +14,7 @@ use crate::{
 
 use super::execution::LoadedApplication;
 
+/// Size of the authenticated signature envelope in the v5 format.
 const SIGNATURE_BYTES: usize = v5::SIGNATURE_SIZE;
 
 #[cfg(not(feature = "repository-loader"))]
@@ -40,6 +41,7 @@ where
     load_file_with_key(file, slot_manager, Some(public_key))
 }
 
+/// Loads and authenticates a file using an optional repository-authorized key.
 fn load_file_with_key<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -102,6 +104,7 @@ where
     })
 }
 
+/// Reads the fixed v5 header from the current file position.
 fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v5::HEADER_SIZE], super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -111,6 +114,7 @@ where
     Ok(header)
 }
 
+/// Reads the signature envelope after validating its file bounds.
 fn read_envelope<D>(
     file: &AmrnFile<'_, D>,
     signed_size: u32,
@@ -128,6 +132,7 @@ where
     Ok(envelope)
 }
 
+/// Consumes a bounded number of bytes from the package stream.
 fn skip_bytes<D>(file: &AmrnFile<'_, D>, size: u32) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -142,6 +147,7 @@ where
     Ok(())
 }
 
+/// Selects the header and manifest slot matching the current target.
 fn select_header<'a>(
     bytes: &[u8; v5::HEADER_SIZE],
     envelope: &'a [u8; SIGNATURE_BYTES],
@@ -172,6 +178,7 @@ fn select_header<'a>(
     Err(v5_error(v5::Error::InvalidHeader))
 }
 
+/// Validates package sizes, CRCs, and the authenticated payload stream.
 fn validate_package<D>(
     file: &AmrnFile<'_, D>,
     header: v5::Header<'_>,
@@ -235,6 +242,7 @@ where
         .map_err(super::LoaderError::SignatureVerification)
 }
 
+/// Computes the signed byte length from the decoded image header.
 fn expected_signed_size(header: v3::Header) -> Result<u32, super::LoaderError> {
     v5::HEADER_SIZE
         .try_into()
@@ -252,6 +260,7 @@ fn expected_signed_size(header: v3::Header) -> Result<u32, super::LoaderError> {
         .ok_or(v5_error(v5::Error::InvalidPayload))
 }
 
+/// Streams one payload segment through authentication and CRC state.
 fn read_payload<D>(
     file: &AmrnFile<'_, D>,
     size: u32,
@@ -275,6 +284,7 @@ where
     Ok(())
 }
 
+/// Streams and validates all relocation records in the package.
 fn read_relocations<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -300,6 +310,7 @@ where
     Ok(())
 }
 
+/// Converts validated image addresses into the launch frame.
 fn prepare_launch(
     entry_address: u32,
     stack_origin: u32,
@@ -311,16 +322,19 @@ fn prepare_launch(
     })
 }
 
+/// Reads a little-endian word from a validated v5 header offset.
 fn read_u32(bytes: &[u8; v5::HEADER_SIZE], offset: usize) -> u32 {
     let mut value = [0; 4];
     value.copy_from_slice(&bytes[offset..offset + 4]);
     u32::from_le_bytes(value)
 }
 
+/// Wraps a v5 format error in the pipeline error type.
 fn v5_error(error: v5::Error) -> super::LoaderError {
     super::LoaderError::V5SignedPackage(error)
 }
 
+/// Copies validated segments and applies validated relocations.
 fn copy_segments_and_relocate<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -342,6 +356,7 @@ where
     apply_relocations(file, header, contract)
 }
 
+/// Applies each validated relocation to the copied image.
 fn apply_relocations<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -363,6 +378,7 @@ where
     Ok(())
 }
 
+/// Copies one validated image segment into its target address.
 fn copy_segment<D>(
     file: &AmrnFile<'_, D>,
     destination: u32,
@@ -393,6 +409,7 @@ where
     Ok(())
 }
 
+/// Returns a mutable slice for a segment already proven to be in bounds.
 fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::LoaderError> {
     let length = usize::try_from(size).map_err(|_| v5_error(v5::Error::InvalidPayload))?;
     let target = unsafe {
@@ -402,6 +419,7 @@ fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::
     Ok(target)
 }
 
+/// Clears the validated zero-initialized image segment.
 fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let target = mutable_segment(destination, size)?;
     target.fill(0);

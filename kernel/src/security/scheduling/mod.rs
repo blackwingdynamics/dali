@@ -7,8 +7,10 @@ use crate::runtime::scheduling::{
     storage::{SchedulerStorage, SchedulerStorageError},
 };
 
+/// Scheduler type sized from the active platform context profile.
 type TargetScheduler = Scheduler<{ crate::platform::CONTEXT_CAPACITY }>;
 
+/// Static scheduler storage used during the kernel lifecycle.
 static SCHEDULER_STORAGE: SchedulerStorage<TargetScheduler> = SchedulerStorage::new();
 
 #[cfg(feature = "abi-context-switch")]
@@ -26,6 +28,7 @@ pub(crate) enum SchedulerInitializationError {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/// Errors encountered while accessing the scheduler ownership boundary.
 pub(crate) enum SchedulerAccessError {
     /// The scheduler storage was not ready for an operation.
     Storage(SchedulerStorageError),
@@ -200,6 +203,7 @@ pub(crate) fn on_systick() {
 }
 
 #[cfg(feature = "abi-context-switch")]
+/// Dispatches the platform scheduler tick interrupt.
 #[exception]
 fn SysTick() {
     on_systick();

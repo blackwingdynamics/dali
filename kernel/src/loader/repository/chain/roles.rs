@@ -1,4 +1,5 @@
 #[inline(never)]
+/// Internal helper for `verify_timestamp_and_snapshot`.
 fn verify_timestamp_and_snapshot<S>(
     storage: &mut S,
     root: &RootMetadata,
@@ -56,6 +57,7 @@ where
 }
 
 #[inline(never)]
+/// Internal helper for `verify_revocations`.
 fn verify_revocations<S>(
     storage: &mut S,
     root: &RootMetadata,
@@ -97,6 +99,7 @@ where
 }
 
 #[inline(never)]
+/// Internal helper for `verify_delegation_and_package`.
 fn verify_delegation_and_package<S>(
     context: &mut PackageVerificationContext<'_, S>,
     target: dali_metadata::TargetPackage,
@@ -158,6 +161,7 @@ where
     .map_err(map_amrn_error)
 }
 
+/// Internal helper for `map_amrn_error`.
 fn map_amrn_error<E>(error: amrn::AmrnStreamError<E>) -> BinaryRepositoryError<E> {
     match error {
         amrn::AmrnStreamError::Storage(error) => BinaryRepositoryError::PackageStorage(error),
@@ -171,6 +175,7 @@ fn map_amrn_error<E>(error: amrn::AmrnStreamError<E>) -> BinaryRepositoryError<E
     }
 }
 
+/// Internal helper for `map_targets_error`.
 fn map_targets_error<E>(
     error: streaming::StreamingTargetSelectionError<E>,
 ) -> BinaryRepositoryError<E> {
@@ -187,35 +192,56 @@ fn map_targets_error<E>(
     }
 }
 
+/// Internal implementation state for `PackageVerificationContext`.
 struct PackageVerificationContext<'a, S> {
+/// Internal field `storage`.
     storage: &'a mut S,
+/// Internal field `root`.
     root: &'a RootMetadata,
+/// Internal field `revocations`.
     revocations: &'a dali_metadata::RevocationMetadata,
+/// Internal field `chunk`.
     chunk: &'a mut [u8],
+/// Internal field `amrn_buffers`.
     amrn_buffers: &'a mut amrn::AmrnStreamBuffers,
+/// Internal field `delegation_reference`.
     delegation_reference: dali_metadata::DelegationReference,
+/// Internal field `delegation_output`.
     delegation_output: &'a mut MaybeUninit<dali_metadata::DelegationMetadata>,
+/// Internal field `role_verifier`.
     role_verifier: &'a mut MaybeUninit<StreamingRoleVerifier>,
+/// Internal field `progress`.
     progress: fn() -> bool,
 }
 
+/// Internal implementation state for `RoleVerificationInput`.
 struct RoleVerificationInput<'a> {
+/// Internal field `chunk`.
     chunk: &'a mut [u8],
+/// Internal field `progress`.
     progress: fn() -> bool,
 }
 
+/// Internal implementation state for `RoleVerificationContext`.
 struct RoleVerificationContext<'a, T> {
+/// Internal field `output`.
     output: &'a mut MaybeUninit<T>,
+/// Internal field `role_verifier`.
     role_verifier: &'a mut MaybeUninit<StreamingRoleVerifier>,
+/// Internal field `input`.
     input: RoleVerificationInput<'a>,
 }
 
+/// Internal implementation state for `RoleVerificationPolicy`.
 struct RoleVerificationPolicy<'a> {
+/// Internal field `role`.
     role: RoleDefinition,
+/// Internal field `keys`.
     keys: &'a [RoleKey],
 }
 
 #[inline(never)]
+/// Internal helper for `verify_role_from_root`.
 fn verify_role_from_root<S, P>(
     storage: &mut S,
     document: RepositoryDocument<'_>,

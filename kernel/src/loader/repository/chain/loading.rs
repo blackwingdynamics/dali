@@ -25,6 +25,7 @@ where
     )
 }
 
+/// Internal helper for `no_repository_progress`.
 fn no_repository_progress() -> bool {
     true
 }
@@ -140,6 +141,7 @@ where
     Ok(authorizations)
 }
 
+/// Internal helper for `select_targets_into`.
 fn select_targets_into<S>(
     storage: &mut S,
     request: RepositoryLoadRequest,
@@ -180,6 +182,7 @@ where
     Ok(targets)
 }
 
+/// Internal helper for `collect_delegation_references`.
 fn collect_delegation_references<E>(
     snapshot: &dali_metadata::SnapshotMetadata,
     targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
@@ -205,6 +208,7 @@ fn collect_delegation_references<E>(
     Ok(())
 }
 
+/// Internal helper for `verify_packages_into`.
 fn verify_packages_into<S, F>(
     storage: &mut S,
     root: &RootMetadata,
@@ -251,11 +255,18 @@ where
     Ok(authorizations)
 }
 
+/// Internal implementation state for `PackageVerificationPass`.
 struct PackageVerificationPass<'a, F> {
+/// Internal field `chunk`.
     chunk: &'a mut [u8],
+/// Internal field `amrn_buffers`.
     amrn_buffers: &'a mut amrn::AmrnStreamBuffers,
+/// Internal field `delegation_output`.
     delegation_output: &'a mut MaybeUninit<dali_metadata::DelegationMetadata>,
+/// Internal field `role_verifier`.
     role_verifier: &'a mut MaybeUninit<StreamingRoleVerifier>,
+/// Internal field `contract_for`.
     contract_for: &'a mut F,
+/// Internal field `progress`.
     progress: fn() -> bool,
 }
