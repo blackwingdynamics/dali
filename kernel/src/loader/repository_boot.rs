@@ -31,10 +31,10 @@ where
     D: embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
 {
     let device = crate::drivers::BlockDeviceRef::new(&device);
-    let target = crate::platform::target_profile().ok_or(LoaderError::CurrentAbiCartridge(
-        dali_amrn::v2::Error::InvalidHeader,
-    ))?;
-    let target_profile = dali_metadata::BoundedText::new(target.name)
+    let target_profile = crate::platform::target_profile().ok_or(
+        LoaderError::CurrentAbiCartridge(dali_amrn::v2::Error::InvalidHeader),
+    )?;
+    let target_profile_name = dali_metadata::BoundedText::new(target_profile.name)
         .map_err(|_| LoaderError::CurrentAbiCartridge(dali_amrn::v2::Error::InvalidHeader))?;
     let committed_generation = committed_generation
         .map(|generation| {
@@ -48,7 +48,7 @@ where
         .map_err(map_repository_error)?;
     let request = repository::RepositoryLoadRequest {
         cartridge_id: None,
-        target_profile,
+        target_profile: target_profile_name,
         contract: None,
         now: None,
         committed_generation,
@@ -57,7 +57,7 @@ where
     let mut storage = crate::storage::filesystem::FatRepositoryStorage::new_with_format_and_pet(
         device,
         crate::storage::filesystem::RepositoryMetadataFormat::BinaryV2,
-        repository_verification_progress,
+        repository_chunk_pet,
     );
     let authorizations = with_binary_repository_buffers(|buffers| {
         repository::load_binary_repository_with_contract(
@@ -66,14 +66,14 @@ where
             crate::platform::trust_anchors(),
             buffers,
             |target| {
-                let isolation = target.memory.isolation?;
+                let isolation = target_profile.memory.isolation?;
                 let slot = isolation
                     .slots
                     .iter()
                     .copied()
                     .find(|slot| slot.id == target.slot_id)?;
                 Some(dali_amrn::v3::Contract {
-                    target_id: target.amrn_target_id,
+                    target_id: target_profile.amrn_target_id,
                     code_load_address: slot.code_origin,
                     code_capacity: slot.code_length,
                     data_load_address: slot.data_origin,
@@ -120,6 +120,12 @@ where
         }
     }
     Ok(loaded)
+}
+
+/// Provides the bounded repository storage progress hook.
+#[cfg(feature = "repository-loader")]
+fn repository_chunk_pet() -> Result<(), crate::drivers::StorageError> {
+    Ok(())
 }
 
 /// Keeps repository verification progressing when no interrupt-owned service
