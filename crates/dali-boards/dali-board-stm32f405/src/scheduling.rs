@@ -47,3 +47,21 @@ unsafe extern "C" fn pendsv_handler() -> ! {
         exception_return = const CONTEXT_EXCEPTION_RETURN_OFFSET,
     );
 }
+
+#[cfg(all(target_arch = "arm", not(feature = "abi-context-switch")))]
+#[unsafe(export_name = "PendSV")]
+#[unsafe(naked)]
+unsafe extern "C" fn launch_handler() -> ! {
+    const CONTROL_UNPRIVILEGED_PSP: u32 = 0b11;
+    const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
+
+    core::arch::naked_asm!(
+        "mov r0, {control}",
+        "msr CONTROL, r0",
+        "isb",
+        "mov lr, {exception_return}",
+        "bx lr",
+        control = const CONTROL_UNPRIVILEGED_PSP,
+        exception_return = const EXC_RETURN_THREAD_PSP_BASIC,
+    );
+}

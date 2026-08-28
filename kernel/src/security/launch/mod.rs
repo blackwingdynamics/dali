@@ -10,9 +10,6 @@ const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
 const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
 /// Link value used by non-returning synthetic frames.
 const NON_RETURNING_LINK: u32 = 0;
-#[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
-/// CONTROL value selecting unprivileged Thread mode with PSP.
-const CONTROL_UNPRIVILEGED_PSP: u32 = 0b11;
 /// CONTROL value selecting privileged Thread mode with MSP.
 const CONTROL_PRIVILEGED_MSP: u32 = 0;
 
@@ -141,26 +138,6 @@ extern "C" fn fault_recovery() -> ! {
         crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
             crate::platform::wait_for_registered_interrupt();
         },
-    }
-}
-
-/// Returns from the privileged PendSV handler into the prepared PSP frame.
-#[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
-#[unsafe(export_name = "PendSV")]
-unsafe extern "C" fn pendsv_handler() -> ! {
-    unsafe {
-        // SAFETY: PendSV runs in privileged Handler mode. The kernel selected
-        // the validated PSP before setting PENDSVSET and owns this transition.
-        core::arch::asm!(
-            "mov r0, {control}",
-            "msr CONTROL, r0",
-            "isb",
-            "mov lr, {exception_return}",
-            "bx lr",
-            control = const CONTROL_UNPRIVILEGED_PSP,
-            exception_return = const EXC_RETURN_THREAD_PSP_BASIC,
-            options(noreturn),
-        );
     }
 }
 

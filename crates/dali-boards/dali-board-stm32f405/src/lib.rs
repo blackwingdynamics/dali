@@ -16,7 +16,7 @@ mod exceptions;
 mod logging;
 #[cfg(feature = "abi-mpu")]
 mod mpu;
-#[cfg(feature = "abi-context-switch")]
+#[cfg(any(feature = "abi-context-switch", feature = "abi-mpu"))]
 mod scheduling;
 mod watchdog;
 
