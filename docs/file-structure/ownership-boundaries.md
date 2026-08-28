@@ -4,7 +4,7 @@
   and privileged activation of application regions.
 - `kernel/src/platform/mod.rs` and `kernel/src/platform/` own the platform facade
   and target-specific entry points; backend ownership and contributor workflow are defined in
-  `docs/PLATFORM_BACKENDS.md`.
+  `docs/platform-backends/README.md`.
 - `kernel/src/platform/f405/sdio.rs` and `kernel/src/platform/f405/sdio_raw/`
   own the F405 PAC/HAL SDIO transport;
   bootstrap consumes it only through the platform facade.

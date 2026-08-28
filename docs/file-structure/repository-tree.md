@@ -200,6 +200,12 @@ dali-kernel/
 │   │   ├── ownership-and-boundaries.md
 │   │   ├── manifest-contract.md
 │   │   └── validation-and-generation.md
+│   ├── platform-backends/           # Platform backend ownership and onboarding
+│   │   ├── README.md
+│   │   ├── ownership-and-boundaries.md
+│   │   ├── target-profile-versus-backend.md
+│   │   ├── adding-a-target.md
+│   │   └── compatibility-rule.md
 │   ├── target-manifest/            # Categorized target manifest documentation
 │   │   ├── README.md
 │   │   ├── clock-bus-and-display.md, memory-pins-and-key.md
