@@ -11,6 +11,10 @@ members = [
     "crates/dali-sdk",
     "crates/dali-cli",
     "crates/dali-targets",
+    "crates/dali-boards",
+    "crates/dali-kernel-api",
+    "crates/dali-boards/dali-board-stm32f405",
+    "crates/dali-firmware",
 ]
 resolver = "2"
 
