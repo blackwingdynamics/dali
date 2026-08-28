@@ -140,6 +140,7 @@ dali-kernel/
 │   ├── architecture/             # Categorized architecture and protocol docs
 │   ├── development/              # Setup, build, flash, and debugging docs
 │   ├── ROADMAP.md, MVP_ACCEPTANCE.md, SECURITY.md
+│   ├── mvp-acceptance/             # Categorized MVP acceptance documentation
 │   ├── CODING_STANDARDS.md, VERSIONING.md
 │   ├── TARGET_PROFILES.md
 │   ├── target-manifest/            # Categorized target manifest documentation

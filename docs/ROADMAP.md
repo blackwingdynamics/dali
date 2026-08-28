@@ -89,7 +89,7 @@ pending.
 Completion requires implementation, relevant host/target validation, and
 hardware evidence when the behavior depends on a physical target. The
 canonical records are [`docs/testing/README.md`](testing/README.md),
-[`docs/MVP_ACCEPTANCE.md`](MVP_ACCEPTANCE.md), and
+[`docs/mvp-acceptance/README.md`](mvp-acceptance/README.md), and
 [`docs/SECURITY.md`](SECURITY.md).
 
 The completed security claims are scoped to the configured STM32F405 path.

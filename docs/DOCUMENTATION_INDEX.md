@@ -19,7 +19,7 @@ Read the documents in this order:
 8. [Development](development/README.md) — build, flash, logging, and debugging workflow.
 9. [Application Workflow](APPLICATION_WORKFLOW.md) — build, package, install, and validate an application.
 10. [Testing](testing/README.md) — categorized host, target, and hardware testing documentation.
-11. [MVP Acceptance](MVP_ACCEPTANCE.md) — the physical STM32F405 end-to-end acceptance procedure.
+11. [MVP Acceptance](mvp-acceptance/README.md) — the physical STM32F405 end-to-end acceptance procedure.
 12. [Versioning](VERSIONING.md) — component versions, ABI compatibility, and release tags.
 13. [Security](SECURITY.md) — current guarantees, non-guarantees, and post-MVP security work.
 14. [Package Distribution](package-distribution/README.md) — normative multi-developer trust, metadata, update, and acceptance contract.

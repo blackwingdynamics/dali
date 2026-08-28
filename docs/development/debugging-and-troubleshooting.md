@@ -44,4 +44,4 @@ Confirm that the board is in DFU mode, the USB cable supports data, the board is
 
 ### Kernel check succeeds but hardware behavior is wrong
 
-Compilation and target checks do not validate wiring, clock behavior, SD electrical levels, or application execution. Record the failure as hardware evidence and follow `docs/MVP_ACCEPTANCE.md`.
+Compilation and target checks do not validate wiring, clock behavior, SD electrical levels, or application execution. Record the failure as hardware evidence and follow `docs/mvp-acceptance/README.md`.
