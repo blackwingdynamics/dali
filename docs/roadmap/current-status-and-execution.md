@@ -9,7 +9,7 @@ acceptance boundary, and backlog.
 | --- | --- | --- |
 | [01 — Kernel Core and Security](01-kernel-core-and-security.md) | **Completed** | F405 feature-gated core, MPU, bounded DMA policy, trust path, watchdog, and storage recovery |
 | [02 — Hardware Drivers and System Subsystems](02-hardware-drivers-and-subsystems.md) | **Completed, device validation pending** | Driver contracts, F405 backend coverage, and bounded I2C recovery; physical I2C device interoperability awaits laboratory measurement |
-| [03 — System GUI and Launcher](03-system-gui-and-launcher.md) | **Implementation complete, hardware validation pending** | Manifest-driven I2C OLED diagnostics console; physical OLED ACK and rendering evidence awaits laboratory measurement |
+| [03 — System GUI and Launcher](03-system-gui-and-launcher.md) | **Future — Dali BIOS backlog** | Full launcher and GUI architecture; the separate I2C OLED diagnostics console is tracked under the hardware-driver roadmap |
 | [04 — First-Stage Bootloader](04-first-stage-bootloader.md) | **Future** | Pre-reset kernel-image verification and FSBL/ROM handoff |
 
 ## Current execution roadmap
