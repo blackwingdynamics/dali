@@ -63,7 +63,7 @@ identifier, version, and target scope.
 
 For the complete new-developer key, authorization, build, SD-card, and F405
 acceptance procedure, see
-[`docs/cli/BINARY_V2_DEVELOPER_WORKFLOW.md`](cli/BINARY_V2_DEVELOPER_WORKFLOW.md).
+[`docs/cli/BINARY_V2_DEVELOPER_WORKFLOW.md`](../cli/BINARY_V2_DEVELOPER_WORKFLOW.md).
 
 The host CLI exposes the first repository-bundle workflow:
 

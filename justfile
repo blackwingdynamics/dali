@@ -119,6 +119,10 @@ attach board="f405":
 diff-check:
     git diff --check
 
+# Check internal Markdown links and documented repository paths.
+docs-check:
+    python3 scripts/check-docs.py
+
 # Remove Cargo build artifacts.
 clean:
     cargo clean

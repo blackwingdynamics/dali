@@ -31,6 +31,16 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+  documentation:
+    name: Documentation validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate internal Markdown links
+        run: python3 scripts/check-docs.py
+
   host:
     name: Host workspace checks
     runs-on: ubuntu-latest

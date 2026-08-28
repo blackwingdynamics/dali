@@ -26,14 +26,14 @@ git-cliff --tag "$version" --latest --output "$archive_file"
         | sort -Vr \
         | while IFS= read -r file; do
             name=$(basename "$file" .md)
-            printf -- '- [%s](%s)\n' "$name" "$file"
+            printf -- '- [%s](%s.md)\n' "$name" "$name"
         done
 } > "$index_file"
 
 {
     printf '%s\n\n' '# Changelog'
     printf '%s\n\n' 'All notable changes to Dali OS are documented in this file.'
-    printf '%s\n\n' 'The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and released versions follow the rules in [VERSIONING.md](docs/VERSIONING.md). Release entries are generated automatically from Conventional Commits.'
+    printf '%s\n\n' 'The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and released versions follow the rules in [versioning documentation](docs/versioning/README.md). Release entries are generated automatically from Conventional Commits.'
     printf '%s\n\n' '## [Unreleased]'
     printf '%s\n\n' 'No manual entries are maintained here. Changes are collected from commit history and archived when a release tag is published.'
     printf '%s\n\n' '## Releases'
