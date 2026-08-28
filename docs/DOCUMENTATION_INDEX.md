@@ -14,7 +14,7 @@ Read the documents in this order:
 4. [Coding Standards](coding-standards/README.md) — mandatory code, comment, safety, and review rules.
 5. [AMRN Format](amrn-format/README.md) — binary package layout and validation rules.
 6. [ABI](abi/README.md) — kernel-to-application execution contract.
-7. [Hardware](HARDWARE.md) — STM32F405 MVP board, pins, clock, SD wiring, and electrical assumptions.
+7. [Hardware](hardware/README.md) — STM32F405 MVP board, pins, clock, SD wiring, and electrical assumptions.
 8. [Development](development/README.md) — build, flash, logging, and debugging workflow.
 9. [Application Workflow](application-workflow/README.md) — build, package, install, and validate an application.
 10. [Testing](testing/README.md) — categorized host, target, and hardware testing documentation.

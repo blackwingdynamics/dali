@@ -32,7 +32,7 @@ Read the relevant documents before making a change:
 - `docs/architecture/README.md` — system boundaries and MVP scope;
 - `docs/amrn-format/README.md` — package bytes and validation rules;
 - `docs/abi/README.md` — kernel/application execution contract;
-- `docs/HARDWARE.md` — board, pins, clock, and SRAM layout;
+- `docs/hardware/README.md` — board, pins, clock, and SRAM layout;
 - `docs/coding-standards/README.md` — code, comments, unsafe, testing, and review rules;
 - `docs/roadmap/README.md` — atomic implementation order;
 - `docs/testing/README.md` — test strategy;

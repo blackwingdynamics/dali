@@ -133,7 +133,12 @@ dali-kernel/
 │   │   └── build/                 # Manifest loader, validation, and generators
 │   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
-│   ├── HARDWARE.md
+│   ├── hardware/                   # Boards, memory, electrical, and acceptance docs
+│   │   ├── README.md
+│   │   ├── boards-and-memory.md
+│   │   ├── f405-sdio-and-loader.md
+│   │   ├── multi-slot-isolation.md
+│   │   └── electrical-clock-and-acceptance.md
 │   ├── abi/                        # Categorized kernel-application ABI docs
 │   │   ├── README.md
 │   │   ├── fault-boundary.md, isolation-overview.md
