@@ -195,7 +195,8 @@ dali-kernel/
 │   │   ├── language-hardcoding-and-discipline.md
 │   │   ├── modules-naming-and-logging.md
 │   │   ├── safety-errors-and-realtime.md
-│   │   └── testing-review-and-prohibited-practices.md
+│   │   ├── testing-review-and-prohibited-practices.md
+│   │   └── terminology-and-style.md
 │   ├── target-profiles/             # Target profile ownership and manifest docs
 │   │   ├── README.md
 │   │   ├── ownership-and-boundaries.md

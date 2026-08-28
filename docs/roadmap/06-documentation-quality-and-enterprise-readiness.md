@@ -16,7 +16,7 @@ approval.
 
 ## 2. Terminology and writing consistency
 
-- [ ] Define a project-wide terminology and naming guide.
+- [x] Define a project-wide terminology and naming guide.
 - [ ] Standardize terms for targets, profiles, backends, manifests, phases,
   evidence, guarantees, and limitations.
 - [ ] Apply consistent heading hierarchy, link style, command formatting, and

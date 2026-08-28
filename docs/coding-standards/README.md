@@ -11,3 +11,4 @@ standards documentation. The files below contain its topic-oriented sections.
 - [Safety, errors, and realtime](safety-errors-and-realtime.md)
 - [Modules, naming, and logging](modules-naming-and-logging.md)
 - [Testing, review, and prohibited practices](testing-review-and-prohibited-practices.md)
+- [Terminology and documentation style](terminology-and-style.md)
