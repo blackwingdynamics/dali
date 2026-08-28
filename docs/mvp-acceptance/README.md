@@ -1,8 +1,8 @@
 # MVP Acceptance Documentation
 
 This directory contains the MVP acceptance procedure and recorded evidence
-organized by topic. The original top-level document remains available as the
-canonical reference until the split is approved.
+organized by topic. This directory is the canonical source for MVP acceptance
+requirements and recorded physical evidence.
 
 ## Prepared sections
 
