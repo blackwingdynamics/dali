@@ -46,7 +46,7 @@ where
 
     /// Returns the selected backend memory contract.
     #[cfg(feature = "abi-mpu")]
-    pub(crate) const fn memory() -> dali_targets::MemoryProfile {
+    pub(crate) fn memory() -> dali_targets::MemoryProfile {
         B::info().memory
     }
 
