@@ -11,8 +11,7 @@ pub mod loader;
 #[path = "loader/contract/mod.rs"]
 pub mod loader_contract;
 #[cfg(feature = "repository-loader")]
-#[path = "loader/repository/mod.rs"]
-pub mod repository_loader;
+pub use loader::repository as repository_loader;
 #[cfg(feature = "repository-loader")]
 pub use repository_loader::streaming as repository_streaming;
 pub mod logging;

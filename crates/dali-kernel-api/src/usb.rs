@@ -22,3 +22,12 @@ pub trait UsbResetDelay {
     /// Delays for the backend-defined interval.
     fn delay_ms(&mut self, milliseconds: u32);
 }
+
+/// Opaque USB interrupt operations supplied by a board backend.
+#[derive(Clone, Copy)]
+pub struct UsbOperations {
+    /// Services the board-owned USB device through the kernel sink callback.
+    pub service_irq: fn(fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink)),
+    /// Pends the board-owned USB interrupt.
+    pub pend_irq: fn(),
+}

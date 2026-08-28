@@ -10,10 +10,12 @@ pub mod storage;
 #[cfg(feature = "usb-cdc")]
 pub mod usb;
 
-pub use architecture::{ArchitectureBackend, ArchitectureOperations};
+pub use architecture::{
+    ARMV7M_SAVED_CONTEXT, ArchitectureBackend, ArchitectureOperations, SavedContextLayout,
+};
 pub use board::{
     BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionOperations, ResetCause,
     WatchdogBackend,
 };
 #[cfg(feature = "usb-cdc")]
-pub use usb::{UsbBusReset, UsbResetDelay, UsbResources};
+pub use usb::{UsbOperations, UsbResetDelay, UsbResources};

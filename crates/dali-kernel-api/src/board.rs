@@ -114,10 +114,6 @@ pub trait BoardBackend {
         + StorageLifecycleControl
         + BlockWriter
         + BlockTransportFlush<Error = crate::storage::StorageError>;
-    /// Board-owned USB resources used by the optional CDC logger.
-    #[cfg(feature = "usb-cdc")]
-    type UsbResources: crate::usb::UsbResources;
-
     /// Returns memory-protection operations when the backend provides them.
     fn memory_protection_operations() -> Option<MemoryProtectionOperations> {
         None
@@ -155,13 +151,13 @@ pub trait BoardBackend {
     /// Reports whether native application execution is supported.
     fn application_execution_supported() -> bool;
 
-    /// Transfers USB resources to the kernel logging owner.
+    /// Initializes the board-owned USB logger state.
     #[cfg(feature = "usb-cdc")]
-    fn take_usb_resources(&mut self) -> Option<Self::UsbResources>;
+    fn initialize_usb(&mut self, force_reenumeration: bool) -> bool;
 
-    /// Enables the backend USB interrupt after logger initialization.
+    /// Returns opaque operations for the board-owned USB device.
     #[cfg(feature = "usb-cdc")]
-    fn unmask_usb_irq();
+    fn usb_operations() -> Option<crate::usb::UsbOperations>;
 
     /// Pends the backend USB interrupt after a log enqueue.
     #[cfg(feature = "usb-cdc")]

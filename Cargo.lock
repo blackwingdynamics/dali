@@ -184,10 +184,12 @@ name = "dali-board-stm32f405"
 version = "0.1.0-alpha.2"
 dependencies = [
  "cortex-m",
+ "critical-section",
  "dali-amrn",
  "dali-driver-api",
  "dali-kernel-api",
  "dali-targets",
+ "dali-usb",
  "fugit",
  "rtt-target",
  "stm32f4xx-hal",

@@ -10,8 +10,10 @@ license = "MIT OR Apache-2.0"
 dali-kernel-api = { path = "../../dali-kernel-api" }
 dali-amrn = { path = "../../dali-amrn" }
 dali-driver-api = { path = "../../dali-driver-api" }
+dali-usb = { path = "../../dali-usb" }
 dali-targets = { path = "../../dali-targets" }
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+critical-section = "1.2"
 rtt-target = "0.6"
 usb-device = { version = "=0.3.2", optional = true }
 usbd-serial = { version = "=0.2.2", optional = true }

@@ -16,9 +16,6 @@ mod buffer {
 }
 mod rtt;
 #[cfg(feature = "usb-cdc")]
-pub(crate) mod usb_cdc;
-
-#[cfg(feature = "usb-cdc")]
 use buffer::{LogLine, LogQueue};
 
 #[cfg(feature = "usb-cdc")]
@@ -74,20 +71,17 @@ pub fn initialize() {
     rtt::initialize();
 }
 
-/// Initializes the optional USB CDC logging backend.
-#[cfg(feature = "usb-cdc")]
-pub(crate) fn initialize_usb(
-    resources: crate::platform::UsbResources,
-    force_reenumeration: bool,
-    delay: &mut dyn usb_cdc::UsbResetDelay,
-) {
-    usb_cdc::initialize(resources, force_reenumeration, delay);
-}
-
 /// Services the optional USB CDC device state machine from its interrupt.
 #[cfg(feature = "usb-cdc")]
 pub(crate) fn service_usb_irq() {
-    usb_cdc::service_irq(drain_usb_queue);
+    crate::platform::service_usb_irq(drain_usb_queue);
+}
+
+/// Entry point called by the selected board's USB interrupt wrapper.
+#[cfg(feature = "usb-cdc")]
+#[unsafe(export_name = "dali_kernel_service_usb_irq")]
+pub extern "C" fn dali_kernel_service_usb_irq() {
+    service_usb_irq();
 }
 
 /// Writes a structured, allocation-free message to the selected backend.

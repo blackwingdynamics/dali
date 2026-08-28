@@ -24,8 +24,6 @@ impl dali_kernel_api::BoardBackend for board::Board {
     type UserKey = board::UserKey;
     type Watchdog = crate::F405Watchdog;
     type StorageReader = sdio::SdioBlockReader;
-    #[cfg(feature = "usb-cdc")]
-    type UsbResources = board::UsbResources;
 
     fn memory_protection_operations() -> Option<dali_kernel_api::MemoryProtectionOperations> {
         #[cfg(feature = "abi-mpu")]
@@ -95,18 +93,21 @@ impl dali_kernel_api::BoardBackend for board::Board {
     }
 
     #[cfg(feature = "usb-cdc")]
-    fn take_usb_resources(&mut self) -> Option<Self::UsbResources> {
-        self.take_usb_resources()
+    fn initialize_usb(&mut self, force_reenumeration: bool) -> bool {
+        board::usb::initialize(self, force_reenumeration)
     }
 
     #[cfg(feature = "usb-cdc")]
-    fn unmask_usb_irq() {
-        board::unmask_usb_irq();
+    fn usb_operations() -> Option<dali_kernel_api::UsbOperations> {
+        Some(dali_kernel_api::UsbOperations {
+            service_irq: board::usb::service_irq,
+            pend_irq: board::pend_usb_irq,
+        })
     }
 
     #[cfg(feature = "usb-cdc")]
     fn pend_usb_irq() {
-        board::pend_usb_irq();
+        board::usb::pend_usb_irq();
     }
 
     #[cfg(feature = "abi-context-switch")]
@@ -124,6 +125,19 @@ impl dali_kernel_api::BoardBackend for board::Board {
 use stm32f4xx_hal::pac;
 #[cfg(any(feature = "usb-cdc", feature = "driver-hardware-test"))]
 use stm32f4xx_hal::pac::interrupt;
+
+#[cfg(feature = "usb-cdc")]
+unsafe extern "C" {
+    fn dali_kernel_service_usb_irq();
+}
+
+#[cfg(feature = "usb-cdc")]
+#[interrupt]
+fn OTG_FS() {
+    // SAFETY: The private firmware composition links this symbol from the
+    // kernel and installs this handler as the sole OTG_FS interrupt owner.
+    unsafe { dali_kernel_service_usb_irq() };
+}
 
 #[cfg(feature = "driver-hardware-test")]
 const USER_KEY_EXTI_MASK: u32 = 1_u32 << 13;

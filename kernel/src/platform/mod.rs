@@ -16,6 +16,12 @@ static ARCHITECTURE: critical_section::Mutex<
     core::cell::RefCell<Option<dali_kernel_api::ArchitectureOperations>>,
 > = critical_section::Mutex::new(core::cell::RefCell::new(None));
 
+/// USB operations registered by the selected firmware composition.
+#[cfg(feature = "usb-cdc")]
+static USB_OPERATIONS: critical_section::Mutex<
+    core::cell::RefCell<Option<dali_kernel_api::UsbOperations>>,
+> = critical_section::Mutex::new(core::cell::RefCell::new(None));
+
 /// Memory-protection operations registered by the selected backend.
 #[cfg(feature = "abi-mpu")]
 static MEMORY_PROTECTION: critical_section::Mutex<
@@ -125,6 +131,13 @@ where
             let mut info = BOARD_INFO.borrow(cs).borrow_mut();
             if info.is_none() {
                 *info = Some(B::info());
+            }
+        });
+        #[cfg(feature = "usb-cdc")]
+        critical_section::with(|cs| {
+            let mut operations = USB_OPERATIONS.borrow(cs).borrow_mut();
+            if operations.is_none() {
+                *operations = B::usb_operations();
             }
         });
         Ok(Self {
@@ -254,6 +267,12 @@ where
         self.backend.poll_user_key();
     }
 
+    /// Initializes board-owned USB state without exposing its concrete types.
+    #[cfg(feature = "usb-cdc")]
+    pub(crate) fn initialize_usb(&mut self, force_reenumeration: bool) -> bool {
+        self.backend.initialize_usb(force_reenumeration)
+    }
+
     /// Takes the initialized storage reader.
     #[cfg(feature = "sdio")]
     pub(crate) fn take_sdio_reader(&mut self) -> Option<B::StorageReader> {
@@ -297,5 +316,21 @@ where
     #[cfg(feature = "driver-hardware-test")]
     pub(crate) fn run_driver_timeout_probe(&mut self) {
         self.backend.run_driver_timeout_probe();
+    }
+}
+
+/// Services the registered board USB backend through a kernel-owned callback.
+#[cfg(feature = "usb-cdc")]
+pub(crate) fn service_usb_irq(drain: fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink)) {
+    if let Some(operations) = critical_section::with(|cs| *USB_OPERATIONS.borrow(cs).borrow()) {
+        (operations.service_irq)(drain);
+    }
+}
+
+/// Pends the registered board USB interrupt.
+#[cfg(feature = "usb-cdc")]
+pub(crate) fn pend_usb_irq() {
+    if let Some(operations) = critical_section::with(|cs| *USB_OPERATIONS.borrow(cs).borrow()) {
+        (operations.pend_irq)();
     }
 }

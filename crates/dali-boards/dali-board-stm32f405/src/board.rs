@@ -19,14 +19,14 @@ mod input;
 mod scheduler;
 #[cfg(feature = "usb-cdc")]
 #[path = "board/usb.rs"]
-mod usb;
+pub(crate) mod usb;
 
 #[cfg(feature = "abi-context-switch")]
 pub(crate) use scheduler::enable_scheduler_tick;
 #[cfg(feature = "usb-cdc")]
 pub use usb::UsbResources;
 #[cfg(feature = "usb-cdc")]
-pub(crate) use usb::{pend_usb_irq, unmask_usb_irq};
+pub(crate) use usb::pend_usb_irq;
 
 /// System clock target derived from the declarative F405 target profile.
 pub const SYSTEM_CLOCK_HZ: u32 = config::SYSTEM_CLOCK_HZ;

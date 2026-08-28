@@ -118,13 +118,7 @@ where
         );
     }
     #[cfg(feature = "usb-cdc")]
-    if let Some(resources) = board.take_usb_resources() {
-        logging::initialize_usb(
-            resources,
-            boot_mode == lifecycle::status::BootMode::SafeMode,
-            &mut board,
-        );
-    } else {
+    if !board.initialize_usb(boot_mode == lifecycle::status::BootMode::SafeMode) {
         logging::error(
             logging::BOOT_SUBSYSTEM,
             format_args!("[USB] USB resources unavailable"),
