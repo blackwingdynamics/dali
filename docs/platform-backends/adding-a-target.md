@@ -43,6 +43,38 @@ changes to existing backend directories or shared kernel policy. If a new
 backend requires such a change, stop and refine the boundary before adding
 the board.
 
+## Required board documentation
+
+Every new board must add a board-local documentation directory at
+`docs/boards/<board-id>/`. The directory must contain the following minimum
+set before the board can enter hardware acceptance:
+
+```text
+docs/boards/<board-id>/
+├── README.md                 # Navigation index only
+├── pinout-and-clocks.md      # Board identity, pins, clocks, and signals
+├── memory-map.md             # Memory regions, linker ownership, and DMA limits
+├── schematics.md             # Verified wiring record or schematic references
+└── hardware-evidence.md      # Test setup, traces, results, and open limitations
+```
+
+These documents must state the board revision, MCU or programmable device,
+target triple, power and ground requirements, debug connection, peripheral
+pin mapping, clock sources, memory and DMA constraints, and supported or
+unsupported capabilities. `hardware-evidence.md` must identify the firmware
+revision, validation transport, expected and observed results, and the exact
+evidence boundary for every claimed physical capability.
+
+`README.md` is an index and must contain links to the board documents; it must
+not become a second source of hardware facts. Additional focused documents
+may be added when a board has special power, peripherals, FPGA constraints,
+or bring-up procedures. Those documents must remain inside the same
+`docs/boards/<board-id>/` directory and be linked from its README.
+
+The board directory is authoritative for physical board facts. Generic
+architecture, testing, and platform documents must link to it instead of
+duplicating board-specific pinouts, wiring, clocks, or memory claims.
+
 ## Compile-time selection
 
 The selected backend must be isolated at compile time. A backend-specific
