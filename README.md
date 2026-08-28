@@ -109,14 +109,14 @@ Start with the [Documentation Index](docs/DOCUMENTATION_INDEX.md). Key documents
 - [Roadmap](docs/ROADMAP.md)
 - [AMRN Format](docs/amrn-format/README.md)
 - [Kernel–Application ABI](docs/abi/README.md)
-- [Coding Standards](docs/CODING_STANDARDS.md)
+- [Coding Standards](docs/coding-standards/README.md)
 - [Contributing](CONTRIBUTING.md)
 
 Changes are tracked in the [Changelog](CHANGELOG.md).
 
 ## Contributing
 
-Contributions must follow [CONTRIBUTING.md](CONTRIBUTING.md) and [CODING_STANDARDS.md](docs/CODING_STANDARDS.md). All changes are expected to include appropriate tests, hardware evidence, or documentation updates.
+Contributions must follow [CONTRIBUTING.md](CONTRIBUTING.md) and [coding standards](docs/coding-standards/README.md). All changes are expected to include appropriate tests, hardware evidence, or documentation updates.
 
 ## License
 

@@ -139,9 +139,10 @@ dali-kernel/
 │   ├── amrn-format/               # Categorized AMRN format documentation
 │   ├── architecture/             # Categorized architecture and protocol docs
 │   ├── development/              # Setup, build, flash, and debugging docs
-│   ├── ROADMAP.md, MVP_ACCEPTANCE.md, SECURITY.md
+│   ├── ROADMAP.md, SECURITY.md
 │   ├── mvp-acceptance/             # Categorized MVP acceptance documentation
-│   ├── CODING_STANDARDS.md, VERSIONING.md
+│   ├── VERSIONING.md
+│   ├── coding-standards/           # Categorized coding policy documentation
 │   ├── TARGET_PROFILES.md
 │   ├── target-manifest/            # Categorized target manifest documentation
 │   ├── APPLICATION_WORKFLOW.md, DOCUMENTATION_INDEX.md

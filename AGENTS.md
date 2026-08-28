@@ -33,7 +33,7 @@ Read the relevant documents before making a change:
 - `docs/amrn-format/README.md` — package bytes and validation rules;
 - `docs/abi/README.md` — kernel/application execution contract;
 - `docs/HARDWARE.md` — board, pins, clock, and SRAM layout;
-- `docs/CODING_STANDARDS.md` — code, comments, unsafe, testing, and review rules;
+- `docs/coding-standards/README.md` — code, comments, unsafe, testing, and review rules;
 - `docs/ROADMAP.md` — atomic implementation order;
 - `docs/testing/README.md` — test strategy;
 - `docs/mvp-acceptance/README.md` — physical acceptance procedure;

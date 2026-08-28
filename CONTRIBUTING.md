@@ -7,7 +7,7 @@ Dali OS is a safety-oriented embedded Rust platform. Contributions must prioriti
 Read:
 
 1. [Architecture](docs/architecture/README.md)
-2. [Coding Standards](docs/CODING_STANDARDS.md)
+2. [Coding Standards](docs/coding-standards/README.md)
 3. [Roadmap](docs/ROADMAP.md)
 4. [Testing](docs/testing/README.md)
 5. [Development](docs/development/README.md)
@@ -88,7 +88,7 @@ Keep generated binaries out of commits unless the repository explicitly requires
 
 ## Code and documentation requirements
 
-All code must comply with [CODING_STANDARDS.md](docs/CODING_STANDARDS.md).
+All code must comply with the [coding standards](docs/coding-standards/README.md).
 
 In particular:
 

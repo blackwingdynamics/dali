@@ -12,7 +12,7 @@ Read the documents in this order:
 2. [File Structure](FILE_STRUCTURE.md) — repository layout and prioritized file sequence.
 3. [Roadmap](ROADMAP.md) — phase gateway, status, and acceptance boundaries;
    detailed phase plans are in [docs/roadmap](roadmap/).
-4. [Coding Standards](CODING_STANDARDS.md) — mandatory code, comment, safety, and review rules.
+4. [Coding Standards](coding-standards/README.md) — mandatory code, comment, safety, and review rules.
 5. [AMRN Format](amrn-format/README.md) — binary package layout and validation rules.
 6. [ABI](abi/README.md) — kernel-to-application execution contract.
 7. [Hardware](HARDWARE.md) — STM32F405 MVP board, pins, clock, SD wiring, and electrical assumptions.
