@@ -12,6 +12,7 @@ acceptance boundaries, and the repository-quality work track.
 - [05 — Interactive Shell, Telemetry, and Control](05-interactive-shell-telemetry-and-control.md)
 - [06 — Documentation Quality and Enterprise Readiness](06-documentation-quality-and-enterprise-readiness.md)
 - [07 — Codebase Refactoring and Hardware Evidence Gates](07-codebase-refactoring-and-hardware-gates.md)
+- [08 — Universal Platform Architecture](08-universal-platform-architecture.md)
 
 ## Prepared sections from the roadmap gateway
 
