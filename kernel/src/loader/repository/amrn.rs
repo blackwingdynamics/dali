@@ -102,6 +102,7 @@ where
 }
 
 #[inline(never)]
+/// Internal helper for `capture_package_shape`.
 fn capture_package_shape<S>(
     storage: &mut S,
     digest: RepositoryPackageDigest,
@@ -135,6 +136,7 @@ where
 }
 
 #[inline(never)]
+/// Internal helper for `replay_package`.
 fn replay_package<S>(
     storage: &mut S,
     digest: RepositoryPackageDigest,
@@ -173,6 +175,7 @@ where
     Ok(())
 }
 
+/// Internal helper for `copy_header`.
 fn copy_header(bytes: &[u8], offset: &mut usize, header: &mut [u8; v5::HEADER_SIZE]) {
     if *offset < header.len() {
         let count = (header.len() - *offset).min(bytes.len());
@@ -180,21 +183,27 @@ fn copy_header(bytes: &[u8], offset: &mut usize, header: &mut [u8; v5::HEADER_SI
     }
 }
 
+/// Internal helper for `read_u32`.
 fn read_u32(bytes: &[u8]) -> u32 {
     u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
 }
 
+/// Internal implementation state for `TailBuffer`.
 struct TailBuffer {
+    /// Internal field `bytes`.
     bytes: [u8; v5::SIGNATURE_SIZE],
+    /// Internal field `length`.
     length: usize,
 }
 impl TailBuffer {
+    /// Internal helper for `new`.
     const fn new() -> Self {
         Self {
             bytes: [0; v5::SIGNATURE_SIZE],
             length: 0,
         }
     }
+    /// Internal helper for `push`.
     fn push(&mut self, bytes: &[u8]) {
         if bytes.len() >= self.bytes.len() {
             let length = self.bytes.len();

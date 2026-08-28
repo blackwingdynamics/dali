@@ -34,6 +34,7 @@ pub struct BlockDeviceAdapter<R> {
 #[cfg(feature = "storage-write")]
 /// Adapts an explicitly read/write block transport to the filesystem API.
 pub struct WritableBlockDeviceAdapter<R> {
+    /// Internal field `transport`.
     transport: RefCell<R>,
 }
 

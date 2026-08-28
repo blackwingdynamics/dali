@@ -1,3 +1,4 @@
+/// Internal helper for `is_revoked`.
 fn is_revoked(
     revocations: &dali_metadata::RevocationMetadata,
     delegation: &dali_metadata::DelegationMetadata,
@@ -119,6 +120,7 @@ where
 }
 
 #[inline(never)]
+/// Internal helper for `verify_captured_role`.
 fn verify_captured_role<S>(
     storage: &mut S,
     document: RepositoryDocument<'_>,
@@ -177,6 +179,7 @@ where
     Ok(captured)
 }
 
+/// Internal helper for `envelope_total_length`.
 fn envelope_total_length(envelope: StreamedEnvelope) -> u64 {
     u64::from(envelope.body_length)
         .saturating_add(dali_metadata::BINARY_ENVELOPE_HEADER_BYTES as u64)

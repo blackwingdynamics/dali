@@ -5,6 +5,7 @@ use crate::storage::repository::{
     RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage,
 };
 
+/// Internal helper for `read_metadata`.
 pub(super) fn read_metadata<S>(
     storage: &mut S,
     document: RepositoryDocument<'_>,
@@ -44,6 +45,7 @@ where
     failure.map_or(Ok(offset), Err)
 }
 
+/// Internal helper for `read_package`.
 pub(super) fn read_package<S>(
     storage: &mut S,
     digest: RepositoryPackageDigest,
@@ -83,6 +85,7 @@ where
     failure.map_or(Ok(offset), Err)
 }
 
+/// Internal helper for `validate_stream_length`.
 fn validate_stream_length<E>(
     streamed: u32,
     delivered: usize,

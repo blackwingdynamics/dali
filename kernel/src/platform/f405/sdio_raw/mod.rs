@@ -34,16 +34,22 @@ const CMD_SET_BLOCK_LENGTH: u8 = 16;
 /// Defines the CMD READ SINGLE BLOCK used by this module.
 const CMD_READ_SINGLE_BLOCK: u8 = 17;
 #[cfg(feature = "storage-write")]
+/// SD command number for writing one block.
 const CMD_WRITE_SINGLE_BLOCK: u8 = 24;
 #[cfg(feature = "storage-write")]
+/// SD command number for reading card status.
 const CMD_SEND_STATUS: u8 = 13;
 #[cfg(feature = "storage-write")]
+/// Card-status flag indicating readiness for another command.
 const CARD_READY_FOR_DATA: u32 = 1 << 8;
 #[cfg(feature = "storage-write")]
+/// Card state value representing the transfer state.
 const CARD_STATE_TRAN: u32 = 4;
 #[cfg(feature = "storage-write")]
+/// Mask selecting the card state field in the status response.
 const CARD_STATE_MASK: u32 = 0xF << 9;
 #[cfg(feature = "storage-write")]
+/// Maximum card-status polling iterations.
 const CARD_STATUS_POLL_LIMIT: u32 = 1_000_000;
 
 #[repr(C, align(4))]

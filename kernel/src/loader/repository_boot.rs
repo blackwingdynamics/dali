@@ -6,10 +6,12 @@ use crate::storage;
 
 #[cfg(feature = "repository-loader")]
 #[unsafe(link_section = ".repository_workspace")]
+/// Dedicated workspace for the bounded binary repository loader.
 static mut BINARY_REPOSITORY_BUFFERS: repository::BinaryRepositoryBuffers =
     repository::BinaryRepositoryBuffers::new();
 
 #[cfg(feature = "repository-loader")]
+/// Provides exclusive access to the boot-time repository workspace.
 fn with_binary_repository_buffers<R>(
     operation: impl FnOnce(&mut repository::BinaryRepositoryBuffers) -> R,
 ) -> R {
@@ -19,6 +21,7 @@ fn with_binary_repository_buffers<R>(
 }
 
 #[cfg(feature = "repository-loader")]
+/// Loads and verifies the repository-selected cartridge package.
 pub(crate) fn load_repository_package<D>(
     device: D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -117,6 +120,7 @@ where
 }
 
 #[cfg(feature = "repository-loader")]
+/// Maps repository verification failures into loader failures and diagnostics.
 fn map_repository_error(
     error: repository::BinaryRepositoryError<embedded_sdmmc::Error<crate::drivers::StorageError>>,
 ) -> LoaderError {
@@ -184,6 +188,7 @@ fn map_repository_error(
 }
 
 #[cfg(feature = "repository-loader")]
+/// Returns the stable diagnostic label for a repository verification error.
 fn repository_error_label<E>(error: &repository::BinaryRepositoryError<E>) -> &'static str {
     match error {
         repository::BinaryRepositoryError::Storage(_) => "storage",

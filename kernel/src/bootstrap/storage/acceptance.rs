@@ -16,15 +16,23 @@ use crate::{
     },
 };
 
+/// Length of each reserved artifact used by the acceptance round trip.
 const ARTIFACT_TEST_LENGTH: usize = 32;
+/// Fill byte used for the active artifact acceptance payload.
 const ACTIVE_TEST_BYTE: u8 = 0xA5;
+/// Fill byte used for the candidate artifact acceptance payload.
 const CANDIDATE_TEST_BYTE: u8 = 0x5A;
+/// Sequence number committed by the acceptance journal record.
 const TEST_JOURNAL_SEQUENCE: u64 = 2;
 #[cfg(feature = "storage-rollback-test")]
+/// Version written by the rollback acceptance journal fixture.
 const TEST_JOURNAL_VERSION: u64 = 2;
 #[cfg(not(feature = "storage-rollback-test"))]
+/// Version written by the normal acceptance journal fixture.
 const TEST_JOURNAL_VERSION: u64 = 1;
+/// Encoded payload length recorded in the acceptance journal.
 const TEST_JOURNAL_LENGTH: u32 = ARTIFACT_TEST_LENGTH as u32;
+/// Digest fixture used to verify journal write and read-back.
 const TEST_JOURNAL_DIGEST: [u8; 32] = [0xC3; 32];
 
 /// Result of inspecting the commit journal during boot acceptance.
@@ -142,6 +150,7 @@ where
         .map_err(ArtifactTestError::CommitJournal)
 }
 
+/// Verifies one reserved artifact through write, flush, and read-back.
 fn verify_artifact<R>(
     device: &WritableBlockDeviceAdapter<R>,
     artifact: filesystem::TrustStoreArtifact,
@@ -167,6 +176,7 @@ where
     Ok(())
 }
 
+/// Verifies the two-record commit journal through the real storage adapter.
 fn verify_commit_journal<R>(device: &WritableBlockDeviceAdapter<R>) -> Result<(), ArtifactTestError>
 where
     R: BlockReader + BlockWriter + BlockTransportFlush<Error = StorageError>,
@@ -219,6 +229,7 @@ where
     Ok(())
 }
 
+/// Maps a failed artifact write to its typed acceptance error.
 fn write_error(
     artifact: filesystem::TrustStoreArtifact,
     error: embedded_sdmmc::Error<StorageError>,
@@ -230,6 +241,7 @@ fn write_error(
     }
 }
 
+/// Maps a failed artifact read to its typed acceptance error.
 fn read_error(
     artifact: filesystem::TrustStoreArtifact,
     error: embedded_sdmmc::Error<StorageError>,
@@ -241,6 +253,7 @@ fn read_error(
     }
 }
 
+/// Maps a failed artifact flush to its typed acceptance error.
 fn flush_error(
     artifact: filesystem::TrustStoreArtifact,
     error: embedded_sdmmc::Error<StorageError>,

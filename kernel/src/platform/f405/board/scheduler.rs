@@ -2,10 +2,13 @@
 
 use super::super::drivers::F405TimerDriver;
 use super::{Board, SYSTEM_CLOCK_HZ, TimerMode};
-use dali_driver_api::{Duration, TimerDriver};
+use dali_driver_api::Duration;
+#[cfg(feature = "driver-hardware-test")]
 use dali_targets::TARGET_F405;
 
+/// Lowest reload value accepted by the SysTick peripheral.
 const SYSTICK_MIN_RELOAD: u32 = 1;
+/// Highest reload value representable by the SysTick peripheral.
 const SYSTICK_MAX_RELOAD: u32 = 0x00FF_FFFF;
 
 /// Enables SysTick for the scheduler after the application context is ready.

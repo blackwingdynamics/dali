@@ -83,9 +83,11 @@ pub(crate) const DMA_REGION: dali_targets::TargetMemoryRegion =
     dali_targets::TARGET_F405.memory.dma;
 
 #[cfg(all(feature = "abi-context-switch", feature = "abi-current"))]
+/// Maximum number of application contexts supported by the target profile.
 pub(crate) const CONTEXT_CAPACITY: usize = dali_targets::TARGET_F405_CONTEXT_CAPACITY;
 
 #[cfg(all(feature = "abi-context-switch", feature = "abi-current"))]
+/// Scheduler configuration selected by the target manifest.
 pub(crate) const SCHEDULER_PROFILE: Option<dali_targets::SchedulerProfile> =
     dali_targets::TARGET_F405.scheduler;
 

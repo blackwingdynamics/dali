@@ -8,9 +8,13 @@ use stm32f4xx_hal::{
 
 /// SysTick-backed timer adapter with manifest-provided timing units.
 pub(crate) struct F405TimerDriver {
+    /// Hardware timer counter used for bounded delays.
     counter: SysCounterHz,
+    /// Requested timer tick frequency.
     ticks_per_second: u32,
+    /// Maximum timeout accepted by the driver contract.
     maximum_timeout: Duration,
+    /// Whether a timer operation is currently active.
     running: bool,
 }
 
@@ -79,6 +83,7 @@ impl F405TimerDriver {
         false
     }
 
+    /// Converts a contract timeout into a bounded hardware frequency.
     fn timeout_frequency(&self, timeout: Duration) -> DriverResult<u32> {
         self.validate_timeout(timeout)?;
         let frequency = self

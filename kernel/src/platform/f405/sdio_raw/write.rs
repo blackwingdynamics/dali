@@ -5,10 +5,14 @@ use super::status::{clear_interrupts, status_error};
 use super::{CMD_SET_BLOCK_LENGTH, CMD_WRITE_SINGLE_BLOCK, RawSdioReader};
 use crate::drivers::{Block, BlockAddress, StorageError};
 
+/// SD block size required by the raw SDIO write command.
 const BLOCK_BYTES: usize = 512;
+/// Hardware data timeout value used by the raw SDIO transaction.
 const DATA_TIMEOUT_CYCLES: u32 = u32::MAX;
+/// Maximum status polling iterations for a raw SDIO write.
 const POLL_LIMIT: u32 = 1_000_000;
 
+/// Writes one complete block through the raw SDIO command path.
 pub(super) fn write_block(
     reader: &RawSdioReader,
     address: BlockAddress,
