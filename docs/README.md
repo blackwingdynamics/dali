@@ -34,3 +34,38 @@ Read the documents in this order:
     - [UART and SPI](drivers/serial.md) — bounded serial contracts and buffer rules.
 
 The categorized documentation indexes and their topic files are the source of truth for their respective areas.
+
+## Documentation ownership
+
+Each domain has one canonical index and one primary source of truth. Topic
+documents inherit the owner and scope of their domain unless they explicitly
+reference a more authoritative contract.
+
+| Domain | Owner | Canonical source |
+| --- | --- | --- |
+| Architecture | Kernel architecture | [Architecture index](architecture/README.md) |
+| ABI | Kernel/application ABI | [ABI index](abi/README.md) |
+| AMRN format | AMRN format contract | [AMRN format index](amrn-format/README.md) |
+| Application workflow | Application delivery workflow | [Application workflow index](application-workflow/README.md) |
+| CLI | Host CLI behavior | [CLI index](cli/README.md) |
+| Coding standards | Repository engineering policy | [Coding standards index](coding-standards/README.md) |
+| Development | Developer setup and operations | [Development index](development/README.md) |
+| Drivers | Hardware-neutral driver contracts | [Driver index](drivers/README.md) |
+| File structure | Repository organization | [File structure index](file-structure/README.md) |
+| Hardware | Board and electrical constraints | [Hardware index](hardware/README.md) |
+| Metadata binary v2 | Repository metadata wire format | [Metadata index](metadata-binary-v2/README.md) |
+| MVP acceptance | End-to-end acceptance evidence | [MVP acceptance index](mvp-acceptance/README.md) |
+| Package distribution | Trust, update, and distribution policy | [Package distribution index](package-distribution/README.md) |
+| Platform backends | Target-specific hardware boundary | [Platform backend index](platform-backends/README.md) |
+| Relocation | Movable application design | [Relocation index](relocation/README.md) |
+| Roadmap | Project phases and execution order | [Roadmap index](roadmap/README.md) |
+| Security | Security guarantees and limitations | [Security index](security/README.md) |
+| Target manifest | TOML schema and field rules | [Target manifest index](target-manifest/README.md) |
+| Target profiles | Generated profile ownership | [Target profile index](target-profiles/README.md) |
+| Testing | Validation strategy and evidence | [Testing index](testing/README.md) |
+| Ustari protocol | Future protocol contract | [Ustari index](ustari-protocol/README.md) |
+| Versioning | Compatibility and release rules | [Versioning index](versioning/README.md) |
+
+The implementation source, target manifests, generated profiles, and recorded
+Silicon Trace remain authoritative for their respective technical facts. This
+matrix defines documentation ownership; it does not replace those sources.
