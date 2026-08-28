@@ -9,6 +9,7 @@ from urllib.parse import unquote
 
 LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 TREE_ENTRY_PATTERN = re.compile(r"^(?P<prefix>(?:│   )*)(?:├──|└──) (?P<item>.*)$")
+HEADING_PATTERN = re.compile(r"^(?P<marks>#{1,6})\s+\S")
 
 
 def link_target(raw_target: str) -> str:
@@ -44,6 +45,33 @@ def check_file(path: Path, root: Path) -> list[str]:
             continue
         if not resolved.exists():
             errors.append(f"{path}: missing link target: {target}")
+    return errors
+
+
+def check_heading_hierarchy(path: Path) -> list[str]:
+    errors: list[str] = []
+    headings: list[tuple[int, int]] = []
+    fenced = False
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if line.startswith(("```", "~~~")):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        match = HEADING_PATTERN.match(line)
+        if match:
+            headings.append((line_number, len(match.group("marks"))))
+    if not headings:
+        return errors
+    if headings[0][1] != 1:
+        errors.append(f"{path}:{headings[0][0]}: first heading must be H1")
+    if sum(level == 1 for _, level in headings) != 1:
+        errors.append(f"{path}: document must contain exactly one H1 heading")
+    for previous, current in zip(headings, headings[1:]):
+        if current[1] > previous[1] + 1:
+            errors.append(
+                f"{path}:{current[0]}: heading jumps H{previous[1]} to H{current[1]}"
+            )
     return errors
 
 
@@ -92,7 +120,11 @@ def main() -> int:
         and path.name != "CHANGELOG.md"
         and "changelog" not in path.relative_to(root).parts
     )
-    errors = [error for path in markdown_files for error in check_file(path, root)]
+    errors = [
+        error
+        for path in markdown_files
+        for error in (*check_file(path, root), *check_heading_hierarchy(path))
+    ]
     errors.extend(check_documentation_indexes(root))
     errors.extend(check_repository_tree(root))
     if errors:

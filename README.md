@@ -2,7 +2,7 @@
   <img src="docs/assets/dali-logo.svg" alt="Dali OS logo" width="220">
 </p>
 
-<!-- # Dali OS -->
+# Dali OS
 
 Dali OS is a Rust-based embedded operating system for STM32 microcontrollers and future autonomous or industrial devices.
 

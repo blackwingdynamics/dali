@@ -19,7 +19,7 @@ approval.
 - [x] Define a project-wide terminology and naming guide.
 - [x] Standardize terms for targets, profiles, backends, manifests, phases,
   evidence, guarantees, and limitations.
-- [ ] Apply consistent heading hierarchy, link style, command formatting, and
+- [x] Apply consistent heading hierarchy, link style, command formatting, and
   status vocabulary.
 - [ ] Keep all code, logs, errors, and documentation text in English.
 
@@ -30,7 +30,7 @@ approval.
 - [x] Validate roadmap indexes and repository-tree entries against the actual
   repository structure.
 - [x] Run documentation checks in CI and preserve actionable failure output.
-- [ ] Keep formatting and whitespace validation compatible with existing hooks.
+- [x] Keep formatting and whitespace validation compatible with existing hooks.
 
 ## 4. Requirements and evidence traceability
 
