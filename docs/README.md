@@ -25,10 +25,11 @@ Read the documents in this order:
 15. [Package Distribution](package-distribution/README.md) — normative multi-developer trust, metadata, update, and acceptance contract.
 16. [Ustari Protocol](ustari-protocol/README.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.
 17. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
-18. [Target Profiles](target-profiles/README.md) — declarative board metadata and kernel mapping ownership.
-19. [Target Manifest Reference](target-manifest/README.md) — complete TOML schema, field rules, and F405 example.
-20. [Platform Backend Contract](platform-backends/README.md) — ownership boundaries and the workflow for adding a target backend.
-21. [Driver Architecture](drivers/README.md) — no-heap, bounded, hardware-neutral driver principles.
+18. [SDK documentation](sdk/README.md) — application service contracts, compatibility, and validation boundaries.
+19. [Target Profiles](target-profiles/README.md) — declarative board metadata and kernel mapping ownership.
+20. [Target Manifest Reference](target-manifest/README.md) — complete TOML schema, field rules, and F405 example.
+21. [Platform Backend Contract](platform-backends/README.md) — ownership boundaries and the workflow for adding a target backend.
+22. [Driver Architecture](drivers/README.md) — no-heap, bounded, hardware-neutral driver principles.
     - [GPIO and EXTI](drivers/gpio.md) — pin modes, level access, and interrupt polling.
     - [Timers](drivers/timer.md) — countdown, timeout, and SysTick policy.
     - [UART and SPI](drivers/serial.md) — bounded serial contracts and buffer rules.
@@ -60,6 +61,7 @@ reference a more authoritative contract.
 | Relocation | Movable application design | [Relocation index](relocation/README.md) |
 | Roadmap | Project phases and execution order | [Roadmap index](roadmap/README.md) |
 | Security | Security guarantees and limitations | [Security index](security/README.md) |
+| SDK | Application service contracts and compatibility | [SDK index](sdk/README.md) |
 | Target manifest | TOML schema and field rules | [Target manifest index](target-manifest/README.md) |
 | Target profiles | Generated profile ownership | [Target profile index](target-profiles/README.md) |
 | Testing | Validation strategy and evidence | [Testing index](testing/README.md) |

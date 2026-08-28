@@ -258,6 +258,8 @@ dali-kernel/
 │   │   ├── ownership-boundaries.md
 │   │   └── repository-tree.md
 │   ├── cli/                        # CLI guides and command references
+│   ├── sdk/                        # Application SDK contracts and compatibility
+│   │   └── README.md
 │   ├── drivers/                    # Driver contracts and boundaries
 │   └── changelog/                  # Archived generated release changelogs
 ├── scripts/
