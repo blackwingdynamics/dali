@@ -10,6 +10,7 @@ use crate::{
 
 use super::execution::LoadedApplications;
 
+/// Discovers and loads all packages selected by the target catalog.
 pub(crate) fn load_files<D>(
     device: &D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -52,6 +53,7 @@ where
     Ok(loaded)
 }
 
+/// Reopens and loads the package identified by a catalog entry.
 fn load_selected_file<D>(
     device: D,
     selected_identity: [u8; 16],

@@ -49,7 +49,9 @@ impl LoadedApplication {
 
 /// Fixed-capacity set of packages loaded into manifest-owned slots.
 pub(crate) struct LoadedApplications<const CAPACITY: usize> {
+    /// Loaded applications in deterministic slot-selection order.
     entries: [Option<LoadedApplication>; CAPACITY],
+    /// Number of occupied entries.
     length: usize,
 }
 
@@ -158,6 +160,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Selects a target slot whose format-2 contract accepts the header.
 fn target_contract(
     bytes: &[u8; v2::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -190,6 +193,7 @@ fn target_contract(
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Reads one complete format-2 header from storage.
 fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v2::HEADER_SIZE], super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -200,6 +204,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Computes the encoded format-2 package length.
 fn package_length(header: v2::Header) -> Option<u32> {
     u32::try_from(v2::HEADER_SIZE)
         .ok()?
@@ -208,6 +213,7 @@ fn package_length(header: v2::Header) -> Option<u32> {
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Verifies the format-2 payload checksum with bounded reads.
 fn validate_payload<D>(file: &AmrnFile<'_, D>, header: v2::Header) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -236,6 +242,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Copies initialized segments and clears the zero-initialized segment.
 fn copy_segments<D>(file: &AmrnFile<'_, D>, header: v2::Header) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -255,6 +262,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Copies one validated segment into its target address.
 fn copy_segment<D>(
     file: &AmrnFile<'_, D>,
     destination: u32,
@@ -289,6 +297,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Clears one validated target memory segment.
 fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let length = usize::try_from(size)
         .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
@@ -305,6 +314,7 @@ fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Reads exactly the requested number of bytes from a package file.
 fn read_exact<D>(
     file: &AmrnFile<'_, D>,
     buffer: &mut [u8],

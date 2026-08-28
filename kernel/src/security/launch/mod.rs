@@ -2,12 +2,18 @@
 
 use dali_sdk::svc::ExceptionFrame;
 
+/// xPSR bit required for a Thumb-state application frame.
 const THUMB_STATE_BIT: u32 = 1 << 24;
+/// Exception return selector for an unprivileged PSP basic frame.
 const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
+/// Exception return selector for a privileged MSP basic frame.
 const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
+/// Link value used by non-returning synthetic frames.
 const NON_RETURNING_LINK: u32 = 0;
 #[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
+/// CONTROL value selecting unprivileged Thread mode with PSP.
 const CONTROL_UNPRIVILEGED_PSP: u32 = 0b11;
+/// CONTROL value selecting privileged Thread mode with MSP.
 const CONTROL_PRIVILEGED_MSP: u32 = 0;
 
 /// A validated basic exception frame and its architectural return selector.
@@ -110,6 +116,7 @@ pub(crate) fn recover() -> ! {
     }
 }
 
+/// Terminates the failed application and enters the configured recovery path.
 extern "C" fn fault_recovery() -> ! {
     if crate::runtime::application::owner::begin_active_recovery() {
         crate::logging::info(

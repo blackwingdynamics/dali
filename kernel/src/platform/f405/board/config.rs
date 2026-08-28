@@ -32,6 +32,7 @@ pub const APPLICATION_EXECUTION_SUPPORTED: bool = true;
 /// System clock target derived from the declarative F405 target profile.
 pub const SYSTEM_CLOCK_HZ: u32 = TARGET_F405.clock.system_hz;
 #[cfg(feature = "abi-current")]
+/// Memory layout selected by the F405 target profile.
 pub const MEMORY_PROFILE: MemoryProfile = TARGET_F405.memory;
 /// Unit conversion used by the boot log's human-readable clock value.
 const HZ_PER_MHZ: u32 = 1_000_000;
