@@ -31,8 +31,8 @@ pub fn encode_unsigned(
     )
     .map_err(|_| Error::InvalidHeader)?;
     write_header(output, image_header, image.metadata, signed_size);
-    let checksum = package_checksum(&output[..signed_size]);
-    write_u32(output, PACKAGE_CRC32_OFFSET, checksum);
+    let checksum = cartridge_checksum(&output[..signed_size]);
+    write_u32(output, CARTRIDGE_CRC32_OFFSET, checksum);
     Ok(signed_size)
 }
 
@@ -69,22 +69,26 @@ pub fn append_signature(
     Ok(total_size)
 }
 
-/// Parses and validates a complete signed package against a target contract.
-pub fn parse<'a>(package: &'a [u8], contract: v3::Contract) -> Result<Package<'a>, Error> {
-    if package.len() < HEADER_SIZE {
+/// Parses and validates a complete signed cartridge against a target contract.
+pub fn parse<'a>(cartridge: &'a [u8], contract: v3::Contract) -> Result<Cartridge<'a>, Error> {
+    if cartridge.len() < HEADER_SIZE {
         return Err(Error::TruncatedHeader);
     }
-    let signed_size = read_u32(package, SIGNED_SIZE_FIELD) as usize;
+    let signed_size = read_u32(cartridge, SIGNED_SIZE_FIELD) as usize;
     let signature_end = signed_size
         .checked_add(SIGNATURE_SIZE)
         .ok_or(Error::InvalidSignature)?;
-    if signature_end > package.len() {
+    if signature_end > cartridge.len() {
         return Err(Error::InvalidSignature);
     }
-    let header_bytes: &[u8; HEADER_SIZE] = package[..HEADER_SIZE]
+    let header_bytes: &[u8; HEADER_SIZE] = cartridge[..HEADER_SIZE]
         .try_into()
         .map_err(|_| Error::TruncatedHeader)?;
-    let header = parse_header_parts(header_bytes, &package[signed_size..signature_end], contract)?;
+    let header = parse_header_parts(
+        header_bytes,
+        &cartridge[signed_size..signature_end],
+        contract,
+    )?;
     let code_size = header.image.code_size as usize;
     let data_size = header.image.data_init_size as usize;
     let table_size = (header.image.relocation_count as usize)
@@ -100,18 +104,18 @@ pub fn parse<'a>(package: &'a [u8], contract: v3::Contract) -> Result<Package<'a
         .checked_add(table_size)
         .ok_or(Error::InvalidPayload)?;
     if header.image.relocation_offset as usize != data_end
-        || package.len() != signature_end
-        || read_u32(package, SIGNATURE_OFFSET_FIELD) as usize != signed_size
-        || read_u32(package, SIGNED_SIZE_FIELD) as usize != signed_size
+        || cartridge.len() != signature_end
+        || read_u32(cartridge, SIGNATURE_OFFSET_FIELD) as usize != signed_size
+        || read_u32(cartridge, SIGNED_SIZE_FIELD) as usize != signed_size
     {
         return Err(Error::InvalidPayload);
     }
-    if package_checksum(&package[..signed_size]) != header.package_crc32 {
+    if cartridge_checksum(&cartridge[..signed_size]) != header.cartridge_crc32 {
         return Err(Error::CrcMismatch);
     }
-    let code = &package[HEADER_SIZE..code_end];
-    let initialized_data = &package[code_end..data_end];
-    let relocation_bytes = &package[data_end..signed_size];
+    let code = &cartridge[HEADER_SIZE..code_end];
+    let initialized_data = &cartridge[code_end..data_end];
+    let relocation_bytes = &cartridge[data_end..signed_size];
     if payload_checksum(code, initialized_data, relocation_bytes) != header.image.crc32 {
         return Err(Error::CrcMismatch);
     }
@@ -123,12 +127,12 @@ pub fn parse<'a>(package: &'a [u8], contract: v3::Contract) -> Result<Package<'a
         v3::validate_relocation(header.image, contract, relocation)
             .map_err(|_| Error::InvalidRelocation)?;
     }
-    Ok(Package {
+    Ok(Cartridge {
         header,
         code,
         initialized_data,
         relocation_bytes,
-        signed_bytes: &package[..signed_size],
+        signed_bytes: &cartridge[..signed_size],
     })
 }
 
@@ -146,7 +150,7 @@ pub fn parse_header_parts<'a>(
     }
     if read_u16(header, SIGNATURE_SIZE_FIELD) != SIGNATURE_SIZE as u16
         || read_u16(header, SIGNATURE_SIZE_FIELD + 2) != 0
-        || header[V4_RESERVED_START..PACKAGE_ID_OFFSET]
+        || header[V4_RESERVED_START..CARTRIDGE_ID_OFFSET]
             .iter()
             .any(|byte| *byte != 0)
         || header[FLAGS_OFFSET] != 0
@@ -157,8 +161,8 @@ pub fn parse_header_parts<'a>(
     {
         return Err(Error::InvalidHeaderReserved);
     }
-    let package_id = read_array::<{ v4::PACKAGE_ID_LENGTH }>(header, PACKAGE_ID_OFFSET);
-    if package_id.iter().all(|byte| *byte == 0) {
+    let cartridge_id = read_array::<{ v4::CARTRIDGE_ID_LENGTH }>(header, CARTRIDGE_ID_OFFSET);
+    if cartridge_id.iter().all(|byte| *byte == 0) {
         return Err(Error::InvalidIdentity);
     }
     let image = v3::Header {
@@ -196,13 +200,13 @@ pub fn parse_header_parts<'a>(
     Ok(Header {
         image,
         metadata: v4::Metadata {
-            package_id,
-            package_version: read_version(header, PACKAGE_VERSION_OFFSET),
+            cartridge_id,
+            cartridge_version: read_version(header, CARTRIDGE_VERSION_OFFSET),
             minimum_kernel_version: read_version(header, MINIMUM_KERNEL_VERSION_OFFSET),
             required_services: read_u32(header, REQUIRED_SERVICES_OFFSET),
             slot_id: header[SLOT_ID_OFFSET],
         },
-        package_crc32: read_u32(header, PACKAGE_CRC32_OFFSET),
+        cartridge_crc32: read_u32(header, CARTRIDGE_CRC32_OFFSET),
         signature: envelope,
     })
 }

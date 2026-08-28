@@ -1,4 +1,4 @@
-# Signed package acceptance
+# Signed cartridge acceptance
 
 ## Repository loader hardware acceptance status (2026-08-22)
 
@@ -64,11 +64,11 @@ inspection of the release ELF measured these largest repository-path local
 allocations:
 
 ```text
-load_repository_package       0x251c = 9500 bytes
+load_repository_cartridge       0x251c = 9500 bytes
 replay_targets                 0xdfc = 3580 bytes
 capture_role_into              0xce4 = 3300 bytes
 parse_targets_first_pass       0xcdc = 3292 bytes
-verify_packages_into            0xc74 = 3188 bytes
+verify_cartridges_into            0xc74 = 3188 bytes
 load_file_with_key              0xa3c = 2620 bytes
 verify_timestamp_and_snapshot  0x83c = 2108 bytes
 ```
@@ -105,7 +105,7 @@ acceptance run on 2026-08-21 used the release-anchor bundle prepared by
 [STORAGE] Read block 0 successfully
 [LOADER] AMRN header and payload validated
 [SECURITY] AMRN signature verified
-[LOADER] Loaded 1 application package(s) into declared slots
+[LOADER] Loaded 1 application cartridge(s) into declared slots
 [LOADER] Slot 1 (slot1) boundaries: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
 [SECURITY] Application lifecycle: Ready
 [SECURITY] Active application context: Running
@@ -125,7 +125,7 @@ target, and interrupted-write/power-loss recovery.
 The kernel was rebuilt with the release repository-loader feature set and
 flashed to the WeAct Studio STM32F405RGT6 through the Raspberry Pi Pico 2
 CMSIS-DAP probe. The SD card contained the freshly generated release-anchor
-Binary v2 bundle. The package digest was:
+Binary v2 bundle. The cartridge digest was:
 
 ```text
 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
@@ -139,7 +139,7 @@ The observed F405 output at `2026-08-22 12:27:00` was:
 [STORAGE] Read block 0 successfully
 [LOADER] AMRN header and payload validated
 [SECURITY] AMRN signature verified
-[LOADER] Loaded 1 application package(s) into declared slots
+[LOADER] Loaded 1 application cartridge(s) into declared slots
 [LOADER] Slot 1 (slot1) boundaries: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
 [SECURITY] Application lifecycle: Ready
 [SECURITY] Active application context: Running
@@ -149,7 +149,7 @@ The observed F405 output at `2026-08-22 12:27:00` was:
 This closes the normal Binary v2 F405 acceptance path for the recorded build:
 SDIO initialization, trust-store access, repository traversal, signed AMRN
 verification, slot loading, relocation, and `Ready -> Running` application
-execution. The package file size, board revision, and power source were not
+execution. The cartridge file size, board revision, and power source were not
 captured in this run and remain unspecified evidence fields. The separate
 watchdog reset/Safe Mode scenario remains a distinct test.
 
@@ -161,7 +161,7 @@ Power source: Not recorded
 Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 Expected trace: SDIO, trust-store, signed AMRN validation, slot loading, and Running state
 Observed trace: All Binary v2 trace lines listed above
-Limitations: Package size and physical power details were not captured; this is not Secure Boot or power-loss evidence
+Limitations: Cartridge size and physical power details were not captured; this is not Secure Boot or power-loss evidence
 ```
 
 Validation layers:
@@ -177,26 +177,26 @@ Validation layers:
   CRC32, relocation, and target-profile trust-anchor checks before SRAM copy.
 - [x] The loader service-capability policy accepts the declared Log service and
   rejects undeclared required-service bits in host/unit coverage.
-- [x] A real v5 relocation package is generated and inspected with the
-  development test key; this is host/package evidence, not hardware evidence.
+- [x] A real v5 relocation cartridge is generated and inspected with the
+  development test key; this is host/cartridge evidence, not hardware evidence.
 - The F405 signed-loader hardware image must be built with Cargo's `release`
   profile; the feature-complete development link does not fit the board's
   documented flash region.
 - [x] F405 hardware: provision the documented development test public key and
-  execute a valid signed v5 package; the kernel verified the signature before
+  execute a valid signed v5 cartridge; the kernel verified the signature before
   loading slot 1 and the relocation fixture ran.
 - [x] F405 hardware: provision the generated release public trust anchor and
-  execute a release-profile signed v5 package; the kernel logged
-  `AMRN signature verified`, loaded one package into slot 1, and ran the
+  execute a release-profile signed v5 cartridge; the kernel logged
+  `AMRN signature verified`, loaded one cartridge into slot 1, and ran the
   relocation fixture. This verifies the configured release trust-anchor path
   on the development board; production key custody, rotation, and Secure Boot
   remain separate acceptance requirements.
 - [x] F405 hardware: reject an unknown key ID before SRAM copy; the loader
   returned `UnknownTrustAnchor` and entered the kernel heartbeat.
 - [x] F405 hardware: reject a modified signed payload; the loader returned
-  `V5SignedPackage(CrcMismatch)` and entered the kernel heartbeat.
+  `V5SignedCartridge(CrcMismatch)` and entered the kernel heartbeat.
 - [x] F405 hardware: reject a truncated DSIG trailer; the loader returned
-  `V5SignedPackage(InvalidSignature)` and entered the kernel heartbeat.
+  `V5SignedCartridge(InvalidSignature)` and entered the kernel heartbeat.
 - [ ] Secure Boot and kernel-image authenticity.
 - [x] F405 hardware: run the feature-gated trust-store artifact
   write/flush/read-back acceptance path on a disposable FAT32 card and record

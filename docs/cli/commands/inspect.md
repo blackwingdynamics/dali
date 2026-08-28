@@ -6,7 +6,7 @@ Validate an existing AMRN cartridge and display its decoded contract fields
 without modifying the input file.
 
 This is a generic cartridge operation, not an application-project command. It
-does not build or package an application. Use `dali app build` for the full
+does not build or cartridge an application. Use `dali app build` for the full
 application workflow, then use this command to validate the resulting AMRN
 cartridge.
 
@@ -15,9 +15,9 @@ cartridge.
 - `--input <cartridge>` — AMRN cartridge to validate explicitly.
 
 The input flag is optional. Without it, the command first checks the current
-directory for `dali.toml` and derives the package path from the application
+directory for `dali.toml` and derives the cartridge path from the application
 name, target profile, and Cargo profile. If no manifest exists, it accepts the
-single `.amrn` file in the current directory. Multiple packages require an
+single `.amrn` file in the current directory. Multiple cartridges require an
 explicit input path.
 
 ## Validation
@@ -52,7 +52,7 @@ size; format version 3 includes relocation metadata.
 dali inspect
 ~~~
 
-For an explicit package or a package in another directory:
+For an explicit cartridge or a cartridge in another directory:
 
 ~~~text
 dali inspect --input /path/to/application.amrn

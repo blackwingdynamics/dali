@@ -51,8 +51,8 @@ Targets body:
 common prefix
 u16 delegation_count
 delegation_count * delegation_id:text
-u32 package_count
-package_count * (record_length:u16, target_record)
+u32 cartridge_count
+cartridge_count * (record_length:u16, target_record)
 ```
 
 Each target record retains the existing semantic fields, encoded in fixed

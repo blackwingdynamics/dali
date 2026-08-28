@@ -1,4 +1,4 @@
-//! AMRN package validation and application entry support.
+//! AMRN cartridge validation and application entry support.
 
 use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, parse_header};
 use dali_sdk::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable};
@@ -13,15 +13,15 @@ use crate::{
 
 #[cfg(feature = "abi-current")]
 /// Bounded collection of applications loaded by the current ABI pipeline.
-pub(crate) type LoadedPackages =
+pub(crate) type LoadedCartridges =
     pipeline::execution::LoadedApplications<{ storage::filesystem::MAX_ROOT_AMRN_FILES }>;
 
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
-/// Loads the current ABI package set from the storage root.
+/// Loads the current ABI cartridge set from the storage root.
 pub(crate) fn load_current_abi<D, B>(
     device: D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
-) -> Result<LoadedPackages, LoaderError>
+) -> Result<LoadedCartridges, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
     B: dali_kernel_api::BoardBackend,
@@ -30,23 +30,23 @@ where
     let target = B::info().target;
     let device = crate::drivers::BlockDeviceRef::new(&device);
     let mut versions = [0; storage::filesystem::MAX_ROOT_AMRN_FILES];
-    let mut package_count = 0;
+    let mut cartridge_count = 0;
     let result = storage::filesystem::with_amrn_files(device, |file| {
         let mut version = [0; dali_amrn::MAGIC.len() + core::mem::size_of::<u8>()];
         read_exact(&file, &mut version).map_err(LoaderError::Filesystem)?;
-        if let Some(version_slot) = versions.get_mut(package_count) {
+        if let Some(version_slot) = versions.get_mut(cartridge_count) {
             *version_slot = version[4];
-            package_count += 1;
+            cartridge_count += 1;
             Ok(())
         } else {
-            Err(LoaderError::CurrentAbiPackage(
+            Err(LoaderError::CurrentAbiCartridge(
                 dali_amrn::v2::Error::InvalidHeader,
             ))
         }
     });
     result.map_err(LoaderError::Filesystem)??;
 
-    match package_count {
+    match cartridge_count {
         0 => Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)),
         1 => storage::filesystem::with_amrn_file(device, |file| {
             load_current_abi_file(file, slot_manager, target)
@@ -54,7 +54,7 @@ where
         .map_err(LoaderError::Filesystem)?,
         _ => {
             #[cfg(feature = "abi-relocation")]
-            if versions[..package_count]
+            if versions[..cartridge_count]
                 .iter()
                 .all(|version| *version == dali_amrn::v4::FORMAT_VERSION)
             {
@@ -66,12 +66,12 @@ where
 }
 
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
-/// Loads one package using its format-specific parser.
+/// Loads one cartridge using its format-specific parser.
 fn load_current_abi_file<D>(
     file: storage::filesystem::AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     target: &'static dali_targets::TargetProfile,
-) -> Result<LoadedPackages, LoaderError>
+) -> Result<LoadedCartridges, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
@@ -92,13 +92,13 @@ where
         #[cfg(feature = "abi-authentication")]
         dali_amrn::v5::FORMAT_VERSION => pipeline::signed::load_file(file, slot_manager)
             .map(pipeline::execution::LoadedApplications::single),
-        _ => Err(LoaderError::CurrentAbiPackage(
+        _ => Err(LoaderError::CurrentAbiCartridge(
             dali_amrn::v2::Error::InvalidHeader,
         )),
     }
 }
 
-/// Validates the root AMRN package without copying or executing its payload.
+/// Validates the root AMRN cartridge without copying or executing its payload.
 pub fn validate_amrn_file<D>(device: D) -> Result<ValidatedPayload, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -107,7 +107,7 @@ where
         .map_err(LoaderError::Filesystem)?
 }
 
-/// Validates and copies the root AMRN package into the application region.
+/// Validates and copies the root AMRN cartridge into the application region.
 pub fn load_amrn_file<D>(device: D) -> Result<ValidatedPayload, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -176,14 +176,14 @@ where
 {
     let mut header_bytes = [0; HEADER_SIZE];
     read_exact(file, &mut header_bytes).map_err(LoaderError::Filesystem)?;
-    let header = parse_header(&header_bytes).map_err(LoaderError::Package)?;
+    let header = parse_header(&header_bytes).map_err(LoaderError::Cartridge)?;
     let expected_length = u64::from(HEADER_SIZE as u32)
         .checked_add(u64::from(header.payload_size))
-        .ok_or(LoaderError::Package(ParseError::PayloadOutsidePackage))?;
+        .ok_or(LoaderError::Cartridge(ParseError::PayloadOutsideCartridge))?;
     if u64::from(file.length()) != expected_length {
-        return Err(LoaderError::Package(ParseError::PayloadOutsidePackage));
+        return Err(LoaderError::Cartridge(ParseError::PayloadOutsideCartridge));
     }
-    let mut validator = PayloadValidator::new(header).map_err(LoaderError::Package)?;
+    let mut validator = PayloadValidator::new(header).map_err(LoaderError::Cartridge)?;
     let mut chunk: Block = [0; BLOCK_SIZE];
     let mut remaining = header.payload_size as usize;
     while remaining > 0 {
@@ -191,10 +191,10 @@ where
         read_exact(file, &mut chunk[..chunk_size]).map_err(LoaderError::Filesystem)?;
         validator
             .update(&chunk[..chunk_size])
-            .map_err(LoaderError::Package)?;
+            .map_err(LoaderError::Cartridge)?;
         remaining -= chunk_size;
     }
-    validator.finish().map_err(LoaderError::Package)
+    validator.finish().map_err(LoaderError::Cartridge)
 }
 
 /// Performs the `load_file` operation for this subsystem.

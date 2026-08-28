@@ -1,6 +1,6 @@
-/// Revocation -> AMRN for all bounded matching packages.
+/// Revocation -> AMRN for all bounded matching cartridges.
 /// Verifies Root -> Timestamp -> Snapshot -> Targets -> Delegation ->
-/// Revocation -> AMRN for all bounded matching packages.
+/// Revocation -> AMRN for all bounded matching cartridges.
 pub fn load_binary_repository<S>(
     storage: &mut S,
     request: RepositoryLoadRequest,
@@ -11,7 +11,7 @@ where
     S: RepositoryStreamStorage,
 {
     let Some(contract) = request.contract else {
-        return Err(BinaryRepositoryError::PackageInvalidHeader(
+        return Err(BinaryRepositoryError::CartridgeInvalidHeader(
             dali_amrn::v5::Error::InvalidHeader,
         ));
     };
@@ -41,7 +41,7 @@ pub fn load_binary_repository_with_contract<S, F>(
 ) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
-    F: FnMut(dali_metadata::TargetPackage) -> Option<dali_amrn::v3::Contract>,
+    F: FnMut(dali_metadata::TargetCartridge) -> Option<dali_amrn::v3::Contract>,
 {
     stream_verified_root(
         storage,
@@ -116,17 +116,17 @@ where
         dali_metadata::TrustStoreSecurityState::from_verified_metadata(root, revocations)
             .map_err(|_| BinaryRepositoryError::SecurityState)?;
     collect_delegation_references(snapshot, &targets, &mut buffers.delegation_references)?;
-    let mut authorizations = verify_packages_into(
+    let mut authorizations = verify_cartridges_into(
         storage,
         root,
         revocations,
         &targets,
         buffers.delegation_references,
-        &mut PackageVerificationPass {
+        &mut CartridgeVerificationPass {
             chunk: &mut buffers.chunk,
             amrn_buffers: &mut buffers.amrn,
             // SAFETY: the delegation output is exclusively used by one
-            // package verification at a time.
+            // cartridge verification at a time.
             delegation_output: unsafe { buffers.metadata.delegation() },
             // SAFETY: the verifier workspace is exclusively used by this
             // phase.
@@ -151,16 +151,16 @@ fn select_targets_into<S>(
     verifier_workspace: &mut MaybeUninit<StreamingRoleVerifier>,
     progress: fn() -> bool,
 ) -> Result<
-    streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
+    streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_CARTRIDGES>,
     BinaryRepositoryError<S::Error>,
 >
 where
     S: RepositoryStreamStorage,
 {
-    let targets = if let Some(package_id) = request.package_id {
-        streaming::select_verified_binary_targets_for_package::<S, MAX_BINARY_REPOSITORY_PACKAGES>(
+    let targets = if let Some(cartridge_id) = request.cartridge_id {
+        streaming::select_verified_binary_targets_for_cartridge::<S, MAX_BINARY_REPOSITORY_CARTRIDGES>(
             storage,
-            package_id,
+            cartridge_id,
             targets_role,
             &root.keys[..usize::from(root.key_count)],
             chunk,
@@ -168,7 +168,7 @@ where
             verifier_workspace,
         )
     } else {
-        streaming::select_verified_binary_targets::<S, MAX_BINARY_REPOSITORY_PACKAGES>(
+        streaming::select_verified_binary_targets::<S, MAX_BINARY_REPOSITORY_CARTRIDGES>(
             storage,
             request.target_profile,
             targets_role,
@@ -185,10 +185,10 @@ where
 /// Internal helper for `collect_delegation_references`.
 fn collect_delegation_references<E>(
     snapshot: &dali_metadata::SnapshotMetadata,
-    targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
-    output: &mut [Option<dali_metadata::DelegationReference>; MAX_BINARY_REPOSITORY_PACKAGES],
+    targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_CARTRIDGES>,
+    output: &mut [Option<dali_metadata::DelegationReference>; MAX_BINARY_REPOSITORY_CARTRIDGES],
 ) -> Result<(), BinaryRepositoryError<E>> {
-    *output = [None; MAX_BINARY_REPOSITORY_PACKAGES];
+    *output = [None; MAX_BINARY_REPOSITORY_CARTRIDGES];
     for (index, selected) in targets.iter().enumerate() {
         let delegation_id = selected
             .target
@@ -208,26 +208,26 @@ fn collect_delegation_references<E>(
     Ok(())
 }
 
-/// Internal helper for `verify_packages_into`.
-fn verify_packages_into<S, F>(
+/// Internal helper for `verify_cartridges_into`.
+fn verify_cartridges_into<S, F>(
     storage: &mut S,
     root: &RootMetadata,
     revocations: &dali_metadata::RevocationMetadata,
-    targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_PACKAGES>,
+    targets: &streaming::VerifiedBinaryTargets<MAX_BINARY_REPOSITORY_CARTRIDGES>,
     delegation_references: [Option<dali_metadata::DelegationReference>;
-        MAX_BINARY_REPOSITORY_PACKAGES],
-    pass: &mut PackageVerificationPass<'_, F>,
+        MAX_BINARY_REPOSITORY_CARTRIDGES],
+    pass: &mut CartridgeVerificationPass<'_, F>,
 ) -> Result<BinaryRepositoryAuthorizations, BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
-    F: FnMut(dali_metadata::TargetPackage) -> Option<dali_amrn::v3::Contract>,
+    F: FnMut(dali_metadata::TargetCartridge) -> Option<dali_amrn::v3::Contract>,
 {
     let mut authorizations = BinaryRepositoryAuthorizations::new();
     for (index, selected) in targets.iter().enumerate() {
         let contract =
-            (pass.contract_for)(selected.target).ok_or(BinaryRepositoryError::PackageContract)?;
-        let developer_public_key = verify_delegation_and_package(
-            &mut PackageVerificationContext {
+            (pass.contract_for)(selected.target).ok_or(BinaryRepositoryError::CartridgeContract)?;
+        let developer_public_key = verify_delegation_and_cartridge(
+            &mut CartridgeVerificationContext {
                 storage,
                 root,
                 revocations,
@@ -249,14 +249,14 @@ where
                 developer_public_key,
             })
             .map_err(|_| {
-                BinaryRepositoryError::PackageInvalidHeader(dali_amrn::v5::Error::InvalidHeader)
+                BinaryRepositoryError::CartridgeInvalidHeader(dali_amrn::v5::Error::InvalidHeader)
             })?;
     }
     Ok(authorizations)
 }
 
-/// Internal implementation state for `PackageVerificationPass`.
-struct PackageVerificationPass<'a, F> {
+/// Internal implementation state for `CartridgeVerificationPass`.
+struct CartridgeVerificationPass<'a, F> {
 /// Internal field `chunk`.
     chunk: &'a mut [u8],
 /// Internal field `amrn_buffers`.

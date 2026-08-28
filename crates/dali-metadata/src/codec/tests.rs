@@ -1,13 +1,13 @@
 use super::*;
 use crate::MAX_ROLE_KEYS;
 use crate::{
-    BoundedText, BundleFile, BundleFileKind, BundleMetadata, DelegationMetadata,
-    DelegationReference, KeyId, MAX_BUNDLE_FILES, MAX_DELEGATION_ABIS, MAX_DELEGATION_ID_BYTES,
-    MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES, MAX_PACKAGE_VERSION_BYTES,
+    BoundedText, BundleFile, BundleFileKind, BundleMetadata, CartridgeId, DelegationMetadata,
+    DelegationReference, KeyId, MAX_BUNDLE_FILES, MAX_CARTRIDGE_VERSION_BYTES, MAX_DELEGATION_ABIS,
+    MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES,
     MAX_SIGNATURES, MAX_SNAPSHOT_REFERENCES, MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES,
-    MetadataHeader, MetadataRole, PackageId, PublicKey, RevocationReference, RoleDefinition,
-    RoleKey, Sha256Digest, Signature, SignatureRecord, SignatureSet, SnapshotMetadata,
-    TargetPackage, TargetsReference, TimestampMetadata,
+    MetadataHeader, MetadataRole, PublicKey, RevocationReference, RoleDefinition, RoleKey,
+    Sha256Digest, Signature, SignatureRecord, SignatureSet, SnapshotMetadata, TargetCartridge,
+    TargetsReference, TimestampMetadata,
 };
 
 const KEY: RoleKey = RoleKey {
@@ -90,8 +90,8 @@ fn bundle_metadata() -> BundleMetadata {
         ..files[0]
     };
     files[6] = BundleFile {
-        kind: BundleFileKind::Package,
-        id: BoundedText::new("aaaaaaaa").expect("test package ID fits"),
+        kind: BundleFileKind::Cartridge,
+        id: BoundedText::new("aaaaaaaa").expect("test cartridge ID fits"),
         ..files[0]
     };
     BundleMetadata {
@@ -143,9 +143,9 @@ fn encodes_a_bounded_bundle_manifest() {
     assert!(output[..length].ends_with(br#""target_profile":"f405","version":1}"#));
 }
 
-fn target_package() -> TargetPackage {
-    TargetPackage {
-        package_id: PackageId([1; crate::KEY_ID_LENGTH]),
+fn target_cartridge() -> TargetCartridge {
+    TargetCartridge {
+        cartridge_id: CartridgeId([1; crate::KEY_ID_LENGTH]),
         namespace: BoundedText::<MAX_NAMESPACE_BYTES>::new("developer/app")
             .expect("test namespace fits"),
         developer_id: BoundedText::<{ crate::MAX_DEVELOPER_ID_BYTES }>::new("developer")
@@ -157,9 +157,9 @@ fn target_package() -> TargetPackage {
             .expect("test target fits"),
         amrn_format: 5,
         abi_version: 3,
-        package_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+        cartridge_version: BoundedText::<MAX_CARTRIDGE_VERSION_BYTES>::new("0.1.0")
             .expect("test version fits"),
-        minimum_kernel_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+        minimum_kernel_version: BoundedText::<MAX_CARTRIDGE_VERSION_BYTES>::new("0.1.0")
             .expect("test minimum version fits"),
         length: 128,
         sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
@@ -241,14 +241,14 @@ fn encodes_targets_fields_in_canonical_order() {
             expires: 0,
         },
         &[delegation],
-        &[target_package()],
+        &[target_cartridge()],
     )
     .expect("targets body should encode");
     let body = &output[..length];
     let fields: &[&[u8]] = &[
         b"\"delegations\"",
         b"\"expires\"",
-        b"\"packages\"",
+        b"\"cartridges\"",
         b"\"role\"",
         b"\"schema\"",
         b"\"version\"",
@@ -260,7 +260,10 @@ fn encodes_targets_fields_in_canonical_order() {
             .expect("field should be present")
     });
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
-    assert!(body.windows(13).any(|window| window == br#""package_id":"#));
+    assert!(
+        body.windows(13)
+            .any(|window| window == br#""cartridge_id":"#)
+    );
 }
 
 fn snapshot_metadata() -> SnapshotMetadata {

@@ -6,20 +6,20 @@
 
 Dali OS is a Rust-based embedded operating system for STM32 microcontrollers and future autonomous or industrial devices.
 
-The project is named after Dali, the Georgian goddess of the hunt. Its application package format, `.amrn` (**Amiran Native**), references Amirani, Dali's son.
+The project is named after Dali, the Georgian goddess of the hunt. Its application cartridge format, `.amrn` (**Amiran Native**), references Amirani, Dali's son.
 
 ## Status
 
 Dali OS `0.1.0-alpha.1` is the first accepted F405 MVP release. The project
 also contains a feature-gated ABI v3 processor-isolation and multi-context
 execution path, plus AMRN format v4 identity/relocation and format v5 signed
-package paths; these remain post-MVP platform features.
+cartridge paths; these remain post-MVP platform features.
 
 The accepted baseline targets the WeAct Studio STM32F405RGT6 Core Board and
 proves that the kernel can:
 
 - boot as a `no_std` Rust binary;
-- read an `.amrn` package from a FAT16/FAT32 SD card;
+- read an `.amrn` cartridge from a FAT16/FAT32 SD card;
 - validate its fixed header and CRC32 checksum;
 - load its native ARM payload into reserved SRAM;
 - transfer control to the documented application entry point.
@@ -27,7 +27,7 @@ proves that the kernel can:
 The baseline ABI v2 application is trusted native code. The feature-gated F405
 path provides hardware-evidenced ABI v3 PSP/SysTick/PendSV context switching,
 MPU region switching, faulted-context retirement, bounded kernel-owned SDIO
-DMA policy, AMRN v5 signed package/repository verification, anti-rollback
+DMA policy, AMRN v5 signed cartridge/repository verification, anti-rollback
 admission, watchdog Safe Mode recovery, and bounded storage-card recovery.
 These are scoped implementation claims, not complete sandboxing, arbitrary DMA
 isolation, pre-reset Secure Boot, production multi-application lifecycle
@@ -39,7 +39,7 @@ pre-reset ROM/first-stage bootloader enforcement remains future work.
 ## Architecture
 
 ```text
-SD card: .amrn package
+SD card: .amrn cartridge
           |
           v
 Dali OS loader
@@ -52,7 +52,7 @@ STM32F405 hardware
 ```
 
 The baseline ABI v2 uses a fixed application load address of `0x20008000`, a
-32-byte package header, CRC32 integrity validation, and the following entry
+32-byte cartridge header, CRC32 integrity validation, and the following entry
 ABI:
 
 ```rust
@@ -65,7 +65,7 @@ unsafe extern "C" fn(*const ServiceTable) -> !
 kernel/               Embedded kernel
 apps/dali-app-hello/  Demo application scaffold
 crates/dali-sdk/      Application SDK scaffold
-crates/dali-cli/      Package and device CLI scaffold
+crates/dali-cli/      Cartridge and device CLI scaffold
 docs/                 Architecture and development documentation
 ```
 

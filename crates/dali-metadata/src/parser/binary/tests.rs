@@ -2,7 +2,7 @@ use super::*;
 use crate::{
     BoundedText, DelegationMetadata, DelegationReference, KeyId, MetadataHeader, MetadataRole,
     PublicKey, RevocationReference, RoleDefinition, RoleKey, Sha256Digest, SnapshotMetadata,
-    TargetPackage, TargetsMetadata, TargetsReference,
+    TargetCartridge, TargetsMetadata, TargetsReference,
 };
 
 fn header(role: MetadataRole) -> MetadataHeader {
@@ -134,8 +134,8 @@ fn target_record_length_rejects_truncation() {
         header: header(MetadataRole::Targets),
         delegations: [text("developer"); crate::MAX_DELEGATION_SCOPES],
         delegation_count: 1,
-        packages: [TargetPackage {
-            package_id: crate::PackageId([1; crate::KEY_ID_LENGTH]),
+        cartridges: [TargetCartridge {
+            cartridge_id: crate::CartridgeId([1; crate::KEY_ID_LENGTH]),
             namespace: text("developer/app"),
             developer_id: text("developer"),
             delegation_id: text("developer"),
@@ -143,14 +143,14 @@ fn target_record_length_rejects_truncation() {
             target_profile: text("f405"),
             amrn_format: 5,
             abi_version: 3,
-            package_version: text("0.1.0"),
+            cartridge_version: text("0.1.0"),
             minimum_kernel_version: text("0.1.0"),
             length: 64,
             sha256: digest(),
             required_services: 1,
             slot_id: 0,
         }; crate::MAX_TARGET_RECORDS],
-        package_count: 1,
+        cartridge_count: 1,
     };
     let length = encode_binary_targets_body(metadata, &mut buffer).expect("targets encode");
     assert!(parse_binary_targets_body(&buffer[..length - 1]).is_err());

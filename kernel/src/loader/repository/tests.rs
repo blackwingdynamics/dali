@@ -18,9 +18,9 @@ impl RepositoryStreamStorage for EmptyRepository {
         Ok(u32::MAX)
     }
 
-    fn stream_package<F>(
+    fn stream_cartridge<F>(
         &mut self,
-        _: RepositoryPackageDigest,
+        _: RepositoryCartridgeDigest,
         output: &mut [u8],
         _: F,
     ) -> Result<u32, Self::Error>
@@ -39,7 +39,7 @@ fn rejects_storage_lengths_larger_than_caller_buffers() {
     let result = load_repository(
         &mut storage,
         RepositoryLoadRequest {
-            package_id: Some(PackageId([1; dali_metadata::KEY_ID_LENGTH])),
+            cartridge_id: Some(CartridgeId([1; dali_metadata::KEY_ID_LENGTH])),
             target_profile: dali_metadata::BoundedText::new("test").expect("test profile fits"),
             contract: Some(Contract {
                 target_id: 0,
@@ -67,11 +67,11 @@ fn rejects_missing_target_records_before_delegation_read() {
         },
         delegations: [dali_metadata::BoundedText::default(); dali_metadata::MAX_DELEGATION_SCOPES],
         delegation_count: 0,
-        packages: [TargetPackage::default(); dali_metadata::MAX_TARGET_RECORDS],
-        package_count: 0,
+        cartridges: [TargetCartridge::default(); dali_metadata::MAX_TARGET_RECORDS],
+        cartridge_count: 0,
     };
     assert_eq!(
-        find_target::<()>(&targets, PackageId([2; dali_metadata::KEY_ID_LENGTH])),
+        find_target::<()>(&targets, CartridgeId([2; dali_metadata::KEY_ID_LENGTH])),
         Err(RepositoryLoaderError::MissingRecord)
     );
 }

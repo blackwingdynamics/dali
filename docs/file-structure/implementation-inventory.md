@@ -17,7 +17,7 @@ kernel/src/
 │   startup/{mod.rs,logging.rs,watchdog.rs},
 │   lifecycle/{mod.rs,heartbeat.rs,status.rs},
 │   storage/{mod.rs,initialization.rs,acceptance.rs},
-│   loading/{mod.rs,package.rs}}
+│   loading/{mod.rs,cartridge.rs}}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
 ├── loader/{mod.rs,repository/{mod.rs,amrn.rs,chain.rs,discovery.rs,io.rs,streaming.rs,trust.rs,tests.rs},contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
@@ -27,11 +27,11 @@ kernel/src/
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports
 ├── compatibility/mod.rs           # ABI-to-format compatibility rules
-├── legacy/                        # Original fixed-origin package contract
+├── legacy/                        # Original fixed-origin cartridge contract
 │   ├── mod.rs, builder.rs, stream.rs, tests.rs
-├── v2/                            # Segmented ABI v3 package contract
+├── v2/                            # Segmented ABI v3 cartridge contract
 │   ├── mod.rs, tests.rs
-├── v3/                            # Relocatable ABI v3 package contract
+├── v3/                            # Relocatable ABI v3 cartridge contract
 │   ├── mod.rs, apply.rs, codec.rs, wire.rs, tests.rs
 ├── v4/                            # Identity and selection metadata extension
 │   ├── mod.rs, tests.rs
@@ -41,10 +41,10 @@ crates/dali-amrn/src/
 crates/dali-cli/src/
 ├── main.rs
 └── commands/
-    ├── mod.rs, doctor.rs, inspect.rs, key.rs, package.rs
+    ├── mod.rs, doctor.rs, inspect.rs, key.rs, cartridge.rs
     ├── app/
     │   ├── mod.rs, artifacts.rs, build.rs, init.rs, linker.rs
-    │   ├── new.rs, new_tests.rs, package.rs, relocations.rs
+    │   ├── new.rs, new_tests.rs, cartridge.rs, relocations.rs
     ├── device/
     │   ├── mod.rs, attach.rs, cdc.rs, console.rs, flash.rs
     │   ├── flash_transport.rs, info.rs
@@ -52,7 +52,7 @@ crates/dali-cli/src/
     │   ├── mod.rs
     │   ├── delegation/mod.rs
     │   ├── repository/{mod.rs,common.rs,init.rs,add_developer.rs,
-    │   │   manifest.rs,publish.rs,register_package.rs}
+    │   │   manifest.rs,publish.rs,register_cartridge.rs}
     │   └── bundle/{mod.rs,common.rs,generate.rs,verify.rs}
     └── target/{mod.rs,info.rs}
 
@@ -112,8 +112,8 @@ target manifest; the generated script is not tracked.
 The CLI documentation files currently tracked under `docs/cli/commands/` are:
 
 ```text
-app-build.md, app-init.md, app-new.md, app-package.md,
+app-build.md, app-init.md, app-new.md, app-cartridge.md,
 device-attach.md, device-console.md, device-flash.md, device-info.md,
-doctor.md, inspect.md, package.md, target-info.md, target-list.md,
+doctor.md, inspect.md, cartridge.md, target-info.md, target-list.md,
 target-scaffold.md
 ```

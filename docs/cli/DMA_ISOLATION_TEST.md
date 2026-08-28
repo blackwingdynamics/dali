@@ -13,15 +13,15 @@ only in the diagnostic build.
 
 ## Build
 
-Build the real application package from its fixture directory:
+Build the real application cartridge from its fixture directory:
 
 ```text
 cd apps/dali-app-dma-denial
 cargo run --manifest-path ../../crates/dali-cli/Cargo.toml -- app build
 ```
 
-Register the package in the existing Binary v2 repository and keep it under
-the repository `packages/` directory with its matching metadata. This kernel
+Register the cartridge in the existing Binary v2 repository and keep it under
+the repository `cartridges/` directory with its matching metadata. This kernel
 path does not scan the FAT root for arbitrary AMRN files. Safely unmount the
 card before inserting it into the F405 board.
 

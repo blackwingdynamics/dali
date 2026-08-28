@@ -2,7 +2,7 @@
 
 - [x] Application restart and rollback policy is explicit: termination enters
   the kernel recovery heartbeat, automatic restart is rejected, and rollback is
-  unavailable while package storage is read-only.
+  unavailable while cartridge storage is read-only.
 - [x] Watchdog arming and feed ownership are integrated behind the platform
   facade, with heartbeat and scheduler-tick feed paths target-checked; this is
   not hardware evidence.
@@ -15,18 +15,18 @@
 - [x] Host-level SRAM slot allocation, exact reservation, occupied-slot
   rejection, undeclared-slot rejection, release/reuse behavior, and range
   containment across independent code/data slots.
-- [x] Host-level root-package selection classification distinguishes no package,
-  exactly one package, and ambiguous multiple packages without inferring
+- [x] Host-level root-cartridge selection classification distinguishes no cartridge,
+  exactly one cartridge, and ambiguous multiple cartridges without inferring
   identity from filenames.
-- [x] Host-level AMRN v4 parsing validates non-zero package identity, ABI v3
-  image metadata, explicit slot metadata, and the extended package checksum.
-- [x] Host-level CLI tests cover v4 manifest parsing, package identity/version
+- [x] Host-level AMRN v4 parsing validates non-zero cartridge identity, ABI v3
+  image metadata, explicit slot metadata, and the extended cartridge checksum.
+- [x] Host-level CLI tests cover v4 manifest parsing, cartridge identity/version
   validation, target slot IDs, and v4 inspection output.
 - [x] Host-level pure catalog tests cover discovery-order-independent selection,
   duplicate identity rejection, slot mismatch, duplicate slot rejection, and
   externally occupied-slot rejection, including ordered selection across both
   declared slots. These tests are not hardware evidence.
-- [x] Host-side AMRN v4 codec tests cover package bytes, CRC mismatch, and
+- [x] Host-side AMRN v4 codec tests cover cartridge bytes, CRC mismatch, and
   invalid relocation; the loader contract test covers undeclared-slot
   rejection. These tests are not hardware evidence.
 - [x] Host-level application lifecycle tests cover ordered discovery, loading,
@@ -37,7 +37,7 @@
   readiness, reject a second active context, and allow retirement only after
   terminal recovery. These tests do not prove runtime scheduling or isolation.
 - [x] Host-level lifecycle policy tests require manual reset after termination,
-  reject rollback on the read-only package boundary, and require a bounded
+  reject rollback on the read-only cartridge boundary, and require a bounded
   heartbeat/feed owner before watchdog arming.
 - [x] Host-level context-switch contract tests preserve the PSP, `r4..r11`,
   `CONTROL`, and `EXC_RETURN` record, enforce one running context, bound table
@@ -63,7 +63,7 @@
   request and save-before-selection ordering. These tests do not prove the
   processor exception path.
 - [x] Target-profile generation tests and embedded compilation consume the
-  manifest-derived scheduler capacity; filesystem package limits are not used
+  manifest-derived scheduler capacity; filesystem cartridge limits are not used
   as scheduler capacity. Runtime interrupt ownership remains unimplemented.
 - [x] Host-level scheduler-storage tests reject pre-initialization access,
   publish one initialized value, and reject repeated initialization. These
@@ -86,16 +86,16 @@
   repeated CPU context switching and MPU switching are separately
   hardware-verified below.
 - [x] F405 hardware verified v4 lifecycle activation through `Loaded`, `Ready`,
-  and `Running` after loading two packages; the kernel logged both slot
+  and `Running` after loading two cartridges; the kernel logged both slot
   boundaries and then executed the slot0 fixture.
 - [x] F405 hardware verified the lifecycle fault path through `Faulted`,
   `Recovering`, and `Terminated` using the v4 invalid-PSP application fixture.
-- [x] The relocation fixture manifest produces an AMRN format 4 package with a
+- [x] The relocation fixture manifest produces an AMRN format 4 cartridge with a
   non-zero identity, compatibility metadata, required service bitset, and the
   manifest-selected slot1; this artifact is ready for the hardware run.
-- [x] The slot0 fixture produces a separate AMRN format 4 package with a
+- [x] The slot0 fixture produces a separate AMRN format 4 cartridge with a
   distinct identity, manifest-selected slot0, and 49 retained relocation
-  records. Both package artifacts are ready for the two-package hardware run.
+  records. Both cartridge artifacts are ready for the two-cartridge hardware run.
 - [x] F405 hardware accepted the first scheduler handoff with the
   `abi-context-switch,abi-relocation` kernel and the two v4 fixtures: the
   boot log entered `Slot 0 fixture` and then `Relocation fixture` after loading
@@ -127,7 +127,7 @@
   `MemManage status=0x00000082 address=Some(536903680)`, followed by
   `Faulted`, `Recovering`, and `Terminated`. This proves CPU MPU rejection of
   a slot1-to-slot0 read, but not DMA isolation or complete application policy.
-- [x] F405 hardware ran the two-package fault-recovery fixture with
+- [x] F405 hardware ran the two-cartridge fault-recovery fixture with
   `abi-context-switch,abi-relocation`. GDB observed the slot1 entry breakpoint
   once, stopped in `recover_faulted_context`, and then observed slot0 progress
   increase from `0x0000024C` to `0x01289A9C`, `0x017BB673`, and `0x01ADDDF1`

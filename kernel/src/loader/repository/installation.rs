@@ -15,19 +15,19 @@ use crate::storage::{
 
 /// Authorization produced by the verified metadata chain for one installation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct PackageInstallationAuthorization {
+pub struct CartridgeInstallationAuthorization {
     /// Targets record authorized by the signed repository metadata.
-    pub target: dali_metadata::TargetPackage,
+    pub target: dali_metadata::TargetCartridge,
     /// Developer delegation authorized by the signed repository metadata.
     pub delegation: dali_metadata::DelegationMetadata,
-    /// Candidate generation bound to the authenticated package digest.
+    /// Candidate generation bound to the authenticated cartridge digest.
     generation: DurableGeneration,
 }
 
-impl PackageInstallationAuthorization {
-    /// Binds a verified package to the supplied signed bundle generation.
+impl CartridgeInstallationAuthorization {
+    /// Binds a verified cartridge to the supplied signed bundle generation.
     pub fn from_verified(
-        verified: dali_metadata::VerifiedRepositoryPackage<'_>,
+        verified: dali_metadata::VerifiedRepositoryCartridge<'_>,
         bundle_version: u64,
     ) -> Self {
         Self {
@@ -62,9 +62,9 @@ where
         + DurableStorageAdapter<Error = <S as RepositoryStreamStorage>::Error>,
 {
     let verified = load_repository(&mut storage, request, buffers)?;
-    let authorization = PackageInstallationAuthorization::from_verified(verified, bundle_version);
-    let package_length = authorization.target.length as usize;
-    if package_length > buffers.package.len() {
+    let authorization = CartridgeInstallationAuthorization::from_verified(verified, bundle_version);
+    let cartridge_length = authorization.target.length as usize;
+    if cartridge_length > buffers.cartridge.len() {
         return Err(RepositoryLoaderError::ArtifactTooLarge);
     }
     let mut coordinator =
@@ -74,15 +74,15 @@ where
         .map_err(RepositoryLoaderError::Persistence)?;
     coordinator
         .write_candidate(
-            &buffers.package[..package_length],
+            &buffers.cartridge[..cartridge_length],
             authorization.generation(),
         )
         .map_err(RepositoryLoaderError::Persistence)?;
     coordinator
         .verify_candidate(
             authorization.generation(),
-            &buffers.package[..package_length],
-            &mut buffers.candidate_readback[..package_length],
+            &buffers.cartridge[..cartridge_length],
+            &mut buffers.candidate_readback[..cartridge_length],
         )
         .map_err(RepositoryLoaderError::Persistence)?;
     coordinator

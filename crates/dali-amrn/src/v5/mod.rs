@@ -12,8 +12,8 @@ pub const FORMAT_VERSION_OFFSET: usize = 4;
 pub const TARGET_ID_OFFSET: usize = 5;
 /// Fixed trailer length supplied by the DSIG envelope contract.
 pub const SIGNATURE_SIZE: usize = signature::ENVELOPE_SIZE;
-/// Offset of the package checksum retained from v4.
-pub const PACKAGE_CRC32_OFFSET: usize = 116;
+/// Offset of the cartridge checksum retained from v4.
+pub const CARTRIDGE_CRC32_OFFSET: usize = 116;
 /// Header offset of the signed-range start and DSIG trailer.
 pub const SIGNATURE_OFFSET: usize = 128;
 /// Header offset of the signed-range length.
@@ -23,7 +23,7 @@ const HEADER_SIZE_OFFSET: usize = 6;
 const V4_RESERVED_START: usize = 64;
 const FLAGS_OFFSET: usize = 113;
 const RESERVED_U16_OFFSET: usize = 114;
-const CRC32_END_OFFSET: usize = PACKAGE_CRC32_OFFSET + core::mem::size_of::<u32>();
+const CRC32_END_OFFSET: usize = CARTRIDGE_CRC32_OFFSET + core::mem::size_of::<u32>();
 const SIGNATURE_OFFSET_FIELD: usize = 128;
 const SIGNATURE_SIZE_FIELD: usize = 132;
 const SIGNED_SIZE_FIELD: usize = 136;
@@ -42,13 +42,13 @@ const RELOCATION_COUNT_OFFSET: usize = 48;
 const RELOCATION_ENTRY_SIZE_OFFSET: usize = 52;
 const PAYLOAD_CRC32_OFFSET: usize = 56;
 const ABI_VERSION_OFFSET: usize = 60;
-const PACKAGE_ID_OFFSET: usize = 80;
-const PACKAGE_VERSION_OFFSET: usize = 96;
+const CARTRIDGE_ID_OFFSET: usize = 80;
+const CARTRIDGE_VERSION_OFFSET: usize = 96;
 const MINIMUM_KERNEL_VERSION_OFFSET: usize = 102;
 const REQUIRED_SERVICES_OFFSET: usize = 108;
 const SLOT_ID_OFFSET: usize = 112;
 
-/// Input image and identity metadata used to construct a signed package.
+/// Input image and identity metadata used to construct a signed cartridge.
 pub type Image<'a> = v4::Image<'a>;
 
 /// Decoded v5 header and its structurally validated signature envelope.
@@ -59,14 +59,14 @@ pub struct Header<'a> {
     /// Identity and compatibility metadata.
     pub metadata: v4::Metadata,
     /// CRC32 over the signed range, excluding this field during calculation.
-    pub package_crc32: u32,
+    pub cartridge_crc32: u32,
     /// Structurally validated signature envelope.
     pub signature: signature::Envelope<'a>,
 }
 
-/// A validated v5 package view into caller-owned bytes.
+/// A validated v5 cartridge view into caller-owned bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct Package<'a> {
+pub struct Cartridge<'a> {
     /// Validated v5 header.
     pub header: Header<'a>,
     /// Code segment bytes.
@@ -77,8 +77,8 @@ pub struct Package<'a> {
     signed_bytes: &'a [u8],
 }
 
-impl Package<'_> {
-    /// Returns the exact bytes covered by the package signature.
+impl Cartridge<'_> {
+    /// Returns the exact bytes covered by the cartridge signature.
     pub fn signed_bytes(&self) -> &[u8] {
         self.signed_bytes
     }
@@ -96,7 +96,7 @@ impl Package<'_> {
     }
 }
 
-/// Errors returned by the signed package codec.
+/// Errors returned by the signed cartridge codec.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Error {
     /// The output or input does not contain a complete fixed header.
@@ -111,13 +111,13 @@ pub enum Error {
     InvalidHeaderEncoding,
     /// The v3 image or relocation payload is malformed.
     InvalidPayload,
-    /// The package does not fit the selected target memory contract.
+    /// The cartridge does not fit the selected target memory contract.
     InvalidContract,
     /// The relocation table is malformed.
     InvalidRelocation,
-    /// The package identity is empty.
+    /// The cartridge identity is empty.
     InvalidIdentity,
-    /// The package CRC32 does not match.
+    /// The cartridge CRC32 does not match.
     CrcMismatch,
     /// The DSIG trailer is malformed.
     InvalidSignature,
@@ -151,9 +151,9 @@ fn payload_checksum(code: &[u8], data: &[u8], relocations: &[u8]) -> u32 {
     checksum.finish()
 }
 
-fn package_checksum(bytes: &[u8]) -> u32 {
+fn cartridge_checksum(bytes: &[u8]) -> u32 {
     let mut checksum = Crc32::new();
-    checksum.update(&bytes[..PACKAGE_CRC32_OFFSET]);
+    checksum.update(&bytes[..CARTRIDGE_CRC32_OFFSET]);
     checksum.update(&bytes[CRC32_END_OFFSET..]);
     checksum.finish()
 }
@@ -186,9 +186,9 @@ fn write_header(output: &mut [u8], image: v3::Header, metadata: v4::Metadata, si
     );
     write_u32(output, PAYLOAD_CRC32_OFFSET, image.crc32);
     output[ABI_VERSION_OFFSET] = v3::ABI_VERSION;
-    output[PACKAGE_ID_OFFSET..PACKAGE_ID_OFFSET + v4::PACKAGE_ID_LENGTH]
-        .copy_from_slice(&metadata.package_id);
-    write_version(output, PACKAGE_VERSION_OFFSET, metadata.package_version);
+    output[CARTRIDGE_ID_OFFSET..CARTRIDGE_ID_OFFSET + v4::CARTRIDGE_ID_LENGTH]
+        .copy_from_slice(&metadata.cartridge_id);
+    write_version(output, CARTRIDGE_VERSION_OFFSET, metadata.cartridge_version);
     write_version(
         output,
         MINIMUM_KERNEL_VERSION_OFFSET,
@@ -200,7 +200,7 @@ fn write_header(output: &mut [u8], image: v3::Header, metadata: v4::Metadata, si
     write_u32(output, SIGNATURE_OFFSET_FIELD, signed_size as u32);
     write_u16(output, SIGNATURE_SIZE_FIELD, SIGNATURE_SIZE as u16);
     write_u32(output, SIGNED_SIZE_FIELD, signed_size as u32);
-    write_u32(output, PACKAGE_CRC32_OFFSET, 0);
+    write_u32(output, CARTRIDGE_CRC32_OFFSET, 0);
 }
 
 fn read_array<const N: usize>(bytes: &[u8], offset: usize) -> [u8; N] {

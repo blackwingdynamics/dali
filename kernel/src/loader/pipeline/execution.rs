@@ -1,4 +1,4 @@
-//! Streaming ABI v3 package loading for the feature-gated kernel path.
+//! Streaming ABI v3 cartridge loading for the feature-gated kernel path.
 
 #[cfg(not(feature = "repository-loader"))]
 use dali_amrn::{Crc32, v2};
@@ -17,7 +17,7 @@ use crate::{
 #[cfg(feature = "abi-context-switch")]
 use crate::runtime::scheduling::{record::ScheduledContext, saved_state::UNPRIVILEGED_PSP_CONTROL};
 
-/// Values retained after an ABI v3 package has been copied into SRAM.
+/// Values retained after an ABI v3 cartridge has been copied into SRAM.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct LoadedApplication {
     /// Validated entry address before the Thumb bit is applied.
@@ -30,7 +30,7 @@ pub struct LoadedApplication {
     pub(crate) slot: dali_targets::IsolationSlot,
     /// Reserved allocation retained for runtime ownership.
     pub(crate) allocation: SlotAllocation,
-    /// Identity lifecycle for v4 packages; legacy packages remain untracked.
+    /// Identity lifecycle for v4 cartridges; legacy cartridges remain untracked.
     pub(crate) lifecycle: Option<ApplicationLifecycle>,
 }
 
@@ -47,7 +47,7 @@ impl LoadedApplication {
     }
 }
 
-/// Fixed-capacity set of packages loaded into manifest-owned slots.
+/// Fixed-capacity set of cartridges loaded into manifest-owned slots.
 pub(crate) struct LoadedApplications<const CAPACITY: usize> {
     /// Loaded applications in deterministic slot-selection order.
     entries: [Option<LoadedApplication>; CAPACITY],
@@ -64,7 +64,7 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
         }
     }
 
-    /// Adds one loaded package without allocating.
+    /// Adds one loaded cartridge without allocating.
     pub(crate) fn push(&mut self, application: LoadedApplication) -> bool {
         let Some(entry) = self.entries.get_mut(self.length) else {
             return false;
@@ -74,24 +74,24 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
         true
     }
 
-    /// Returns the first package selected for the current single-context runtime.
+    /// Returns the first cartridge selected for the current single-context runtime.
     pub(crate) fn first(&self) -> Option<LoadedApplication> {
         self.entries.first().copied().flatten()
     }
 
-    /// Iterates over loaded packages in deterministic slot-selection order.
+    /// Iterates over loaded cartridges in deterministic slot-selection order.
     pub(crate) fn iter(&self) -> impl Iterator<Item = &LoadedApplication> {
         self.entries[..self.length]
             .iter()
             .filter_map(Option::as_ref)
     }
 
-    /// Returns the number of packages copied into manifest-owned slots.
+    /// Returns the number of cartridges copied into manifest-owned slots.
     pub(crate) const fn len(&self) -> usize {
         self.length
     }
 
-    /// Wraps one loaded package in a bounded set.
+    /// Wraps one loaded cartridge in a bounded set.
     pub(crate) fn single(application: LoadedApplication) -> Self {
         let mut applications = Self::new();
         let _ = applications.push(application);
@@ -99,7 +99,7 @@ impl<const CAPACITY: usize> LoadedApplications<CAPACITY> {
     }
 }
 
-/// Reads, validates, and copies one ABI v3 package using bounded storage reads.
+/// Reads, validates, and copies one ABI v3 cartridge using bounded storage reads.
 #[cfg(not(feature = "repository-loader"))]
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
@@ -112,12 +112,12 @@ where
     let header = read_header(&file)?;
     let (contract, allocation) = target_contract(&header, slot_manager, target)?;
     let header =
-        v2::parse_header(&header, contract).map_err(super::LoaderError::CurrentAbiPackage)?;
-    let expected_length = package_length(header).ok_or(super::LoaderError::CurrentAbiPackage(
-        v2::Error::InvalidPayload,
-    ))?;
+        v2::parse_header(&header, contract).map_err(super::LoaderError::CurrentAbiCartridge)?;
+    let expected_length = cartridge_length(header).ok_or(
+        super::LoaderError::CurrentAbiCartridge(v2::Error::InvalidPayload),
+    )?;
     if u64::from(file.length()) != u64::from(expected_length) {
-        return Err(super::LoaderError::CurrentAbiPackage(
+        return Err(super::LoaderError::CurrentAbiCartridge(
             v2::Error::InvalidPayload,
         ));
     }
@@ -126,26 +126,26 @@ where
     let entry_address = header
         .code_load_address
         .checked_add(header.execution_offset)
-        .ok_or(super::LoaderError::CurrentAbiPackage(
+        .ok_or(super::LoaderError::CurrentAbiCartridge(
             v2::Error::AddressOverflow,
         ))?;
     let stack_origin = header
         .data_load_address
         .checked_add(header.data_init_size)
         .and_then(|address| address.checked_add(header.data_zero_size))
-        .ok_or(super::LoaderError::CurrentAbiPackage(
+        .ok_or(super::LoaderError::CurrentAbiCartridge(
             v2::Error::AddressOverflow,
         ))?;
     let psp_top = stack_origin.checked_add(header.stack_size).ok_or(
-        super::LoaderError::CurrentAbiPackage(v2::Error::AddressOverflow),
+        super::LoaderError::CurrentAbiCartridge(v2::Error::AddressOverflow),
     )?;
     let launch_frame = launch::prepare(entry_address, stack_origin, header.stack_size).map_err(
         |error| match error {
             launch::LaunchError::InvalidEntry => {
-                super::LoaderError::CurrentAbiPackage(v2::Error::InvalidExecutionOffset)
+                super::LoaderError::CurrentAbiCartridge(v2::Error::InvalidExecutionOffset)
             }
             launch::LaunchError::InvalidStack => {
-                super::LoaderError::CurrentAbiPackage(v2::Error::RegionOverflow)
+                super::LoaderError::CurrentAbiCartridge(v2::Error::RegionOverflow)
             }
         },
     )?;
@@ -190,7 +190,7 @@ fn target_contract(
             Err(error) => last_error = error,
         }
     }
-    Err(super::LoaderError::CurrentAbiPackage(last_error))
+    Err(super::LoaderError::CurrentAbiCartridge(last_error))
 }
 
 #[cfg(not(feature = "repository-loader"))]
@@ -205,8 +205,8 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
-/// Computes the encoded format-2 package length.
-fn package_length(header: v2::Header) -> Option<u32> {
+/// Computes the encoded format-2 cartridge length.
+fn cartridge_length(header: v2::Header) -> Option<u32> {
     u32::try_from(v2::HEADER_SIZE)
         .ok()?
         .checked_add(header.code_size)?
@@ -222,11 +222,11 @@ where
     file.rewind().map_err(super::LoaderError::Filesystem)?;
     let _header = read_header(file)?;
     let payload_size = header.code_size.checked_add(header.data_init_size).ok_or(
-        super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload),
+        super::LoaderError::CurrentAbiCartridge(v2::Error::InvalidPayload),
     )?;
     let mut checksum = Crc32::new();
     let mut remaining = usize::try_from(payload_size)
-        .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::CurrentAbiCartridge(v2::Error::InvalidPayload))?;
     let mut chunk: Block = [0; BLOCK_SIZE];
     while remaining > 0 {
         let chunk_size = remaining.min(chunk.len());
@@ -235,7 +235,7 @@ where
         remaining -= chunk_size;
     }
     if checksum.finish() != header.crc32 {
-        return Err(super::LoaderError::CurrentAbiPackage(
+        return Err(super::LoaderError::CurrentAbiCartridge(
             v2::Error::CrcMismatch,
         ));
     }
@@ -255,7 +255,7 @@ where
     let zero_start = header
         .data_load_address
         .checked_add(header.data_init_size)
-        .ok_or(super::LoaderError::CurrentAbiPackage(
+        .ok_or(super::LoaderError::CurrentAbiCartridge(
             v2::Error::AddressOverflow,
         ))?;
     zero_segment(zero_start, header.data_zero_size)?;
@@ -273,7 +273,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let mut remaining = usize::try_from(size)
-        .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::CurrentAbiCartridge(v2::Error::InvalidPayload))?;
     let mut offset = 0usize;
     let mut chunk: Block = [0; BLOCK_SIZE];
     while remaining > 0 {
@@ -282,7 +282,7 @@ where
         let address = usize::try_from(destination)
             .ok()
             .and_then(|value| value.checked_add(offset))
-            .ok_or(super::LoaderError::CurrentAbiPackage(
+            .ok_or(super::LoaderError::CurrentAbiCartridge(
                 v2::Error::AddressOverflow,
             ))?;
         let target = unsafe {
@@ -301,7 +301,7 @@ where
 /// Clears one validated target memory segment.
 fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let length = usize::try_from(size)
-        .map_err(|_| super::LoaderError::CurrentAbiPackage(v2::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::CurrentAbiCartridge(v2::Error::InvalidPayload))?;
     if length == 0 {
         return Ok(());
     }
@@ -315,7 +315,7 @@ fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
 }
 
 #[cfg(not(feature = "repository-loader"))]
-/// Reads exactly the requested number of bytes from a package file.
+/// Reads exactly the requested number of bytes from a cartridge file.
 fn read_exact<D>(
     file: &AmrnFile<'_, D>,
     buffer: &mut [u8],

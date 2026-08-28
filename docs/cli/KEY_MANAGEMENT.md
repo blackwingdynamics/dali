@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Dali package signatures provide authenticity only when the kernel has a trusted
-public key for the package's `key_id`. The private signing seed creates package
+Dali cartridge signatures provide authenticity only when the kernel has a trusted
+public key for the cartridge's `key_id`. The private signing seed creates cartridge
 signatures; the public key is provisioned into the target profile and compiled
 into the kernel trust store.
 
@@ -11,9 +11,9 @@ The two materials have different lifecycles:
 
 | Material | Purpose | Repository | Required secrecy |
 | --- | --- | --- | --- |
-| Ed25519 private seed | Signs AMRN v5 packages | Never commit | Secret |
-| Ed25519 public key | Verifies package signatures | `targets/*.toml` | Public |
-| 16-byte `key_id` | Selects the public key | Package and target manifest | Public |
+| Ed25519 private seed | Signs AMRN v5 cartridges | Never commit | Secret |
+| Ed25519 public key | Verifies cartridge signatures | `targets/*.toml` | Public |
+| 16-byte `key_id` | Selects the public key | Cartridge and target manifest | Public |
 
 The key identifier is an opaque random label. It is not a password, a hash
 that authenticates the key, or a replacement for the public key. The signature
@@ -93,14 +93,14 @@ release_trust_anchors = [
 ```
 
 For a production release, the `release_trust_anchors` entry must match the
-private seed used to sign the package. The private seed itself must never be
+private seed used to sign the cartridge. The private seed itself must never be
 added to `targets/f405.toml` or any other tracked file.
 
 Review the public fragment and target diff carefully. The key identifier and
 public key are both fixed-width hexadecimal values. Run the normal workspace
 checks after changing a target manifest.
 
-## Sign a release application package
+## Sign a release application cartridge
 
 The application manifest must select the release profile and AMRN v5:
 
@@ -124,15 +124,15 @@ In CI, use the CI secret store instead of a checked-out seed file. Do not use
 not place it in a shell history entry. The CLI reads the seed only to create
 the DSIG envelope; the seed is not written into the AMRN cartridge.
 
-Inspect the package before deployment:
+Inspect the cartridge before deployment:
 
 ```text
 dali inspect --input target/thumbv7em-none-eabihf/release/<application>.amrn
 ```
 
 Confirm that the reported `format_version` is `5`, the `signing_key_id` is
-the provisioned identifier, and the package metadata is correct. Inspection is
-host/package evidence; it does not replace target hardware acceptance.
+the provisioned identifier, and the cartridge metadata is correct. Inspection is
+host/cartridge evidence; it does not replace target hardware acceptance.
 
 ## Kernel build and acceptance
 
@@ -147,11 +147,11 @@ cargo build -p dali-kernel --release \
 ```
 
 The production build must not enable `abi-test-fixtures`. On hardware, a valid
-package must log signature verification before application loading. A package
+cartridge must log signature verification before application loading. A cartridge
 with an unknown key identifier, modified signed content, or malformed DSIG
 trailer must be rejected before SRAM copy and application entry.
 
-Record the board, kernel commit, target profile, key identifier, package hash,
+Record the board, kernel commit, target profile, key identifier, cartridge hash,
 SD card/filesystem, power source, console channel, expected output, observed
 output, and result in `docs/testing/README.md` or the associated acceptance record.
 
@@ -164,13 +164,13 @@ allows a controlled rotation:
 2. Add the new public key and key identifier to `release_trust_anchors`.
 3. Build, flash, and hardware-test a kernel that accepts both old and new
    anchors.
-4. Sign new packages with the new key and verify the new key identifier.
+4. Sign new cartridges with the new key and verify the new key identifier.
 5. After the migration window, release another kernel that removes the old
    anchor.
 
 If a private seed is exposed, stop signing immediately, preserve the incident
 record, provision a replacement anchor through a firmware update, and treat
-packages signed by the exposed key as untrusted. The current implementation
+cartridges signed by the exposed key as untrusted. The current implementation
 does not provide remote revocation, anti-rollback, or automatic trust-store
 updates; those remain separate roadmap work.
 
@@ -180,6 +180,6 @@ updates; those remain separate roadmap work.
 - Never reuse the RFC8032 development seed for production.
 - Never generate production keys in an online random-key website.
 - Never copy a private seed into `targets/*.toml` or firmware source.
-- Never claim Secure Boot solely from CRC32 or host-side package inspection.
-- Never deploy a release package until the target contains the corresponding
+- Never claim Secure Boot solely from CRC32 or host-side cartridge inspection.
+- Never deploy a release cartridge until the target contains the corresponding
   public trust anchor and hardware acceptance has been recorded.

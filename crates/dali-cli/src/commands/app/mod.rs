@@ -1,13 +1,13 @@
 mod artifacts;
 mod build;
+mod cartridge;
 mod init;
 mod new;
-mod package;
 mod relocations;
 
 const BUILD_COMMAND: &str = "build";
 const INIT_COMMAND: &str = "init";
-const PACKAGE_COMMAND: &str = "package";
+const CARTRIDGE_COMMAND: &str = "cartridge";
 const NEW_COMMAND: &str = "new";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
@@ -15,12 +15,12 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         Some(NEW_COMMAND) => new::run(arguments),
         Some(INIT_COMMAND) => init::run(arguments),
         Some(BUILD_COMMAND) => build::run(arguments),
-        Some(PACKAGE_COMMAND) => package::run(arguments),
+        Some(CARTRIDGE_COMMAND) => cartridge::run(arguments),
         _ => Err(usage()),
     }
 }
 
 fn usage() -> String {
-    "usage:\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali app package"
+    "usage:\n  dali app new <name> [--sdk-path <path>]\n  dali app init [--sdk-path <path>]\n  dali app build\n  dali app cartridge"
         .to_owned()
 }

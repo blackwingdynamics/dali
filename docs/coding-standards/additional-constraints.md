@@ -26,7 +26,7 @@ Do not disable, ignore, or remove tests without an issue or roadmap reference an
 
 ### Fallback behavior
 
-Invalid configuration, missing storage, malformed packages, and hardware failures must not trigger silent fallback behavior unless that fallback is explicitly documented and safe.
+Invalid configuration, missing storage, malformed cartridges, and hardware failures must not trigger silent fallback behavior unless that fallback is explicitly documented and safe.
 
 ### Hardware evidence boundary
 
@@ -35,7 +35,7 @@ simulated runtime behavior as a substitute for the real implementation or
 hardware acceptance. Host tests may cover genuinely hardware-neutral codecs,
 validators, and pure contracts over caller-owned bytes, but those tests are not
 hardware evidence. A test application is valid only when it is a real compiled
-package executed through the documented target contract.
+cartridge executed through the documented target contract.
 
 ### Logging and secrets
 

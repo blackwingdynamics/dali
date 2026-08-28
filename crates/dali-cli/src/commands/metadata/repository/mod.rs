@@ -5,25 +5,25 @@ mod common;
 mod init;
 mod manifest;
 mod publish;
-mod register_package;
+mod register_cartridge;
 
 const INIT_COMMAND: &str = "init";
 const ADD_DEVELOPER_COMMAND: &str = "add-developer";
 const PUBLISH_COMMAND: &str = "publish";
-const REGISTER_PACKAGE_COMMAND: &str = "register-package";
+const REGISTER_CARTRIDGE_COMMAND: &str = "register-cartridge";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     match arguments.get(2).map(String::as_str) {
         Some(INIT_COMMAND) => init::run(arguments),
         Some(ADD_DEVELOPER_COMMAND) => add_developer::run(arguments),
         Some(PUBLISH_COMMAND) => publish::run(arguments),
-        Some(REGISTER_PACKAGE_COMMAND) => register_package::run(arguments),
+        Some(REGISTER_CARTRIDGE_COMMAND) => register_cartridge::run(arguments),
         _ => Err(usage()),
     }
 }
 
 fn usage() -> String {
-    "usage: dali metadata repository {init|add-developer|register-package|publish} ...".to_owned()
+    "usage: dali metadata repository {init|add-developer|register-cartridge|publish} ...".to_owned()
 }
 
 #[cfg(test)]
@@ -117,8 +117,8 @@ mod tests {
         let delegation =
             parse_binary_delegation_body(delegation_envelope.body).expect("parse delegation body");
         assert_eq!(delegation.developer_id.as_str(), Some("developer-one"));
-        fs::write(repository.join("packages/test.amrn"), b"test package")
-            .expect("write package fixture");
+        fs::write(repository.join("cartridges/test.amrn"), b"test cartridge")
+            .expect("write cartridge fixture");
         publish::run(&[
             "metadata".into(),
             "repository".into(),

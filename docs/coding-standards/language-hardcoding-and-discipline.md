@@ -29,7 +29,7 @@ The following must be represented by named constants, typed values, configuratio
 - GPIO pins and peripheral identifiers;
 - clock frequencies, baud rates, timeouts, and delays;
 - buffer sizes, payload limits, stack sizes, and queue capacities;
-- filesystem paths and package names;
+- filesystem paths and cartridge names;
 - protocol versions, target IDs, ABI versions, and feature flags;
 - device identifiers, retry counts, and safety thresholds.
 

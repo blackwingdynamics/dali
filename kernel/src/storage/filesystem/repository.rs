@@ -8,7 +8,7 @@ use crate::{
     drivers::FlushableBlockDevice,
     storage::{
         durable::{DurableArtifact, DurableStorageAdapter},
-        repository::{RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage},
+        repository::{RepositoryCartridgeDigest, RepositoryDocument, RepositoryStreamStorage},
     },
 };
 
@@ -17,8 +17,8 @@ use super::{
     stream_repository_file, stream_root_file, write_trust_store_artifact,
 };
 
-/// Defines the `PACKAGE_NAME_BYTES` bound used by this subsystem.
-const PACKAGE_NAME_BYTES: usize = 64 + 5;
+/// Defines the `CARTRIDGE_NAME_BYTES` bound used by this subsystem.
+const CARTRIDGE_NAME_BYTES: usize = 64 + 5;
 /// Defines the `DELEGATION_NAME_BYTES` bound used by this subsystem.
 const DELEGATION_NAME_BYTES: usize = 64 + 5;
 /// Defines the `METADATA_NAME_BYTES` bound used by this subsystem.
@@ -122,10 +122,10 @@ impl<D> FatRepositoryStorage<D> {
     }
 }
 
-/// Opens one content-addressed AMRN package for the existing execution loader.
-pub fn with_content_addressed_package<D, F, R, E>(
+/// Opens one content-addressed AMRN cartridge for the existing execution loader.
+pub fn with_content_addressed_cartridge<D, F, R, E>(
     device: D,
-    digest: RepositoryPackageDigest,
+    digest: RepositoryCartridgeDigest,
     callback: F,
 ) -> Result<Result<R, E>, Error<crate::drivers::StorageError>>
 where
@@ -135,21 +135,31 @@ where
     let manager = VolumeManager::new(device, KernelTimeSource);
     let volume = manager.open_volume(VolumeIdx(0))?;
     let root = manager.open_root_dir(volume.to_raw_volume())?;
-    let packages = match manager.open_dir(root, "packages") {
+    let cartridges = match manager.open_dir(root, "cartridges") {
         Ok(directory) => directory,
         Err(error) => return super::close_directories(&manager, [root, root, root], 1, Err(error)),
     };
-    let mut name = [0u8; PACKAGE_NAME_BYTES];
-    let name = match append_package_suffix(&digest.0, &mut name) {
+    let mut name = [0u8; CARTRIDGE_NAME_BYTES];
+    let name = match append_cartridge_suffix(&digest.0, &mut name) {
         Ok(name) => name,
         Err(error) => {
-            return super::close_directories(&manager, [root, packages, packages], 2, Err(error));
+            return super::close_directories(
+                &manager,
+                [root, cartridges, cartridges],
+                2,
+                Err(error),
+            );
         }
     };
-    let raw_file = match manager.open_long_name_file_in_dir(packages, name, Mode::ReadOnly) {
+    let raw_file = match manager.open_long_name_file_in_dir(cartridges, name, Mode::ReadOnly) {
         Ok(file) => file,
         Err(error) => {
-            return super::close_directories(&manager, [root, packages, packages], 2, Err(error));
+            return super::close_directories(
+                &manager,
+                [root, cartridges, cartridges],
+                2,
+                Err(error),
+            );
         }
     };
     let length = match manager.file_length(raw_file) {
@@ -158,7 +168,7 @@ where
             return super::close_file_with_error(
                 &manager,
                 raw_file,
-                super::close_directories(&manager, [root, packages, packages], 2, Err(error)),
+                super::close_directories(&manager, [root, cartridges, cartridges], 2, Err(error)),
             );
         }
     };
@@ -168,12 +178,12 @@ where
             return super::close_file_with_error(
                 &manager,
                 raw_file,
-                super::close_directories(&manager, [root, packages, packages], 2, Err(error)),
+                super::close_directories(&manager, [root, cartridges, cartridges], 2, Err(error)),
             );
         }
     };
     let result = callback(file);
-    finish_content_addressed(&manager, [root, packages, packages], raw_file, result)
+    finish_content_addressed(&manager, [root, cartridges, cartridges], raw_file, result)
 }
 
 /// Performs the `finish_content_addressed` operation for this subsystem.
@@ -275,20 +285,20 @@ where
         }
     }
 
-    fn stream_package<F>(
+    fn stream_cartridge<F>(
         &mut self,
-        digest: RepositoryPackageDigest,
+        digest: RepositoryCartridgeDigest,
         chunk: &mut [u8],
         consumer: F,
     ) -> Result<u32, Self::Error>
     where
         F: FnMut(&[u8]) -> Result<(), Self::Error>,
     {
-        let mut name = [0u8; PACKAGE_NAME_BYTES];
-        let name = append_package_suffix(&digest.0, &mut name)?;
+        let mut name = [0u8; CARTRIDGE_NAME_BYTES];
+        let name = append_cartridge_suffix(&digest.0, &mut name)?;
         stream_file(
             self.device,
-            "packages",
+            "cartridges",
             None,
             name,
             chunk,
@@ -332,10 +342,10 @@ where
     )
 }
 
-/// Performs the `append_package_suffix` operation for this subsystem.
-fn append_package_suffix<'a>(
+/// Performs the `append_cartridge_suffix` operation for this subsystem.
+fn append_cartridge_suffix<'a>(
     digest: &[u8; 32],
-    output: &'a mut [u8; PACKAGE_NAME_BYTES],
+    output: &'a mut [u8; CARTRIDGE_NAME_BYTES],
 ) -> Result<&'a str, embedded_sdmmc::Error<crate::drivers::StorageError>> {
     let mut length = 0;
     for byte in digest {
@@ -385,18 +395,18 @@ const fn hex_digit(value: u8) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{PACKAGE_NAME_BYTES, append_package_suffix};
+    use super::{CARTRIDGE_NAME_BYTES, append_cartridge_suffix};
 
     #[test]
-    fn content_addressed_package_names_use_lowercase_digest_hex() {
+    fn content_addressed_cartridge_names_use_lowercase_digest_hex() {
         let digest = [0xC6; 32];
-        let mut output = [0; PACKAGE_NAME_BYTES];
+        let mut output = [0; CARTRIDGE_NAME_BYTES];
         let mut expected = [0u8; 64];
         for pair in expected.chunks_exact_mut(2) {
             pair.copy_from_slice(b"c6");
         }
 
-        let name = append_package_suffix(&digest, &mut output).unwrap();
+        let name = append_cartridge_suffix(&digest, &mut output).unwrap();
         assert_eq!(&name.as_bytes()[..64], &expected);
         assert_eq!(&name.as_bytes()[64..], b".amrn");
     }

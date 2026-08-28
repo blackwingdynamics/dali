@@ -1,4 +1,4 @@
-# 8. `.amrn` package format
+# 8. `.amrn` cartridge format
 
 The first format revision uses a fixed 32-byte binary header followed by the native payload. The payload is linked for the fixed SRAM address `0x20008000`; relocation and dynamic linking are not part of the MVP.
 
@@ -28,7 +28,7 @@ The loader must reject:
 - non-zero flags or reserved fields;
 - integer overflow while calculating offsets or sizes;
 - an empty payload or a payload larger than 64 KiB;
-- a payload outside the package or reserved executable SRAM region;
+- a payload outside the cartridge or reserved executable SRAM region;
 - a load address other than `0x20008000`;
 - an unaligned or out-of-range execution offset;
 - a CRC32 mismatch;
@@ -36,8 +36,8 @@ The loader must reject:
 
 AMRN v5 digital signatures, manifests, version compatibility, revocation, and
 anti-rollback exist in the feature-gated post-MVP repository path; they are not
-part of the baseline ABI v2 package contract. F405 hardware evidence covers
-signed package verification and anti-rollback, while target-side revoked-key
+part of the baseline ABI v2 cartridge contract. F405 hardware evidence covers
+signed cartridge verification and anti-rollback, while target-side revoked-key
 acceptance, production root-key custody enforcement, and pre-reset
 kernel-image Secure Boot remain future work.
 
@@ -56,7 +56,7 @@ The linker script must reserve this region from kernel code, data, stack, and fu
 The loader must:
 
 1. read and validate the header;
-2. validate the complete package size before copying;
+2. validate the complete cartridge size before copying;
 3. validate the load address and entry offset;
 4. copy the payload into the reserved SRAM region;
 5. derive the entry address from the load address and execution offset;

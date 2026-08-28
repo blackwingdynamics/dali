@@ -30,18 +30,18 @@ Limitations: Aggregate entries must not be generalized beyond their quoted behav
 
 The procedure-specific records in [`host.md`](host.md),
 [`../mvp-acceptance/recorded-evidence.md`](../mvp-acceptance/recorded-evidence.md),
-and [`signed-packages.md`](signed-packages.md) remain the source for
+and [`signed-cartridges.md`](signed-cartridges.md) remain the source for
 run-specific metadata and status.
 
 ## Boot, storage, and application path
 
 - [x] F405 boot, 168 MHz clock, PB2 LED, PC13 key, SDIO initialization, and block-zero
   read.
-- [x] FAT32 root scan and `.amrn` package discovery.
+- [x] FAT32 root scan and `.amrn` cartridge discovery.
 - [x] AMRN validation, bounded application load, entry transfer, and the
   three-flash/long-pause application LED pattern.
 - [x] ABI v2 application logging through USB CDC.
-- [x] Empty SD/package states remain informational and enter the heartbeat.
+- [x] Empty SD/cartridge states remain informational and enter the heartbeat.
 
 ### ABI v3 isolation and fault recovery
 
@@ -63,42 +63,42 @@ run-specific metadata and status.
 
 ### Host relocation and non-zero slot evidence
 
-- [x] The relocation fixture was packaged with AMRN format 3 using the
+- [x] The relocation fixture was cartridged with AMRN format 3 using the
   manifest-owned `slot = "slot1"` selection. Its linked bases remained code
-  `0x20008000` and data `0x2000C000`, while the package load addresses were
+  `0x20008000` and data `0x2000C000`, while the cartridge load addresses were
   code `0x20010000` and data `0x20014000`.
-- [x] Host inspection accepted the slot1 package with 49 retained relocation
+- [x] Host inspection accepted the slot1 cartridge with 49 retained relocation
   records, 8 bytes of initialized data, and 4 bytes of zero-initialized data.
-- [x] F405 hardware executed the same relocated slot1 package after the MPU
+- [x] F405 hardware executed the same relocated slot1 cartridge after the MPU
   and SVC slot-selection fix. The console reported AMRN validation followed by
   `[INFO][APP] Relocation fixture`; the same result was observed after CDC
   reconnect. The first reset produced a USB transport disconnect when the
   board cable moved, not a kernel fault.
 - [x] F405 hardware regression after kernel-owned slot reservation was
-  integrated: the slot1 package again passed AMRN validation and emitted
+  integrated: the slot1 cartridge again passed AMRN validation and emitted
   `[INFO][APP] Relocation fixture`. This verifies that reservation state does
   not change the established single-application relocation path.
 
 ### AMRN v4 hardware evidence
 
 - [x] F405 hardware accepted the manifest-backed AMRN format 4 relocation
-  package: the console reported AMRN validation followed by
+  cartridge: the console reported AMRN validation followed by
   `[INFO][APP] Relocation fixture`.
-- [x] The observed package contained identity metadata, `slot_id = 1`, and 49
+- [x] The observed cartridge contained identity metadata, `slot_id = 1`, and 49
   relocation records; the application executed from the selected non-zero slot.
 - [x] The probe shutdown warning after flashing was classified as a transport
   teardown event after the target continued running, not as a loader failure.
-- [x] F405 hardware loaded two distinct AMRN v4 packages in one boot: the
-  loader reported `Loaded 2 application package(s) into declared slots`, and
+- [x] F405 hardware loaded two distinct AMRN v4 cartridges in one boot: the
+  loader reported `Loaded 2 application cartridge(s) into declared slots`, and
   deterministic slot selection entered the slot0 fixture. A later CDC console
   attach showed no replay because prior records had already drained.
-- [x] F405 hardware rejected two real packages carrying the same identity with
-  `PackageCatalog(DuplicateIdentity)` and entered the kernel heartbeat without
+- [x] F405 hardware rejected two real cartridges carrying the same identity with
+  `CartridgeCatalog(DuplicateIdentity)` and entered the kernel heartbeat without
   executing either application.
-- [x] F405 hardware rejected two real packages with different identities that
-  claimed the same slot with `PackageCatalog(SlotOccupied)` and entered the
+- [x] F405 hardware rejected two real cartridges with different identities that
+  claimed the same slot with `CartridgeCatalog(SlotOccupied)` and entered the
   kernel heartbeat without executing either application.
-- [x] F405 hardware reported both loaded packages in their manifest-owned
+- [x] F405 hardware reported both loaded cartridges in their manifest-owned
   regions: slot0 code `0x20008000+16384`, data `0x2000C000+16384`, PSP top
   `0x2000D00C`; slot1 code `0x20010000+16384`, data `0x20014000+16384`, PSP
   top `0x2001500C`. This verifies loader placement and reservations, not
@@ -124,7 +124,7 @@ run-specific metadata and status.
   programming DMA2 and retains exclusive mutable ownership for the transfer.
 - [x] F405 hardware evidence that the guarded SDIO path remains operational
   after the ownership check: firmware reported `SDIO card initialized` and
-  `Read block 0 successfully` before loading two AMRN v4 packages.
+  `Read block 0 successfully` before loading two AMRN v4 cartridges.
 - [x] F405 SWD evidence for kernel-owned DMA configuration and application-owned
   DMA denial. At the active diagnostic marker, DMA2 Stream 3 reported
   `CR=0x08025401`, `NDTR=128`, `PAR=0x40012C80`, and `M0AR=0x20000024`, while

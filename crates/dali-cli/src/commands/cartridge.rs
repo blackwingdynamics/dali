@@ -9,17 +9,17 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         .parse::<u32>()
         .map_err(|_| format!("invalid {ENTRY_OFFSET_FLAG} value"))?;
     let payload = fs::read(input).map_err(|error| format!("cannot read input: {error}"))?;
-    let package = build_package(&payload, entry_offset)?;
-    fs::write(output, package).map_err(|error| format!("cannot write output: {error}"))
+    let cartridge = build_cartridge(&payload, entry_offset)?;
+    fs::write(output, cartridge).map_err(|error| format!("cannot write output: {error}"))
 }
 
-pub(super) fn build_package(payload: &[u8], entry_offset: u32) -> Result<Vec<u8>, String> {
+pub(super) fn build_cartridge(payload: &[u8], entry_offset: u32) -> Result<Vec<u8>, String> {
     let output_size = dali_amrn::HEADER_SIZE
         .checked_add(payload.len())
-        .ok_or_else(|| "package size overflow".to_owned())?;
-    let mut package = vec![0; output_size];
-    let written = dali_amrn::encode_package(payload, entry_offset, &mut package)
-        .map_err(|error| format!("cannot encode package: {error:?}"))?;
-    package.truncate(written);
-    Ok(package)
+        .ok_or_else(|| "cartridge size overflow".to_owned())?;
+    let mut cartridge = vec![0; output_size];
+    let written = dali_amrn::encode_cartridge(payload, entry_offset, &mut cartridge)
+        .map_err(|error| format!("cannot encode cartridge: {error:?}"))?;
+    cartridge.truncate(written);
+    Ok(cartridge)
 }

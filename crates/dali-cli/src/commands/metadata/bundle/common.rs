@@ -17,12 +17,12 @@ pub(super) const SIGNING_KEY_FLAG: &str = "--signing-key";
 pub(super) const SIGNER_KEY_ID_FLAG: &str = "--signer-key-id";
 pub(super) const TARGET_PROFILE_FLAG: &str = "--target-profile";
 pub(super) const VERSION_FLAG: &str = "--version";
-pub(super) const PACKAGE_ID_FLAG: &str = "--package-id";
+pub(super) const CARTRIDGE_ID_FLAG: &str = "--cartridge-id";
 pub(super) const METADATA_FORMAT_FLAG: &str = "--metadata-format";
 pub(super) const MANIFEST_NAME: &str = "bundle.manifest";
 pub(super) const METADATA_DIRECTORY: &str = "metadata";
 pub(super) const DELEGATIONS_DIRECTORY: &str = "delegat";
-pub(super) const PACKAGES_DIRECTORY: &str = "packages";
+pub(super) const CARTRIDGES_DIRECTORY: &str = "cartridges";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum MetadataFormat {
@@ -147,7 +147,7 @@ pub(super) fn bundle_file_path(
             .join(METADATA_DIRECTORY)
             .join(DELEGATIONS_DIRECTORY)
             .join(format!("{id}.{}", format.extension())),
-        BundleFileKind::Package => root.join(PACKAGES_DIRECTORY).join(format!("{id}.amrn")),
+        BundleFileKind::Cartridge => root.join(CARTRIDGES_DIRECTORY).join(format!("{id}.amrn")),
     })
 }
 
@@ -246,7 +246,7 @@ fn kind_order(kind: BundleFileKind) -> u8 {
         BundleFileKind::Targets => 3,
         BundleFileKind::Revocation => 4,
         BundleFileKind::Delegation => 5,
-        BundleFileKind::Package => 6,
+        BundleFileKind::Cartridge => 6,
     }
 }
 

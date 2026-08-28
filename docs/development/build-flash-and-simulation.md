@@ -125,7 +125,7 @@ After flashing, reset the board and connect an RTT viewer through the debug prob
 just clean
 ```
 
-This runs `cargo clean` and removes Cargo build artifacts. It does not remove source files, packages, SD-card contents, or Git history.
+This runs `cargo clean` and removes Cargo build artifacts. It does not remove source files, cartridges, SD-card contents, or Git history.
 
 Build success alone is not hardware evidence. Record the board, probe, wiring, firmware revision, power source, tool versions, expected output, observed output, and result.
 

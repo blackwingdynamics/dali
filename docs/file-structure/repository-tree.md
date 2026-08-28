@@ -68,30 +68,30 @@ dali-kernel/
 │       │   ├── startup/           # Logging, boot banner, and watchdog setup
 │       │   ├── lifecycle/         # Storage status and heartbeat behavior
 │       │   ├── storage/           # Storage initialization and durable-artifact acceptance
-│       │   └── loading/           # Package validation and application launch handoff
+│       │   └── loading/           # Cartridge validation and application launch handoff
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader/mod.rs          # AMRN dispatch and ABI services
 │       ├── loader/repository/      # Repository chain, streaming selection, and tests
 │       │   ├── mod.rs              # Bounded chain and durable install
 │       │   ├── amrn.rs             # Streamed AMRN v5 validation
 │       │   ├── chain.rs            # Generic role capture and replay
-│       │   ├── discovery.rs        # Target package selection
+│       │   ├── discovery.rs        # Target cartridge selection
 │       │   ├── io.rs               # Repository stream I/O helpers
 │       │   ├── streaming.rs        # Binary v2 selective target scan
 │       │   ├── trust.rs            # Root trust-anchor membership
 │       │   └── tests.rs            # Repository loader contract tests
 │       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
-│       │   ├── catalog.rs          # Package catalog policy
+│       │   ├── catalog.rs          # Cartridge catalog policy
 │       │   └── tests.rs            # Hardware-neutral contract tests
 │       ├── loader/pipeline/       # Responsibility-specific loading paths
 │       │   ├── mod.rs             # Pipeline ownership and shared loader imports
 │       │   ├── execution.rs       # Fixed-origin ABI execution path
 │       │   ├── relocation.rs      # Relocation application path
-│       │   ├── identity.rs        # Identity-aware package loading
-│       │   ├── discovery.rs       # Real root-package catalog and selection
+│       │   ├── identity.rs        # Identity-aware cartridge loading
+│       │   ├── discovery.rs       # Real root-cartridge catalog and selection
 │       │   ├── services.rs        # Required-service validation
-│       │   └── signed.rs          # Signed-package loading path
+│       │   └── signed.rs          # Signed-cartridge loading path
 │       ├── logging/              # Facade, RTT, USB CDC backend
 │       ├── runtime/              # Hardware-neutral runtime contracts
 │       │   ├── application/     # Lifecycle, active ownership, recovery policy
@@ -100,7 +100,7 @@ dali-kernel/
 │       └── storage/              # Filesystem and durable storage policy
 │           └── filesystem/       # FAT files, repository adapter, and streaming
 │               ├── repository.rs # FAT32/LFN RepositoryStreamStorage adapter
-│               └── multi.rs      # Bounded multi-package enumeration
+│               └── multi.rs      # Bounded multi-cartridge enumeration
 ├── apps/
 │   ├── dali-app-hello/
 │   ├── dali-app-slot0-fixture/       # AMRN v4 relocation fixture for slot 0
@@ -152,7 +152,7 @@ dali-kernel/
 │   ├── abi/                        # Categorized kernel-application ABI docs
 │   │   ├── README.md
 │   │   ├── fault-boundary.md, isolation-overview.md
-│   │   ├── memory-and-package-contract.md, mvp-and-safety.md
+│   │   ├── memory-and-cartridge-contract.md, mvp-and-safety.md
 │   │   └── runtime-foundations.md
 │   ├── amrn-format/                # Categorized AMRN format documentation
 │   │   ├── README.md
@@ -162,7 +162,7 @@ dali-kernel/
 │   ├── architecture/               # Categorized architecture and protocol docs
 │   │   ├── README.md
 │   │   ├── application-model.md, future-architecture.md
-│   │   ├── mvp-and-platform.md, packages-and-execution.md
+│   │   ├── mvp-and-platform.md, cartridges-and-execution.md
 │   │   ├── rfc-ustari-amrn-ipc.md, runtime-and-kernel.md
 │   │   ├── storage-and-repository.md, ustari_application_protocol.md
 │   │   └── vision-and-scope.md
@@ -233,7 +233,7 @@ dali-kernel/
 │   ├── application-workflow/
 │   │   ├── README.md
 │   │   ├── overview-and-layout.md
-│   │   ├── build-package-and-inspect.md
+│   │   ├── build-cartridge-and-inspect.md
 │   │   ├── cli-install-and-deploy.md
 │   │   └── boundaries-and-troubleshooting.md
 │   ├── README.md                    # Documentation navigation index
@@ -250,7 +250,7 @@ dali-kernel/
 │   │   ├── decision-and-envelope.md
 │   │   ├── f405-streaming-profile.md
 │   │   └── migration-and-compatibility.md
-│   ├── package-distribution/      # Categorized package, trust, and acceptance docs
+│   ├── cartridge-distribution/      # Categorized cartridge, trust, and acceptance docs
 │   │   ├── README.md
 │   │   ├── acceptance-and-trust-updates.md, frozen-profile-decisions.md
 │   │   ├── goals-and-threat-model.md, keys-and-repository.md
@@ -260,12 +260,12 @@ dali-kernel/
 │   │   ├── README.md
 │   │   ├── evidence-boundary.md, f405-silicon.md, host.md
 │   │   ├── mvp-acceptance.md, requirements-and-evidence.md
-│   │   ├── signed-packages.md
+│   │   ├── signed-cartridges.md
 │   │   └── target.md
 │   ├── ustari-protocol/            # Categorized Ustari protocol documentation
 │   │   ├── README.md
 │   │   ├── acceptance-and-compatibility.md, frames-and-messages.md
-│   │   ├── implementation-phases.md, package-and-safety.md
+│   │   ├── implementation-phases.md, cartridge-and-safety.md
 │   │   ├── security-and-authorization.md, status-and-contract.md
 │   │   └── streaming-and-transport.md
 │   ├── file-structure/             # Categorized repository structure documentation

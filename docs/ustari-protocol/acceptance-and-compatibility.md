@@ -5,7 +5,7 @@
 | Codec | Host tests and bounded malformed-input coverage |
 | Session security | Authentication, nonce, authorization, and replay tests |
 | USB integration | Real F405 USB CDC command/response evidence |
-| Package delivery | Real storage read-back, signature, atomic activation, rollback evidence |
+| Cartridge delivery | Real storage read-back, signature, atomic activation, rollback evidence |
 | Other transports | Separate transport-specific evidence |
 | Safety | Board-level local-stop evidence; remote command alone is insufficient |
 

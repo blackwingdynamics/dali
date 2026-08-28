@@ -29,7 +29,7 @@
   coordination. `storage/durable.rs` defines the board-agnostic block and
   durable-adapter contracts; `storage/durable/journal.rs` owns the 104-byte
   DALI-CMT codec; and `storage/durable/coordinator.rs` owns the bounded
-  persistence state machine. Package parsing remains in
+  persistence state machine. Cartridge parsing remains in
   `crates/dali-amrn/` and bootstrap loading policy remains in
   `kernel/src/bootstrap/loading/` while AMRN execution contracts remain in
   `kernel/src/loader/`.
@@ -37,7 +37,7 @@
   `kernel/src/bootstrap/lifecycle/` owns heartbeat/status behavior;
   `kernel/src/bootstrap/storage/` owns storage initialization and the
   feature-gated durable-artifact acceptance path; and
-  `kernel/src/bootstrap/loading/` owns package-to-runtime handoff.
+  `kernel/src/bootstrap/loading/` owns cartridge-to-runtime handoff.
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, fault
   recovery, and MPU protection. The hardware-neutral MPU descriptors and
   layout builder are separated from privileged register programming.

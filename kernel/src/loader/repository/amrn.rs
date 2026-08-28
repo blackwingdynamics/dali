@@ -1,9 +1,9 @@
-//! Generic streamed validation for signed AMRN v5 packages.
+//! Generic streamed validation for signed AMRN v5 cartridges.
 
 use dali_amrn::{Crc32, v3, v5};
 use dali_metadata::{DelegationMetadata, Sha256Digest};
 
-use crate::storage::repository::{RepositoryPackageDigest, RepositoryStreamStorage};
+use crate::storage::repository::{RepositoryCartridgeDigest, RepositoryStreamStorage};
 
 /// Caller-owned fixed storage required by the AMRN two-pass verifier.
 pub(crate) struct AmrnStreamBuffers {
@@ -32,25 +32,25 @@ impl Default for AmrnStreamBuffers {
 /// Errors returned by the generic streamed AMRN validator.
 #[derive(Debug)]
 pub(crate) enum AmrnStreamError<E> {
-    /// Repository storage failed while producing a package chunk.
+    /// Repository storage failed while producing a cartridge chunk.
     Storage(E),
     /// The adapter length did not match the delivered bytes.
     LengthMismatch,
-    /// The package header or trailer was malformed.
+    /// The cartridge header or trailer was malformed.
     InvalidHeader(dali_amrn::v5::Error),
-    /// The package digest did not match the target record.
+    /// The cartridge digest did not match the target record.
     DigestMismatch,
-    /// The package signature did not match the delegated developer key.
+    /// The cartridge signature did not match the delegated developer key.
     InvalidSignature,
-    /// The package CRC or payload CRC was invalid.
+    /// The cartridge CRC or payload CRC was invalid.
     InvalidCrc,
 }
 
-/// Streams and validates one AMRN v5 package in two bounded passes.
+/// Streams and validates one AMRN v5 cartridge in two bounded passes.
 #[inline(never)]
 pub(crate) fn verify_streamed_amrn<'a, S>(
     storage: &mut S,
-    digest: RepositoryPackageDigest,
+    digest: RepositoryCartridgeDigest,
     delegation: &DelegationMetadata,
     contract: v3::Contract,
     chunk: &mut [u8],
@@ -59,7 +59,7 @@ pub(crate) fn verify_streamed_amrn<'a, S>(
 where
     S: RepositoryStreamStorage,
 {
-    let total = capture_package_shape(storage, digest, chunk, buffers)?;
+    let total = capture_cartridge_shape(storage, digest, chunk, buffers)?;
     let header = v5::parse_header_parts(&buffers.header, &buffers.signature, contract)
         .map_err(AmrnStreamError::InvalidHeader)?;
     let signed_size = usize::try_from(read_u32(
@@ -79,20 +79,22 @@ where
         .map_err(|_| AmrnStreamError::InvalidSignature)?;
     let mut verifier = dali_crypto::begin_verify(&delegation.public_key.0, &signature)
         .map_err(|_| AmrnStreamError::InvalidSignature)?;
-    let mut package_crc = Crc32::new();
-    package_crc.update(&buffers.header[..v5::PACKAGE_CRC32_OFFSET]);
-    package_crc.update(&buffers.header[v5::PACKAGE_CRC32_OFFSET + 4..]);
+    let mut cartridge_crc = Crc32::new();
+    cartridge_crc.update(&buffers.header[..v5::CARTRIDGE_CRC32_OFFSET]);
+    cartridge_crc.update(&buffers.header[v5::CARTRIDGE_CRC32_OFFSET + 4..]);
     let mut payload_crc = Crc32::new();
-    replay_package(
+    replay_cartridge(
         storage,
         digest,
         chunk,
         signed_size,
         &mut verifier,
-        &mut package_crc,
+        &mut cartridge_crc,
         &mut payload_crc,
     )?;
-    if package_crc.finish() != header.package_crc32 || payload_crc.finish() != header.image.crc32 {
+    if cartridge_crc.finish() != header.cartridge_crc32
+        || payload_crc.finish() != header.image.crc32
+    {
         return Err(AmrnStreamError::InvalidCrc);
     }
     verifier
@@ -102,10 +104,10 @@ where
 }
 
 #[inline(never)]
-/// Internal helper for `capture_package_shape`.
-fn capture_package_shape<S>(
+/// Internal helper for `capture_cartridge_shape`.
+fn capture_cartridge_shape<S>(
     storage: &mut S,
-    digest: RepositoryPackageDigest,
+    digest: RepositoryCartridgeDigest,
     chunk: &mut [u8],
     buffers: &mut AmrnStreamBuffers,
 ) -> Result<usize, AmrnStreamError<S::Error>>
@@ -113,11 +115,11 @@ where
     S: RepositoryStreamStorage,
 {
     let mut offset = 0_usize;
-    let mut package_digest = dali_crypto::Sha256Accumulator::new();
+    let mut cartridge_digest = dali_crypto::Sha256Accumulator::new();
     let mut tail = TailBuffer::new();
     let total = storage
-        .stream_package(digest, chunk, |bytes| {
-            package_digest.update(bytes);
+        .stream_cartridge(digest, chunk, |bytes| {
+            cartridge_digest.update(bytes);
             copy_header(bytes, &mut offset, &mut buffers.header);
             tail.push(bytes);
             offset = offset.saturating_add(bytes.len());
@@ -128,7 +130,7 @@ where
         return Err(AmrnStreamError::LengthMismatch);
     }
     buffers.signature.copy_from_slice(&tail.bytes);
-    let actual = Sha256Digest(package_digest.finalize());
+    let actual = Sha256Digest(cartridge_digest.finalize());
     if actual.0 != digest.0 {
         return Err(AmrnStreamError::DigestMismatch);
     }
@@ -136,14 +138,14 @@ where
 }
 
 #[inline(never)]
-/// Internal helper for `replay_package`.
-fn replay_package<S>(
+/// Internal helper for `replay_cartridge`.
+fn replay_cartridge<S>(
     storage: &mut S,
-    digest: RepositoryPackageDigest,
+    digest: RepositoryCartridgeDigest,
     chunk: &mut [u8],
     signed_size: usize,
     verifier: &mut dali_crypto::StreamingVerifier,
-    package_crc: &mut Crc32,
+    cartridge_crc: &mut Crc32,
     payload_crc: &mut Crc32,
 ) -> Result<(), AmrnStreamError<S::Error>>
 where
@@ -151,17 +153,17 @@ where
 {
     let mut offset = 0_usize;
     storage
-        .stream_package(digest, chunk, |bytes| {
+        .stream_cartridge(digest, chunk, |bytes| {
             let signed_end = signed_size.min(offset.saturating_add(bytes.len()));
             if offset < signed_end {
                 let signed = &bytes[..signed_end - offset];
                 verifier.update(signed);
                 if offset >= v5::HEADER_SIZE {
-                    package_crc.update(signed);
+                    cartridge_crc.update(signed);
                     payload_crc.update(signed);
                 } else if offset + signed.len() > v5::HEADER_SIZE {
                     let payload_start = v5::HEADER_SIZE - offset;
-                    package_crc.update(&signed[payload_start..]);
+                    cartridge_crc.update(&signed[payload_start..]);
                     payload_crc.update(&signed[payload_start..]);
                 }
             }

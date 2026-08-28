@@ -7,9 +7,9 @@ The loader must validate at least:
 - application ABI version;
 - load address and memory limits;
 - application payload size;
-- package integrity.
+- cartridge integrity.
 
-Compatibility is explicit. A package must not be loaded merely because its name or semantic version appears valid.
+Compatibility is explicit. A cartridge must not be loaded merely because its name or semantic version appears valid.
 
 Future compatibility metadata may include:
 
@@ -21,10 +21,10 @@ required_services
 memory_requirements
 ```
 
-Target profiles permanently declare package authentication policy for both
+Target profiles permanently declare cartridge authentication policy for both
 development and release builds. The current F405 policy permits unsigned
-development packages for local bring-up and requires Ed25519 for release
-packages. Release manifests must select AMRN format `5`, declare a
+development cartridges for local bring-up and requires Ed25519 for release
+cartridges. Release manifests must select AMRN format `5`, declare a
 `signing_key_id`, and provide the private seed through the external
 `DALI_SIGNING_KEY_HEX` environment variable. Target manifests provision
 verification public keys through `authentication.development_trust_anchors`
@@ -34,13 +34,13 @@ anchor is the RFC8032 test vector and is enabled only by `abi-test-fixtures`;
 the release manifest contains a generated public anchor and has hardware
 verification evidence. This static target-profile mechanism is the precursor
 to the multi-developer repository trust contract in
-`docs/package-distribution/README.md`; it is not that contract's dynamic trust store.
+`docs/cartridge-distribution/README.md`; it is not that contract's dynamic trust store.
 
-AMRN format version `4` defines package identity and selection metadata. It
+AMRN format version `4` defines cartridge identity and selection metadata. It
 remains ABI v3-compatible: format v4 changes the container header and
 compatibility checks, not the application calling convention, service gateway,
 or MPU contract. The current feature-gated F405 loader supports format v4 for
-one selected package; it does not yet provide multi-package execution.
+one selected cartridge; it does not yet provide multi-cartridge execution.
 
 AMRN format version `5` is the signed successor to format v4. It leaves the
 v4 bytes unchanged, signs the fixed header and payload, and appends a DSIG

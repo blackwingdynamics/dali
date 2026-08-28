@@ -93,8 +93,8 @@ checkpoint; it must not be hidden by a successful host build.
 - [ ] `kernel/src/loader/pipeline/signed.rs` (427 lines): separate signed
   cartridge reading, authentication/CRC validation, memory copying, and
   relocation application.
-- [ ] `crates/dali-cli/src/commands/app/package.rs` (407 lines): separate
-  package input preparation, metadata handling, and output writing.
+- [ ] `crates/dali-cli/src/commands/app/cartridge.rs` (407 lines): separate
+  cartridge input preparation, metadata handling, and output writing.
 
 ## Priority 2 — parser, metadata, and runtime checkpoints
 

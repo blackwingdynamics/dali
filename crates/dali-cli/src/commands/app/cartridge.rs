@@ -1,6 +1,6 @@
 use std::{env, fs};
 
-use super::super::package as package_command;
+use super::super::cartridge as cartridge_command;
 use super::{artifacts, build};
 
 const AMRN_EXTENSION: &str = "amrn";
@@ -19,7 +19,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let abi_contract = dali_amrn::compatibility::for_abi(abi_version)
         .ok_or_else(|| format!("unsupported application ABI version {abi_version}"))?;
     let release = build::cargo_profile_is_release(&manifest.profile)?;
-    build::validate_package_authentication(target_profile, release, manifest.format_version)?;
+    build::validate_cartridge_authentication(target_profile, release, manifest.format_version)?;
     let output = build::payload_path(&project_directory, target, release, &manifest.name)
         .with_extension(AMRN_EXTENSION);
     let format_version = manifest
@@ -38,7 +38,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             "AMRN format version {format_version} is incompatible with ABI version {abi_version}"
         ));
     }
-    let package = if abi_contract.family == dali_amrn::compatibility::AbiFamily::Legacy {
+    let cartridge = if abi_contract.family == dali_amrn::compatibility::AbiFamily::Legacy {
         if format_version != dali_amrn::FORMAT_VERSION {
             return Err(format!(
                 "AMRN format version {format_version} is incompatible with ABI version {abi_version}"
@@ -48,31 +48,31 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         let payload_bytes = fs::read(&payload).map_err(|error| {
             format!("cannot read native payload {}: {error}", payload.display())
         })?;
-        package_command::build_package(&payload_bytes, manifest.entry_offset)?
+        cartridge_command::build_cartridge(&payload_bytes, manifest.entry_offset)?
     } else {
         match format_version {
-            dali_amrn::v2::FORMAT_VERSION => build_isolation_package(
+            dali_amrn::v2::FORMAT_VERSION => build_isolation_cartridge(
                 &project_directory,
                 &manifest,
                 target_profile,
                 target,
                 release,
             )?,
-            dali_amrn::v3::FORMAT_VERSION => build_relocatable_package(
+            dali_amrn::v3::FORMAT_VERSION => build_relocatable_cartridge(
                 &project_directory,
                 &manifest,
                 target_profile,
                 target,
                 release,
             )?,
-            dali_amrn::v4::FORMAT_VERSION => build_relocatable_identity_package(
+            dali_amrn::v4::FORMAT_VERSION => build_relocatable_identity_cartridge(
                 &project_directory,
                 &manifest,
                 target_profile,
                 target,
                 release,
             )?,
-            dali_amrn::v5::FORMAT_VERSION => build_signed_identity_package(
+            dali_amrn::v5::FORMAT_VERSION => build_signed_identity_cartridge(
                 &project_directory,
                 &manifest,
                 target_profile,
@@ -82,13 +82,13 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             _ => return Err(format!("unsupported AMRN format version {format_version}")),
         }
     };
-    fs::write(&output, package)
-        .map_err(|error| format!("cannot write AMRN package {}: {error}", output.display()))?;
-    println!("Created AMRN package: {}", output.display());
+    fs::write(&output, cartridge)
+        .map_err(|error| format!("cannot write AMRN cartridge {}: {error}", output.display()))?;
+    println!("Created AMRN cartridge: {}", output.display());
     Ok(())
 }
 
-fn build_signed_identity_package(
+fn build_signed_identity_cartridge(
     project_directory: &std::path::Path,
     manifest: &build::ApplicationManifest,
     target_profile: &dali_targets::TargetProfile,
@@ -99,16 +99,16 @@ fn build_signed_identity_package(
         .slot_name
         .as_deref()
         .ok_or_else(|| "AMRN format version 5 requires an explicit `slot`".to_owned())?;
-    let package_id = manifest
-        .package_id
+    let cartridge_id = manifest
+        .cartridge_id
         .as_deref()
-        .ok_or_else(|| "AMRN format version 5 requires `package_id`".to_owned())?;
+        .ok_or_else(|| "AMRN format version 5 requires `cartridge_id`".to_owned())?;
     let signing_key_id = manifest
         .signing_key_id
         .as_deref()
         .ok_or_else(|| "AMRN format version 5 requires `signing_key_id`".to_owned())?;
-    let package_version = manifest
-        .package_version
+    let cartridge_version = manifest
+        .cartridge_version
         .as_deref()
         .ok_or_else(|| "AMRN format version 5 requires `version`".to_owned())?;
     let minimum_kernel_version = manifest
@@ -120,7 +120,7 @@ fn build_signed_identity_package(
     })?;
     let private_key =
         parse_fixed_hex::<{ dali_crypto::PRIVATE_KEY_LENGTH }>(&key_hex, "signing key")?;
-    let key_id = build::parse_package_id(signing_key_id)?;
+    let key_id = build::parse_cartridge_id(signing_key_id)?;
     let slot = build::application_slot(target_profile, Some(slot_name))?;
     let code = artifacts::code_path(project_directory, target, release, &manifest.name);
     let data = artifacts::data_path(project_directory, target, release, &manifest.name);
@@ -151,8 +151,8 @@ fn build_signed_identity_package(
             relocations: &relocation_artifact.relocations,
         },
         metadata: dali_amrn::v4::Metadata {
-            package_id: build::parse_package_id(package_id)?,
-            package_version: build::parse_version(package_version, "version")?,
+            cartridge_id: build::parse_cartridge_id(cartridge_id)?,
+            cartridge_version: build::parse_version(cartridge_version, "version")?,
             minimum_kernel_version: build::parse_version(
                 minimum_kernel_version,
                 "minimum_kernel_version",
@@ -177,17 +177,17 @@ fn build_signed_identity_package(
         .checked_add(code_bytes.len())
         .and_then(|size| size.checked_add(data_bytes.len()))
         .and_then(|size| size.checked_add(relocation_bytes))
-        .ok_or_else(|| "AMRN v5 package size overflow".to_owned())?;
+        .ok_or_else(|| "AMRN v5 cartridge size overflow".to_owned())?;
     let mut signed = vec![0; signed_capacity];
     let signed_size = dali_amrn::v5::encode_unsigned(image, contract, &mut signed)
-        .map_err(|error| format!("cannot encode AMRN v5 package: {error:?}"))?;
+        .map_err(|error| format!("cannot encode AMRN v5 cartridge: {error:?}"))?;
     signed.truncate(signed_size);
     let signature = dali_crypto::sign(&private_key, &signed);
-    let mut package = vec![0; signed_size + dali_amrn::v5::SIGNATURE_SIZE];
-    let size = dali_amrn::v5::append_signature(&signed, &key_id, &signature, &mut package)
+    let mut cartridge = vec![0; signed_size + dali_amrn::v5::SIGNATURE_SIZE];
+    let size = dali_amrn::v5::append_signature(&signed, &key_id, &signature, &mut cartridge)
         .map_err(|error| format!("cannot append AMRN v5 signature: {error:?}"))?;
-    package.truncate(size);
-    Ok(package)
+    cartridge.truncate(size);
+    Ok(cartridge)
 }
 
 fn parse_fixed_hex<const N: usize>(value: &str, field: &str) -> Result<[u8; N], String> {
@@ -207,7 +207,7 @@ fn parse_fixed_hex<const N: usize>(value: &str, field: &str) -> Result<[u8; N], 
     Ok(result)
 }
 
-fn build_relocatable_identity_package(
+fn build_relocatable_identity_cartridge(
     project_directory: &std::path::Path,
     manifest: &build::ApplicationManifest,
     target_profile: &dali_targets::TargetProfile,
@@ -218,12 +218,12 @@ fn build_relocatable_identity_package(
         .slot_name
         .as_deref()
         .ok_or_else(|| "AMRN format version 4 requires an explicit `slot`".to_owned())?;
-    let package_id = manifest
-        .package_id
+    let cartridge_id = manifest
+        .cartridge_id
         .as_deref()
-        .ok_or_else(|| "AMRN format version 4 requires `package_id`".to_owned())?;
-    let package_version = manifest
-        .package_version
+        .ok_or_else(|| "AMRN format version 4 requires `cartridge_id`".to_owned())?;
+    let cartridge_version = manifest
+        .cartridge_version
         .as_deref()
         .ok_or_else(|| "AMRN format version 4 requires `version`".to_owned())?;
     let minimum_kernel_version = manifest
@@ -260,8 +260,8 @@ fn build_relocatable_identity_package(
             relocations: &relocation_artifact.relocations,
         },
         metadata: dali_amrn::v4::Metadata {
-            package_id: build::parse_package_id(package_id)?,
-            package_version: build::parse_version(package_version, "version")?,
+            cartridge_id: build::parse_cartridge_id(cartridge_id)?,
+            cartridge_version: build::parse_version(cartridge_version, "version")?,
             minimum_kernel_version: build::parse_version(
                 minimum_kernel_version,
                 "minimum_kernel_version",
@@ -286,15 +286,15 @@ fn build_relocatable_identity_package(
         .checked_add(code_bytes.len())
         .and_then(|size| size.checked_add(data_bytes.len()))
         .and_then(|size| size.checked_add(relocation_bytes))
-        .ok_or_else(|| "AMRN v4 package size overflow".to_owned())?;
-    let mut package = vec![0; capacity];
-    let size = dali_amrn::v4::encode(image, contract, &mut package)
-        .map_err(|error| format!("cannot encode AMRN v4 package: {error:?}"))?;
-    package.truncate(size);
-    Ok(package)
+        .ok_or_else(|| "AMRN v4 cartridge size overflow".to_owned())?;
+    let mut cartridge = vec![0; capacity];
+    let size = dali_amrn::v4::encode(image, contract, &mut cartridge)
+        .map_err(|error| format!("cannot encode AMRN v4 cartridge: {error:?}"))?;
+    cartridge.truncate(size);
+    Ok(cartridge)
 }
 
-fn build_relocatable_package(
+fn build_relocatable_cartridge(
     project_directory: &std::path::Path,
     manifest: &build::ApplicationManifest,
     target_profile: &dali_targets::TargetProfile,
@@ -345,15 +345,15 @@ fn build_relocatable_package(
         .checked_add(code_bytes.len())
         .and_then(|size| size.checked_add(data_bytes.len()))
         .and_then(|size| size.checked_add(relocation_bytes))
-        .ok_or_else(|| "AMRN v3 package size overflow".to_owned())?;
-    let mut package = vec![0; capacity];
-    let size = dali_amrn::v3::encode(image, contract, &mut package)
-        .map_err(|error| format!("cannot encode AMRN v3 package: {error:?}"))?;
-    package.truncate(size);
-    Ok(package)
+        .ok_or_else(|| "AMRN v3 cartridge size overflow".to_owned())?;
+    let mut cartridge = vec![0; capacity];
+    let size = dali_amrn::v3::encode(image, contract, &mut cartridge)
+        .map_err(|error| format!("cannot encode AMRN v3 cartridge: {error:?}"))?;
+    cartridge.truncate(size);
+    Ok(cartridge)
 }
 
-fn build_isolation_package(
+fn build_isolation_cartridge(
     project_directory: &std::path::Path,
     manifest: &build::ApplicationManifest,
     target_profile: &dali_targets::TargetProfile,
@@ -394,14 +394,14 @@ fn build_isolation_package(
     let capacity = dali_amrn::v2::HEADER_SIZE
         .checked_add(code_bytes.len())
         .and_then(|size| size.checked_add(data_bytes.len()))
-        .ok_or_else(|| "ABI v3 package size overflow".to_owned())?;
-    let mut package = vec![0; capacity];
-    let size = dali_amrn::v2::encode(image, contract, &mut package)
-        .map_err(|error| format!("cannot encode ABI v3 package: {error:?}"))?;
-    package.truncate(size);
-    Ok(package)
+        .ok_or_else(|| "ABI v3 cartridge size overflow".to_owned())?;
+    let mut cartridge = vec![0; capacity];
+    let size = dali_amrn::v2::encode(image, contract, &mut cartridge)
+        .map_err(|error| format!("cannot encode ABI v3 cartridge: {error:?}"))?;
+    cartridge.truncate(size);
+    Ok(cartridge)
 }
 
 fn usage() -> String {
-    "usage:\n  dali app package".to_owned()
+    "usage:\n  dali app cartridge".to_owned()
 }

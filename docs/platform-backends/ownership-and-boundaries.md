@@ -26,7 +26,7 @@ concrete PAC, board identifier, pin number, or transport identifier.
 
 ## Backend isolation contract
 
-Each backend is an independently owned platform package. Its directory owns
+Each backend is an independently owned platform cartridge. Its directory owns
 all target-specific implementation details, including:
 
 - PAC/HAL dependencies and register access;

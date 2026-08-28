@@ -49,7 +49,7 @@ approval.
   references.
 - [x] Document SDK contracts, service boundaries, version compatibility, and
   supported application patterns.
-- [x] Add reproducible examples for package creation, inspection, signing,
+- [x] Add reproducible examples for cartridge creation, inspection, signing,
   installation, and device interaction.
 - [x] Document unsupported modes and failure recovery without inventing
   hardware behavior.

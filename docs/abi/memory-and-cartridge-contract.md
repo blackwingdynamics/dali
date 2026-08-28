@@ -16,7 +16,7 @@ copying or launching. Slot 1 is declared and validated by the target contract.
 The feature-gated ABI v3 scheduler can execute declared contexts and switch
 their PSP/MPU state on F405; production lifecycle, replacement, restart, and
 application-to-application policy remain future work. The v2 single-image
-linker contract remains unchanged for existing packages.
+linker contract remains unchanged for existing cartridges.
 
 The initial eight-region budget is:
 
@@ -42,13 +42,13 @@ region switching. It is not the default kernel configuration, and the
 privileged background map and default-memory attributes must continue to
 prevent bypass of the no-access boundaries.
 
-## ABI v3 package and linker contract
+## ABI v3 cartridge and linker contract
 
-ABI v3 packages use AMRN format version `2`; the format revision is required
+ABI v3 cartridges use AMRN format version `2`; the format revision is required
 because the v1 fixed header cannot represent separate code/data segments and
-runtime stack reservations. The v2 package contract is defined in
+runtime stack reservations. The v2 cartridge contract is defined in
 `docs/amrn-format/README.md`. The `dali-amrn` crate provides host-side parsing and
-construction. The CLI can build and inspect ABI v3 packages, and the kernel has
+construction. The CLI can build and inspect ABI v3 cartridges, and the kernel has
 a feature-gated streaming validator/copy path. The default kernel remains
 ABI v2-only; the feature-gated path is experimental and its hardware evidence
 is complete for the documented F405 context-switch and single-context fault
@@ -65,17 +65,17 @@ For a target selected through the manifest, the linker must emit:
 - metadata sufficient to validate code size, initialized-data size,
   zero-data size, and PSP stack size.
 
-The package payload stores code followed by initialized data. Zero data and
+The cartridge payload stores code followed by initialized data. Zero data and
 the PSP stack are reservations, not file bytes. The loader must copy the two
 file segments only after validating every region bound, then clear the
 zero-data range and construct the PSP launch frame. This is a fixed-address
 single-application contract. Explicit relocation is defined by AMRN format
 version 3 and hardware-tested separately; compiler PIC or RWPI alone is not
-treated as an AMRN relocation contract. Multiple-package execution remains
+treated as an AMRN relocation contract. Multiple-cartridge execution remains
 deferred.
 
 Format version 3 is the movable ABI v3 contract. Its host-side header,
-relocation-entry validation, CLI extraction, package emission, and inspection
+relocation-entry validation, CLI extraction, cartridge emission, and inspection
 are defined in docs/amrn-format/README.md and implemented in dali-amrn::v3 and the
 CLI. The kernel accepts and applies it only with the explicit
 `abi-relocation` feature; the default kernel path remains unchanged. The
@@ -86,12 +86,12 @@ address fields.
 
 The launch frame is kernel-generated. Its PC is the validated Thumb entry,
 its PSP is within the declared stack bounds, its unused argument registers are
-cleared, and its link value cannot return into kernel code. The package cannot
+cleared, and its link value cannot return into kernel code. The cartridge cannot
 provide an exception-return value or a privileged function pointer. ABI v2
-packages remain on the existing direct `ServiceTable` entry path and must not
-be interpreted as ABI v3 packages.
+cartridges remain on the existing direct `ServiceTable` entry path and must not
+be interpreted as ABI v3 cartridges.
 
 Kernel SRAM, kernel runtime/stack SRAM, and ordinary peripheral registers are
 not application-accessible. The v3 design does not claim DMA isolation,
-confidentiality of readable Flash, package authenticity, or recovery from
+confidentiality of readable Flash, cartridge authenticity, or recovery from
 arbitrary native faults.

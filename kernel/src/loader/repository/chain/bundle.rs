@@ -84,7 +84,7 @@ mod tests {
 
     fn request(admission: RepositoryGenerationAdmission) -> RepositoryLoadRequest {
         RepositoryLoadRequest {
-            package_id: None,
+            cartridge_id: None,
             target_profile: dali_metadata::BoundedText::new("test-target").expect("profile fits"),
             contract: None,
             now: None,

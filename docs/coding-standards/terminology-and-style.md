@@ -21,9 +21,9 @@ Dali OS documentation.
 - Use `cartridge` as the canonical Dali OS term for a deployable `.amrn`
   artifact.
 - Use `application payload` for executable code contained by a cartridge.
-- Do not call a `.amrn` artifact an application or package in user-facing
-  documentation. Reserve `package` for packaging operations, Cargo package
-  identity, or specifications that explicitly define package semantics.
+- Do not call a `.amrn` artifact an application or cartridge in user-facing
+  documentation. Reserve `cartridge` for packaging operations, Cargo cartridge
+  identity, or specifications that explicitly define cartridge semantics.
 
 ## Interface and hardware names
 

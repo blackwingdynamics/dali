@@ -26,7 +26,7 @@ into `StreamingRoleVerifier`. Root remains a trust-anchor bootstrap case and
 requires a provisioned root anchor or an explicitly documented two-pass
 policy; it must not be silently treated as self-trusted.
 
-`verify_binary_role_envelope` now packages that parse-and-replay operation for
+`verify_binary_role_envelope` now cartridges that parse-and-replay operation for
 the typed Root, Timestamp, Snapshot, Delegation, and Revocation body parsers.
 It compares the first-pass and replay SHA-256 digests and rejects malformed or
 tampered bodies before returning typed metadata. This is a chain primitive;
@@ -37,8 +37,8 @@ Typed role-body streaming parsers now cover Root, Timestamp, Snapshot,
 Delegation, and Revocation. Each parser uses a bounded queue and emits typed
 fixed-capacity metadata after fragmented-input validation. Targets continues
 to use the kernel's selective record parser because its `record_length` field
-allows non-selected package records to be skipped without retaining them.
-The complete repository chain and package discovery wiring remain in progress.
+allows non-selected cartridge records to be skipped without retaining them.
+The complete repository chain and cartridge discovery wiring remain in progress.
 
 The `<4 KiB` figure is a measured F405 verifier-state budget, not a property
 of binary encoding alone. It must be reported from the linked target image

@@ -27,7 +27,7 @@ pub struct TargetProfile {
     pub dfu: Option<DfuProfile>,
     /// Whether the profile is currently valid for AMRN application execution.
     pub application_supported: bool,
-    /// AMRN target identifier assigned by the package contract.
+    /// AMRN target identifier assigned by the cartridge contract.
     pub amrn_target_id: u8,
     /// Application ABI version.
     pub abi_version: u8,
@@ -55,36 +55,36 @@ pub struct TargetProfile {
     pub scheduler: Option<SchedulerProfile>,
     /// Watchdog configuration declared by the target manifest.
     pub watchdog: Option<WatchdogProfile>,
-    /// Package authentication policy for development and release builds.
+    /// Cartridge authentication policy for development and release builds.
     pub authentication: AuthenticationProfile,
 }
 
-/// Package authentication policy selected by a target build profile.
+/// Cartridge authentication policy selected by a target build profile.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PackageAuthentication {
-    /// Packages may be unsigned in an explicitly non-production build.
+pub enum CartridgeAuthentication {
+    /// Cartridges may be unsigned in an explicitly non-production build.
     UnsignedAllowed,
-    /// Packages must carry a valid Ed25519 signature before release.
+    /// Cartridges must carry a valid Ed25519 signature before release.
     Ed25519Required,
 }
 
 /// Authentication policy for the two supported application build profiles.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct AuthenticationProfile {
-    /// Policy for development packages.
-    pub development: PackageAuthentication,
-    /// Policy for release packages.
-    pub release: PackageAuthentication,
-    /// Public keys provisioned for development/test package verification.
+    /// Policy for development cartridges.
+    pub development: CartridgeAuthentication,
+    /// Policy for release cartridges.
+    pub release: CartridgeAuthentication,
+    /// Public keys provisioned for development/test cartridge verification.
     pub development_trust_anchors: &'static [TrustAnchorProfile],
-    /// Public keys provisioned for release package verification.
+    /// Public keys provisioned for release cartridge verification.
     pub release_trust_anchors: &'static [TrustAnchorProfile],
 }
 
 /// One manifest-owned Ed25519 trust anchor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TrustAnchorProfile {
-    /// Opaque identifier carried by a signed package.
+    /// Opaque identifier carried by a signed cartridge.
     pub key_id: [u8; 16],
     /// Ed25519 public key bytes provisioned for verification.
     pub public_key: [u8; 32],
@@ -99,7 +99,7 @@ pub struct CapabilitiesProfile {
     pub usb_console: bool,
     /// Whether the processor/backend can enforce the declared MPU boundary.
     pub mpu: bool,
-    /// Whether the selected ABI supports relocation packages.
+    /// Whether the selected ABI supports relocation cartridges.
     pub relocation: bool,
 }
 
@@ -280,7 +280,7 @@ impl IsolationMemoryProfile {
 /// A manifest-owned application code/data slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct IsolationSlot {
-    /// Stable target-manifest identifier for package selection.
+    /// Stable target-manifest identifier for cartridge selection.
     pub id: u8,
     /// Stable slot name used by target-aware tooling.
     pub name: &'static str,

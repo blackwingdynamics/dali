@@ -24,13 +24,13 @@ pub const DELEGATION_ID_FLAG: &str = "--delegation-id";
 pub const NAMESPACE_FLAG: &str = "--namespace";
 pub const TARGET_FLAG: &str = "--target";
 pub const ABI_FLAG: &str = "--abi";
-pub const PACKAGE_FLAG: &str = "--package";
+pub const CARTRIDGE_FLAG: &str = "--cartridge";
 pub const MANIFEST_FLAG: &str = "--manifest";
 pub const TARGET_PROFILE_FLAG: &str = "--target-profile";
 pub const VERSION_FLAG: &str = "--version";
 pub const METADATA_DIRECTORY: &str = "metadata";
 pub const DELEGATIONS_DIRECTORY: &str = "delegat";
-pub const PACKAGES_DIRECTORY: &str = "packages";
+pub const CARTRIDGES_DIRECTORY: &str = "cartridges";
 
 pub fn required(arguments: &[String], flag: &str) -> Result<String, String> {
     let position = arguments
@@ -184,7 +184,7 @@ pub fn random_key_id() -> Result<KeyId, String> {
 }
 
 pub fn usage() -> String {
-    "usage: dali metadata repository {init|add-developer|register-package|publish} ...".to_owned()
+    "usage: dali metadata repository {init|add-developer|register-cartridge|publish} ...".to_owned()
 }
 
 pub fn hex_encode(bytes: &[u8]) -> String {

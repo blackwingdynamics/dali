@@ -1,4 +1,4 @@
-# dali package
+# dali cartridge
 
 ## Purpose
 
@@ -7,7 +7,7 @@ Create a contract-valid AMRN cartridge from an already linked native payload.
 ## Inputs
 
 - --input <payload> — linked native payload binary;
-- --output <package> — destination AMRN file;
+- --output <cartridge> — destination AMRN file;
 - --entry-offset <bytes> — word-aligned entry offset from the payload start.
 
 The input is not Rust source and is not an ELF file. It must already be linked
@@ -28,7 +28,7 @@ It does not flash hardware, modify an SD card, or execute the payload.
 ## Example
 
 ~~~text
-dali package \
+dali cartridge \
   --input <payload.bin> \
   --output <application.amrn> \
   --entry-offset <byte-offset>
@@ -37,4 +37,4 @@ dali package \
 ## Failure cases
 
 The command fails for unreadable input, empty or oversized payloads, invalid
-entry offsets, package-size overflow, and unwritable output paths.
+entry offsets, cartridge-size overflow, and unwritable output paths.

@@ -25,12 +25,12 @@ pub use multi::with_amrn_files;
 pub(crate) use read::{close_directories, close_file_with_error, close_root};
 pub use read::{read_repository_file, read_root_file, stream_repository_file};
 pub use repository::{
-    FatRepositoryStorage, RepositoryMetadataFormat, with_content_addressed_package,
+    FatRepositoryStorage, RepositoryMetadataFormat, with_content_addressed_cartridge,
 };
 pub(crate) use root_stream::stream_root_file;
 pub use write::write_root_file;
 
-/// The package extension recognized by the MVP root-directory scan.
+/// The cartridge extension recognized by the MVP root-directory scan.
 pub const AMRN_EXTENSION: &[u8] = b"AMRN";
 /// Maximum number of root AMRN files processed in one bounded scan.
 pub const MAX_ROOT_AMRN_FILES: usize = 4;
@@ -60,24 +60,24 @@ pub struct RootDirectoryReport {
     pub amrn_file_count: u32,
 }
 
-/// Bounded selection result for the current root-package contract.
+/// Bounded selection result for the current root-cartridge contract.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RootPackageSelection {
-    /// No root AMRN package is available.
+pub enum RootCartridgeSelection {
+    /// No root AMRN cartridge is available.
     None,
-    /// Exactly one root AMRN package is eligible for selection.
+    /// Exactly one root AMRN cartridge is eligible for selection.
     Single,
-    /// More than one root AMRN package requires an identity-aware policy.
+    /// More than one root AMRN cartridge requires an identity-aware policy.
     Ambiguous,
 }
 
 impl RootDirectoryReport {
     /// Classifies the root directory without inferring identity from filenames.
-    pub const fn package_selection(self) -> RootPackageSelection {
+    pub const fn cartridge_selection(self) -> RootCartridgeSelection {
         match self.amrn_file_count {
-            0 => RootPackageSelection::None,
-            1 => RootPackageSelection::Single,
-            _ => RootPackageSelection::Ambiguous,
+            0 => RootCartridgeSelection::None,
+            1 => RootCartridgeSelection::Single,
+            _ => RootCartridgeSelection::Ambiguous,
         }
     }
 }
@@ -93,7 +93,7 @@ const MAX_OPEN_VOLUMES: usize = 1;
 type FilesystemManager<D> =
     VolumeManager<D, KernelTimeSource, MAX_OPEN_DIRECTORIES, MAX_OPEN_FILES, MAX_OPEN_VOLUMES>;
 
-/// A read-only stream for the single root AMRN package selected by the loader.
+/// A read-only stream for the single root AMRN cartridge selected by the loader.
 pub struct AmrnFile<'a, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -122,12 +122,12 @@ where
         self.name
     }
 
-    /// Reads the next bounded portion of the package.
+    /// Reads the next bounded portion of the cartridge.
     pub fn read(&self, buffer: &mut [u8]) -> Result<usize, Error<StorageError>> {
         self.manager.read(self.raw_file, buffer)
     }
 
-    /// Rewinds the stream to the beginning of the package.
+    /// Rewinds the stream to the beginning of the cartridge.
     pub fn rewind(&self) -> Result<(), Error<StorageError>> {
         self.manager.file_seek_from_start(self.raw_file, 0)
     }
@@ -162,7 +162,7 @@ impl TimeSource for KernelTimeSource {
     }
 }
 
-/// Scans the first FAT volume root directory for AMRN packages.
+/// Scans the first FAT volume root directory for AMRN cartridges.
 pub fn scan_root_directory<D>(device: D) -> Result<RootDirectoryReport, Error<StorageError>>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -187,7 +187,7 @@ where
     Ok(report)
 }
 
-/// Runs a bounded read-only operation on the single root AMRN package.
+/// Runs a bounded read-only operation on the single root AMRN cartridge.
 pub fn with_amrn_file<D, F, R, E>(
     device: D,
     callback: F,
@@ -243,8 +243,8 @@ where
 }
 
 #[derive(Clone, Copy)]
-/// Represents the private `PackageCandidate` state for this subsystem.
-struct PackageCandidate {
+/// Represents the private `CartridgeCandidate` state for this subsystem.
+struct CartridgeCandidate {
     /// Stores the discovered short filename.
     name: ShortFileName,
 }
@@ -253,7 +253,7 @@ struct PackageCandidate {
 fn find_single_amrn<D>(
     manager: &FilesystemManager<D>,
     root: embedded_sdmmc::RawDirectory,
-) -> Result<PackageCandidate, Error<StorageError>>
+) -> Result<CartridgeCandidate, Error<StorageError>>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
@@ -265,7 +265,7 @@ where
         if is_amrn_entry(entry, long_name) {
             count = count.saturating_add(1);
             if candidate.is_none() {
-                candidate = Some(PackageCandidate { name: entry.name });
+                candidate = Some(CartridgeCandidate { name: entry.name });
             }
         }
         ControlFlow::Continue(())
@@ -274,13 +274,13 @@ where
         RootDirectoryReport {
             amrn_file_count: u32::from(count),
         }
-        .package_selection(),
+        .cartridge_selection(),
         candidate,
     ) {
-        (RootPackageSelection::None, _) => Err(Error::NotFound),
-        (RootPackageSelection::Single, Some(candidate)) => Ok(candidate),
-        (RootPackageSelection::Ambiguous, _) => Err(Error::Unsupported),
-        (RootPackageSelection::Single, None) => Err(Error::NotFound),
+        (RootCartridgeSelection::None, _) => Err(Error::NotFound),
+        (RootCartridgeSelection::Single, Some(candidate)) => Ok(candidate),
+        (RootCartridgeSelection::Ambiguous, _) => Err(Error::Unsupported),
+        (RootCartridgeSelection::Single, None) => Err(Error::NotFound),
     }
 }
 

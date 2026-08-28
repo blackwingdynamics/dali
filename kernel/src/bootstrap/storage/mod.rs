@@ -1,4 +1,4 @@
-//! Storage discovery, filesystem acceptance, and package handoff.
+//! Storage discovery, filesystem acceptance, and cartridge handoff.
 
 #[cfg(feature = "storage-write")]
 mod acceptance;

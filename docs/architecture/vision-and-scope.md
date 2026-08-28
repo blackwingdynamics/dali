@@ -17,8 +17,8 @@ The central architectural idea is:
 - hardware services for sensors, motors, communication, storage, and power;
 - independently built and deployed applications;
 - a Rust SDK (`dali`);
-- a package and device-management CLI (`dali` command, `dali-cli` package);
-- signed packages, compatibility checks, rollback, and safe recovery.
+- a cartridge and device-management CLI (`dali` command, `dali-cli` cartridge);
+- signed cartridges, compatibility checks, rollback, and safe recovery.
 
 ### Explicit non-goals for the first version
 

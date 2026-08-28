@@ -12,21 +12,21 @@ const FLAGS_OFFSET: usize = 25;
 const RESERVED_U16_OFFSET: usize = 26;
 const RESERVED_U32_OFFSET: usize = 28;
 
-/// Errors returned while constructing an AMRN package.
+/// Errors returned while constructing an AMRN cartridge.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BuildError {
     /// The payload is empty.
     EmptyPayload,
     /// The payload exceeds the format limit.
     PayloadTooLarge,
-    /// The output buffer cannot contain the complete package.
+    /// The output buffer cannot contain the complete cartridge.
     OutputTooSmall,
     /// The requested entry offset is invalid for the payload.
     InvalidExecutionOffset,
 }
 
 /// Encodes an AMRN v1 header and payload into caller-provided storage.
-pub fn encode_package(
+pub fn encode_cartridge(
     payload: &[u8],
     execution_offset: u32,
     output: &mut [u8],
@@ -39,16 +39,16 @@ pub fn encode_package(
     }
     validate_execution_offset(execution_offset, payload.len())
         .map_err(|_| BuildError::InvalidExecutionOffset)?;
-    let package_size = HEADER_SIZE
+    let cartridge_size = HEADER_SIZE
         .checked_add(payload.len())
         .ok_or(BuildError::OutputTooSmall)?;
-    if output.len() < package_size {
+    if output.len() < cartridge_size {
         return Err(BuildError::OutputTooSmall);
     }
 
     write_header(output, payload, execution_offset);
-    output[HEADER_SIZE..package_size].copy_from_slice(payload);
-    Ok(package_size)
+    output[HEADER_SIZE..cartridge_size].copy_from_slice(payload);
+    Ok(cartridge_size)
 }
 
 fn write_header(output: &mut [u8], payload: &[u8], execution_offset: u32) {

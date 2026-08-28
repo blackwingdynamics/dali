@@ -13,7 +13,7 @@ const TARGET_ID: u8 = 2;
 const CODE_BYTES: usize = 4;
 const DATA_BYTES: usize = 4;
 const UNDECLARED_SLOT_ID: u8 = 7;
-fn package() -> (Vec<u8>, v3::Contract) {
+fn cartridge() -> (Vec<u8>, v3::Contract) {
     let contract = v3::Contract {
         target_id: TARGET_ID,
         code_load_address: SLOT.code_origin,
@@ -33,8 +33,8 @@ fn package() -> (Vec<u8>, v3::Contract) {
             relocations: &[],
         },
         metadata: v4::Metadata {
-            package_id: [1; 16],
-            package_version: v4::Version {
+            cartridge_id: [1; 16],
+            cartridge_version: v4::Version {
                 major: 1,
                 minor: 0,
                 patch: 0,
@@ -48,17 +48,17 @@ fn package() -> (Vec<u8>, v3::Contract) {
             slot_id: SLOT.id,
         },
     };
-    let mut package = vec![0; v4::HEADER_SIZE + CODE_BYTES + DATA_BYTES];
-    let size = v4::encode(image, contract, &mut package).expect("fixture encodes");
-    package.truncate(size);
-    (package, contract)
+    let mut cartridge = vec![0; v4::HEADER_SIZE + CODE_BYTES + DATA_BYTES];
+    let size = v4::encode(image, contract, &mut cartridge).expect("fixture encodes");
+    cartridge.truncate(size);
+    (cartridge, contract)
 }
 
 #[test]
 fn rejects_an_undeclared_slot() {
-    let (package, contract) = package();
+    let (cartridge, contract) = cartridge();
     let mut header = [0; v4::HEADER_SIZE];
-    header.copy_from_slice(&package[..v4::HEADER_SIZE]);
+    header.copy_from_slice(&cartridge[..v4::HEADER_SIZE]);
     header[v4::SLOT_ID_OFFSET] = UNDECLARED_SLOT_ID;
     assert_eq!(
         select_slot(&header, contract.target_id, &[SLOT]),

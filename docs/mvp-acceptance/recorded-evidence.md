@@ -23,7 +23,7 @@ and the documented slow storage-status blink. After powering down the board,
 reseating the SD card, and restarting it, the same firmware completed SDIO
 initialization, read block zero, validated the AMRN cartridge, and delivered all
 three application log records. The corrected three-flash/long-pause application
-pattern was also observed on the refreshed package. This is evidence that the
+pattern was also observed on the refreshed cartridge. This is evidence that the
 software path can recover after a clean card reseat; it also records that the
 current hardware setup is sensitive to SD-card contact or power quality. The
 observation does not identify which physical component is responsible.
@@ -40,7 +40,7 @@ terminal to lose its port temporarily; reopening the console showed the boot
 and application logs again. This is hardware evidence for the storage-status
 and application LED distinction and CDC reset/reconnect behavior. The formal
 acceptance record still requires the board revision, power source, exact
-package revision and CRC32, and tester fields.
+cartridge revision and CRC32, and tester fields.
 
 ## Acceptance evidence record — 2026-08-16
 
@@ -56,9 +56,9 @@ Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 SD card and filesystem: 128 GB microSD, FAT32
 Kernel revision: 4fb7b41
 Firmware revision: 4fb7b41 (kernel revision)
-Application package revision: hello.amrn
-Package size: 3999 bytes
-Package CRC32: 0xBFDB25F5
+Application cartridge revision: hello.amrn
+Cartridge size: 3999 bytes
+Cartridge CRC32: 0xBFDB25F5
 Observed log: Complete boot, SDIO, AMRN validation, and three application log records
 Expected trace: Successful boot, SDIO initialization, AMRN validation, and application logs
 Observed LED pattern: Slow storage blink without SD card; three short flashes and
@@ -75,7 +75,7 @@ Validation layers:
 - Flashing: Pico 2 CMSIS-DAP programming.
 - Silicon Trace: USB CDC boot and application output recorded above.
 
-The package metadata was recovered from the exact `hello.amrn` file retained
+The cartridge metadata was recovered from the exact `hello.amrn` file retained
 on the FAT32 SD card used for the hardware run.
 
 ### Binary v2 acceptance evidence record — 2026-08-22
@@ -91,14 +91,14 @@ Power source: Not recorded
 Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 SD card and filesystem: FAT32 Binary v2 repository bundle
 Kernel revision: 714339c
-Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
+Cartridge digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
 Observed log: SDIO initialized; trust-store read/write passed; block zero read;
-  AMRN header and payload validated; AMRN signature verified; one package
+  AMRN header and payload validated; AMRN signature verified; one cartridge
   loaded into slot 1; Ready -> Running; Relocation fixture executed
 Observed slot: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
 Result: PASS
 Expected trace: SDIO, trust-store, AMRN validation, slot loading, Ready, and Running
-Limitations: Package size, wiring, board revision, and power source were not captured.
+Limitations: Cartridge size, wiring, board revision, and power source were not captured.
 Known issues: Watchdog reset/Safe Mode is tracked as a separate acceptance scenario.
 ```
 
@@ -126,9 +126,9 @@ Power source: Not recorded
 Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 SD card and filesystem: FAT32 Binary v2 repository bundle
 Kernel revision: baa9a47
-Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
+Cartridge digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
 Observed log: Trust-store artifact write/flush/read-back passed; AMRN header
-  and payload validated; AMRN signature verified; one package loaded into
+  and payload validated; AMRN signature verified; one cartridge loaded into
   slot 1; Ready -> Running; Relocation fixture executed
 Observed slot: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
 Result: PASS
@@ -163,12 +163,12 @@ Power source: Not recorded
 Transport: USB CDC console; manual hardware reboot after SD-card reseat
 SD card and filesystem: FAT32 Binary v2 repository bundle
 Kernel revision: d32ad62
-Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
+Cartridge digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
 Verification method: Manual hardware run after SD card reseat
 Expected trace: Committed-generation selection followed by signed load and Running state
 Observed log: Committed generation selected: version=1 sequence=2 slot=B;
   trust-store write/flush/read-back passed; AMRN header and payload validated;
-  AMRN signature verified; one package loaded into slot 1; Ready -> Running;
+  AMRN signature verified; one cartridge loaded into slot 1; Ready -> Running;
   Relocation fixture executed
 Result: PASS
 Limitations: Wiring, board revision, and power source were not captured. This run verifies committed-journal recovery after reboot. It

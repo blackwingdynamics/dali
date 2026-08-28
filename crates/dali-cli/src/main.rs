@@ -1,4 +1,4 @@
-//! Dali OS package and device CLI.
+//! Dali OS cartridge and device CLI.
 
 use std::{env, process};
 

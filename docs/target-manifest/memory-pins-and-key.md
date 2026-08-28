@@ -35,7 +35,7 @@ An isolation manifest may also declare ordered slots with repeated
 
 The first declared slot must preserve the active single-application code/data
 contract until the loader and MPU switch to slot selection. The explicit `id`
-is the package-facing identity and must remain stable if declarations are
+is the cartridge-facing identity and must remain stable if declarations are
 reordered. Slot declarations are metadata and do not by themselves enable
 multiple applications or context switching. The feature-gated ABI v3
 scheduler and F405 backend provide the separately validated context/MPU
@@ -45,7 +45,7 @@ outside this manifest.
 When present, the code and data regions must be contiguous, begin at
 `application_origin`, and end at the application boundary. They are metadata
 for the isolated ABI and do not enable MPU protection by themselves. The
-`stack_length` value is copied into ABI v3 packages as the PSP reservation.
+`stack_length` value is copied into ABI v3 cartridges as the PSP reservation.
 The peripheral region must be power-of-two-sized and aligned; it is used to make
 ordinary peripheral registers inaccessible to unprivileged applications.
 

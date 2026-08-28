@@ -9,7 +9,7 @@ After the MVP, the platform can grow toward:
 - application lifecycle management;
 - production multi-application lifecycle, ownership, and resource policy on
   top of the current feature-gated MPU/context-switching capability;
-- signed packages and secure boot;
+- signed cartridges and secure boot;
 - A/B updates and rollback;
 - `dali` CLI workflows.
 
@@ -22,7 +22,7 @@ The STM32F405 protection and memory constraints are described in the
 architecture must model such constraints through typed backend capabilities;
 it must not make the F405 layout universal. PIC compiler flags alone do not
 define a relocatable raw AMRN contract. Explicit relocation metadata now
-defines the implemented movable-package path; an alternative PIC/RWPI ABI
+defines the implemented movable-cartridge path; an alternative PIC/RWPI ABI
 remains future work.
 
 ## 12. Architectural principles
@@ -34,12 +34,12 @@ remains future work.
 - Treat native application execution as trusted until isolation exists.
 - Use audited external implementations for cryptography and filesystems where appropriate.
 - Make every security claim match an implemented mechanism.
-- Keep the kernel, SDK, CLI, package format, and application APIs versioned independently.
+- Keep the kernel, SDK, CLI, cartridge format, and application APIs versioned independently.
 
 ## 13. Universal platform boundary
 
 Dali OS is organized around a hardware-neutral kernel core and independently
-packaged platform backends. The core owns boot policy, runtime policy, loader
+cartridged platform backends. The core owns boot policy, runtime policy, loader
 policy, security policy, and hardware-neutral driver contracts. A platform
 backend owns vendor PAC/HAL dependencies, register access, interrupt vectors,
 linker and memory definitions, clock setup, pin mapping, and peripheral

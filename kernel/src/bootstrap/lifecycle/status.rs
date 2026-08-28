@@ -34,7 +34,7 @@ pub enum StorageStatus {
     /// A previously probed card stopped responding and recovery is active.
     #[cfg(feature = "sdio")]
     Removed,
-    /// The storage medium is available, but no application package is present.
+    /// The storage medium is available, but no application cartridge is present.
     Idle,
     /// The card initialized and block zero was read successfully.
     #[cfg(feature = "sdio")]
@@ -42,7 +42,7 @@ pub enum StorageStatus {
     /// The card or transport reported an operational failure.
     #[cfg(feature = "sdio")]
     Failure,
-    /// Recovery boot intentionally skipped package loading.
+    /// Recovery boot intentionally skipped cartridge loading.
     SafeMode,
 }
 

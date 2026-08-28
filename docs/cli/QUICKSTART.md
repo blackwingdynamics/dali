@@ -12,12 +12,12 @@ just app-build
 ~~~
 
 The input must be a linked native payload for the documented target and load
-address. A Rust source file is not a valid input to `dali package`.
+address. A Rust source file is not a valid input to `dali cartridge`.
 
 ## 2. Create the cartridge
 
 ~~~text
-dali package \
+dali cartridge \
   --input <payload.bin> \
   --output <application.amrn> \
   --entry-offset <byte-offset>
@@ -26,10 +26,10 @@ dali package \
 The repository demo shortcut is:
 
 ~~~text
-just package-hello
+just cartridge-hello
 ~~~
 
-## 3. Validate the package
+## 3. Validate the cartridge
 
 ~~~text
 dali inspect --input <application.amrn>

@@ -43,7 +43,7 @@ unsafe extern "C" fn relocation_target() -> ! {
 ///
 /// # Safety
 ///
-/// The fixture is entered only by a test loader after its package contract is
+/// The fixture is entered only by a test loader after its cartridge contract is
 /// validated.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]

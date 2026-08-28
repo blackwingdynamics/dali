@@ -8,8 +8,8 @@ the Dali CLI.
 - [App build](app-build.md)
 - [App init](app-init.md)
 - [App new](app-new.md)
-- [App package](app-package.md)
-- [Package](package.md)
+- [App cartridge](app-cartridge.md)
+- [Cartridge](cartridge.md)
 - [Inspect](inspect.md)
 
 ## Device and target commands

@@ -25,4 +25,4 @@ remains trusted native code.
 
 Keep each phase atomic, preserve hardware-agnostic contracts, and obtain
 explicit approval before changing architecture, boot path, storage layout,
-loader mode, ABI, or package layout.
+loader mode, ABI, or cartridge layout.

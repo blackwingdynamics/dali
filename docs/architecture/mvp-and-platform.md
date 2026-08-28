@@ -6,7 +6,7 @@ The first milestone proves one complete path on a single reference board:
 2. initialize the reference board clock, status LED, SDIO, and logging;
 3. initialize an SD card over the STM32 hardware SDIO interface;
 4. read a FAT16/FAT32 filesystem;
-5. discover an `.amrn` package in the SD card root directory;
+5. discover an `.amrn` cartridge in the SD card root directory;
 6. validate its fixed 32-byte header, payload bounds, target, and CRC32 checksum;
 7. copy its native ARM payload to a reserved SRAM region;
 8. jump to its fixed ABI entry point;

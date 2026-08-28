@@ -1,21 +1,21 @@
 //! Bounded application lifecycle state owned by the kernel runtime.
 
-use dali_amrn::v4::PACKAGE_ID_LENGTH;
+use dali_amrn::v4::CARTRIDGE_ID_LENGTH;
 
 use crate::runtime::memory::slots::{SlotAllocation, SlotManagerError};
 
-/// Opaque identity assigned to one installed application package.
+/// Opaque identity assigned to one installed application cartridge.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ApplicationIdentity([u8; PACKAGE_ID_LENGTH]);
+pub struct ApplicationIdentity([u8; CARTRIDGE_ID_LENGTH]);
 
 impl ApplicationIdentity {
-    /// Creates an identity from validated package metadata.
-    pub const fn new(bytes: [u8; PACKAGE_ID_LENGTH]) -> Self {
+    /// Creates an identity from validated cartridge metadata.
+    pub const fn new(bytes: [u8; CARTRIDGE_ID_LENGTH]) -> Self {
         Self(bytes)
     }
 
-    /// Returns the opaque package identity bytes.
-    pub const fn bytes(self) -> [u8; PACKAGE_ID_LENGTH] {
+    /// Returns the opaque cartridge identity bytes.
+    pub const fn bytes(self) -> [u8; CARTRIDGE_ID_LENGTH] {
         self.0
     }
 }
@@ -49,7 +49,7 @@ pub enum LifecycleError {
         /// Event that was rejected by the lifecycle state machine.
         event: LifecycleEvent,
     },
-    /// The reserved slot does not match the package's declared slot.
+    /// The reserved slot does not match the cartridge's declared slot.
     SlotMismatch,
     /// The slot manager rejected the lifecycle-owned allocation.
     SlotManager(SlotManagerError),
@@ -86,7 +86,7 @@ pub struct ApplicationLifecycle {
 }
 
 impl ApplicationLifecycle {
-    /// Creates a lifecycle record after package discovery and slot selection.
+    /// Creates a lifecycle record after cartridge discovery and slot selection.
     pub const fn discovered(identity: ApplicationIdentity, declared_slot: u8) -> Self {
         Self {
             identity,
@@ -96,12 +96,12 @@ impl ApplicationLifecycle {
         }
     }
 
-    /// Returns the package identity owned by this record.
+    /// Returns the cartridge identity owned by this record.
     pub const fn identity(self) -> ApplicationIdentity {
         self.identity
     }
 
-    /// Returns the package's manifest-declared slot identifier.
+    /// Returns the cartridge's manifest-declared slot identifier.
     pub const fn declared_slot(self) -> u8 {
         self.declared_slot
     }
@@ -172,7 +172,7 @@ mod tests {
     use crate::runtime::memory::slots::SlotManager;
     use dali_targets::IsolationSlot;
 
-    const IDENTITY: ApplicationIdentity = ApplicationIdentity::new([1; PACKAGE_ID_LENGTH]);
+    const IDENTITY: ApplicationIdentity = ApplicationIdentity::new([1; CARTRIDGE_ID_LENGTH]);
     const SLOT: IsolationSlot = IsolationSlot {
         id: 0,
         name: "slot0",

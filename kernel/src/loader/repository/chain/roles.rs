@@ -28,7 +28,7 @@ where
     // SAFETY: verify_role_from_root writes the timestamp before returning.
     let timestamp_metadata = unsafe { timestamp_output.assume_init_ref() };
     let mut snapshot_parser =
-        BinarySnapshotBodyStreamParser::<MAX_BINARY_REPOSITORY_PACKAGES>::new();
+        BinarySnapshotBodyStreamParser::<MAX_BINARY_REPOSITORY_CARTRIDGES>::new();
     let snapshot = verify_role_from_root(
         storage,
         RepositoryDocument::Snapshot,
@@ -99,10 +99,10 @@ where
 }
 
 #[inline(never)]
-/// Internal helper for `verify_delegation_and_package`.
-fn verify_delegation_and_package<S>(
-    context: &mut PackageVerificationContext<'_, S>,
-    target: dali_metadata::TargetPackage,
+/// Internal helper for `verify_delegation_and_cartridge`.
+fn verify_delegation_and_cartridge<S>(
+    context: &mut CartridgeVerificationContext<'_, S>,
+    target: dali_metadata::TargetCartridge,
     target_version: u64,
     contract: dali_amrn::v3::Contract,
 ) -> Result<[u8; dali_metadata::PUBLIC_KEY_LENGTH], BinaryRepositoryError<S::Error>>
@@ -114,9 +114,9 @@ where
         .as_str()
         .ok_or(BinaryRepositoryError::MissingRecord)?;
     let mut parser = BinaryDelegationBodyStreamParser::<
-        MAX_BINARY_PACKAGE_DELEGATION_NAMESPACES,
-        MAX_BINARY_PACKAGE_DELEGATION_TARGETS,
-        MAX_BINARY_PACKAGE_DELEGATION_ABIS,
+        MAX_BINARY_CARTRIDGE_DELEGATION_NAMESPACES,
+        MAX_BINARY_CARTRIDGE_DELEGATION_TARGETS,
+        MAX_BINARY_CARTRIDGE_DELEGATION_ABIS,
     >::new();
     let delegation_info = verify_role_from_root(
         context.storage,
@@ -151,7 +151,7 @@ where
     }
     amrn::verify_streamed_amrn(
         context.storage,
-        RepositoryPackageDigest(target.sha256.0),
+        RepositoryCartridgeDigest(target.sha256.0),
         delegation,
         contract,
         context.chunk,
@@ -164,14 +164,14 @@ where
 /// Internal helper for `map_amrn_error`.
 fn map_amrn_error<E>(error: amrn::AmrnStreamError<E>) -> BinaryRepositoryError<E> {
     match error {
-        amrn::AmrnStreamError::Storage(error) => BinaryRepositoryError::PackageStorage(error),
-        amrn::AmrnStreamError::LengthMismatch => BinaryRepositoryError::PackageLengthMismatch,
+        amrn::AmrnStreamError::Storage(error) => BinaryRepositoryError::CartridgeStorage(error),
+        amrn::AmrnStreamError::LengthMismatch => BinaryRepositoryError::CartridgeLengthMismatch,
         amrn::AmrnStreamError::InvalidHeader(error) => {
-            BinaryRepositoryError::PackageInvalidHeader(error)
+            BinaryRepositoryError::CartridgeInvalidHeader(error)
         }
-        amrn::AmrnStreamError::DigestMismatch => BinaryRepositoryError::PackageDigestMismatch,
-        amrn::AmrnStreamError::InvalidSignature => BinaryRepositoryError::PackageSignature,
-        amrn::AmrnStreamError::InvalidCrc => BinaryRepositoryError::PackageCrc,
+        amrn::AmrnStreamError::DigestMismatch => BinaryRepositoryError::CartridgeDigestMismatch,
+        amrn::AmrnStreamError::InvalidSignature => BinaryRepositoryError::CartridgeSignature,
+        amrn::AmrnStreamError::InvalidCrc => BinaryRepositoryError::CartridgeCrc,
     }
 }
 
@@ -192,8 +192,8 @@ fn map_targets_error<E>(
     }
 }
 
-/// Internal implementation state for `PackageVerificationContext`.
-struct PackageVerificationContext<'a, S> {
+/// Internal implementation state for `CartridgeVerificationContext`.
+struct CartridgeVerificationContext<'a, S> {
 /// Internal field `storage`.
     storage: &'a mut S,
 /// Internal field `root`.

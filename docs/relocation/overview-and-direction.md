@@ -9,7 +9,7 @@ default production boot mode.
 AMRN format 2 remains fixed-address: code is linked for the target manifest's
 active slot and data is linked for its data origin. Format 3 adds explicit
 relocation metadata and a manifest-owned destination slot. Both formats remain
-feature-gated in the kernel, and existing format 2 packages remain valid.
+feature-gated in the kernel, and existing format 2 cartridges remain valid.
 
 Compiler options such as `-C relocation-model=pic` or `-C relocation-model=rwpi`
 are not, by themselves, a Dali relocation contract. A final linked ELF may
@@ -23,7 +23,7 @@ Dali will use explicit relocation metadata for the first movable-application
 implementation. The application build pipeline will produce a linked image,
 retain the linker's relocation records, and convert only the supported records
 into a bounded AMRN relocation table. The kernel loader will apply that table
-after validating the package and before enabling the application's MPU
+after validating the cartridge and before enabling the application's MPU
 permissions or entering the application.
 
 This direction keeps placement policy in the target manifest and loader,

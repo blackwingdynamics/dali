@@ -3,7 +3,7 @@
 Status: **Future — approved architecture; implementation pending**.
 
 Ustari is Dali OS's canonical native application protocol for commands,
-telemetry, diagnostics, and package transfer. The kernel speaks typed binary
+telemetry, diagnostics, and cartridge transfer. The kernel speaks typed binary
 Ustari frames; host tools translate those frames into text, tables, or GUI
 views. Ustari does not replace a physical transport, the AMRN cartridge format,
 the Trust Store, Secure Boot, MPU policy, watchdog, or local actuator safety.
@@ -11,7 +11,7 @@ the Trust Store, Secure Boot, MPU policy, watchdog, or local actuator safety.
 This document records the accepted architecture for the future shell and
 telemetry ecosystem. It does not change the current MVP, the existing
 thirteen-step roadmap, the ABI, the boot path, the storage layout, or the
-package layout. The protocol remains unavailable until its implementation and
+cartridge layout. The protocol remains unavailable until its implementation and
 acceptance gates are complete.
 
 ## Decision
@@ -44,10 +44,10 @@ verification and authorization rules.
       response size, and command execution time.
 - [ ] Separate read-only diagnostics, privileged state changes, and
       safety-critical actuation into explicit authorization classes.
-- [ ] Prevent telemetry, logs, or package transfer from starving control,
+- [ ] Prevent telemetry, logs, or cartridge transfer from starving control,
       watchdog, recovery, or local safety paths.
-- [ ] Keep package authenticity in AMRN and Trust Store policy; Ustari session
-      authorization must not become an alternative package-signing mechanism.
+- [ ] Keep cartridge authenticity in AMRN and Trust Store policy; Ustari session
+      authorization must not become an alternative cartridge-signing mechanism.
 
 ## Protocol layering
 
@@ -82,7 +82,7 @@ the canonical Ustari v1 frame contract from [`ustari-protocol/README.md`](../ust
   frame.
 
 The profile may carry full diagnostics, application lifecycle operations,
-versioned telemetry, and authenticated package-transfer messages. Package
+versioned telemetry, and authenticated cartridge-transfer messages. Cartridge
 transfer remains subject to AMRN validation, signature verification, Trust
 Store policy, anti-rollback, atomic activation, and recovery rules.
 
@@ -106,7 +106,7 @@ constraining the encoded representation for small and loss-prone packets.
       assume a radio can carry a full USTARI_FULL frame.
 - [ ] Define duty-cycle, airtime, downlink, latency, and update-rate budgets
       for each radio deployment.
-- [ ] Reject package transfer, unrestricted logs, arbitrary shell text, and
+- [ ] Reject cartridge transfer, unrestricted logs, arbitrary shell text, and
       unbounded telemetry from the compact profile.
 - [ ] Prove that link loss or reconnect cannot leave an actuator enabled.
 
@@ -128,7 +128,7 @@ The outer CRC detects accidental corruption only.
       authorization class, idempotency, duplicate handling, response, errors,
       and timeout/retry rules.
 - [ ] Reserve separate logical channels for session/control,
-      diagnostics/telemetry, and package transfer.
+      diagnostics/telemetry, and cartridge transfer.
 - [ ] Define explicit priority and fairness rules; an `URGENT` flag must not
       override authorization or local safety policy.
 - [ ] Define compatibility negotiation and rejection of unknown versions,
@@ -191,7 +191,7 @@ session or rekey; it must never silently wrap under the same key.
 Authorization is evaluated after structural, cryptographic, and replay checks.
 The policy is capability- and service-specific, not transport-specific.
 
-- [ ] Define read-only, privileged, package-management, and safety-critical
+- [ ] Define read-only, privileged, cartridge-management, and safety-critical
       capability classes.
 - [ ] Require explicit capability negotiation and deny by default.
 - [ ] Require confirmation, deadline, and cancellation for dangerous actions.
@@ -201,7 +201,7 @@ The policy is capability- and service-specific, not transport-specific.
 - [ ] Define behavior when a session expires during command execution.
 
 CRC16 or CRC32 can detect accidental corruption, but neither authenticates a
-peer. A CRC32 may be used by a specific transport or package-transfer layer
+peer. A CRC32 may be used by a specific transport or cartridge-transfer layer
 when its error-detection requirements justify the extra bytes; it must not be
 presented as authorization or a replacement for AEAD authentication.
 
@@ -266,7 +266,7 @@ native application protocol and cannot be used to infer command success.
 | Diagnostics | `sysinfo`, `ps`, `mem`, `dmesg`, reset status | Read-only, bounded snapshots and streams |
 | Application lifecycle | list, inspect, start, stop | Existing AMRN, Trust Store, MPU, ABI, and lifecycle policy |
 | Telemetry | sensor health, orientation, battery, load | Freshness, validity, rate, and subscriber bounds |
-| Package transfer | start, chunk, finish, abort | AMRN signatures, anti-rollback, atomic activation, recovery |
+| Cartridge transfer | start, chunk, finish, abort | AMRN signatures, anti-rollback, atomic activation, recovery |
 | Motor/ESC test | Explicit safety-critical command | Local failsafe, interlock, deadline, output cap, hardware evidence |
 
 ## Implementation and acceptance gates
@@ -280,7 +280,7 @@ native application protocol and cannot be used to infer command success.
 - [ ] Add host `dali shell` support and typed response validation.
 - [ ] Add F405 target evidence for framing errors, authentication failures,
       replay rejection, and bounded command execution.
-- [ ] Integrate AMRN lifecycle and package transfer only after wired security
+- [ ] Integrate AMRN lifecycle and cartridge transfer only after wired security
       acceptance.
 - [ ] Define and independently validate the compact LoRa/ELRS profile.
 - [ ] Validate telemetry loss, stale data, reconnect, and bandwidth budgets.

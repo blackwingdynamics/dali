@@ -8,7 +8,7 @@ the owning technical contract.
 
 - [ ] The change maps to a roadmap task and has one clear objective.
 - [ ] The owning module and affected boundaries are identified.
-- [ ] No boot path, ABI, memory layout, package layout, or feature contract is
+- [ ] No boot path, ABI, memory layout, cartridge layout, or feature contract is
       changed without the required architecture approval and documentation.
 - [ ] Frozen subsystem paths remain unchanged unless an explicit exception was
       approved.

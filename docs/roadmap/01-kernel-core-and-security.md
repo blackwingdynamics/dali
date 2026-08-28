@@ -15,10 +15,10 @@ the baseline ABI v2 MVP into a general-purpose secure kernel.
 - Faulted-context retirement and resumption of a ready context on F405.
 - Bounded kernel-owned F405 SDIO DMA policy, validated buffer ownership, and
   application DMA request rejection.
-- AMRN v5 signed package/repository verification, developer authorization,
+- AMRN v5 signed cartridge/repository verification, developer authorization,
   trust-store rotation/revocation policy, expiry handling, and durable
   generation anti-rollback admission in the configured repository path. F405
-  hardware evidence covers signed package verification and anti-rollback;
+  hardware evidence covers signed cartridge verification and anti-rollback;
   target-side revoked-developer-key acceptance remains a separate test.
 - Watchdog reset-cause detection, one-shot feed-failure verification, and
   stable Safe Mode heartbeat recovery on F405.

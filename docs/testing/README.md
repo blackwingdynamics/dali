@@ -16,8 +16,8 @@ Board-specific wiring and evidence context: [STM32F405 board documentation](../b
    target-specific acceptance records.
 4. [Evidence boundary](evidence-boundary.md) — evidenced and unevidenced
    behavior, including the distinction between host tests and hardware proof.
-5. [Signed package acceptance](signed-packages.md) — repository, trust-store,
-   and signed-package validation records.
+5. [Signed cartridge acceptance](signed-cartridges.md) — repository, trust-store,
+   and signed-cartridge validation records.
 6. [MVP acceptance](mvp-acceptance.md) — the baseline end-to-end acceptance
    procedure.
 7. [Requirements and evidence traceability](requirements-and-evidence.md) —

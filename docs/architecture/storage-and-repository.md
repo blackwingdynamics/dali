@@ -6,7 +6,7 @@ The storage subsystem is responsible for:
 - SD-card initialization at a safe low SPI frequency;
 - block reads;
 - FAT16/FAT32 read-only filesystem access;
-- root-directory package discovery;
+- root-directory cartridge discovery;
 - bounded reads into loader-owned buffers.
 
 The boot watchdog is deliberately installed immediately before the selected
@@ -74,29 +74,29 @@ STM32F405 SDIO -> F405 block adapter -> FAT32 adapter -> logical storage traits
 
 The repository loader consumes `RepositoryStreamStorage` through bounded
 two-pass role verification. The complete Root -> Timestamp -> Snapshot ->
-Targets -> Delegation -> Revocation -> Package -> AMRN chain is assembled before
-the execution loader receives a package. The loader does not enumerate
-directories or choose packages from filenames. This keeps future board adapters
+Targets -> Delegation -> Revocation -> Cartridge -> AMRN chain is assembled before
+the execution loader receives a cartridge. The loader does not enumerate
+directories or choose cartridges from filenames. This keeps future board adapters
 replaceable without changing trust policy or loader logic.
 
 When the `repository-loader` feature is enabled, the F405 boot path constructs
 the concrete FAT adapter, requests the board target profile, selects every
 matching executable Binary v2 Targets record within the bounded execution
-capacity, opens each lowercase content-addressed `packages/<sha256>.amrn`
+capacity, opens each lowercase content-addressed `cartridges/<sha256>.amrn`
 object, and passes the verified streams to the existing slot/relocation loader.
 The target memory contract is resolved from each manifest-owned slot at the
 dependency-injection boundary; the generic repository loader contains no F405
-or SDIO types. The default MVP build keeps the legacy root-package path because
+or SDIO types. The default MVP build keeps the legacy root-cartridge path because
 repository boot remains feature-gated. The Binary v2 repository path has F405
 development-profile hardware evidence, but it is not the default MVP profile.
 
 The concrete F405 adapter is `FatRepositoryStorage<D>`. Its constructor accepts
 an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
 board-agnostic logical documents through `metadata/`,
-`metadata/delegat/`, and `packages/`, using FAT-compatible bounded directory names, while durable artifacts remain
+`metadata/delegat/`, and `cartridges/`, using FAT-compatible bounded directory names, while durable artifacts remain
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
-The adapter also exposes `with_content_addressed_package()`, which opens only
-the lowercase SHA-256 package filename under `packages/` and hands the file to
+The adapter also exposes `with_content_addressed_cartridge()`, which opens only
+the lowercase SHA-256 cartridge filename under `cartridges/` and hands the file to
 the existing bounded AMRN execution loaders.
 
 The adapter now exposes the streaming contract directly. The shared Binary v2
@@ -108,20 +108,20 @@ kernel repository loader now also contains a bounded two-pass AMRN v5 validator
 under `loader/repository/amrn.rs`, a generic role-stream capture/replay helper
 under `loader/repository/chain.rs`, Root anchor membership wiring through the
 target manifest, and the board-agnostic `load_binary_repository()` chain
-assembler. `load_repository_package()` is the boot handoff: it injects the F405
-adapter into the generic chain and then opens only the digest-selected package
+assembler. `load_repository_cartridge()` is the boot handoff: it injects the F405
+adapter into the generic chain and then opens only the digest-selected cartridge
 for the existing execution pipeline.
 
 ## Production multi-application policy
 
 The legacy root-file path intentionally accepts exactly one root `.amrn`
-package and rejects ambiguous selection. The feature-gated Binary v2
+cartridge and rejects ambiguous selection. The feature-gated Binary v2
 repository path already selects multiple executable Targets records within a
-bounded capacity and maps each verified package to a manifest-owned slot.
+bounded capacity and maps each verified cartridge to a manifest-owned slot.
 The feature-gated runtime can execute declared contexts through its
 hardware-verified scheduler and MPU switching path, but it is not yet a
 general production multi-application policy. Dali must still define lifecycle,
 replacement, restart, recovery, and application-to-application behavior for
-missing, duplicate, incompatible, or already-reserved packages. The slot
+missing, duplicate, incompatible, or already-reserved cartridges. The slot
 manager must consume validated selection; it must not infer ownership from
-directory order or package names.
+directory order or cartridge names.

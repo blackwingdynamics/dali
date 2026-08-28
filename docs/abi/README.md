@@ -9,5 +9,5 @@ topic-oriented sections.
 - [MVP and safety](mvp-and-safety.md)
 - [Isolation overview](isolation-overview.md)
 - [Runtime foundations](runtime-foundations.md)
-- [Memory and package contract](memory-and-package-contract.md)
+- [Memory and cartridge contract](memory-and-cartridge-contract.md)
 - [Fault boundary](fault-boundary.md)

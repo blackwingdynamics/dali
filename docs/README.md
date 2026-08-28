@@ -16,14 +16,14 @@ Read the documents in this order:
 6. [ABI](abi/README.md) — kernel-to-application execution contract.
 7. [Hardware](hardware/README.md) — STM32F405 MVP board, pins, clock, SD wiring, and electrical assumptions.
 8. [Development](development/README.md) — build, flash, logging, and debugging workflow.
-9. [Application Workflow](application-workflow/README.md) — build, package, install, and validate an application.
+9. [Application Workflow](application-workflow/README.md) — build, cartridge, install, and validate an application.
 10. [Testing](testing/README.md) — categorized host, target, and hardware testing documentation.
 11. [MVP Acceptance](mvp-acceptance/README.md) — the physical STM32F405 end-to-end acceptance procedure.
 12. [Versioning](versioning/README.md) — component versions, ABI compatibility, and release tags.
 13. [Security](security/README.md) — current guarantees, non-guarantees, and post-MVP security work.
 14. [Application Relocation](relocation/README.md) — movable ABI v3 application design and evidence boundaries.
-15. [Package Distribution](package-distribution/README.md) — normative multi-developer trust, metadata, update, and acceptance contract.
-16. [Ustari Protocol](ustari-protocol/README.md) — the planned bounded command, telemetry, session-security, and package-delivery protocol.
+15. [Cartridge Distribution](cartridge-distribution/README.md) — normative multi-developer trust, metadata, update, and acceptance contract.
+16. [Ustari Protocol](ustari-protocol/README.md) — the planned bounded command, telemetry, session-security, and cartridge-delivery protocol.
 17. [CLI documentation](cli/README.md) — installation, commands, workflows, output, errors, and testing.
 18. [SDK documentation](sdk/README.md) — application service contracts, compatibility, and validation boundaries.
 19. [Target Profiles](target-profiles/README.md) — declarative board metadata and kernel mapping ownership.
@@ -56,7 +56,7 @@ reference a more authoritative contract.
 | Hardware | Board and electrical constraints | [Hardware index](hardware/README.md) |
 | Metadata binary v2 | Repository metadata wire format | [Metadata index](metadata-binary-v2/README.md) |
 | MVP acceptance | End-to-end acceptance evidence | [MVP acceptance index](mvp-acceptance/README.md) |
-| Package distribution | Trust, update, and distribution policy | [Package distribution index](package-distribution/README.md) |
+| Cartridge distribution | Trust, update, and distribution policy | [Cartridge distribution index](cartridge-distribution/README.md) |
 | Platform backends | Target-specific hardware boundary | [Platform backend index](platform-backends/README.md) |
 | Relocation | Movable application design | [Relocation index](relocation/README.md) |
 | Roadmap | Project phases and execution order | [Roadmap index](roadmap/README.md) |

@@ -23,8 +23,8 @@ fn image() -> Image<'static> {
             relocations: &[],
         },
         metadata: v4::Metadata {
-            package_id: [1; 16],
-            package_version: v4::Version {
+            cartridge_id: [1; 16],
+            cartridge_version: v4::Version {
                 major: 1,
                 minor: 2,
                 patch: 3,
@@ -47,17 +47,17 @@ fn encodes_and_parses_the_signed_container() {
     let signed_size =
         encode_unsigned(image(), CONTRACT, &mut signed).expect("signed range encodes");
     signed.truncate(signed_size);
-    let mut package = std::vec![0; signed_size + SIGNATURE_SIZE];
+    let mut cartridge = std::vec![0; signed_size + SIGNATURE_SIZE];
     let size =
-        append_signature(&signed, &[7; 16], &[9; 64], &mut package).expect("trailer appends");
-    package.truncate(size);
-    let parsed = parse(&package, CONTRACT).expect("signed package parses");
-    let header: &[u8; HEADER_SIZE] = package[..HEADER_SIZE].try_into().unwrap();
-    let parts = parse_header_parts(header, &package[signed_size..], CONTRACT)
+        append_signature(&signed, &[7; 16], &[9; 64], &mut cartridge).expect("trailer appends");
+    cartridge.truncate(size);
+    let parsed = parse(&cartridge, CONTRACT).expect("signed cartridge parses");
+    let header: &[u8; HEADER_SIZE] = cartridge[..HEADER_SIZE].try_into().unwrap();
+    let parts = parse_header_parts(header, &cartridge[signed_size..], CONTRACT)
         .expect("split header and trailer parse");
     assert_eq!(parsed.header.signature.key_id, &[7; 16]);
     assert_eq!(parts, parsed.header);
-    assert_eq!(parsed.signed_bytes(), &package[..signed_size]);
+    assert_eq!(parsed.signed_bytes(), &cartridge[..signed_size]);
 }
 
 #[test]
@@ -66,10 +66,10 @@ fn rejects_a_signature_boundary_change() {
     let signed_size =
         encode_unsigned(image(), CONTRACT, &mut signed).expect("signed range encodes");
     signed.truncate(signed_size);
-    let mut package = std::vec![0; signed_size + SIGNATURE_SIZE];
-    append_signature(&signed, &[7; 16], &[9; 64], &mut package).expect("trailer appends");
-    package[SIGNATURE_OFFSET_FIELD] ^= 1;
-    assert_eq!(parse(&package, CONTRACT), Err(Error::InvalidSignature));
+    let mut cartridge = std::vec![0; signed_size + SIGNATURE_SIZE];
+    append_signature(&signed, &[7; 16], &[9; 64], &mut cartridge).expect("trailer appends");
+    cartridge[SIGNATURE_OFFSET_FIELD] ^= 1;
+    assert_eq!(parse(&cartridge, CONTRACT), Err(Error::InvalidSignature));
 }
 
 #[test]
@@ -78,8 +78,8 @@ fn rejects_crc_changes_inside_the_signed_range() {
     let signed_size =
         encode_unsigned(image(), CONTRACT, &mut signed).expect("signed range encodes");
     signed.truncate(signed_size);
-    let mut package = std::vec![0; signed_size + SIGNATURE_SIZE];
-    append_signature(&signed, &[7; 16], &[9; 64], &mut package).expect("trailer appends");
-    package[HEADER_SIZE] ^= 1;
-    assert_eq!(parse(&package, CONTRACT), Err(Error::CrcMismatch));
+    let mut cartridge = std::vec![0; signed_size + SIGNATURE_SIZE];
+    append_signature(&signed, &[7; 16], &[9; 64], &mut cartridge).expect("trailer appends");
+    cartridge[HEADER_SIZE] ^= 1;
+    assert_eq!(parse(&cartridge, CONTRACT), Err(Error::CrcMismatch));
 }

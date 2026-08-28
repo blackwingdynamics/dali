@@ -9,7 +9,7 @@ Dali root keys
             |
             +-- developer public key / certificate
                     |
-                    +-- sign AMRN application package
+                    +-- sign AMRN application cartridge
 ```
 
 The installed kernel contains only the Dali root public-key set and a target
@@ -32,23 +32,23 @@ The initial production configuration SHOULD use at least three independently
 stored root keys with a two-of-three signing threshold. A single root key MAY
 be used only for development and must be labelled non-production.
 
-Root keys MUST NOT sign application packages directly. Their compromise is an
+Root keys MUST NOT sign application cartridges directly. Their compromise is an
 ecosystem incident and requires an emergency recovery procedure.
 
 ### 5.2 Targets role
 
-The targets role authorizes package names, target profiles, developer
-delegations, package hashes, package lengths, package versions, and package
+The targets role authorizes cartridge names, target profiles, developer
+delegations, cartridge hashes, cartridge lengths, cartridge versions, and cartridge
 compatibility metadata. It MUST be signed by a key authorized by root
 metadata.
 
-Targets metadata MUST contain enough information to reject a package before
+Targets metadata MUST contain enough information to reject a cartridge before
 loading it:
 
-- package identity;
+- cartridge identity;
 - target profile and AMRN format;
 - ABI and minimum kernel version;
-- package version;
+- cartridge version;
 - exact byte length;
 - cryptographic hash of the complete AMRN artifact;
 - developer key identifier or delegation identifier;
@@ -82,7 +82,7 @@ Each developer receives a delegated identity containing:
 
 - developer identifier;
 - developer public key and key identifier;
-- allowed package namespace or application ownership scope;
+- allowed cartridge namespace or application ownership scope;
 - allowed target profiles and ABI families;
 - certificate validity interval;
 - delegation version; and
@@ -99,8 +99,8 @@ missing delegation, a changed targets file, or a local deny-list. Each record
 identifies a developer key, the developer identity, the repository version from
 which the revocation applies, the issuing authority key, and a bounded reason.
 The revocation document is signed by the root-authorized `revocation` role and
-is referenced by snapshot metadata. A target MUST reject a package signed by a
-revoked developer key when the package is evaluated at or after the record's
+is referenced by snapshot metadata. A target MUST reject a cartridge signed by a
+revoked developer key when the cartridge is evaluated at or after the record's
 effective version.
 
 The `recovery` role is also root-authorized, but it is reserved for separately

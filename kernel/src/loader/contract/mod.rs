@@ -8,17 +8,17 @@ mod catalog;
 #[cfg(test)]
 mod tests;
 
-pub use catalog::{CatalogError, DiscoveredPackage, PackageCatalog};
+pub use catalog::{CartridgeCatalog, CatalogError, DiscoveredCartridge};
 
-/// A bounded package reader used by the streaming validation core.
-pub trait PackageReader {
+/// A bounded cartridge reader used by the streaming validation core.
+pub trait CartridgeReader {
     /// The storage error returned by the reader.
     type Error;
 
-    /// Reads the next portion of the package.
+    /// Reads the next portion of the cartridge.
     fn read(&self, buffer: &mut [u8]) -> Result<usize, Self::Error>;
 
-    /// Rewinds the package to its beginning.
+    /// Rewinds the cartridge to its beginning.
     fn rewind(&self) -> Result<(), Self::Error>;
 }
 
@@ -27,9 +27,9 @@ pub trait PackageReader {
 pub enum StreamError<E> {
     /// The reader could not provide the requested bytes.
     Read(E),
-    /// The package contains an invalid relocation entry or target range.
+    /// The cartridge contains an invalid relocation entry or target range.
     InvalidRelocation,
-    /// The payload or package checksum does not match the header.
+    /// The payload or cartridge checksum does not match the header.
     CrcMismatch,
 }
 
@@ -59,49 +59,49 @@ pub fn select_slot(
     Err(last_error)
 }
 
-/// Validates v4 payload and package checksums from a bounded reader.
+/// Validates v4 payload and cartridge checksums from a bounded reader.
 pub fn validate_stream<R>(
     reader: &R,
     header: v4::Header,
     contract: v3::Contract,
 ) -> Result<(), StreamError<R::Error>>
 where
-    R: PackageReader,
+    R: CartridgeReader,
 {
     reader.rewind().map_err(StreamError::Read)?;
     let mut header_bytes = [0; v4::HEADER_SIZE];
     read_exact(reader, &mut header_bytes)?;
     let mut payload_checksum = Crc32::new();
-    let mut package_checksum = Crc32::new();
-    package_checksum.update(&header_bytes[v4::RESERVED_BYTES_OFFSET..]);
+    let mut cartridge_checksum = Crc32::new();
+    cartridge_checksum.update(&header_bytes[v4::RESERVED_BYTES_OFFSET..]);
     let mut chunk = [0; crate::drivers::BLOCK_SIZE];
     read_checksum_bytes(
         reader,
         header.image.code_size,
         &mut chunk,
         &mut payload_checksum,
-        &mut package_checksum,
+        &mut cartridge_checksum,
     )?;
     read_checksum_bytes(
         reader,
         header.image.data_init_size,
         &mut chunk,
         &mut payload_checksum,
-        &mut package_checksum,
+        &mut cartridge_checksum,
     )?;
     let mut entry = [0; v4::RELOCATION_ENTRY_SIZE];
     for _ in 0..header.image.relocation_count {
         read_exact(reader, &mut entry)?;
         payload_checksum.update(&entry);
-        package_checksum.update(&entry);
+        cartridge_checksum.update(&entry);
         let relocation =
             v3::decode_relocation(&entry).map_err(|_| StreamError::InvalidRelocation)?;
         v3::validate_relocation(header.image, contract, relocation)
             .map_err(|_| StreamError::InvalidRelocation)?;
     }
-    package_checksum.update(&header_bytes[..v4::PACKAGE_CRC32_OFFSET]);
+    cartridge_checksum.update(&header_bytes[..v4::CARTRIDGE_CRC32_OFFSET]);
     if payload_checksum.finish() != header.image.crc32
-        || package_checksum.finish() != header.package_crc32
+        || cartridge_checksum.finish() != header.cartridge_crc32
     {
         return Err(StreamError::CrcMismatch);
     }
@@ -114,17 +114,17 @@ fn read_checksum_bytes<R>(
     size: u32,
     chunk: &mut [u8],
     payload_checksum: &mut Crc32,
-    package_checksum: &mut Crc32,
+    cartridge_checksum: &mut Crc32,
 ) -> Result<(), StreamError<R::Error>>
 where
-    R: PackageReader,
+    R: CartridgeReader,
 {
     let mut remaining = usize::try_from(size).map_err(|_| StreamError::CrcMismatch)?;
     while remaining > 0 {
         let chunk_size = remaining.min(chunk.len());
         read_exact(reader, &mut chunk[..chunk_size])?;
         payload_checksum.update(&chunk[..chunk_size]);
-        package_checksum.update(&chunk[..chunk_size]);
+        cartridge_checksum.update(&chunk[..chunk_size]);
         remaining -= chunk_size;
     }
     Ok(())
@@ -133,7 +133,7 @@ where
 /// Performs the `read_exact` operation for this subsystem.
 fn read_exact<R>(reader: &R, buffer: &mut [u8]) -> Result<(), StreamError<R::Error>>
 where
-    R: PackageReader,
+    R: CartridgeReader,
 {
     let mut offset = 0;
     while offset < buffer.len() {
@@ -148,7 +148,7 @@ where
     Ok(())
 }
 
-/// Errors returned when a package cannot be matched to a declared slot.
+/// Errors returned when a cartridge cannot be matched to a declared slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SlotSelectionError {
     /// No declared slot accepted the target and image contract.

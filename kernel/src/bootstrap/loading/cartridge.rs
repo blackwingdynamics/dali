@@ -1,4 +1,4 @@
-//! Package validation, slot activation, and application launch policy.
+//! Cartridge validation, slot activation, and application launch policy.
 
 use super::super::lifecycle::status;
 use crate::{drivers::StorageError, logging, platform};
@@ -29,19 +29,19 @@ where
         format_args!("[STORAGE] Read block 0 successfully"),
     );
     #[cfg(all(feature = "abi-current", feature = "repository-loader"))]
-    let package =
-        crate::loader::load_repository_package(device, slot_manager, committed_generation);
+    let cartridge =
+        crate::loader::load_repository_cartridge(device, slot_manager, committed_generation);
     #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
-    let package = crate::loader::load_current_abi::<D, B>(device, slot_manager);
+    let cartridge = crate::loader::load_current_abi::<D, B>(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]
-    let package = if B::application_execution_supported() {
+    let cartridge = if B::application_execution_supported() {
         crate::loader::load_amrn_file(device)
     } else {
         crate::loader::validate_amrn_file(device)
     };
 
-    match package {
-        Ok(package) => {
+    match cartridge {
+        Ok(cartridge) => {
             logging::info(
                 logging::BOOT_SUBSYSTEM,
                 format_args!("[LOADER] AMRN header and payload validated"),
@@ -53,18 +53,18 @@ where
             );
             #[cfg(not(feature = "abi-current"))]
             if B::application_execution_supported() {
-                crate::loader::start_application(package);
+                crate::loader::start_application(cartridge);
             }
             #[cfg(feature = "abi-current")]
             {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
                     format_args!(
-                        "[LOADER] Loaded {} application package(s) into declared slots",
-                        package.len()
+                        "[LOADER] Loaded {} application cartridge(s) into declared slots",
+                        cartridge.len()
                     ),
                 );
-                for application in package.iter() {
+                for application in cartridge.iter() {
                     let slot = application.slot;
                     logging::info(
                         logging::BOOT_SUBSYSTEM,
@@ -82,7 +82,7 @@ where
                 }
                 #[cfg(feature = "abi-context-switch")]
                 if let Err(error) = crate::security::scheduling::register_contexts(
-                    package
+                    cartridge
                         .iter()
                         .map(|application| application.scheduler_context()),
                 ) {
@@ -97,16 +97,16 @@ where
                 }
                 #[cfg(feature = "abi-mpu")]
                 {
-                    let Some(package) = package.first() else {
+                    let Some(cartridge) = cartridge.first() else {
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
                             format_args!("[SECURITY] No loaded application context"),
                         );
                         return status::StorageStatus::Failure;
                     };
-                    let Some(mut lifecycle) = package.lifecycle else {
-                        if platform::activate_application_regions(package.slot) {
-                            crate::security::launch::enter(package.launch_frame);
+                    let Some(mut lifecycle) = cartridge.lifecycle else {
+                        if platform::activate_application_regions(cartridge.slot) {
+                            crate::security::launch::enter(cartridge.launch_frame);
                         }
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
@@ -178,7 +178,7 @@ where
                                 return status::StorageStatus::Failure;
                             }
                         }
-                        crate::security::launch::enter(package.launch_frame);
+                        crate::security::launch::enter(cartridge.launch_frame);
                     }
                     logging::error(
                         logging::SECURITY_SUBSYSTEM,
@@ -188,7 +188,7 @@ where
                 }
                 #[cfg(not(feature = "abi-mpu"))]
                 {
-                    let _ = package.first();
+                    let _ = cartridge.first();
                     status::StorageStatus::Ready
                 }
             }
@@ -202,7 +202,7 @@ where
             ) {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
-                    format_args!("[LOADER] No AMRN package found; entering kernel heartbeat"),
+                    format_args!("[LOADER] No AMRN cartridge found; entering kernel heartbeat"),
                 );
                 return status::StorageStatus::Idle;
             }

@@ -1,8 +1,8 @@
-# 7. Package acceptance flow
+# 7. Cartridge acceptance flow
 
 The target-side acceptance flow is fixed:
 
-1. discover the candidate package from the supported storage backend;
+1. discover the candidate cartridge from the supported storage backend;
 2. read bounded repository metadata and the signed trust-store state;
 3. validate metadata structure, size, version, role, and expiration policy;
 4. verify the root-to-role metadata chain;
@@ -10,9 +10,9 @@ The target-side acceptance flow is fixed:
 6. resolve every executable target record for the boot profile within the
    bounded execution capacity; zero records, duplicate identities, or records
    beyond the capacity MUST be rejected;
-7. open `packages/<lowercase-sha256>.amrn` from the content-addressed package
+7. open `cartridges/<lowercase-sha256>.amrn` from the content-addressed cartridge
    directory, never by directory order or an untrusted display name;
-8. verify package length and complete-file hash;
+8. verify cartridge length and complete-file hash;
 9. verify the developer delegation and its validity/revocation state;
 10. verify the AMRN v5 developer signature over its specified signed range;
 11. validate AMRN fields, CRC32, bounds, compatibility, services, and entry;
@@ -28,17 +28,17 @@ or sensitive metadata.
 ## 7.1 Implemented verification-chain boundary
 
 The hardware-neutral `dali-metadata` crate now exposes the bounded
-`verify_repository_package` entry point. Its sequence is deliberately linear:
+`verify_repository_cartridge` entry point. Its sequence is deliberately linear:
 
 ```text
 Root
   -> Bundle manifest (signature and generation admission against DALI-CMT.BIN)
   -> Timestamp (snapshot length/version/SHA-256)
   -> Snapshot (targets, revocation, delegation references)
-  -> Targets (package record)
+  -> Targets (cartridge record)
   -> Delegation (developer identity/key/scope)
   -> Revocation (effective repository generation)
-  -> Package record (complete-file length/SHA-256 and AMRN fields)
+  -> Cartridge record (complete-file length/SHA-256 and AMRN fields)
   -> AMRN v5 (CRC32 and developer Ed25519 signature)
 ```
 
@@ -47,21 +47,21 @@ with the root-declared role threshold before its references are consumed.
 The signed `bundle.manifest` is streamed through the same Root-declared bundle
 role policy before its generation is used. Active boot accepts the committed
 generation; an explicitly authorized candidate must be strictly newer, and an
-older or otherwise inadmissible generation is rejected before package loading.
+older or otherwise inadmissible generation is rejected before cartridge loading.
 `Ed25519Verifier` delegates to the workspace `dali-crypto` facade; there is no
 deterministic or test-only verifier in the production path. The chain is
 bounded and borrows caller-owned bytes, so it is suitable for host tooling and
 later target integration without introducing storage ownership or heap policy
 into the metadata contract. The kernel installation path creates a
-`PackageInstallationAuthorization` only after this chain succeeds, binds the
-package digest and length to the candidate generation, and checks that
+`CartridgeInstallationAuthorization` only after this chain succeeds, binds the
+cartridge digest and length to the candidate generation, and checks that
 generation against the active `DALI-CMT.BIN` counter before writing the
 inactive slot. F405 production release acceptance remains separate hardware
 evidence.
 
 ## 8. Trust-store update flow
 
-Trust-store updates are separate from application packages. An application
+Trust-store updates are separate from application cartridges. An application
 MUST NOT be able to update the trust store.
 
 The update flow is:

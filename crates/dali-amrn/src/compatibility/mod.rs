@@ -1,11 +1,11 @@
 //! Shared ABI and AMRN format compatibility rules.
 
-/// ABI family represented by a package contract.
+/// ABI family represented by a cartridge contract.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AbiFamily {
-    /// Fixed-origin AMRN v1 packages and the direct service-table ABI.
+    /// Fixed-origin AMRN v1 cartridges and the direct service-table ABI.
     Legacy,
-    /// Segmented AMRN packages and the privileged SVC ABI.
+    /// Segmented AMRN cartridges and the privileged SVC ABI.
     Isolation,
 }
 

@@ -1,7 +1,7 @@
 # 11. Development, release, and recovery modes
 
 Development mode MAY use an explicitly documented test anchor and unsigned
-packages. It MUST be impossible to confuse development artifacts with release
+cartridges. It MUST be impossible to confuse development artifacts with release
 artifacts through names, metadata, or logs.
 
 Release mode MUST require:
@@ -15,7 +15,7 @@ Release mode MUST require:
 - an accepted signature chain.
 
 Recovery mode MUST accept only a separately authorized recovery bundle. A
-normal application package MUST NOT activate recovery mode or modify root
+normal application cartridge MUST NOT activate recovery mode or modify root
 trust. Recovery behavior, physical authorization, and anti-rollback policy
 must be documented for each target family.
 
@@ -31,11 +31,11 @@ The system MUST distinguish these failures:
 - expired metadata;
 - revoked key or certificate;
 - rollback or stale version;
-- unauthorized package namespace or target;
+- unauthorized cartridge namespace or target;
 - AMRN validation failure; and
 - durable trust-store commit failure.
 
-Logs MAY include role, key identifier, package identity, version, and typed
+Logs MAY include role, key identifier, cartridge identity, version, and typed
 failure reason. Logs MUST NOT include private keys, signatures when not needed
 for diagnosis, seed material, or complete metadata dumps from untrusted input.
 
@@ -75,11 +75,11 @@ The embedded target checks MUST prove:
 
 Each supported board must demonstrate:
 
-1. valid metadata and package acceptance;
+1. valid metadata and cartridge acceptance;
 2. unknown developer rejection;
 3. revoked or expired developer rejection;
 4. modified metadata rejection;
-5. modified package rejection;
+5. modified cartridge rejection;
 6. rollback rejection;
 7. power-loss-safe trust-store replacement, where testable;
 8. key rotation with old/new overlap; and
@@ -100,11 +100,11 @@ Implementation MUST follow this order:
 5. extend the CLI to generate requests and build signed metadata bundles;
 6. define the offline bundle layout and atomic storage-update contract;
 7. implement target trust-store verification and durable activation;
-8. connect package installation to metadata authorization;
+8. connect cartridge installation to metadata authorization;
 9. add host, target, and hardware acceptance evidence; and
 10. only then publish a public multi-developer registry workflow.
 
-No application scheduler, board backend, or package loader feature may silently
+No application scheduler, board backend, or cartridge loader feature may silently
 implement part of this design under a different name. All changes must point
 back to this document and the corresponding versioned contract.
 

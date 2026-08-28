@@ -1,8 +1,8 @@
-# 13. Package transfer and activation
+# 13. Cartridge transfer and activation
 
 The transfer lifecycle is:
 
-1. `FILE_START` declares transfer ID, package ID, format/version, exact length,
+1. `FILE_START` declares transfer ID, cartridge ID, format/version, exact length,
    digest, and signature metadata.
 2. The device validates limits and authorization before reserving a transfer.
 3. `FILE_CHUNK` carries a bounded offset or in-order chunk number.
@@ -11,11 +11,11 @@ The transfer lifecycle is:
    Trust Store validation, target/ABI compatibility, and policy checks.
 6. Candidate/commit-marker activation makes power loss recoverable.
 7. Activation is reported only after read-back and commit validation.
-8. Failure leaves the active package unchanged.
+8. Failure leaves the active cartridge unchanged.
 
 The initial profile requires in-order chunks and one transfer per peer.
 Resumable or out-of-order transfers need an explicit storage and replay design.
-No filename or UI label is trusted as package identity.
+No filename or UI label is trusted as cartridge identity.
 
 ## 14. Safety and emergency commands
 

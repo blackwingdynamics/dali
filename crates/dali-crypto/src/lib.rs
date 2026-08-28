@@ -50,7 +50,7 @@ impl Default for Sha256Accumulator {
 /// One public key registered in a target trust store.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TrustAnchor {
-    /// Opaque identifier carried by a signed package.
+    /// Opaque identifier carried by a signed cartridge.
     pub key_id: [u8; KEY_ID_LENGTH],
     /// Ed25519 public key associated with the identifier.
     pub public_key: [u8; PUBLIC_KEY_LENGTH],
@@ -141,7 +141,7 @@ pub fn begin_verify_with_trust_store(
 /// Errors returned by trust-anchor selection and verification.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TrustStoreError {
-    /// No configured key has the package's requested identifier.
+    /// No configured key has the cartridge's requested identifier.
     UnknownKey,
     /// The selected key or signature failed cryptographic verification.
     Verification(VerificationError),

@@ -1,19 +1,19 @@
 use std::{fs, path::PathBuf};
 
 use dali_metadata::{
-    BoundedText, DelegationMetadata, MetadataHeader, MetadataRole, PackageId, Sha256Digest,
-    SnapshotMetadata, TargetPackage, TargetsMetadata, TargetsReference, TimestampMetadata,
+    BoundedText, CartridgeId, DelegationMetadata, MetadataHeader, MetadataRole, Sha256Digest,
+    SnapshotMetadata, TargetCartridge, TargetsMetadata, TargetsReference, TimestampMetadata,
     parse_binary_delegation_body, parse_binary_revocation_body, parse_binary_root_body,
     parse_binary_snapshot_body, parse_binary_targets_body,
 };
 use sha2::{Digest, Sha256};
 
 use super::common;
-use super::manifest::{self, PackageManifest};
+use super::manifest::{self, CartridgeManifest};
 
 pub fn run(arguments: &[String]) -> Result<(), String> {
     let repository = PathBuf::from(common::required(arguments, common::INPUT_FLAG)?);
-    let package_path = PathBuf::from(common::required(arguments, common::PACKAGE_FLAG)?);
+    let cartridge_path = PathBuf::from(common::required(arguments, common::CARTRIDGE_FLAG)?);
     let manifest_path = PathBuf::from(common::required(arguments, common::MANIFEST_FLAG)?);
     let delegation_id = common::bounded::<{ dali_metadata::MAX_DELEGATION_ID_BYTES }>(
         &common::required(arguments, common::DELEGATION_ID_FLAG)?,
@@ -28,12 +28,16 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
         common::SIGNING_KEY_FLAG,
     )?))?;
     let manifest = manifest::parse(&manifest_path)?;
-    let package_bytes = fs::read(&package_path)
-        .map_err(|error| format!("cannot read package {}: {error}", package_path.display()))?;
-    let digest = Sha256Digest(Sha256::digest(&package_bytes).into());
-    verify_stored_package(&repository, &digest, &package_bytes)?;
-    let package = parse_package(&package_bytes, &manifest)?;
-    validate_manifest_package(&manifest, &package)?;
+    let cartridge_bytes = fs::read(&cartridge_path).map_err(|error| {
+        format!(
+            "cannot read cartridge {}: {error}",
+            cartridge_path.display()
+        )
+    })?;
+    let digest = Sha256Digest(Sha256::digest(&cartridge_bytes).into());
+    verify_stored_cartridge(&repository, &digest, &cartridge_bytes)?;
+    let cartridge = parse_cartridge(&cartridge_bytes, &manifest)?;
+    validate_manifest_cartridge(&manifest, &cartridge)?;
 
     let (_, root_envelope) =
         common::read_binary(&common::root_path(&repository), MetadataRole::Root)?;
@@ -62,10 +66,10 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     let (_, delegation_envelope) = common::read_binary(&delegation_path, MetadataRole::Delegation)?;
     let delegation = parse_binary_delegation_body(delegation_envelope.body)
         .map_err(|error| format!("invalid delegation body: {error:?}"))?;
-    authorize_package(&targets, &delegation, delegation_id, namespace, &manifest)?;
+    authorize_cartridge(&targets, &delegation, delegation_id, namespace, &manifest)?;
 
-    let target_package = TargetPackage {
-        package_id: PackageId(manifest.package_id),
+    let target_cartridge = TargetCartridge {
+        cartridge_id: CartridgeId(manifest.cartridge_id),
         namespace,
         developer_id: delegation.developer_id,
         delegation_id,
@@ -73,15 +77,15 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
         target_profile: manifest.target_profile,
         amrn_format: u16::from(dali_amrn::v5::FORMAT_VERSION),
         abi_version: u16::from(dali_amrn::v3::ABI_VERSION),
-        package_version: manifest.package_version,
+        cartridge_version: manifest.cartridge_version,
         minimum_kernel_version: manifest.minimum_kernel_version,
-        length: u32::try_from(package_bytes.len())
-            .map_err(|_| "package is larger than the targets length field".to_owned())?,
+        length: u32::try_from(cartridge_bytes.len())
+            .map_err(|_| "cartridge is larger than the targets length field".to_owned())?,
         sha256: digest,
         required_services: manifest.required_services,
         slot_id: manifest.slot_id,
     };
-    let updated_targets = append_package(targets, target_package)?;
+    let updated_targets = append_cartridge(targets, target_cartridge)?;
     let targets_body = encode_targets(updated_targets)?;
     let targets_signer = common::role_key(&root, MetadataRole::Targets)?;
     let targets_envelope = common::sign_binary(
@@ -121,16 +125,19 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     common::write_replace(&common::targets_path(&repository), &targets_envelope)?;
     common::write_replace(&common::snapshot_path(&repository), &snapshot_envelope)?;
     common::write_replace(&common::timestamp_path(&repository), &timestamp_envelope)?;
-    println!("Registered package: {}", package_path.display());
-    println!("package id: {}", common::hex_encode(&manifest.package_id));
+    println!("Registered cartridge: {}", cartridge_path.display());
+    println!(
+        "cartridge id: {}",
+        common::hex_encode(&manifest.cartridge_id)
+    );
     println!("sha256: {}", common::hex_encode(&digest.0));
     Ok(())
 }
 
-fn parse_package<'a>(
+fn parse_cartridge<'a>(
     bytes: &'a [u8],
-    manifest: &PackageManifest,
-) -> Result<dali_amrn::v5::Package<'a>, String> {
+    manifest: &CartridgeManifest,
+) -> Result<dali_amrn::v5::Cartridge<'a>, String> {
     let target = dali_targets::find_target(manifest.target_profile.as_str().unwrap_or_default())
         .ok_or_else(|| "manifest target_profile is not a supported target".to_owned())?;
     let slot = target
@@ -146,53 +153,53 @@ fn parse_package<'a>(
         data_capacity: slot.data_length,
     };
     dali_amrn::v5::parse(bytes, contract)
-        .map_err(|error| format!("invalid AMRN v5 package: {error:?}"))
+        .map_err(|error| format!("invalid AMRN v5 cartridge: {error:?}"))
 }
 
-fn verify_stored_package(
+fn verify_stored_cartridge(
     repository: &std::path::Path,
     digest: &Sha256Digest,
-    package: &[u8],
+    cartridge: &[u8],
 ) -> Result<(), String> {
     let path = repository
-        .join(common::PACKAGES_DIRECTORY)
+        .join(common::CARTRIDGES_DIRECTORY)
         .join(format!("{}.amrn", common::hex_encode(&digest.0)));
     let stored = fs::read(&path).map_err(|error| {
         format!(
-            "cannot read content-addressed package {}: {error}",
+            "cannot read content-addressed cartridge {}: {error}",
             path.display()
         )
     })?;
-    if stored != package {
+    if stored != cartridge {
         return Err(format!(
-            "content-addressed package differs from input: {}",
+            "content-addressed cartridge differs from input: {}",
             path.display()
         ));
     }
     Ok(())
 }
 
-fn validate_manifest_package(
-    manifest: &PackageManifest,
-    package: &dali_amrn::v5::Package<'_>,
+fn validate_manifest_cartridge(
+    manifest: &CartridgeManifest,
+    cartridge: &dali_amrn::v5::Cartridge<'_>,
 ) -> Result<(), String> {
-    if package.header.metadata.package_id != manifest.package_id
-        || package.header.metadata.slot_id != manifest.slot_id
-        || package.header.metadata.required_services != manifest.required_services
-        || package.header.metadata.package_version != manifest.package_version_parts
-        || package.header.metadata.minimum_kernel_version != manifest.minimum_kernel_version_parts
+    if cartridge.header.metadata.cartridge_id != manifest.cartridge_id
+        || cartridge.header.metadata.slot_id != manifest.slot_id
+        || cartridge.header.metadata.required_services != manifest.required_services
+        || cartridge.header.metadata.cartridge_version != manifest.cartridge_version_parts
+        || cartridge.header.metadata.minimum_kernel_version != manifest.minimum_kernel_version_parts
     {
         return Err("dali.toml identity fields do not match the AMRN header".to_owned());
     }
     Ok(())
 }
 
-fn authorize_package(
+fn authorize_cartridge(
     targets: &TargetsMetadata,
     delegation: &DelegationMetadata,
     delegation_id: BoundedText<{ dali_metadata::MAX_DELEGATION_ID_BYTES }>,
     namespace: BoundedText<{ dali_metadata::MAX_NAMESPACE_BYTES }>,
-    manifest: &PackageManifest,
+    manifest: &CartridgeManifest,
 ) -> Result<(), String> {
     if !targets.delegations[..usize::from(targets.delegation_count)].contains(&delegation_id) {
         return Err("targets does not reference the selected delegation".to_owned());
@@ -205,29 +212,29 @@ fn authorize_package(
         || !delegation.allowed_abis[..usize::from(delegation.abi_count)]
             .contains(&u16::from(dali_amrn::v3::ABI_VERSION))
     {
-        return Err("package fields are not authorized by the selected delegation".to_owned());
+        return Err("cartridge fields are not authorized by the selected delegation".to_owned());
     }
     Ok(())
 }
 
-fn append_package(
+fn append_cartridge(
     mut targets: TargetsMetadata,
-    package: TargetPackage,
+    cartridge: TargetCartridge,
 ) -> Result<TargetsMetadata, String> {
-    let count = usize::from(targets.package_count);
+    let count = usize::from(targets.cartridge_count);
     if count >= dali_metadata::MAX_TARGET_RECORDS {
-        return Err("targets package capacity is exhausted".to_owned());
+        return Err("targets cartridge capacity is exhausted".to_owned());
     }
-    if targets.packages[..count]
+    if targets.cartridges[..count]
         .iter()
-        .any(|existing| existing.package_id == package.package_id)
+        .any(|existing| existing.cartridge_id == cartridge.cartridge_id)
     {
-        return Err("targets already contains this package ID".to_owned());
+        return Err("targets already contains this cartridge ID".to_owned());
     }
-    targets.packages[count] = package;
-    targets.package_count += 1;
-    let active = &mut targets.packages[..usize::from(targets.package_count)];
-    active.sort_by_key(|left| left.package_id.0);
+    targets.cartridges[count] = cartridge;
+    targets.cartridge_count += 1;
+    let active = &mut targets.cartridges[..usize::from(targets.cartridge_count)];
+    active.sort_by_key(|left| left.cartridge_id.0);
     targets.header.version += 1;
     Ok(targets)
 }

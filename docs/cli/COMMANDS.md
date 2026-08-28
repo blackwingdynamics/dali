@@ -3,7 +3,7 @@
 ## Command syntax
 
 The executable is dali. When running from the repository without installing
-it, use Cargo's package and binary selectors:
+it, use Cargo's cartridge and binary selectors:
 
 ~~~text
 cargo run -p dali-cli --bin dali -- <command> <options>
@@ -132,11 +132,11 @@ metadata. The `probe-chip` form prints only the probe identifier.
 
 See [commands/target-info.md](commands/target-info.md).
 
-### dali package
+### dali cartridge
 
 Creates an AMRN cartridge from a linked native payload.
 
-See commands/package.md.
+See commands/cartridge.md.
 
 ### dali inspect
 
@@ -182,25 +182,25 @@ The following commands are supported:
 dali app new <name> [--sdk-path <path>]
 dali app init [--sdk-path <path>]
 dali app build
-dali app package
+dali app cartridge
 ```
 
 See [commands/app-new.md](commands/app-new.md) and [Application project
 contract](APPLICATION_PROJECT.md) for the scaffold, manifest, and overwrite
 policy. See [commands/app-init.md](commands/app-init.md) for initialization
 of an existing directory, [commands/app-build.md](commands/app-build.md) for
-native payload builds, and [commands/app-package.md](commands/app-package.md)
+native payload builds, and [commands/app-cartridge.md](commands/app-cartridge.md)
 for application-aware packaging.
 
 There is no `dali app inspect` command. AMRN validation is provided by the
-generic `dali inspect` command because it validates a package artifact rather
+generic `dali inspect` command because it validates a cartridge artifact rather
 than application project configuration.
-The `app package` command creates the AMRN artifact from the payload path
+The `app cartridge` command creates the AMRN artifact from the payload path
 derived from the same manifest.
 
 ## Unsupported commands
 
-Unknown commands fail with usage information. SD-card package installation,
+Unknown commands fail with usage information. SD-card cartridge installation,
 replacement, removal, and application lifecycle commands are not currently
 implemented. Probe and DFU flashing, device discovery, console access, and
 debug attachment are implemented for the declared F405 workflow. The device

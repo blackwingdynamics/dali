@@ -128,7 +128,7 @@ For embedded changes, verify the target build and record the exact command and r
 - expected and observed output;
 - whether the test passed, failed, or was not run.
 
-Build success is not hardware acceptance evidence. Parser tests do not prove that a package executed on the MCU.
+Build success is not hardware acceptance evidence. Parser tests do not prove that a cartridge executed on the MCU.
 
 Loader changes must include boundary tests for malformed headers, truncation, invalid targets, oversized payloads, invalid addresses, invalid entry offsets, and CRC32 mismatches where applicable.
 
@@ -186,7 +186,7 @@ Review feedback must be specific and respectful. Resolve feedback with a new com
 
 New dependencies require justification covering `no_std` compatibility, license, maintenance, auditability, transitive impact, memory cost, and binary-size cost. Cryptography and filesystem implementations should use suitable reviewed dependencies when their constraints and licenses fit the project.
 
-Generated binaries and packages may be committed only when explicitly required. Document their generation command and keep the source process reproducible. Never commit secrets, private keys, device credentials, or sensitive logs.
+Generated binaries and cartridges may be committed only when explicitly required. Document their generation command and keep the source process reproducible. Never commit secrets, private keys, device credentials, or sensitive logs.
 
 ## Security disclosures
 

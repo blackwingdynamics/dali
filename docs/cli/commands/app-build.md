@@ -27,7 +27,7 @@ does not embed a board-specific target mapping.
 
 The optional build.format_version field selects the AMRN cartridge format. ABI
 v3 defaults to format version 2; setting it to 3 enables the relocatable
-package pipeline.
+cartridge pipeline.
 
 For ABI v2, the command runs Cargo with the `embedded-payload` feature, uses
 `cargo objcopy` to write the native payload, and then creates the AMRN cartridge
@@ -42,7 +42,7 @@ For the default `dev` profile, Cargo uses the `debug` output directory, so the
 concrete path is `target/<target-profile>/debug/<application-name>.bin`.
 
 The `.bin` file is the intermediate native payload. The `.amrn` file is the
-deployable cartridge. `dali app package` remains available when repackaging an
+deployable cartridge. `dali app cartridge` remains available when repackaging an
 existing payload without rebuilding it.
 
 For ABI v3, the command enables the `abi-current` feature, selects `memory.v3.x`,
@@ -54,14 +54,14 @@ target/<target-profile>/<profile>/<application-name>.data.bin
 target/<target-profile>/<profile>/<application-name>.amrn
 ```
 
-The package records the linker-defined zero-initialized data size and the
+The cartridge records the linker-defined zero-initialized data size and the
 target manifest's PSP stack reservation. ABI v3 output is currently suitable
 for host inspection and contract testing only; kernel launch support is a
 separate roadmap task.
 
 When build.format_version is 3, the command retains supported ARM relocation
-records from the linked ELF and emits an AMRN format version 3 package. This
-package is host-inspectable but is not accepted by the kernel loader yet.
+records from the linked ELF and emits an AMRN format version 3 cartridge. This
+cartridge is host-inspectable but is not accepted by the kernel loader yet.
 
 ## Failure behavior
 

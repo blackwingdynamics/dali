@@ -9,19 +9,19 @@ use dali_metadata::{
 
 use super::{RepositoryLoadRequest, amrn, streaming};
 use crate::storage::repository::{
-    RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage,
+    RepositoryDocument, RepositoryCartridgeDigest, RepositoryStreamStorage,
 };
 
-/// Maximum number of repository packages handed to the bounded execution pipeline.
-pub const MAX_BINARY_REPOSITORY_PACKAGES: usize = 4;
+/// Maximum number of repository cartridges handed to the bounded execution pipeline.
+pub const MAX_BINARY_REPOSITORY_CARTRIDGES: usize = 4;
 /// Maximum revocation records retained by the bounded kernel chain pass.
 pub const MAX_BINARY_REVOCATION_RECORDS: usize = 8;
-/// Maximum delegation namespaces retained for one executable package.
-pub const MAX_BINARY_PACKAGE_DELEGATION_NAMESPACES: usize = 1;
-/// Maximum delegation target profiles retained for one executable package.
-pub const MAX_BINARY_PACKAGE_DELEGATION_TARGETS: usize = 1;
-/// Maximum delegation ABI versions retained for one executable package.
-pub const MAX_BINARY_PACKAGE_DELEGATION_ABIS: usize = 1;
+/// Maximum delegation namespaces retained for one executable cartridge.
+pub const MAX_BINARY_CARTRIDGE_DELEGATION_NAMESPACES: usize = 1;
+/// Maximum delegation target profiles retained for one executable cartridge.
+pub const MAX_BINARY_CARTRIDGE_DELEGATION_TARGETS: usize = 1;
+/// Maximum delegation ABI versions retained for one executable cartridge.
+pub const MAX_BINARY_CARTRIDGE_DELEGATION_ABIS: usize = 1;
 
 /// Authentication result retained for one streamed metadata document.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -51,7 +51,7 @@ pub(crate) enum StreamedRoleError<E> {
 
 /// Caller-owned buffers for one Binary v2 repository chain pass.
 pub struct BinaryRepositoryBuffers {
-    /// Shared bounded metadata and package transport chunk.
+    /// Shared bounded metadata and cartridge transport chunk.
     chunk: [u8; streaming::STREAMING_METADATA_CHUNK_BYTES],
     /// Fixed AMRN header and signature trailer retained between passes.
     amrn: amrn::AmrnStreamBuffers,
@@ -59,11 +59,11 @@ pub struct BinaryRepositoryBuffers {
     pub(crate) root: MaybeUninit<RootMetadata>,
     /// Snapshot/delegation metadata shared by sequential chain phases.
     pub(crate) metadata: RepositoryMetadataScratch,
-    /// Revocation metadata retained for package authorization checks.
+    /// Revocation metadata retained for cartridge authorization checks.
     pub(crate) revocations: MaybeUninit<dali_metadata::RevocationMetadata>,
     /// Delegation references selected from the authenticated Snapshot.
     pub(crate) delegation_references:
-        [Option<dali_metadata::DelegationReference>; MAX_BINARY_REPOSITORY_PACKAGES],
+        [Option<dali_metadata::DelegationReference>; MAX_BINARY_REPOSITORY_CARTRIDGES],
     /// Mutually exclusive target-verifier and delegation scratch storage.
     pub(crate) scratch: RepositoryScratch,
 }
@@ -82,7 +82,7 @@ pub(crate) union RepositoryMetadataScratch {
     pub(crate) snapshot: ManuallyDrop<MaybeUninit<dali_metadata::SnapshotMetadata>>,
     /// Bundle summary retained during generation admission.
     pub(crate) bundle: ManuallyDrop<MaybeUninit<BinaryBundleBodyStreamParser>>,
-    /// Delegation metadata retained while its package is authenticated.
+    /// Delegation metadata retained while its cartridge is authenticated.
     pub(crate) delegation: ManuallyDrop<MaybeUninit<dali_metadata::DelegationMetadata>>,
 }
 
@@ -111,7 +111,7 @@ impl RepositoryMetadataScratch {
 
 /// Internal helper for `delegation`.
     unsafe fn delegation(&mut self) -> &mut MaybeUninit<dali_metadata::DelegationMetadata> {
-        // SAFETY: the delegation variant is active during one package pass.
+        // SAFETY: the delegation variant is active during one cartridge pass.
         unsafe { &mut *core::ptr::addr_of_mut!(self.delegation) }
     }
 
@@ -141,7 +141,7 @@ impl BinaryRepositoryBuffers {
                 snapshot: ManuallyDrop::new(MaybeUninit::uninit()),
             },
             revocations: MaybeUninit::uninit(),
-            delegation_references: [None; MAX_BINARY_REPOSITORY_PACKAGES],
+            delegation_references: [None; MAX_BINARY_REPOSITORY_CARTRIDGES],
             scratch: RepositoryScratch {
                 root_parser: ManuallyDrop::new(MaybeUninit::uninit()),
             },
@@ -158,8 +158,8 @@ impl Default for BinaryRepositoryBuffers {
 /// Result of a complete metadata-to-AMRN streamed authorization pass.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BinaryRepositoryAuthorization {
-    /// Target package record accepted by Targets metadata.
-    pub target: dali_metadata::TargetPackage,
+    /// Target cartridge record accepted by Targets metadata.
+    pub target: dali_metadata::TargetCartridge,
     /// Developer key authorized by the validated delegation metadata.
     pub developer_public_key: [u8; dali_metadata::PUBLIC_KEY_LENGTH],
 }
@@ -168,7 +168,7 @@ pub struct BinaryRepositoryAuthorization {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct BinaryRepositoryAuthorizations {
 /// Internal field `entries`.
-    entries: [Option<BinaryRepositoryAuthorization>; MAX_BINARY_REPOSITORY_PACKAGES],
+    entries: [Option<BinaryRepositoryAuthorization>; MAX_BINARY_REPOSITORY_CARTRIDGES],
 /// Internal field `length`.
     length: usize,
     /// Durable generation selected by boot recovery.
@@ -183,7 +183,7 @@ impl BinaryRepositoryAuthorizations {
     /// Creates an empty authorization set.
     pub const fn new() -> Self {
         Self {
-            entries: [None; MAX_BINARY_REPOSITORY_PACKAGES],
+            entries: [None; MAX_BINARY_REPOSITORY_CARTRIDGES],
             length: 0,
             committed_generation: None,
             security_state: None,
@@ -191,17 +191,17 @@ impl BinaryRepositoryAuthorizations {
         }
     }
 
-    /// Returns the number of authorized packages.
+    /// Returns the number of authorized cartridges.
     pub const fn len(&self) -> usize {
         self.length
     }
 
-    /// Returns whether no package was authorized.
+    /// Returns whether no cartridge was authorized.
     pub const fn is_empty(&self) -> bool {
         self.length == 0
     }
 
-    /// Iterates over authorized packages in Targets document order.
+    /// Iterates over authorized cartridges in Targets document order.
     pub fn iter(&self) -> impl Iterator<Item = BinaryRepositoryAuthorization> + '_ {
         self.entries[..self.length]
             .iter()
@@ -229,7 +229,7 @@ impl Default for BinaryRepositoryAuthorizations {
 /// Errors returned by the complete streamed repository chain.
 #[derive(Debug)]
 pub enum BinaryRepositoryError<E> {
-    /// Storage failed while producing one document or package.
+    /// Storage failed while producing one document or cartridge.
     Storage(E),
     /// A role document failed bounded parsing or signature verification.
     RoleDecode,
@@ -263,24 +263,24 @@ pub enum BinaryRepositoryError<E> {
     RevocationReferenceMismatch,
     /// Snapshot's Delegation reference did not match the streamed Delegation file.
     DelegationReferenceMismatch,
-    /// The selected delegation did not authorize the selected package.
+    /// The selected delegation did not authorize the selected cartridge.
     DelegationMismatch,
     /// The selected developer key was revoked.
     Revoked,
     /// Verified root/revocation state could not be reconstructed.
     SecurityState,
-    /// Package storage failed during streamed validation.
-    PackageStorage(E),
-    /// The package length did not match its signed header.
-    PackageLengthMismatch,
+    /// Cartridge storage failed during streamed validation.
+    CartridgeStorage(E),
+    /// The cartridge length did not match its signed header.
+    CartridgeLengthMismatch,
     /// The selected target record could not resolve to a target memory contract.
-    PackageContract,
-    /// The package header or DSIG envelope was malformed.
-    PackageInvalidHeader(dali_amrn::v5::Error),
-    /// The package digest did not match its Targets record.
-    PackageDigestMismatch,
-    /// The package Ed25519 signature did not verify.
-    PackageSignature,
-    /// The package CRC did not verify.
-    PackageCrc,
+    CartridgeContract,
+    /// The cartridge header or DSIG envelope was malformed.
+    CartridgeInvalidHeader(dali_amrn::v5::Error),
+    /// The cartridge digest did not match its Targets record.
+    CartridgeDigestMismatch,
+    /// The cartridge Ed25519 signature did not verify.
+    CartridgeSignature,
+    /// The cartridge CRC did not verify.
+    CartridgeCrc,
 }

@@ -5,8 +5,8 @@ use std::{
 
 use dali_amrn::v3;
 use dali_metadata::{
-    BundleMetadata, PackageId, parse_bundle_signed, parse_root_signed, parse_signed_envelope,
-    parse_targets_signed, verify_repository_package,
+    BundleMetadata, CartridgeId, parse_bundle_signed, parse_root_signed, parse_signed_envelope,
+    parse_targets_signed, verify_repository_cartridge,
 };
 
 use super::common;
@@ -24,9 +24,9 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     if format == common::MetadataFormat::BinaryV2 {
         return verify_binary_manifest(&root);
     }
-    let package_id = PackageId(common::parse_hex::<16>(
-        &common::required(arguments, common::PACKAGE_ID_FLAG)?,
-        common::PACKAGE_ID_FLAG,
+    let cartridge_id = CartridgeId(common::parse_hex::<16>(
+        &common::required(arguments, common::CARTRIDGE_ID_FLAG)?,
+        common::CARTRIDGE_ID_FLAG,
     )?);
     let (manifest, bundle) = load_bundle(&root, format)?;
     common::verify_bundle_files(&root, &bundle, format)?;
@@ -44,15 +44,15 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let targets_metadata = parse_targets_signed(targets.signed)
         .map_err(|error| format!("invalid targets metadata: {error:?}"))?;
     let target = targets_metadata
-        .packages
+        .cartridges
         .iter()
-        .take(usize::from(targets_metadata.package_count))
-        .find(|candidate| candidate.package_id == package_id)
+        .take(usize::from(targets_metadata.cartridge_count))
+        .find(|candidate| candidate.cartridge_id == cartridge_id)
         .copied()
         .ok_or_else(|| {
             format!(
-                "package {} is not declared by targets metadata",
-                common::hex_encode(&package_id.0)
+                "cartridge {} is not declared by targets metadata",
+                common::hex_encode(&cartridge_id.0)
             )
         })?;
     let delegation_id = target
@@ -63,15 +63,20 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         .join(common::METADATA_DIRECTORY)
         .join(common::DELEGATIONS_DIRECTORY)
         .join(format!("{delegation_id}.json"));
-    let package_path = root
-        .join(common::PACKAGES_DIRECTORY)
+    let cartridge_path = root
+        .join(common::CARTRIDGES_DIRECTORY)
         .join(format!("{}.amrn", common::hex_encode(&target.sha256.0)));
-    let package = Box::leak(
-        fs::read(&package_path)
-            .map_err(|error| format!("cannot read package {}: {error}", package_path.display()))?
+    let cartridge = Box::leak(
+        fs::read(&cartridge_path)
+            .map_err(|error| {
+                format!(
+                    "cannot read cartridge {}: {error}",
+                    cartridge_path.display()
+                )
+            })?
             .into_boxed_slice(),
     );
-    let documents = dali_metadata::RepositoryPackageDocuments {
+    let documents = dali_metadata::RepositoryCartridgeDocuments {
         root: root_envelope,
         timestamp: common::read_envelope(
             &root.join(common::METADATA_DIRECTORY).join("timestamp.json"),
@@ -89,7 +94,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
             "revocation",
         )?,
         delegation: common::read_envelope(&delegation_path, "delegation")?,
-        package,
+        cartridge,
     };
     let profile_name = bundle
         .target_profile
@@ -109,13 +114,13 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         data_load_address: slot.data_origin,
         data_capacity: slot.data_length,
     };
-    verify_repository_package(documents, package_id, contract, None)
+    verify_repository_cartridge(documents, cartridge_id, contract, None)
         .map_err(|error| format!("repository verification failed: {error:?}"))?;
     println!("Repository bundle verified");
     println!("target_profile: {profile_name}");
-    println!("package_id: {}", common::hex_encode(&package_id.0));
+    println!("cartridge_id: {}", common::hex_encode(&cartridge_id.0));
     println!(
-        "chain: root -> timestamp -> snapshot -> targets -> delegation -> revocation -> package -> AMRN"
+        "chain: root -> timestamp -> snapshot -> targets -> delegation -> revocation -> cartridge -> AMRN"
     );
     Ok(())
 }
@@ -202,6 +207,6 @@ fn verify_binary_manifest(root: &Path) -> Result<(), String> {
         bundle.target_profile.as_str().unwrap_or("<invalid>")
     );
     println!("chain: binary root -> bundle manifest -> referenced artifacts");
-    println!("note: package-chain boot verification remains pending kernel streaming wiring");
+    println!("note: cartridge-chain boot verification remains pending kernel streaming wiring");
     Ok(())
 }

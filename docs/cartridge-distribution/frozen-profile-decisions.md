@@ -10,7 +10,7 @@ rules without a contract revision.
   UTF-8 object keys sorted lexicographically, deterministic number encoding,
   and no duplicate object keys.
 - Ed25519 is the only accepted signature algorithm in profile version `1`.
-- SHA-256 is the repository metadata and complete-package hash algorithm.
+- SHA-256 is the repository metadata and complete-cartridge hash algorithm.
 - CRC32 remains only the AMRN corruption detector.
 - Signatures cover the canonical serialized body, never an ambiguous parsed
   representation.
@@ -20,7 +20,7 @@ rules without a contract revision.
 - Production root uses three independently held keys and a two-of-three
   threshold.
 - Root keys are offline or hardware-backed and never live in CI variables used
-  for ordinary package builds.
+  for ordinary cartridge builds.
 - Targets, snapshot, and timestamp use separate delegated keys.
 - Revocation uses a separate delegated key and explicit signed metadata.
 - Developer keys never sign root, snapshot, or timestamp metadata.
@@ -45,9 +45,9 @@ version
 ```
 
 `developer_id` is an opaque registry identifier. `key_id` is a random fixed
-16-byte identifier. Namespaces use lowercase UTF-8 package names separated by
+16-byte identifier. Namespaces use lowercase UTF-8 cartridge names separated by
 `/`; a delegation MUST name an exact namespace or an explicitly bounded
-namespace prefix. Wildcard access to every package is forbidden for developer
+namespace prefix. Wildcard access to every cartridge is forbidden for developer
 delegations.
 
 ### 15.4 Bounded metadata limits
@@ -59,8 +59,8 @@ The first F405 profile uses named, target-owned limits:
 | root | 16 KiB | 16 keys and 16 roles |
 | timestamp | 4 KiB | 1 snapshot reference |
 | snapshot | 16 KiB | 64 metadata references |
-| targets | 64 KiB | 256 package records |
-| developer delegation | 4 KiB | 32 package scopes |
+| targets | 64 KiB | 256 cartridge records |
+| developer delegation | 4 KiB | 32 cartridge scopes |
 | revocation | 4 KiB | 64 revocation records |
 | trust-store update bundle | 128 KiB | 64 developer delegations |
 
@@ -79,7 +79,7 @@ metadata/snapshot.json
 metadata/targets.json
 metadata/delegations/<delegation-id>.json
 metadata/revocations.json
-packages/<package-sha256>.amrn
+cartridges/<cartridge-sha256>.amrn
 bundle.manifest
 ```
 
@@ -101,11 +101,11 @@ DALI-CAN.BIN   candidate trust-store bundle
 DALI-CMT.BIN   commit marker
 ```
 
-These names are kernel-owned and are not application packages. The commit
+These names are kernel-owned and are not application cartridges. The commit
 marker contains only the bounded commit record defined by the installer; it
 must never be inferred from a filename or directory order.
 
-The kernel's FAT write boundary is intentionally separate from package
+The kernel's FAT write boundary is intentionally separate from cartridge
 verification: `write_root_file` can create or truncate one bounded root-level
 artifact and flush its directory entry, but it does not provide a transaction.
 The trust-store installer must sequence candidate bytes, read-back verification,
@@ -148,9 +148,9 @@ pub trait RepositoryStreamStorage {
     where
         F: FnMut(&[u8]) -> Result<(), Self::Error>;
 
-    fn stream_package<F>(
+    fn stream_cartridge<F>(
         &mut self,
-        digest: RepositoryPackageDigest,
+        digest: RepositoryCartridgeDigest,
         chunk: &mut [u8],
         consumer: F,
     ) -> Result<u32, Self::Error>
@@ -159,7 +159,7 @@ pub trait RepositoryStreamStorage {
 }
 ```
 
-`BlockDevice` is the lower-level fixed-block boundary. A board support package
+`BlockDevice` is the lower-level fixed-block boundary. A board support cartridge
 implements it using its native controller. A filesystem adapter then
 implements `DurableStorageAdapter` and `RepositoryStreamStorage` without exposing
 the block controller to the installer or loader. The F405 path is therefore:
@@ -171,7 +171,7 @@ STM32F405 SDIO -> F405 block adapter -> FAT adapter
 ```
 
 The loader receives metadata and AMRN bytes through `RepositoryStreamStorage`;
-it MUST NOT open files, interpret FAT paths, or select packages by directory
+it MUST NOT open files, interpret FAT paths, or select cartridges by directory
 order. The adapter's returned byte count MUST equal the bytes delivered to the
 consumer, and the caller owns the chunk lifetime.
 
@@ -181,8 +181,8 @@ caller-owned buffers. It reads the five fixed roles, selects every executable
 Targets record for the configured target profile within the execution capacity,
 and verifies each selected delegation, revocation state, content-addressed
 AMRN cartridge, and shared Root -> Timestamp -> Snapshot -> Targets -> Delegation
--> Revocation -> Package Record -> AMRN chain. After successful verification,
-`load_repository_package()` opens the same lowercase SHA-256 package path and
+-> Revocation -> Cartridge Record -> AMRN chain. After successful verification,
+`load_repository_cartridge()` opens the same lowercase SHA-256 cartridge path and
 passes it to the existing slot/relocation execution loader. The F405 target has
 a concrete `FatRepositoryStorage<D>` adapter injected at this boundary. The
 feature is intentionally excluded from the default MVP build. The
@@ -190,7 +190,7 @@ feature-gated F405 path has signed-bundle boot evidence; physical acceptance
 of durable installation and recovery remains pending. The old retained-slice
 `RepositoryBuffers` API remains host-side
 only and still requires 360,448 bytes versus the 32 KiB kernel/runtime region;
-the feature-gated F405 boot path MUST use `load_repository_package()` instead.
+the feature-gated F405 boot path MUST use `load_repository_cartridge()` instead.
 
 ### 15.5.2 DALI-CMT.BIN commit journal record
 
@@ -226,23 +226,23 @@ may write the next journal record and retire the older slot.
 - `timestamp` expiry is enforced only when the target has a trustworthy wall
   clock; a missing RTC MUST NOT be treated as current time.
 - Every accepted trust-store bundle has a strictly increasing durable version.
-- Every package namespace has a strictly increasing accepted package version.
+- Every cartridge namespace has a strictly increasing accepted cartridge version.
 - A target without a hardware monotonic counter MUST label rollback protection
-  as limited to its durable trust-store and package-version state.
+  as limited to its durable trust-store and cartridge-version state.
 - A production anti-rollback claim requires a hardware monotonic counter or an
   equivalent tamper-resistant durable counter.
 
 ### 15.7 Revocation behavior
 
 Revocation prevents installation, restart, and replacement of newly evaluated
-packages signed by the revoked key. A currently running package is not
+cartridges signed by the revoked key. A currently running cartridge is not
 forcibly interrupted solely because a later revocation arrives; it becomes
 ineligible at its next lifecycle transition. Emergency recovery MAY override
 this only through a separately authorized recovery bundle.
 
 ### 15.8 Registry and mirror behavior
 
-The registry publishes immutable, hash-addressed package artifacts and signed
+The registry publishes immutable, hash-addressed cartridge artifacts and signed
 metadata. Mirrors MAY cache and serve the same bytes but MUST NOT rewrite
 metadata. A client MUST accept a mirror response only after verifying the
 root-to-target chain, referenced hashes, target scope, and freshness policy.

@@ -14,10 +14,10 @@ pub enum RestartPolicy {
     ManualResetOnly,
 }
 
-/// Package rollback behavior for the read-only storage boundary.
+/// Cartridge rollback behavior for the read-only storage boundary.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RollbackPolicy {
-    /// No previous package can be selected or written by the current loader.
+    /// No previous cartridge can be selected or written by the current loader.
     UnavailableOnReadOnlyStorage,
 }
 
@@ -106,7 +106,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_rollback_without_writable_package_storage() {
+    fn rejects_rollback_without_writable_cartridge_storage() {
         assert_eq!(
             super::CURRENT.rollback(),
             super::RollbackPolicy::UnavailableOnReadOnlyStorage

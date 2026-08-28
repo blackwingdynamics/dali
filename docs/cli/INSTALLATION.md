@@ -15,15 +15,15 @@ Run from the repository root:
 cargo install --path crates/dali-cli --locked
 ~~~
 
-The installed executable is dali. The Cargo package remains dali-cli.
+The installed executable is dali. The Cargo cartridge remains dali-cli.
 
 ## Verify installation
 
 ~~~text
-dali inspect --input <package.amrn>
+dali inspect --input <cartridge.amrn>
 ~~~
 
-A valid package prints AMRN cartridge valid and its decoded contract fields.
+A valid cartridge prints AMRN cartridge valid and its decoded contract fields.
 
 ## Update or remove
 
@@ -34,4 +34,4 @@ directory configured on the host.
 ## Reproducibility
 
 Use --locked so dependency resolution follows Cargo.lock. Do not install a
-package from an unrelated checkout and assume it matches the kernel contract.
+cartridge from an unrelated checkout and assume it matches the kernel contract.

@@ -4,13 +4,13 @@ use core::mem::MaybeUninit;
 
 use dali_metadata::{
     BINARY_ENVELOPE_HEADER_BYTES, BINARY_FORMAT_VERSION, BINARY_MAGIC, BinaryEnvelopeStreamParser,
-    DecodeError, MetadataRole, PackageId, RoleDefinition, RoleKey, StreamingRoleVerifier,
-    TargetPackage, parse_binary_target_record,
+    CartridgeId, DecodeError, MetadataRole, RoleDefinition, RoleKey, StreamingRoleVerifier,
+    TargetCartridge, parse_binary_target_record,
 };
 
 use crate::storage::repository::{RepositoryDocument, RepositoryStreamStorage};
 
-/// Maximum target record retained while selecting executable packages.
+/// Maximum target record retained while selecting executable cartridges.
 pub const MAX_STREAMING_TARGET_RECORD_BYTES: usize = 512;
 /// Minimum caller-owned chunk size recommended for repository reads.
 pub const STREAMING_METADATA_CHUNK_BYTES: usize = 512;
@@ -27,7 +27,7 @@ enum Phase {
     /// Internal implementation item.
     DelegationBytes,
     /// Internal implementation item.
-    PackageCount,
+    CartridgeCount,
     /// Internal implementation item.
     RecordLength,
     /// Internal implementation item.
@@ -49,9 +49,9 @@ pub enum StreamingTargetsError {
     InvalidRecord,
     /// The stream contained bytes outside its declared envelope.
     TrailingBytes,
-    /// The selected target profile resolved to more packages than the caller can retain.
+    /// The selected target profile resolved to more cartridges than the caller can retain.
     TooManyMatchingRecords,
-    /// A single-package selection resolved to more than one package.
+    /// A single-cartridge selection resolved to more than one cartridge.
     MultipleMatchingRecords,
 }
 
@@ -69,8 +69,8 @@ pub enum StreamingTargetSelectionError<E> {
 /// Selected target plus the authenticated serialized Targets document shape.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct VerifiedBinaryTarget {
-    /// Package authorization record selected by package identity.
-    pub target: TargetPackage,
+    /// Cartridge authorization record selected by cartridge identity.
+    pub target: TargetCartridge,
     /// Exact serialized Targets document length.
     pub length: u32,
     /// SHA-256 digest of the complete serialized Targets document.
@@ -87,7 +87,7 @@ pub struct VerifiedBinaryTarget {
 /// exact envelope body through the bounded Ed25519/SHA-256 verifier.
 pub fn select_verified_binary_target<S>(
     storage: &mut S,
-    package_id: PackageId,
+    cartridge_id: CartridgeId,
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
@@ -99,7 +99,7 @@ where
 {
     let targets = select_verified_targets::<S, 1>(
         storage,
-        BinaryTargetsStreamParser::for_package(package_id),
+        BinaryTargetsStreamParser::for_cartridge(cartridge_id),
         role,
         keys,
         chunk,
@@ -137,11 +137,11 @@ where
     )
 }
 
-/// Selects and authenticates all records matching one explicit package ID.
+/// Selects and authenticates all records matching one explicit cartridge ID.
 #[inline(never)]
-pub fn select_verified_binary_targets_for_package<S, const CAPACITY: usize>(
+pub fn select_verified_binary_targets_for_cartridge<S, const CAPACITY: usize>(
     storage: &mut S,
-    package_id: PackageId,
+    cartridge_id: CartridgeId,
     role: RoleDefinition,
     keys: &[RoleKey],
     chunk: &mut [u8],
@@ -153,7 +153,7 @@ where
 {
     select_verified_targets::<S, CAPACITY>(
         storage,
-        BinaryTargetsStreamParser::for_package(package_id),
+        BinaryTargetsStreamParser::for_cartridge(cartridge_id),
         role,
         keys,
         chunk,
@@ -193,7 +193,7 @@ where
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct VerifiedBinaryTargets<const CAPACITY: usize> {
     /// Internal field `targets`.
-    targets: [Option<TargetPackage>; CAPACITY],
+    targets: [Option<TargetCartridge>; CAPACITY],
     /// Internal field `selected_count`.
     selected_count: usize,
     /// Internal field `document_length`.
@@ -215,7 +215,7 @@ struct ParsedTargets<const CAPACITY: usize> {
     /// Internal field `version`.
     version: u64,
     /// Internal field `targets`.
-    targets: [Option<TargetPackage>; CAPACITY],
+    targets: [Option<TargetCartridge>; CAPACITY],
     /// Internal field `digest`.
     digest: dali_metadata::Sha256Digest,
 }
@@ -443,13 +443,13 @@ struct TargetReplayContext<'a> {
 /// Selects one target record without retaining the complete targets document.
 pub fn select_binary_target<S>(
     storage: &mut S,
-    package_id: PackageId,
+    cartridge_id: CartridgeId,
     chunk: &mut [u8],
-) -> Result<Option<TargetPackage>, StreamingTargetSelectionError<S::Error>>
+) -> Result<Option<TargetCartridge>, StreamingTargetSelectionError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
-    let mut parser = BinaryTargetsStreamParser::<1>::for_package(package_id);
+    let mut parser = BinaryTargetsStreamParser::<1>::for_cartridge(cartridge_id);
     let mut parse_error = None;
     storage
         .stream_metadata(RepositoryDocument::Targets, chunk, |bytes| {
@@ -473,7 +473,7 @@ where
 /// Internal implementation state for `BinaryTargetsStreamParser`.
 struct BinaryTargetsStreamParser<const CAPACITY: usize> {
     /// Internal field `wanted`.
-    wanted: Option<PackageId>,
+    wanted: Option<CartridgeId>,
     /// Internal field `target_profile`.
     target_profile: Option<dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>>,
     /// Internal field `envelope`.
@@ -502,8 +502,8 @@ struct BinaryTargetsStreamParser<const CAPACITY: usize> {
     delegations_left: u16,
     /// Internal field `delegation_bytes_left`.
     delegation_bytes_left: usize,
-    /// Internal field `packages_left`.
-    packages_left: u32,
+    /// Internal field `cartridges_left`.
+    cartridges_left: u32,
     /// Internal field `record_length`.
     record_length: usize,
     /// Internal field `record_seen`.
@@ -519,14 +519,14 @@ struct BinaryTargetsStreamParser<const CAPACITY: usize> {
     /// Internal field `record_buffered`.
     record_buffered: usize,
     /// Internal field `selected_targets`.
-    selected_targets: [Option<TargetPackage>; CAPACITY],
+    selected_targets: [Option<TargetCartridge>; CAPACITY],
     /// Internal field `selected_count`.
     selected_count: usize,
 }
 
 impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
-    /// Internal helper for `for_package`.
-    fn for_package(wanted: PackageId) -> Self {
+    /// Internal helper for `for_cartridge`.
+    fn for_cartridge(wanted: CartridgeId) -> Self {
         Self::new(Some(wanted), None)
     }
 
@@ -539,7 +539,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
 
     /// Internal helper for `new`.
     fn new(
-        wanted: Option<PackageId>,
+        wanted: Option<CartridgeId>,
         target_profile: Option<
             dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
         >,
@@ -560,7 +560,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
             field_need: 16,
             delegations_left: 0,
             delegation_bytes_left: 0,
-            packages_left: 0,
+            cartridges_left: 0,
             record_length: 0,
             record_seen: 0,
             candidate_id: [0; 16],
@@ -656,7 +656,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
                     self.reset_field(
                         if self.delegations_left == 0 { 4 } else { 2 },
                         if self.delegations_left == 0 {
-                            Phase::PackageCount
+                            Phase::CartridgeCount
                         } else {
                             Phase::DelegationLength
                         },
@@ -673,7 +673,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
                         self.reset_field(
                             if self.delegations_left == 0 { 4 } else { 2 },
                             if self.delegations_left == 0 {
-                                Phase::PackageCount
+                                Phase::CartridgeCount
                             } else {
                                 Phase::DelegationLength
                             },
@@ -691,7 +691,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
                     self.reset_field(
                         if self.delegations_left == 0 { 4 } else { 2 },
                         if self.delegations_left == 0 {
-                            Phase::PackageCount
+                            Phase::CartridgeCount
                         } else {
                             Phase::DelegationLength
                         },
@@ -699,11 +699,11 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
                 }
                 Ok(())
             }
-            Phase::PackageCount => {
-                self.read_field(byte, Phase::PackageCount);
+            Phase::CartridgeCount => {
+                self.read_field(byte, Phase::CartridgeCount);
                 if self.field_length == self.field_need {
-                    self.packages_left = read_u32(&self.field[..4]);
-                    if self.packages_left == 0 {
+                    self.cartridges_left = read_u32(&self.field[..4]);
+                    if self.cartridges_left == 0 {
                         self.phase = Phase::Complete;
                         self.field_length = 0;
                     } else {
@@ -795,8 +795,8 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
                 self.selected_count += 1;
             }
         }
-        self.packages_left -= 1;
-        self.phase = if self.packages_left == 0 {
+        self.cartridges_left -= 1;
+        self.phase = if self.cartridges_left == 0 {
             Phase::Complete
         } else {
             Phase::RecordLength
@@ -805,7 +805,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
     }
 
     /// Internal helper for `finish`.
-    fn finish(self) -> Result<[Option<TargetPackage>; CAPACITY], StreamingTargetsError> {
+    fn finish(self) -> Result<[Option<TargetCartridge>; CAPACITY], StreamingTargetsError> {
         if self.envelope_length != BINARY_ENVELOPE_HEADER_BYTES
             || self.body_seen != self.body_length
             || self.total_seen != self.total_length
@@ -817,7 +817,7 @@ impl<const CAPACITY: usize> BinaryTargetsStreamParser<CAPACITY> {
     }
 
     /// Internal helper for `finish_body`.
-    fn finish_body(self) -> Result<[Option<TargetPackage>; CAPACITY], StreamingTargetsError> {
+    fn finish_body(self) -> Result<[Option<TargetCartridge>; CAPACITY], StreamingTargetsError> {
         if self.phase != Phase::Complete {
             return Err(StreamingTargetsError::UnexpectedEnd);
         }

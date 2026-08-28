@@ -8,7 +8,7 @@ pub enum BundleFileKind {
     Targets,
     Delegation,
     Revocation,
-    Package,
+    Cartridge,
 }
 impl BundleFileKind {
     pub const fn as_str(self) -> &'static str {
@@ -19,7 +19,7 @@ impl BundleFileKind {
             Self::Targets => "targets",
             Self::Delegation => "delegation",
             Self::Revocation => "revocation",
-            Self::Package => "package",
+            Self::Cartridge => "cartridge",
         }
     }
 }

@@ -30,7 +30,7 @@ impl MetadataRole {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct KeyId(pub [u8; KEY_ID_LENGTH]);
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct PackageId(pub [u8; KEY_ID_LENGTH]);
+pub struct CartridgeId(pub [u8; KEY_ID_LENGTH]);
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Sha256Digest(pub [u8; SHA256_LENGTH]);
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

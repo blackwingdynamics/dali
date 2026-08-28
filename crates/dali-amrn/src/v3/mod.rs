@@ -126,7 +126,7 @@ pub struct Relocation {
     pub addend: i32,
 }
 
-/// Target load boundaries accepted by a movable package.
+/// Target load boundaries accepted by a movable cartridge.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Contract {
     /// AMRN target identifier.
@@ -185,7 +185,7 @@ pub struct Header {
     pub data_load_address: u32,
     /// Entry offset from the linked code origin.
     pub execution_offset: u32,
-    /// Absolute package offset of the relocation table.
+    /// Absolute cartridge offset of the relocation table.
     pub relocation_offset: u32,
     /// Number of relocation entries.
     pub relocation_count: u32,
@@ -193,10 +193,10 @@ pub struct Header {
     pub crc32: u32,
 }
 
-/// A validated AMRN v3 package view into caller-owned bytes.
+/// A validated AMRN v3 cartridge view into caller-owned bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct Package<'a> {
-    /// The validated package header.
+pub struct Cartridge<'a> {
+    /// The validated cartridge header.
     pub header: Header,
     /// The code segment bytes.
     pub code: &'a [u8],
@@ -205,7 +205,7 @@ pub struct Package<'a> {
     relocation_bytes: &'a [u8],
 }
 
-impl<'a> Package<'a> {
+impl<'a> Cartridge<'a> {
     /// Decodes one validated relocation entry by index.
     pub fn relocation(&self, index: usize) -> Result<Relocation, Error> {
         let offset = index
@@ -228,7 +228,7 @@ pub enum Error {
     InvalidHeader,
     /// A segment or runtime reservation exceeds its capacity.
     RegionOverflow,
-    /// The package does not contain exactly the declared segments and table.
+    /// The cartridge does not contain exactly the declared segments and table.
     InvalidPayload,
     /// The relocation table is malformed or contains an unsupported operation.
     InvalidRelocation,
@@ -240,9 +240,9 @@ pub enum Error {
     InvalidPatch,
     /// A relocation target plus its addend is outside the selected image.
     RelocationOverflow,
-    /// The package checksum is invalid.
+    /// The cartridge checksum is invalid.
     CrcMismatch,
-    /// The output buffer cannot contain the package.
+    /// The output buffer cannot contain the cartridge.
     OutputTooSmall,
 }
 

@@ -28,11 +28,11 @@ must not be treated as complete production application isolation because DMA
 isolation, lifecycle policy, and application-to-application policy remain
 open.
 
-The default loader and SDK use ABI v2 packages with the direct `ServiceTable`
+The default loader and SDK use ABI v2 cartridges with the direct `ServiceTable`
 entry contract. The feature-gated ABI v3 loader validates and copies the
 separate segments, prepares a kernel-owned launch frame, and materializes its
 basic exception frame inside the validated application stack reservation. Only
 the explicitly enabled `abi-mpu` path selects PSP, activates the descriptor
 backed MPU map, and enters through PendSV; the default kernel does none of
-these. ABI v3 host packages cannot be treated as production-isolated because
+these. ABI v3 host cartridges cannot be treated as production-isolated because
 complete lifecycle, DMA, and application-to-application policy remain open.

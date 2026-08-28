@@ -4,13 +4,14 @@ use dali_amrn::{v3, v4, v5};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    BoundedText, DelegationMetadata, Ed25519Verifier, MetadataRole, PackageAuthorizationError,
-    PackageId, RevocationMetadata, RootMetadata, Sha256Digest, SignatureVerifier, SignedEnvelope,
-    SnapshotMetadata, TargetPackage, TargetsMetadata, TimestampMetadata, verify_role_signatures,
+    BoundedText, CartridgeAuthorizationError, CartridgeId, DelegationMetadata, Ed25519Verifier,
+    MetadataRole, RevocationMetadata, RootMetadata, Sha256Digest, SignatureVerifier,
+    SignedEnvelope, SnapshotMetadata, TargetCartridge, TargetsMetadata, TimestampMetadata,
+    verify_role_signatures,
 };
 
-/// All signed documents needed to verify one package artifact.
-pub struct RepositoryPackageDocuments<'a> {
+/// All signed documents needed to verify one cartridge artifact.
+pub struct RepositoryCartridgeDocuments<'a> {
     /// Self-signed repository root.
     pub root: SignedEnvelope<'a>,
     /// Root-authorized timestamp document.
@@ -23,19 +24,19 @@ pub struct RepositoryPackageDocuments<'a> {
     pub revocations: SignedEnvelope<'a>,
     /// Root-authorized developer delegation selected by the target record.
     pub delegation: SignedEnvelope<'a>,
-    /// Complete AMRN package bytes, including its DSIG trailer.
-    pub package: &'a [u8],
+    /// Complete AMRN cartridge bytes, including its DSIG trailer.
+    pub cartridge: &'a [u8],
 }
 
 /// Result of a successful repository-to-AMRN verification.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct VerifiedRepositoryPackage<'a> {
-    /// Parsed targets record that authorized the package.
-    pub target: TargetPackage,
-    /// Parsed developer delegation that authorized the package.
+pub struct VerifiedRepositoryCartridge<'a> {
+    /// Parsed targets record that authorized the cartridge.
+    pub target: TargetCartridge,
+    /// Parsed developer delegation that authorized the cartridge.
     pub delegation: DelegationMetadata,
-    /// Parsed AMRN package borrowing the caller's bytes.
-    pub amrn: v5::Package<'a>,
+    /// Parsed AMRN cartridge borrowing the caller's bytes.
+    pub amrn: v5::Cartridge<'a>,
 }
 
 /// Errors returned by the complete verification chain.
@@ -47,38 +48,38 @@ pub enum ChainVerificationError {
     Signature,
     /// A metadata reference did not match the supplied signed bytes.
     ReferenceMismatch,
-    /// A requested package or delegation was absent.
+    /// A requested cartridge or delegation was absent.
     MissingRecord,
-    /// A package was outside its developer delegation or was revoked.
+    /// A cartridge was outside its developer delegation or was revoked.
     Authorization,
-    /// The AMRN package failed structural validation.
+    /// The AMRN cartridge failed structural validation.
     InvalidAmrn,
-    /// The AMRN package signature failed verification.
+    /// The AMRN cartridge signature failed verification.
     InvalidAmrnSignature,
     /// An AMRN header field disagreed with the target record.
-    PackageRecordMismatch,
+    CartridgeRecordMismatch,
     /// A signed document was expired at the supplied clock value.
     Expired,
 }
 
 /// Verifies the complete chain with the real Ed25519 facade.
-pub fn verify_repository_package(
-    documents: RepositoryPackageDocuments<'_>,
-    package_id: PackageId,
+pub fn verify_repository_cartridge(
+    documents: RepositoryCartridgeDocuments<'_>,
+    cartridge_id: CartridgeId,
     contract: v3::Contract,
     now: Option<u64>,
-) -> Result<VerifiedRepositoryPackage<'_>, ChainVerificationError> {
-    verify_repository_package_with(&Ed25519Verifier, documents, package_id, contract, now)
+) -> Result<VerifiedRepositoryCartridge<'_>, ChainVerificationError> {
+    verify_repository_cartridge_with(&Ed25519Verifier, documents, cartridge_id, contract, now)
 }
 
 /// Verifies the complete chain with an injected signature backend.
-pub fn verify_repository_package_with<'a, V: SignatureVerifier>(
+pub fn verify_repository_cartridge_with<'a, V: SignatureVerifier>(
     verifier: &V,
-    documents: RepositoryPackageDocuments<'a>,
-    package_id: PackageId,
+    documents: RepositoryCartridgeDocuments<'a>,
+    cartridge_id: CartridgeId,
     contract: v3::Contract,
     now: Option<u64>,
-) -> Result<VerifiedRepositoryPackage<'a>, ChainVerificationError> {
+) -> Result<VerifiedRepositoryCartridge<'a>, ChainVerificationError> {
     let root = decode_root(documents.root.signed)?;
     let timestamp = decode_timestamp(documents.timestamp.signed)?;
     let snapshot = decode_snapshot(documents.snapshot.signed)?;
@@ -157,7 +158,7 @@ pub fn verify_repository_package_with<'a, V: SignatureVerifier>(
         revocations.header.version,
     )?;
 
-    let target = find_target(&targets, package_id)?;
+    let target = find_target(&targets, cartridge_id)?;
     let delegation_id = target.delegation_id;
     let reference = snapshot
         .delegations
@@ -173,7 +174,7 @@ pub fn verify_repository_package_with<'a, V: SignatureVerifier>(
         delegation.header.version,
     )?;
 
-    crate::authorize_target_package_with_revocations(
+    crate::authorize_target_cartridge_with_revocations(
         &target,
         &delegation_id,
         &delegation,
@@ -183,11 +184,11 @@ pub fn verify_repository_package_with<'a, V: SignatureVerifier>(
     )
     .map_err(map_authorization_error)?;
 
-    let amrn =
-        v5::parse(documents.package, contract).map_err(|_| ChainVerificationError::InvalidAmrn)?;
-    verify_package_record(&target, &amrn, documents.package)?;
+    let amrn = v5::parse(documents.cartridge, contract)
+        .map_err(|_| ChainVerificationError::InvalidAmrn)?;
+    verify_cartridge_record(&target, &amrn, documents.cartridge)?;
     verify_amrn_signature(&delegation, &amrn)?;
-    Ok(VerifiedRepositoryPackage {
+    Ok(VerifiedRepositoryCartridge {
         target,
         delegation,
         amrn,
@@ -259,61 +260,65 @@ fn check_reference(
 
 fn find_target(
     targets: &TargetsMetadata,
-    package_id: PackageId,
-) -> Result<TargetPackage, ChainVerificationError> {
+    cartridge_id: CartridgeId,
+) -> Result<TargetCartridge, ChainVerificationError> {
     targets
-        .packages
+        .cartridges
         .iter()
-        .take(usize::from(targets.package_count))
-        .find(|target| target.package_id == package_id)
+        .take(usize::from(targets.cartridge_count))
+        .find(|target| target.cartridge_id == cartridge_id)
         .copied()
         .ok_or(ChainVerificationError::MissingRecord)
 }
 
-fn verify_package_record(
-    target: &TargetPackage,
-    package: &v5::Package<'_>,
+fn verify_cartridge_record(
+    target: &TargetCartridge,
+    cartridge: &v5::Cartridge<'_>,
     bytes: &[u8],
 ) -> Result<(), ChainVerificationError> {
     let digest = Sha256::digest(bytes);
-    let metadata = package.header.metadata;
-    if target.package_id.0 != metadata.package_id
+    let metadata = cartridge.header.metadata;
+    if target.cartridge_id.0 != metadata.cartridge_id
         || target.length != u32::try_from(bytes.len()).unwrap_or(u32::MAX)
         || target.sha256.0 != digest[..]
         || target.amrn_format != u16::from(v5::FORMAT_VERSION)
         || target.abi_version != u16::from(v3::ABI_VERSION)
         || target.required_services != metadata.required_services
         || target.slot_id != metadata.slot_id
-        || !version_matches(target.package_version, metadata.package_version)
+        || !version_matches(target.cartridge_version, metadata.cartridge_version)
         || !version_matches(
             target.minimum_kernel_version,
             metadata.minimum_kernel_version,
         )
     {
-        return Err(ChainVerificationError::PackageRecordMismatch);
+        return Err(ChainVerificationError::CartridgeRecordMismatch);
     }
     Ok(())
 }
 
 fn verify_amrn_signature(
     delegation: &DelegationMetadata,
-    package: &v5::Package<'_>,
+    cartridge: &v5::Cartridge<'_>,
 ) -> Result<(), ChainVerificationError> {
-    if package.header.signature.key_id != delegation.key_id.0 {
+    if cartridge.header.signature.key_id != delegation.key_id.0 {
         return Err(ChainVerificationError::InvalidAmrnSignature);
     }
-    let signature = package
+    let signature = cartridge
         .header
         .signature
         .signature
         .try_into()
         .map_err(|_| ChainVerificationError::InvalidAmrnSignature)?;
-    dali_crypto::verify(&delegation.public_key.0, package.signed_bytes(), signature)
-        .map_err(|_| ChainVerificationError::InvalidAmrnSignature)
+    dali_crypto::verify(
+        &delegation.public_key.0,
+        cartridge.signed_bytes(),
+        signature,
+    )
+    .map_err(|_| ChainVerificationError::InvalidAmrnSignature)
 }
 
 fn version_matches(
-    text: BoundedText<{ crate::MAX_PACKAGE_VERSION_BYTES }>,
+    text: BoundedText<{ crate::MAX_CARTRIDGE_VERSION_BYTES }>,
     version: v4::Version,
 ) -> bool {
     let Some(bytes) = text.as_str().map(str::as_bytes) else {
@@ -341,7 +346,7 @@ fn version_matches(
     index == 3 && numbers == [version.major, version.minor, version.patch]
 }
 
-fn map_authorization_error(_: PackageAuthorizationError) -> ChainVerificationError {
+fn map_authorization_error(_: CartridgeAuthorizationError) -> ChainVerificationError {
     ChainVerificationError::Authorization
 }
 

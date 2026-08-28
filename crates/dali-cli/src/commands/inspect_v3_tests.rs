@@ -19,11 +19,11 @@ fn inspect_reports_relocation_fields() {
         execution_offset: 0,
         relocations: &[],
     };
-    let mut package = vec![0; dali_amrn::v3::HEADER_SIZE + 8];
-    let written = dali_amrn::v3::encode(image, contract, &mut package)
-        .expect("v3 test package should encode");
-    package.truncate(written);
-    let report = inspect_bytes(&package).expect("v3 package should inspect");
+    let mut cartridge = vec![0; dali_amrn::v3::HEADER_SIZE + 8];
+    let written = dali_amrn::v3::encode(image, contract, &mut cartridge)
+        .expect("v3 test cartridge should encode");
+    cartridge.truncate(written);
+    let report = inspect_bytes(&cartridge).expect("v3 cartridge should inspect");
     assert!(report.contains("format_version: 3"));
     assert!(report.contains("relocation_count: 0"));
     assert!(report.contains("abi_version: 3"));

@@ -3,23 +3,23 @@
 use dali_amrn::v4;
 use dali_targets::IsolationSlot;
 
-/// A validated package header paired with its manifest-owned slot.
+/// A validated cartridge header paired with its manifest-owned slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct DiscoveredPackage {
-    /// The package header obtained from the real package source.
+pub struct DiscoveredCartridge {
+    /// The cartridge header obtained from the real cartridge source.
     pub header: v4::Header,
     /// The manifest slot accepted by the header.
     pub slot: IsolationSlot,
 }
 
-/// Errors returned while building a bounded package catalog.
+/// Errors returned while building a bounded cartridge catalog.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CatalogError {
-    /// The package identity contains no non-zero byte.
+    /// The cartridge identity contains no non-zero byte.
     InvalidIdentity,
     /// The header names a slot different from the selected manifest slot.
     SlotMismatch,
-    /// Another package already owns the same identity.
+    /// Another cartridge already owns the same identity.
     DuplicateIdentity,
     /// The selected slot is already occupied or catalogued.
     SlotOccupied,
@@ -27,15 +27,15 @@ pub enum CatalogError {
     CapacityExceeded,
 }
 
-/// Fixed-capacity catalog used before package loading begins.
-pub struct PackageCatalog<const CAPACITY: usize> {
+/// Fixed-capacity catalog used before cartridge loading begins.
+pub struct CartridgeCatalog<const CAPACITY: usize> {
     /// Stores the `entries` value for this bounded state.
-    entries: [Option<DiscoveredPackage>; CAPACITY],
+    entries: [Option<DiscoveredCartridge>; CAPACITY],
     /// Stores the `length` value for this bounded state.
     length: usize,
 }
 
-impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
+impl<const CAPACITY: usize> CartridgeCatalog<CAPACITY> {
     /// Creates an empty catalog without allocating.
     pub const fn new() -> Self {
         Self {
@@ -44,31 +44,31 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
         }
     }
 
-    /// Returns whether no package candidate has been accepted.
+    /// Returns whether no cartridge candidate has been accepted.
     pub const fn is_empty(&self) -> bool {
         self.length == 0
     }
 
-    /// Returns the number of accepted package candidates.
+    /// Returns the number of accepted cartridge candidates.
     #[cfg(not(feature = "repository-loader"))]
     pub const fn len(&self) -> usize {
         self.length
     }
 
-    /// Registers one already-validated package header.
+    /// Registers one already-validated cartridge header.
     pub fn register(
         &mut self,
         header: v4::Header,
         slot: IsolationSlot,
         slot_occupied: bool,
     ) -> Result<(), CatalogError> {
-        if header.metadata.package_id.iter().all(|byte| *byte == 0) {
+        if header.metadata.cartridge_id.iter().all(|byte| *byte == 0) {
             return Err(CatalogError::InvalidIdentity);
         }
         if header.metadata.slot_id != slot.id {
             return Err(CatalogError::SlotMismatch);
         }
-        if self.has_identity(header.metadata.package_id) {
+        if self.has_identity(header.metadata.cartridge_id) {
             return Err(CatalogError::DuplicateIdentity);
         }
         if slot_occupied || self.has_slot(slot.id) {
@@ -77,18 +77,18 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
         let Some(entry) = self.entries.get_mut(self.length) else {
             return Err(CatalogError::CapacityExceeded);
         };
-        *entry = Some(DiscoveredPackage { header, slot });
+        *entry = Some(DiscoveredCartridge { header, slot });
         self.length += 1;
         Ok(())
     }
 
     /// Selects the lowest manifest slot independently of discovery order.
-    pub fn select(&self) -> Option<DiscoveredPackage> {
+    pub fn select(&self) -> Option<DiscoveredCartridge> {
         self.select_after(None)
     }
 
     /// Selects the lowest manifest slot after an optional previously selected slot.
-    pub fn select_after(&self, previous_slot: Option<u8>) -> Option<DiscoveredPackage> {
+    pub fn select_after(&self, previous_slot: Option<u8>) -> Option<DiscoveredCartridge> {
         if self.is_empty() {
             return None;
         }
@@ -100,18 +100,18 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
             .min_by_key(|candidate| candidate.slot.id)
     }
 
-    /// Finds a package by its stable identity.
-    pub fn find_by_identity(&self, package_id: [u8; 16]) -> Option<DiscoveredPackage> {
+    /// Finds a cartridge by its stable identity.
+    pub fn find_by_identity(&self, cartridge_id: [u8; 16]) -> Option<DiscoveredCartridge> {
         self.entries[..self.length]
             .iter()
             .flatten()
-            .find(|candidate| candidate.header.metadata.package_id == package_id)
+            .find(|candidate| candidate.header.metadata.cartridge_id == cartridge_id)
             .copied()
     }
 
     /// Performs the `has_identity` operation for this subsystem.
-    fn has_identity(&self, package_id: [u8; 16]) -> bool {
-        self.find_by_identity(package_id).is_some()
+    fn has_identity(&self, cartridge_id: [u8; 16]) -> bool {
+        self.find_by_identity(cartridge_id).is_some()
     }
 
     /// Performs the `has_slot` operation for this subsystem.
@@ -123,7 +123,7 @@ impl<const CAPACITY: usize> PackageCatalog<CAPACITY> {
     }
 }
 
-impl<const CAPACITY: usize> Default for PackageCatalog<CAPACITY> {
+impl<const CAPACITY: usize> Default for CartridgeCatalog<CAPACITY> {
     fn default() -> Self {
         Self::new()
     }
@@ -187,8 +187,8 @@ mod tests {
                 crc32: 0,
             },
             metadata: v4::Metadata {
-                package_id: [identity_byte; 16],
-                package_version: v4::Version {
+                cartridge_id: [identity_byte; 16],
+                cartridge_version: v4::Version {
                     major: 1,
                     minor: 0,
                     patch: 0,
@@ -201,13 +201,13 @@ mod tests {
                 required_services: 0,
                 slot_id,
             },
-            package_crc32: 0,
+            cartridge_crc32: 0,
         }
     }
 
     #[test]
     fn selection_is_independent_of_discovery_order() {
-        let mut catalog = PackageCatalog::<CATALOG_CAPACITY>::new();
+        let mut catalog = CartridgeCatalog::<CATALOG_CAPACITY>::new();
         catalog
             .register(header(2, SLOT1_ID), SLOT1, false)
             .expect("slot 1 registers");
@@ -215,14 +215,14 @@ mod tests {
             .register(header(1, SLOT0_ID), SLOT0, false)
             .expect("slot 0 registers");
 
-        let selected = catalog.select().expect("a package is selected");
+        let selected = catalog.select().expect("a cartridge is selected");
         assert_eq!(selected.slot.id, SLOT0_ID);
-        assert_eq!(selected.header.metadata.package_id, [1; 16]);
+        assert_eq!(selected.header.metadata.cartridge_id, [1; 16]);
     }
 
     #[test]
     fn selects_each_declared_slot_in_manifest_order() {
-        let mut catalog = PackageCatalog::<CATALOG_CAPACITY>::new();
+        let mut catalog = CartridgeCatalog::<CATALOG_CAPACITY>::new();
         catalog
             .register(header(2, SLOT1_ID), SLOT1, false)
             .expect("slot 1 registers");
@@ -232,10 +232,10 @@ mod tests {
 
         let first = catalog
             .select_after(None)
-            .expect("first package is selected");
+            .expect("first cartridge is selected");
         let second = catalog
             .select_after(Some(first.slot.id))
-            .expect("second package is selected");
+            .expect("second cartridge is selected");
 
         assert_eq!(first.slot.id, SLOT0_ID);
         assert_eq!(second.slot.id, SLOT1_ID);
@@ -244,10 +244,10 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_identity() {
-        let mut catalog = PackageCatalog::<CATALOG_CAPACITY>::new();
+        let mut catalog = CartridgeCatalog::<CATALOG_CAPACITY>::new();
         catalog
             .register(header(1, SLOT0_ID), SLOT0, false)
-            .expect("first package registers");
+            .expect("first cartridge registers");
 
         assert_eq!(
             catalog.register(header(1, SLOT1_ID), SLOT1, false),
@@ -257,10 +257,10 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_and_external_slot_occupancy() {
-        let mut catalog = PackageCatalog::<CATALOG_CAPACITY>::new();
+        let mut catalog = CartridgeCatalog::<CATALOG_CAPACITY>::new();
         catalog
             .register(header(1, SLOT0_ID), SLOT0, false)
-            .expect("first package registers");
+            .expect("first cartridge registers");
 
         assert_eq!(
             catalog.register(header(2, SLOT0_ID), SLOT0, false),
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn rejects_a_header_for_the_wrong_manifest_slot() {
-        let mut catalog = PackageCatalog::<CATALOG_CAPACITY>::new();
+        let mut catalog = CartridgeCatalog::<CATALOG_CAPACITY>::new();
 
         assert_eq!(
             catalog.register(header(1, SLOT1_ID), SLOT0, false),
@@ -284,7 +284,7 @@ mod tests {
 
     #[test]
     fn rejects_capacity_overflow() {
-        let mut catalog = PackageCatalog::<CATALOG_CAPACITY>::new();
+        let mut catalog = CartridgeCatalog::<CATALOG_CAPACITY>::new();
         catalog
             .register(header(1, SLOT0_ID), SLOT0, false)
             .expect("slot 0 registers");

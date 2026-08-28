@@ -157,20 +157,20 @@ fn collect_files(
             )?);
         }
     }
-    let package_dir = root.join(common::PACKAGES_DIRECTORY);
-    for entry in fs::read_dir(&package_dir)
-        .map_err(|error| format!("cannot scan {}: {error}", package_dir.display()))?
+    let cartridge_dir = root.join(common::CARTRIDGES_DIRECTORY);
+    for entry in fs::read_dir(&cartridge_dir)
+        .map_err(|error| format!("cannot scan {}: {error}", cartridge_dir.display()))?
     {
         let path = entry
-            .map_err(|error| format!("cannot read package entry: {error}"))?
+            .map_err(|error| format!("cannot read cartridge entry: {error}"))?
             .path();
         if path.extension().and_then(|extension| extension.to_str()) == Some("amrn") {
             let id = path
                 .file_stem()
                 .and_then(|stem| stem.to_str())
-                .ok_or_else(|| "invalid package filename".to_owned())?;
+                .ok_or_else(|| "invalid cartridge filename".to_owned())?;
             collected.push(common::file_record(
-                dali_metadata::BundleFileKind::Package,
+                dali_metadata::BundleFileKind::Cartridge,
                 id,
                 &path,
             )?);

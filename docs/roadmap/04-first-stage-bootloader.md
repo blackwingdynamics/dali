@@ -21,6 +21,6 @@ it is not yet enforced before the kernel reset vector executes.
 
 ## Explicit non-claims
 
-Repository/package signature verification after reset is not pre-reset Secure
+Repository/cartridge signature verification after reset is not pre-reset Secure
 Boot. The current F405 release path therefore remains outside the FSBL/ROM
 acceptance claim until this document's evidence gate is met.

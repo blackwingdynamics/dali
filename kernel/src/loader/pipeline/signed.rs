@@ -1,4 +1,4 @@
-//! Bounded streaming loader for authenticated AMRN format 5 packages.
+//! Bounded streaming loader for authenticated AMRN format 5 cartridges.
 
 use dali_amrn::{Crc32, v3, v5};
 
@@ -28,7 +28,7 @@ where
     load_file_with_key(file, slot_manager, None)
 }
 
-/// Loads a package whose signing key was authorized by the repository chain.
+/// Loads a cartridge whose signing key was authorized by the repository chain.
 #[cfg(feature = "repository-loader")]
 pub(crate) fn load_file_with_public_key<D>(
     file: AmrnFile<'_, D>,
@@ -68,7 +68,7 @@ where
                 .map(|anchor| anchor.public_key)
         })
         .ok_or(super::LoaderError::UnknownTrustAnchor)?;
-    validate_package(&file, header, contract, signed_size, &public_key)?;
+    validate_cartridge(&file, header, contract, signed_size, &public_key)?;
     file.rewind().map_err(super::LoaderError::Filesystem)?;
     let _header = read_header(&file)?;
     copy_segments_and_relocate(&file, header.image, contract)?;
@@ -86,7 +86,7 @@ where
     let launch_frame = prepare_launch(entry_address, stack_origin, header.image.stack_size)?;
     launch::materialize(launch_frame);
     let mut lifecycle = ApplicationLifecycle::discovered(
-        ApplicationIdentity::new(header.metadata.package_id),
+        ApplicationIdentity::new(header.metadata.cartridge_id),
         allocation.slot().id,
     );
     lifecycle
@@ -132,7 +132,7 @@ where
     Ok(envelope)
 }
 
-/// Consumes a bounded number of bytes from the package stream.
+/// Consumes a bounded number of bytes from the cartridge stream.
 fn skip_bytes<D>(file: &AmrnFile<'_, D>, size: u32) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -178,8 +178,8 @@ fn select_header<'a>(
     Err(v5_error(v5::Error::InvalidHeader))
 }
 
-/// Validates package sizes, CRCs, and the authenticated payload stream.
-fn validate_package<D>(
+/// Validates cartridge sizes, CRCs, and the authenticated payload stream.
+fn validate_cartridge<D>(
     file: &AmrnFile<'_, D>,
     header: v5::Header<'_>,
     contract: v3::Contract,
@@ -208,23 +208,23 @@ where
     let mut header_bytes = [0; v5::HEADER_SIZE];
     super::read_exact(file, &mut header_bytes).map_err(super::LoaderError::Filesystem)?;
     verifier.update(&header_bytes);
-    let mut package_crc = Crc32::new();
-    package_crc.update(&header_bytes[..v5::PACKAGE_CRC32_OFFSET]);
-    package_crc.update(&header_bytes[v5::PACKAGE_CRC32_OFFSET + 4..]);
+    let mut cartridge_crc = Crc32::new();
+    cartridge_crc.update(&header_bytes[..v5::CARTRIDGE_CRC32_OFFSET]);
+    cartridge_crc.update(&header_bytes[v5::CARTRIDGE_CRC32_OFFSET + 4..]);
     let mut payload_crc = Crc32::new();
     read_payload(
         file,
         header.image.code_size,
         &mut verifier,
         &mut payload_crc,
-        &mut package_crc,
+        &mut cartridge_crc,
     )?;
     read_payload(
         file,
         header.image.data_init_size,
         &mut verifier,
         &mut payload_crc,
-        &mut package_crc,
+        &mut cartridge_crc,
     )?;
     read_relocations(
         file,
@@ -232,9 +232,11 @@ where
         contract,
         &mut verifier,
         &mut payload_crc,
-        &mut package_crc,
+        &mut cartridge_crc,
     )?;
-    if package_crc.finish() != header.package_crc32 || payload_crc.finish() != header.image.crc32 {
+    if cartridge_crc.finish() != header.cartridge_crc32
+        || payload_crc.finish() != header.image.crc32
+    {
         return Err(v5_error(v5::Error::CrcMismatch));
     }
     verifier
@@ -266,7 +268,7 @@ fn read_payload<D>(
     size: u32,
     verifier: &mut dali_crypto::StreamingVerifier,
     payload_crc: &mut Crc32,
-    package_crc: &mut Crc32,
+    cartridge_crc: &mut Crc32,
 ) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -278,20 +280,20 @@ where
         super::read_exact(file, &mut chunk[..size]).map_err(super::LoaderError::Filesystem)?;
         verifier.update(&chunk[..size]);
         payload_crc.update(&chunk[..size]);
-        package_crc.update(&chunk[..size]);
+        cartridge_crc.update(&chunk[..size]);
         remaining -= size;
     }
     Ok(())
 }
 
-/// Streams and validates all relocation records in the package.
+/// Streams and validates all relocation records in the cartridge.
 fn read_relocations<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
     contract: v3::Contract,
     verifier: &mut dali_crypto::StreamingVerifier,
     payload_crc: &mut Crc32,
-    package_crc: &mut Crc32,
+    cartridge_crc: &mut Crc32,
 ) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -301,7 +303,7 @@ where
         super::read_exact(file, &mut entry).map_err(super::LoaderError::Filesystem)?;
         verifier.update(&entry);
         payload_crc.update(&entry);
-        package_crc.update(&entry);
+        cartridge_crc.update(&entry);
         let relocation =
             v3::decode_relocation(&entry).map_err(|_| v5_error(v5::Error::InvalidRelocation))?;
         v3::validate_relocation(header, contract, relocation)
@@ -331,7 +333,7 @@ fn read_u32(bytes: &[u8; v5::HEADER_SIZE], offset: usize) -> u32 {
 
 /// Wraps a v5 format error in the pipeline error type.
 fn v5_error(error: v5::Error) -> super::LoaderError {
-    super::LoaderError::V5SignedPackage(error)
+    super::LoaderError::V5SignedCartridge(error)
 }
 
 /// Copies validated segments and applies validated relocations.

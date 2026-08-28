@@ -6,12 +6,12 @@
 - arbitrary DMA-controller/peripheral isolation;
 - cross-target watchdog failure semantics and timeout evidence;
 - power-loss-safe update and rollback acceptance;
-- security review of package parsing and storage access.
+- security review of cartridge parsing and storage access.
 
 Security claims must be added only after the corresponding mechanism and test evidence exist.
 
-The future multi-developer package ecosystem is defined in
-`docs/package-distribution/README.md`. That document is the source of truth for the
+The future multi-developer cartridge ecosystem is defined in
+`docs/cartridge-distribution/README.md`. That document is the source of truth for the
 Dali root, repository metadata roles, developer delegations, signed trust-store
 updates, revocation, rotation, rollback, and offline installation. The current
 F405 static release trust-anchor path is a precursor to that design and must

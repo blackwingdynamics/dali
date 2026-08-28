@@ -9,23 +9,23 @@ mod trust;
 
 use dali_amrn::v3::Contract;
 use dali_metadata::{
-    MAX_DELEGATION_BYTES, MAX_ENVELOPE_BYTES, PackageId, RepositoryPackageDocuments, TargetPackage,
-    VerifiedRepositoryPackage, parse_signed_envelope, parse_targets_signed,
-    verify_repository_package,
+    CartridgeId, MAX_DELEGATION_BYTES, MAX_ENVELOPE_BYTES, RepositoryCartridgeDocuments,
+    TargetCartridge, VerifiedRepositoryCartridge, parse_signed_envelope, parse_targets_signed,
+    verify_repository_cartridge,
 };
 
 use crate::storage::durable::coordinator::PersistenceError;
 use crate::storage::repository::{
-    RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage,
+    RepositoryCartridgeDigest, RepositoryDocument, RepositoryStreamStorage,
 };
 
-use io::{read_metadata, read_package};
+use io::{read_cartridge, read_metadata};
 
 pub use chain::{
     BinaryRepositoryAuthorization, BinaryRepositoryAuthorizations, BinaryRepositoryBuffers,
     BinaryRepositoryError, load_binary_repository, load_binary_repository_with_contract,
 };
-pub use installation::{PackageInstallationAuthorization, install_repository};
+pub use installation::{CartridgeInstallationAuthorization, install_repository};
 
 /// Generation rule applied to a signed bundle during repository loading.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -52,8 +52,8 @@ pub struct RepositoryBuffers {
     pub revocations: [u8; MAX_ENVELOPE_BYTES],
     /// Selected delegation envelope.
     pub delegation: [u8; MAX_DELEGATION_BYTES + 2 * 1024],
-    /// Complete AMRN package.
-    pub package: [u8; dali_metadata::MAX_BUNDLE_BYTES],
+    /// Complete AMRN cartridge.
+    pub cartridge: [u8; dali_metadata::MAX_BUNDLE_BYTES],
     /// Read-back buffer used before durable commit.
     pub candidate_readback: [u8; dali_metadata::MAX_BUNDLE_BYTES],
 }
@@ -69,7 +69,7 @@ impl RepositoryBuffers {
             targets: [0; MAX_ENVELOPE_BYTES],
             revocations: [0; MAX_ENVELOPE_BYTES],
             delegation: [0; MAX_DELEGATION_BYTES + 2 * 1024],
-            package: [0; dali_metadata::MAX_BUNDLE_BYTES],
+            cartridge: [0; dali_metadata::MAX_BUNDLE_BYTES],
             candidate_readback: [0; dali_metadata::MAX_BUNDLE_BYTES],
         }
     }
@@ -84,8 +84,8 @@ impl Default for RepositoryBuffers {
 /// Inputs that are stable for one repository load.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RepositoryLoadRequest {
-    /// Optional package identity for an explicit host-side selection.
-    pub package_id: Option<PackageId>,
+    /// Optional cartridge identity for an explicit host-side selection.
+    pub cartridge_id: Option<CartridgeId>,
     /// Target profile used by boot-time bounded executable discovery.
     pub target_profile: dali_metadata::BoundedText<{ dali_metadata::MAX_TARGET_PROFILE_BYTES }>,
     /// Optional fixed AMRN v5 contract for explicit host-side verification.
@@ -101,8 +101,8 @@ pub struct RepositoryLoadRequest {
 /// Copy-only result returned after a repository was durably published.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct InstalledRepository {
-    /// Package authorization record accepted by the chain.
-    pub target: TargetPackage,
+    /// Cartridge authorization record accepted by the chain.
+    pub target: TargetCartridge,
     /// Developer delegation accepted by the chain.
     pub delegation: dali_metadata::DelegationMetadata,
 }
@@ -110,7 +110,7 @@ pub struct InstalledRepository {
 /// Loader errors preserve storage, parsing, and chain-verification boundaries.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RepositoryLoaderError<E> {
-    /// Repository storage failed to provide a document or package.
+    /// Repository storage failed to provide a document or cartridge.
     Storage(E),
     /// A repository artifact exceeded its caller-owned buffer.
     ArtifactTooLarge,
@@ -118,7 +118,7 @@ pub enum RepositoryLoaderError<E> {
     StorageLengthMismatch,
     /// A signed metadata envelope could not be parsed.
     Decode,
-    /// The selected package or its delegation was not present.
+    /// The selected cartridge or its delegation was not present.
     MissingRecord,
     /// The complete metadata-to-AMRN chain rejected the repository.
     Verification(dali_metadata::ChainVerificationError),
@@ -132,7 +132,7 @@ pub fn load_repository<'a, S>(
     request: RepositoryLoadRequest,
     buffers: &'a mut RepositoryBuffers,
 ) -> Result<
-    VerifiedRepositoryPackage<'a>,
+    VerifiedRepositoryCartridge<'a>,
     RepositoryLoaderError<<S as RepositoryStreamStorage>::Error>,
 >
 where
@@ -173,10 +173,10 @@ where
         .map_err(|_| RepositoryLoaderError::Decode)?;
     let targets =
         parse_targets_signed(targets_envelope.signed).map_err(|_| RepositoryLoaderError::Decode)?;
-    let package_id = request
-        .package_id
+    let cartridge_id = request
+        .cartridge_id
         .ok_or(RepositoryLoaderError::MissingRecord)?;
-    let target = find_target(&targets, package_id)?;
+    let target = find_target(&targets, cartridge_id)?;
     let delegation_id = target
         .delegation_id
         .as_str()
@@ -187,26 +187,26 @@ where
         &mut buffers.delegation,
         &mut buffers.stream_chunk,
     )?;
-    let package_length = read_package(
+    let cartridge_length = read_cartridge(
         storage,
-        RepositoryPackageDigest(target.sha256.0),
-        &mut buffers.package,
+        RepositoryCartridgeDigest(target.sha256.0),
+        &mut buffers.cartridge,
         &mut buffers.stream_chunk,
     )?;
 
-    let documents = RepositoryPackageDocuments {
+    let documents = RepositoryCartridgeDocuments {
         root: parse_envelope(&buffers.root[..root_length])?,
         timestamp: parse_envelope(&buffers.timestamp[..timestamp_length])?,
         snapshot: parse_envelope(&buffers.snapshot[..snapshot_length])?,
         targets: targets_envelope,
         revocations: parse_envelope(&buffers.revocations[..revocations_length])?,
         delegation: parse_envelope(&buffers.delegation[..delegation_length])?,
-        package: &buffers.package[..package_length],
+        cartridge: &buffers.cartridge[..cartridge_length],
     };
     let contract = request
         .contract
         .ok_or(RepositoryLoaderError::MissingRecord)?;
-    verify_repository_package(documents, package_id, contract, request.now)
+    verify_repository_cartridge(documents, cartridge_id, contract, request.now)
         .map_err(RepositoryLoaderError::Verification)
 }
 
@@ -220,13 +220,13 @@ fn parse_envelope<'a, E>(
 /// Internal helper for `find_target`.
 fn find_target<E>(
     targets: &dali_metadata::TargetsMetadata,
-    package_id: PackageId,
-) -> Result<TargetPackage, RepositoryLoaderError<E>> {
+    cartridge_id: CartridgeId,
+) -> Result<TargetCartridge, RepositoryLoaderError<E>> {
     targets
-        .packages
+        .cartridges
         .iter()
-        .take(usize::from(targets.package_count))
-        .find(|target| target.package_id == package_id)
+        .take(usize::from(targets.cartridge_count))
+        .find(|target| target.cartridge_id == cartridge_id)
         .copied()
         .ok_or(RepositoryLoaderError::MissingRecord)
 }

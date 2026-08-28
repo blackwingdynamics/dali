@@ -31,11 +31,11 @@ just app-build
 
 ## Create an AMRN cartridge
 
-The package command adds the documented AMRN v1 header, records the payload
+The cartridge command adds the documented AMRN v1 header, records the payload
 length and entry metadata, and calculates the CRC32 over the payload:
 
 ```text
-cargo run -p dali-cli --bin dali -- package \
+cargo run -p dali-cli --bin dali -- cartridge \
   --input target/thumbv7em-none-eabihf/debug/dali-app-hello.bin \
   --output target/thumbv7em-none-eabihf/debug/hello.amrn \
   --entry-offset 0
@@ -49,15 +49,15 @@ The equivalent recipe, including the application build and binary extraction,
 is:
 
 ```text
-just package-hello
+just cartridge-hello
 ```
 
-The generated package is written under the target directory and is ignored by
+The generated cartridge is written under the target directory and is ignored by
 Git as a build artifact.
 
 ## Inspect an AMRN cartridge
 
-Use the host CLI to validate an existing package against the AMRN contract and
+Use the host CLI to validate an existing cartridge against the AMRN contract and
 print its decoded fields:
 
 ```text
@@ -66,4 +66,4 @@ cargo run -p dali-cli --bin dali -- inspect \
 ```
 
 The command validates the header, target, ABI version, payload bounds,
-execution entry, CRC32, and exact file length. It does not modify the package.
+execution entry, CRC32, and exact file length. It does not modify the cartridge.

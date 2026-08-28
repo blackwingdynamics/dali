@@ -32,9 +32,9 @@ impl PayloadValidator {
         let next_size = self
             .bytes_seen
             .checked_add(chunk.len())
-            .ok_or(ParseError::PayloadOutsidePackage)?;
+            .ok_or(ParseError::PayloadOutsideCartridge)?;
         if next_size > self.header.payload_size as usize {
-            return Err(ParseError::PayloadOutsidePackage);
+            return Err(ParseError::PayloadOutsideCartridge);
         }
         self.checksum.update(chunk);
         self.bytes_seen = next_size;
@@ -45,7 +45,7 @@ impl PayloadValidator {
     pub fn finish(self) -> Result<ValidatedPayload, ParseError> {
         let expected_size = self.header.payload_size as usize;
         if self.bytes_seen != expected_size {
-            return Err(ParseError::PayloadOutsidePackage);
+            return Err(ParseError::PayloadOutsideCartridge);
         }
         if self.checksum.finish() != self.header.crc32 {
             return Err(ParseError::CrcMismatch);
@@ -62,7 +62,7 @@ impl PayloadValidator {
     }
 }
 
-/// Incremental CRC32 calculator shared by bounded package readers.
+/// Incremental CRC32 calculator shared by bounded cartridge readers.
 pub struct Crc32(u32);
 
 impl Default for Crc32 {

@@ -1,7 +1,7 @@
 # Target profile versus backend
 
 `targets/*.toml` is the source of truth for declarative target facts: memory
-ranges, clocks, pins, peripherals, package compatibility, and protection
+ranges, clocks, pins, peripherals, cartridge compatibility, and protection
 capabilities. The generated target registry exposes typed metadata to host and
 kernel build code.
 

@@ -1,7 +1,7 @@
-# AMRN format version 4: package identity and selection metadata
+# AMRN format version 4: cartridge identity and selection metadata
 
-Format version `4` extends the relocatable ABI v3 package contract for
-multi-package storage. It does not introduce an ABI v4: the package continues
+Format version `4` extends the relocatable ABI v3 cartridge contract for
+multi-cartridge storage. It does not introduce an ABI v4: the cartridge continues
 to declare ABI version `3`, and the code/data/relocation semantics remain those
 of format version `3`.
 
@@ -11,10 +11,10 @@ are:
 
 | Offset | Field | Size | Description |
 | --- | --- | ---: | --- |
-| `0x50` | package_id | 16 bytes | Opaque stable application identity; not derived from a filename |
-| `0x60` | package_version_major | 2 bytes | Little-endian semantic package version component |
-| `0x62` | package_version_minor | 2 bytes | Little-endian semantic package version component |
-| `0x64` | package_version_patch | 2 bytes | Little-endian semantic package version component |
+| `0x50` | cartridge_id | 16 bytes | Opaque stable application identity; not derived from a filename |
+| `0x60` | cartridge_version_major | 2 bytes | Little-endian semantic cartridge version component |
+| `0x62` | cartridge_version_minor | 2 bytes | Little-endian semantic cartridge version component |
+| `0x64` | cartridge_version_patch | 2 bytes | Little-endian semantic cartridge version component |
 | `0x66` | minimum_kernel_major | 2 bytes | Minimum compatible kernel API version component |
 | `0x68` | minimum_kernel_minor | 2 bytes | Minimum compatible kernel API version component |
 | `0x6A` | minimum_kernel_patch | 2 bytes | Minimum compatible kernel API version component |
@@ -30,25 +30,25 @@ relocation metadata and ABI version. The v4 `crc32` field is moved to the
 extension area so the integrity check covers the complete selection metadata;
 the old v3 payload-only checksum rule is unchanged for format version `3`.
 The exact CRC input order is the bytes from `0x78` through the end of the
-package followed by the bytes from `0x00` through `0x73`, excluding the v4
+cartridge followed by the bytes from `0x00` through `0x73`, excluding the v4
 `crc32` field itself. A builder and loader must use this order exactly.
 
 Selection rules are bounded and explicit:
 
-- `package_id` must be non-zero and must be unique among installed packages;
-- package version and minimum kernel version use three unsigned, little-endian
+- `cartridge_id` must be non-zero and must be unique among installed cartridges;
+- cartridge version and minimum kernel version use three unsigned, little-endian
   semantic components and must not overflow their field widths;
 - `required_services` must be a subset of services declared by the kernel;
 - `slot_id` must name a slot declared by the target manifest;
 - target ID, ABI version, relocation contract, and memory ranges must still
   pass the format v3 validation rules;
-- a missing identity, incompatible package, duplicate identity, or occupied
+- a missing identity, incompatible cartridge, duplicate identity, or occupied
   slot is a rejection, never an implicit filename- or directory-order choice;
-- format v3 packages remain valid under their existing single-package rules.
+- format v3 cartridges remain valid under their existing single-cartridge rules.
 
 The v4 codec, CLI builder/inspection, feature-gated kernel selection/streaming
 loader, and host streaming-loader fixtures are implemented without changing the
-ABI v2/v3 package paths. A manifest-backed v4 relocation fixture is available
+ABI v2/v3 cartridge paths. A manifest-backed v4 relocation fixture is available
 for hardware testing, and the F405 hardware path has accepted that fixture for
 selection, relocation, and successful execution. v4-specific rejection and
 recovery hardware tests remain open. Format v4 must not be advertised as
@@ -75,10 +75,10 @@ envelope for a future versioned AMRN signature extension. The fixed envelope is
 | `0x18` | signature | 64 bytes | Algorithm-specific signature bytes |
 
 The current parser validates only structure and bounded lengths; it does not
-make unsigned v4 packages secure. The v5 loader adds feature-gated signature
+make unsigned v4 cartridges secure. The v5 loader adds feature-gated signature
 verification and static target trust-anchor selection. The complete
 multi-developer trust chain, metadata roles, and update policy are defined by
-`docs/package-distribution/README.md` and are not implemented by this envelope alone.
+`docs/cartridge-distribution/README.md` and are not implemented by this envelope alone.
 The `SignatureVerifier` trait is the hardware-neutral boundary for an audited
 host signer and a target trust-store verifier; it does not provide a default
 or bypass implementation. The `dali-crypto` facade now provides a bounded
@@ -86,10 +86,10 @@ incremental verifier backed by `ed25519-dalek 3.0.0`; its standard-Ed25519
 chunked verification is host-tested and thumb-target checked. This backend
 selection does not, by itself, enable kernel-side verification or Secure Boot.
 
-### Signed package container (format version 5, feature-gated kernel path)
+### Signed cartridge container (format version 5, feature-gated kernel path)
 
 Format version `5` is the signed successor to the identity-aware relocatable
-contract. It does not modify the v4 byte layout. A v5 package uses the v3/v4
+contract. It does not modify the v4 byte layout. A v5 cartridge uses the v3/v4
 image and identity fields in the first 128 bytes, extends the fixed header to
 160 bytes, stores the image payload after that header, and appends one fixed
 88-byte `DSIG` envelope:
@@ -117,8 +117,8 @@ from the v3 linked image to the v5 payload origin. The extension fields are:
 | `0x8C` | reserved | 4 bytes | Must be zero |
 | `0x90` | reserved | 16 bytes | Must be zero |
 
-The signed byte range is exactly `package[0..signature_offset]`. It includes
-the final header and package CRC32, but excludes the DSIG trailer. The package
+The signed byte range is exactly `cartridge[0..signature_offset]`. It includes
+the final header and cartridge CRC32, but excludes the DSIG trailer. The cartridge
 CRC32 is calculated over the signed range with its own four bytes treated as
 zero, so CRC construction is not circular with signature construction. The
 signature envelope is structurally validated by `dali-amrn`; cryptographic

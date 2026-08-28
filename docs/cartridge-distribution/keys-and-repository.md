@@ -17,22 +17,22 @@ are not trusted merely because they are available in a repository.
 ### 9.3 Rotation
 
 Rotation MUST overlap old and new keys long enough to update supported devices.
-The new key MUST be added before packages are signed with it. The old key MUST
+The new key MUST be added before cartridges are signed with it. The old key MUST
 be removed only after the migration window and acceptance evidence.
 
 ### 9.4 Revocation
 
 Revocation metadata MUST identify the key or certificate, reason, effective
 version, and issuing authority. A revoked developer key MUST prevent new
-package installation while preserving an explicit policy for already-installed
-packages.
+cartridge installation while preserving an explicit policy for already-installed
+cartridges.
 
 ### 9.5 Compromise and loss
 
-If a developer private key is lost, existing packages remain verifiable, but
-new packages cannot be signed with that key. The developer must enroll a new
+If a developer private key is lost, existing cartridges remain verifiable, but
+new cartridges cannot be signed with that key. The developer must enroll a new
 key. If a key is suspected compromised, it MUST be revoked immediately and a
-replacement package/trust update must be issued. The root-key incident
+replacement cartridge/trust update must be issued. The root-key incident
 procedure is separate and requires root threshold recovery.
 
 ## 10. Repository and CLI responsibilities
@@ -42,7 +42,7 @@ The registry is responsible for:
 - issuing and revoking developer delegations;
 - generating canonical root, targets, snapshot, and timestamp metadata;
 - enforcing namespace and target authorization;
-- publishing complete, hash-addressed package artifacts; and
+- publishing complete, hash-addressed cartridge artifacts; and
 - preserving auditable metadata history.
 
 The CLI is responsible for:
@@ -51,11 +51,11 @@ The CLI is responsible for:
 - creating signing requests without exposing private keys;
 - building and signing AMRN cartridges;
 - generating and inspecting metadata bundles;
-- verifying packages and metadata before installation; and
+- verifying cartridges and metadata before installation; and
 - producing deterministic, reviewable release artifacts.
 
 The CLI MUST NOT silently generate a new trust root, replace a key, bypass an
-expired metadata role, or accept an unsigned production package. Commands that
+expired metadata role, or accept an unsigned production cartridge. Commands that
 change trust state MUST require explicit input and display the resulting key
 identifier, version, and target scope.
 
@@ -79,11 +79,11 @@ dali metadata bundle generate \
 dali metadata bundle inspect --input <repository-root>
 dali metadata bundle verify \
   --input <repository-root> \
-  --package-id <package-id-hex>
+  --cartridge-id <cartridge-id-hex>
 ```
 
 `generate` hashes the fixed metadata files, delegation documents, and
-content-addressed `.amrn` packages, then writes a canonical signed bundle
+content-addressed `.amrn` cartridges, then writes a canonical signed bundle
 manifest. It refuses to overwrite an existing manifest. `inspect` parses the
 manifest and verifies every recorded length and SHA-256 reference before
 printing the bundle inventory. `verify` performs those checks, verifies the
@@ -92,7 +92,7 @@ host-side Ed25519 chain used by the metadata crate:
 
 ```text
 Root -> Timestamp -> Snapshot -> Targets -> Delegation -> Revocation
-      -> Package Record -> AMRN hash/signature
+      -> Cartridge Record -> AMRN hash/signature
 ```
 
 The commands are host-side release and pre-install tooling. They do not prove
@@ -106,7 +106,7 @@ The kernel is responsible for:
 - storing the root public-key set;
 - verifying bounded trust-store updates;
 - enforcing the active trust policy;
-- verifying package metadata and AMRN contents before copy/relocation; and
+- verifying cartridge metadata and AMRN contents before copy/relocation; and
 - failing closed on any unsupported role, algorithm, version, or scope.
 
 The kernel is not responsible for developer account management or for

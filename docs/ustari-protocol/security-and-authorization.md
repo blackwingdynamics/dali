@@ -47,10 +47,10 @@ a volatile window alone is insufficient.
 
 Authentication answers which peer owns a session. Authorization answers what it
 may do. The device enforces both for telemetry, parameters, lifecycle,
-package upload/activation, Trust Store administration, and safety commands.
+cartridge upload/activation, Trust Store administration, and safety commands.
 
-Package identity, developer delegation, Trust Store updates, and package
-signatures remain governed by `docs/package-distribution/README.md` and AMRN. Ustari
+Cartridge identity, developer delegation, Trust Store updates, and cartridge
+signatures remain governed by `docs/cartridge-distribution/README.md` and AMRN. Ustari
 may transport these operations but may not weaken their validation or make a
 transport connection an enrollment authority.
 

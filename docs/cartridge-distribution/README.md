@@ -1,6 +1,6 @@
-# Package Distribution Documentation
+# Cartridge Distribution Documentation
 
-This file is the stable entry point and navigation index for the package
+This file is the stable entry point and navigation index for the cartridge
 distribution and trust contract. The files below contain its topic-oriented
 sections.
 

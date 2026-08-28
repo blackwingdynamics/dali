@@ -22,13 +22,13 @@ Every metadata document MUST include:
 - an explicit signature list with algorithm and key identifier.
 
 The parser MUST enforce maximum sizes for the document, signature list, key
-list, package list, namespace length, and string fields before parsing nested
+list, cartridge list, namespace length, and string fields before parsing nested
 content. Unknown fields MUST be rejected in security-critical metadata unless
 the metadata version explicitly permits extension fields.
 
 ## 6.1 Hash and length rules
 
-Repository metadata MUST record both the exact package length and a
+Repository metadata MUST record both the exact cartridge length and a
 cryptographic hash of the complete AMRN file. The hash MUST cover the bytes as
 stored and transported, including the AMRN header and signature trailer.
 
@@ -99,7 +99,7 @@ file references, sorted by kind then identifier:
 
 The payload has a maximum of `MAX_TRUST_STORE_FILES` references and
 `MAX_TRUST_STORE_BYTES` encoded body bytes. It MUST contain the five singleton
-metadata roles and at least one delegation reference. Package references,
+metadata roles and at least one delegation reference. Cartridge references,
 duplicate references, zero lengths, zero digests, invalid UTF-8, and
 non-canonical ordering are rejected before activation. The signed envelope
 authenticates the payload; the payload itself is only a bounded state
@@ -133,7 +133,7 @@ The root signed body is:
 }
 ```
 
-The targets signed body contains bounded package records and developer
+The targets signed body contains bounded cartridge records and developer
 delegations:
 
 ```json
@@ -143,16 +143,16 @@ delegations:
   "version": 1,
   "expires": 0,
   "delegations": ["developer-delegation-id"],
-  "packages": [
+  "cartridges": [
     {
-      "package_id": "32 lowercase hex characters",
+      "cartridge_id": "32 lowercase hex characters",
       "namespace": "developer/application",
       "developer_id": "developer-id",
       "developer_key_id": "...",
       "target_profile": "f405",
       "amrn_format": 5,
       "abi_version": 3,
-      "package_version": "0.1.0",
+      "cartridge_version": "0.1.0",
       "minimum_kernel_version": "0.1.0",
       "length": 1234,
       "sha256": "64 lowercase hex characters",
@@ -232,7 +232,7 @@ A delegation signed body contains one developer key and its bounded scope:
 ```
 
 The `targets` record MUST reference the exact delegation and developer key
-that authorize the package. A package is not authorized when its AMRN key ID,
+that authorize the cartridge. A cartridge is not authorized when its AMRN key ID,
 namespace, target, ABI, or version disagrees with metadata.
 
 ### 6.4 Offline bundle manifest
@@ -244,7 +244,7 @@ signed body contains exactly these top-level fields in lexicographic order:
 {
   "files": [
     { "id": "developer-id", "kind": "delegation", "length": 456, "sha256": "..." },
-    { "id": "package-sha256", "kind": "package", "length": 1234, "sha256": "..." }
+    { "id": "cartridge-sha256", "kind": "cartridge", "length": 1234, "sha256": "..." }
   ],
   "role": "bundle",
   "schema": "dali.metadata.v1",
@@ -253,13 +253,13 @@ signed body contains exactly these top-level fields in lexicographic order:
 }
 ```
 
-`kind` MUST be one of `delegation`, `package`, `root`, `snapshot`,
+`kind` MUST be one of `delegation`, `cartridge`, `root`, `snapshot`,
 `targets`, `revocation`, or `timestamp`. Fixed metadata files use their kind as the logical
-identity; delegation files use the delegation identifier; package files use
+identity; delegation files use the delegation identifier; cartridge files use
 the lowercase SHA-256 filename stem. Each kind/id pair MUST be unique, every
 length MUST be non-zero, and every digest MUST be non-zero. The canonical file
 order is `root`, `timestamp`, `snapshot`, `targets`, `revocation`,
-`delegation`, then `package`; each repeated kind is ordered by its identifier.
+`delegation`, then `cartridge`; each repeated kind is ordered by its identifier.
 A complete ordinary bundle MUST contain all seven kinds, and the manifest MUST
 be verified before any file is installed. Recovery metadata is distributed by a
 separate recovery procedure and is not required in an ordinary bundle.

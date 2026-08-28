@@ -31,7 +31,7 @@ This contract does not by itself provide:
 - application scheduling, DMA isolation, or storage hot-plug behavior; or
 - permission for an application to install another application.
 
-Package authenticity and package authorization are separate from application
+Cartridge authenticity and cartridge authorization are separate from application
 memory isolation. A correctly signed malicious application remains malicious
 code unless the target's isolation contract contains it.
 
@@ -42,9 +42,9 @@ The words MUST, MUST NOT, REQUIRED, SHOULD, SHOULD NOT, and MAY are normative.
 The following invariants are mandatory:
 
 - Private keys MUST never be shipped in firmware, target manifests, AMRN
-  packages, CI artifacts, issue reports, or logs.
-- A public key MUST NOT become trusted merely because it appears in a package.
-- Every accepted package MUST be authorized by the active target policy and a
+  cartridges, CI artifacts, issue reports, or logs.
+- A public key MUST NOT become trusted merely because it appears in a cartridge.
+- Every accepted cartridge MUST be authorized by the active target policy and a
   valid trust chain rooted in a kernel-provisioned Dali root key.
 - Every signed byte range MUST be specified before a signer or verifier is
   implemented.
@@ -53,9 +53,9 @@ The following invariants are mandatory:
   reject the update without partially activating it.
 - Trust-store replacement MUST be atomic: power loss may leave the previous
   valid store active, but never a partially written store.
-- A package MUST be verified before relocation, MPU locking, application entry,
+- A cartridge MUST be verified before relocation, MPU locking, application entry,
   or any application-owned state transition.
-- A package hash and an AMRN signature are complementary controls; neither may
+- A cartridge hash and an AMRN signature are complementary controls; neither may
   be silently treated as a substitute for the other.
 
 ## 4. Threat model
@@ -67,7 +67,7 @@ The system protects:
 - the Dali root of trust;
 - developer private signing keys;
 - target trust policy and revocation state;
-- package identity, version, size, and hash metadata;
+- cartridge identity, version, size, and hash metadata;
 - the integrity of the installed application image; and
 - the monotonic state used to prevent rollback where hardware supports it.
 
@@ -75,8 +75,8 @@ The system protects:
 
 The design MUST address:
 
-- a modified package or metadata file;
-- a package replaced by another valid package;
+- a modified cartridge or metadata file;
+- a cartridge replaced by another valid cartridge;
 - an unknown developer key;
 - a revoked or expired developer certificate;
 - replay of an old metadata bundle;

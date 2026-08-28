@@ -12,7 +12,7 @@ fn parses_a_fragmented_manifest_without_retaining_file_records() {
         (BundleFileKind::Targets, "targets"),
         (BundleFileKind::Revocation, "revocation"),
         (BundleFileKind::Delegation, "developer"),
-        (BundleFileKind::Package, "package"),
+        (BundleFileKind::Cartridge, "cartridge"),
     ];
     let mut files = [BundleFile::default(); crate::MAX_BUNDLE_FILES];
     for (file, (kind, id)) in files.iter_mut().zip(kinds) {

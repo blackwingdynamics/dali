@@ -3,7 +3,7 @@
 Status: **Active — external backend extraction in progress**.
 
 This roadmap converts Dali OS from an F405-first kernel into a portable OS
-with independently packaged platform backends. A new board must be implemented
+with independently cartridged platform backends. A new board must be implemented
 inside its own backend directory and target profile. Adding that board must not
 require changes to kernel core, boot policy, runtime policy, loader policy,
 security policy, or existing backend code.

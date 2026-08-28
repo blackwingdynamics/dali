@@ -167,7 +167,7 @@ unsafe extern "C" fn pendsv_handler() -> ! {
 /// Errors found while constructing the kernel-owned launch context.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum LaunchError {
-    /// The package entry was not a word-aligned address.
+    /// The cartridge entry was not a word-aligned address.
     InvalidEntry,
     /// The declared stack cannot contain a basic exception frame.
     InvalidStack,

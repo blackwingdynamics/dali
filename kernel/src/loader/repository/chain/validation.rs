@@ -47,7 +47,7 @@ fn same_reference(
 
 /// Internal helper for `validate_target_delegation`.
 fn validate_target_delegation<E>(
-    target: dali_metadata::TargetPackage,
+    target: dali_metadata::TargetCartridge,
     delegation: &dali_metadata::DelegationMetadata,
 ) -> Result<(), BinaryRepositoryError<E>> {
     let namespace_allowed = delegation.allowed_namespaces

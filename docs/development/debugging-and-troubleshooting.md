@@ -3,7 +3,7 @@
 - keep the boot log deterministic;
 - log validation failures with a reason;
 - never hide SD or loader errors behind a generic panic during bring-up;
-- record the exact package bytes used for an acceptance test;
+- record the exact cartridge bytes used for an acceptance test;
 - keep application and kernel linker layouts under version control.
 
 ## Troubleshooting

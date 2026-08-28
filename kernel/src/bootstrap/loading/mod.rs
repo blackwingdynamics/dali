@@ -1,6 +1,6 @@
-//! Package validation and application launch handoff.
+//! Cartridge validation and application launch handoff.
 
-mod package;
+mod cartridge;
 
 #[cfg(feature = "sdio")]
-pub(super) use package::load;
+pub(super) use cartridge::load;

@@ -5,7 +5,7 @@
 | `storage` | boolean | yes | Whether the selected backend provides the declared storage path. |
 | `usb_console` | boolean | yes | Whether the target supports Dali USB CDC console operation. |
 | `mpu` | boolean | yes | Whether the target/backend supports the declared MPU protection boundary. |
-| `relocation` | boolean | yes | Whether the target supports the declared relocation package contract. |
+| `relocation` | boolean | yes | Whether the target supports the declared relocation cartridge contract. |
 
 The build validates these fields against the rest of the manifest. For
 example, `storage = true` requires a `[storage]` section, and `mpu` or

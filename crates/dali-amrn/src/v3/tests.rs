@@ -49,17 +49,17 @@ fn image() -> Image<'static> {
 }
 
 #[test]
-fn encodes_and_parses_relocation_package() {
+fn encodes_and_parses_relocation_cartridge() {
     let expected_size =
         HEADER_SIZE + CODE.len() + DATA.len() + RELOCATIONS.len() * RELOCATION_ENTRY_SIZE;
     let mut output = [0; 128];
     let size = encode(image(), contract(), &mut output).unwrap();
     assert_eq!(size, expected_size);
-    let package = parse(&output[..size], contract()).unwrap();
-    assert_eq!(package.code, CODE);
-    assert_eq!(package.initialized_data, DATA);
-    assert_eq!(package.relocation(0).unwrap(), RELOCATIONS[0]);
-    assert_eq!(package.relocation(1).unwrap(), RELOCATIONS[1]);
+    let cartridge = parse(&output[..size], contract()).unwrap();
+    assert_eq!(cartridge.code, CODE);
+    assert_eq!(cartridge.initialized_data, DATA);
+    assert_eq!(cartridge.relocation(0).unwrap(), RELOCATIONS[0]);
+    assert_eq!(cartridge.relocation(1).unwrap(), RELOCATIONS[1]);
 }
 
 #[test]

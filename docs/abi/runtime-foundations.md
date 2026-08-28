@@ -11,7 +11,7 @@
 ## Application lifecycle foundation
 
 The kernel runtime defines a bounded lifecycle record for one discovered
-package and its manifest-owned slot:
+cartridge and its manifest-owned slot:
 
 ```text
 Discovered -> Loaded -> Ready -> Running -> Faulted -> Recovering -> Terminated
@@ -30,18 +30,18 @@ contracts.
 The lifecycle owner tracks at most one currently active application context. A
 ready lifecycle must be explicitly activated before it can enter `Running`,
 and a second activation through that owner is rejected. The active context
-retains the package identity and manifest-owned slot allocation. Retirement is
+retains the cartridge identity and manifest-owned slot allocation. Retirement is
 accepted only after the lifecycle reaches `Terminated`; there is no implicit
 restart. The feature-gated scheduler can explicitly select another declared
 ready context after a supported handoff or fault recovery.
 The v4 loader creates the lifecycle after validated copy and relocation, then
 the launch path performs the `Loaded -> Ready -> Running` transition before
-MPU activation. Legacy v2/v3 package paths retain their existing launch
+MPU activation. Legacy v2/v3 cartridge paths retain their existing launch
 behavior until they receive an identity-aware lifecycle contract.
-F405 hardware has confirmed these transitions together with two-package
+F405 hardware has confirmed these transitions together with two-cartridge
 loading, manifest slot boundaries, slot0 execution, and the complete fault
 transition. The current policy requires a manual reset after termination,
-provides no rollback on the read-only package boundary, and does not arm a
+provides no rollback on the read-only cartridge boundary, and does not arm a
 watchdog without a bounded feed owner.
 
 ### Context-switch foundation

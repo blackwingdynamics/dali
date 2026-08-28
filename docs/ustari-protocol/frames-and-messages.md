@@ -63,14 +63,14 @@ authorization and provides no confidentiality.
 
 Bits `0x10..=0x80` are reserved and must be rejected. The encrypted flag is
 not a security policy by itself: after session establishment, control,
-package-management, and authorization messages require encryption. Cleartext
+cartridge-management, and authorization messages require encryption. Cleartext
 telemetry is allowed only by explicit device policy.
 
 Compression occurs before encryption and requires a bounded, negotiated codec.
 The flag alone must never select an unbounded decompressor.
 
 Initial channels are `0` control/session, `1` telemetry/diagnostics, and `2`
-package transfer. Unknown channels must be rejected with a typed `NACK`.
+cartridge transfer. Unknown channels must be rejected with a typed `NACK`.
 
 ## 7. Message identifiers and schemas
 
@@ -79,11 +79,11 @@ package transfer. Unknown channels must be rejected with a typed `NACK`.
 | `0x00..=0x0F` | Session and system control |
 | `0x10..=0x1F` | Application lifecycle |
 | `0x20..=0x2F` | Telemetry and parameters |
-| `0x30..=0x3F` | Package transfer |
+| `0x30..=0x3F` | Cartridge transfer |
 | `0xF0..=0xFF` | Safety and emergency handling |
 
 Reserved initial names include `PING`, `PONG`, `ACK`, `NACK`, application list,
-start/stop/pause/resume, typed telemetry and parameter access, package
+start/stop/pause/resume, typed telemetry and parameter access, cartridge
 start/chunk/finish/abort, and emergency-stop request/result.
 
 Names are not implementations. Every message requires a versioned, bounded
@@ -91,6 +91,6 @@ binary schema defining channel, authentication state, maximum size,
 authorization, idempotency, duplicate behavior, success response, typed
 errors, and timeout/retry semantics.
 
-Application commands identify packages by signed package identity, version,
+Application commands identify cartridges by signed cartridge identity, version,
 slot, or runtime identity. They must never authorize a hardcoded host path such
-as `/missions/agro.amrn`, and a remote path is never package identity.
+as `/missions/agro.amrn`, and a remote path is never cartridge identity.

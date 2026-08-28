@@ -25,7 +25,7 @@ dali app init --sdk-path /path/to/dali-kernel/crates/dali-sdk
 - The command preflights all managed paths before creating any files.
 - Invalid directory names are rejected before filesystem mutation.
 - The SDK path must point to a Cargo crate named `dali`.
-- The command does not build, package, flash, or install the application.
+- The command does not build, cartridge, flash, or install the application.
 
 ## Example
 

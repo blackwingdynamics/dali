@@ -50,7 +50,7 @@ On 2026-08-21, the feature-gated `repository-loader` F405 release profile was
 flashed with a signed Binary v2 bundle prepared by
 `scripts/prepare-f405-binary-v2-sd.sh`. The board initialized SDIO, read the
 repository, verified the AMRN header, payload, and signature, loaded one
-manifest-declared package into slot 1, and executed the relocation fixture.
+manifest-declared cartridge into slot 1, and executed the relocation fixture.
 This is development-profile hardware evidence for the configured release
 anchor. It does not establish production key custody, Secure Boot, DMA
 isolation, revocation rejection on target, or interrupted-write recovery.

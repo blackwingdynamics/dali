@@ -4,7 +4,7 @@ Status: **Future**.
 
 This document describes a future control and observability ecosystem. It does
 not modify the current thirteen-step roadmap, the MVP boot path, the ABI, the
-storage layout, the package layout, or the existing security boundaries.
+storage layout, the cartridge layout, or the existing security boundaries.
 Implementation begins only after the relevant driver, runtime, application
 lifecycle, and first-stage bootloader contracts have been explicitly approved.
 
@@ -115,7 +115,7 @@ anti-rollback, or grant an application kernel-owned resources.
       boundaries, entry point, target, ABI, and signature status.
 - [ ] Require explicit authorization for start, stop, and other state changes.
 - [ ] Define behavior for duplicate names, stale generations, revoked keys,
-      expired packages, missing storage, and running dependencies.
+      expired cartridges, missing storage, and running dependencies.
 - [ ] Define recovery when an application cannot be safely terminated.
 - [ ] Add host tests for lifecycle state transitions and authorization errors.
 - [ ] Add target evidence for list, inspect, start, stop, and failed-operation
@@ -200,7 +200,7 @@ existing security and memory boundaries.
 | `app list` | List valid signed AMRN cartridges | Existing trust-store and anti-rollback policy |
 | `app start <name>` | Load and start an authorized application | Existing loader, MPU, ABI, and lifecycle policy |
 | `app stop <id>` | Stop and revoke an application context | Bounded retirement and resource cleanup |
-| `app inspect <name>` | Show verified metadata and memory boundaries | No bypass of signature or package validation |
+| `app inspect <name>` | Show verified metadata and memory boundaries | No bypass of signature or cartridge validation |
 
 ### Robotics and telemetry
 

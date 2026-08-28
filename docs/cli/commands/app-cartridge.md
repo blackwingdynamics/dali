@@ -1,22 +1,22 @@
-# `dali app package`
+# `dali app cartridge`
 
 ## Purpose
 
-Create the AMRN deployment package from the native payload produced by
+Create the AMRN deployment cartridge from the native payload produced by
 `dali app build`.
 
 This is the application-aware packaging command. It reads `dali.toml` and
-derives the payload and package paths. For raw files outside an application
-project, use the generic `dali package` command instead.
+derives the payload and cartridge paths. For raw files outside an application
+project, use the generic `dali cartridge` command instead.
 
 ## Syntax
 
 ```text
-dali app package
+dali app cartridge
 ```
 
 The command reads `dali.toml`, derives the target/profile artifact paths, reads
-`build.entry_offset`, and writes the package beside the artifacts:
+`build.entry_offset`, and writes the cartridge beside the artifacts:
 
 ```text
 target/<target-profile>/debug/<application-name>.amrn
@@ -39,7 +39,7 @@ dali app build
 dali inspect --input target/thumbv7em-none-eabihf/debug/telemetry.amrn
 ```
 
-`dali app build` normally creates both artifacts. Use `dali app package` when
+`dali app build` normally creates both artifacts. Use `dali app cartridge` when
 the native payload already exists and only packaging must be repeated.
 
 ## Failure behavior

@@ -220,7 +220,7 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 - [x] Record F405 GPIO output-toggle evidence with the F405 acceptance firmware.
 - [x] Record F405 GPIO input and interrupt evidence: grounding the PC13 input
   produced repeated `[DRIVER][EXTI] PC13 interrupt triggered` traces both with
-  the SD card absent and during a successful SDIO/package boot.
+  the SD card absent and during a successful SDIO/cartridge boot.
 
 ### Timers
 
@@ -248,7 +248,7 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 - [x] Bind an F405 EXTI input resource to board-owned EXTI and SYSCFG state.
 - [x] Record F405 EXTI edge and pending-bit evidence: grounding the PC13 input
   produced repeated `[DRIVER][EXTI] PC13 interrupt triggered` traces both with
-  the SD card absent and during a successful SDIO/package boot.
+  the SD card absent and during a successful SDIO/cartridge boot.
 - [x] Run Slice 3 host tests, strict Clippy, and the production F405 build.
 
 ### UART

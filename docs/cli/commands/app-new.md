@@ -8,7 +8,7 @@ scaffold.
 ## Status
 
 Implemented for the initial scaffold contract. The command creates source and
-configuration files but does not build, package, flash, or install an
+configuration files but does not build, cartridge, flash, or install an
 application.
 
 ## Syntax

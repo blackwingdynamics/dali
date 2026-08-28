@@ -13,7 +13,7 @@ dali app init
 `new` creates a new application directory and refuses to overwrite an
 existing path. `init` initializes the current directory using its directory
 name as the application name and refuses to replace any existing managed
-file. `build` builds and packages locally; these commands do not flash
+file. `build` builds and cartridges locally; these commands do not flash
 hardware or write to an SD card.
 
 The command works both inside and outside a Dali workspace. Inside a workspace
@@ -63,7 +63,7 @@ build configuration that must remain configurable:
 - application name and version;
 - SDK requirement;
 - target profile, expressed as the documented Rust compilation target;
-- package output name;
+- cartridge output name;
 - entry symbol and entry offset policy.
 - requested application ABI version; omit it to use the target profile default.
 - requested AMRN format version; omit it to use the ABI-compatible default.
@@ -93,4 +93,4 @@ command must not duplicate those values in command logic.
 2. Implement `dali app new <name> [--sdk-path <path>]`. (Complete.)
 3. Implement `dali app init` using the same renderer and overwrite policy.
 4. Add command documentation and fixture comparison tests. (Complete for `new`.)
-5. Connect the manifest to `dali app build` and `dali app package`.
+5. Connect the manifest to `dali app build` and `dali app cartridge`.

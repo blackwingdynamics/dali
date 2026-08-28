@@ -108,7 +108,7 @@ fn parse_kind(value: &str) -> Result<BundleFileKind, DecodeError> {
         "targets" => Ok(BundleFileKind::Targets),
         "revocation" => Ok(BundleFileKind::Revocation),
         "delegation" => Ok(BundleFileKind::Delegation),
-        "package" => Ok(BundleFileKind::Package),
+        "cartridge" => Ok(BundleFileKind::Cartridge),
         _ => Err(DecodeError::InvalidValue),
     }
 }
