@@ -1,6 +1,6 @@
 //! Watchdog backend initialization during kernel startup.
 
-use crate::runtime::watchdog::WatchdogRuntime;
+use crate::runtime::watchdog::{FeedOwner, WatchdogRuntime};
 use crate::{logging, platform};
 
 /// Performs the `initialize` operation for this subsystem.
@@ -18,7 +18,16 @@ where
         return None;
     };
     match WatchdogRuntime::new(backend, profile) {
-        Ok(runtime) => Some(runtime),
+        Ok(mut runtime) => match runtime.arm(FeedOwner::KernelHeartbeat) {
+            Ok(()) => Some(runtime),
+            Err(_) => {
+                logging::error(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[WATCHDOG] Failed to arm runtime"),
+                );
+                None
+            }
+        },
         Err(error) => {
             logging::error(
                 logging::BOOT_SUBSYSTEM,
