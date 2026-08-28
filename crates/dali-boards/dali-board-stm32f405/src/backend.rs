@@ -23,6 +23,7 @@ pub use sdio::Stm32f405SdioTransport;
 
 #[cfg(feature = "board-stm32f405-sd")]
 impl dali_kernel_api::BoardBackend for board::Board {
+    type Architecture = crate::CortexMArchitecture;
     type StatusLed = board::StatusLed;
     type UserKey = board::UserKey;
     type Watchdog = crate::F405Watchdog;

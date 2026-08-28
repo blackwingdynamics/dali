@@ -7,6 +7,7 @@
 //! Existing kernel F405 code is migrated here in subsequent atomic checkpoints;
 //! this first checkpoint establishes the publication and dependency boundary.
 
+mod architecture;
 #[cfg(feature = "board-stm32f405-sd")]
 mod backend;
 #[cfg(feature = "board-stm32f405-sd")]
@@ -15,6 +16,7 @@ mod logging;
 mod mpu;
 mod watchdog;
 
+pub use architecture::CortexMArchitecture;
 pub use watchdog::{F405Watchdog, F405WatchdogError};
 
 #[cfg(feature = "board-stm32f405-sd")]

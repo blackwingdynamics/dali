@@ -3,10 +3,12 @@
 
 //! Public, hardware-neutral contracts for integrating Dali OS backends.
 
+pub mod architecture;
 pub mod board;
 pub mod dma;
 pub mod storage;
 
+pub use architecture::ArchitectureBackend;
 pub use board::{
     BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionProvider, ResetCause,
     WatchdogBackend,

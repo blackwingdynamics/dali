@@ -9,7 +9,7 @@
     feature = "abi-context-switch"
 ))]
 use dali_kernel_api::BoardInfo;
-use dali_kernel_api::{BoardBackend, BoardError, ResetCause, WatchdogBackend};
+use dali_kernel_api::{ArchitectureBackend, BoardBackend, BoardError, ResetCause, WatchdogBackend};
 
 #[cfg(any(
     feature = "abi-current",
@@ -107,6 +107,23 @@ where
     /// Returns the reset cause captured by the backend.
     pub(crate) fn reset_cause(&self) -> ResetCause {
         self.backend.reset_cause()
+    }
+
+    /// Waits through the selected architecture backend.
+    pub(crate) fn wait_for_interrupt()
+    where
+        B::Architecture: ArchitectureBackend,
+    {
+        B::Architecture::wait_for_interrupt()
+    }
+
+    /// Enables interrupts through the selected architecture backend.
+    #[cfg(feature = "driver-hardware-test")]
+    pub(crate) fn enable_interrupts()
+    where
+        B::Architecture: ArchitectureBackend,
+    {
+        B::Architecture::enable_interrupts();
     }
 
     /// Sets the backend-owned status indicator.

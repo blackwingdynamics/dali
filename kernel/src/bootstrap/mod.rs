@@ -11,6 +11,7 @@ use crate::{logging, platform};
 pub(super) struct StorageRuntime<B>
 where
     B: dali_kernel_api::BoardBackend,
+    B::Architecture: dali_kernel_api::ArchitectureBackend,
     B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
     /// Associates storage state with the selected backend type.
@@ -93,7 +94,7 @@ where
 {
     let mut board = platform::Platform::<B>::initialize().unwrap_or_else(|_| {
         loop {
-            cortex_m::asm::wfi();
+            platform::Platform::<B>::wait_for_interrupt();
         }
     });
     #[cfg(feature = "abi-mpu")]
@@ -135,11 +136,7 @@ where
     }
 
     #[cfg(feature = "driver-hardware-test")]
-    unsafe {
-        // SAFETY: All test-build interrupt handlers are linked, and USB/logging
-        // ownership is initialized before EXTI events can emit diagnostics.
-        cortex_m::interrupt::enable();
-    }
+    platform::Platform::<B>::enable_interrupts();
 
     startup::emit_boot_banner();
     logging::info(

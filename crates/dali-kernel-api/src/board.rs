@@ -101,6 +101,8 @@ pub trait MemoryProtectionProvider {
 
 /// Common board lifecycle contract consumed by kernel orchestration.
 pub trait BoardBackend {
+    /// CPU architecture implementation selected by the firmware composition.
+    type Architecture: crate::architecture::ArchitectureBackend;
     /// Board-owned status LED resource.
     type StatusLed;
     /// Board-owned user input resource.

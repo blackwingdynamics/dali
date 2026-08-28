@@ -25,6 +25,7 @@ pub mod storage;
 pub fn run<B>() -> !
 where
     B: dali_kernel_api::BoardBackend,
+    B::Architecture: dali_kernel_api::ArchitectureBackend,
     B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
     bootstrap::run::<B>()
