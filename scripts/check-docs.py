@@ -46,6 +46,16 @@ def check_file(path: Path, root: Path) -> list[str]:
     return errors
 
 
+def check_documentation_indexes(root: Path) -> list[str]:
+    docs_root = root / "docs"
+    errors: list[str] = []
+    for directory in sorted(path for path in docs_root.rglob("*") if path.is_dir()):
+        markdown_files = tuple(directory.glob("*.md"))
+        if markdown_files and not (directory / "README.md").is_file():
+            errors.append(f"{directory}: missing README.md index")
+    return errors
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     markdown_files = sorted(
@@ -57,6 +67,7 @@ def main() -> int:
         and "changelog" not in path.relative_to(root).parts
     )
     errors = [error for path in markdown_files for error in check_file(path, root)]
+    errors.extend(check_documentation_indexes(root))
     if errors:
         print("Documentation validation failed:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)

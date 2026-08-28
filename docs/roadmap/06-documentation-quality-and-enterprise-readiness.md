@@ -26,7 +26,7 @@ approval.
 ## 3. Automated documentation validation
 
 - [x] Add an internal-link checker for Markdown files.
-- [ ] Validate that every documented file and directory exists.
+- [x] Validate that every documented file and directory exists.
 - [ ] Validate roadmap indexes and repository-tree entries against the actual
   repository structure.
 - [x] Run documentation checks in CI and preserve actionable failure output.
