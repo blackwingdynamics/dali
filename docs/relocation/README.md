@@ -1,8 +1,8 @@
 # Application Relocation Documentation
 
-The canonical source remains [`../RELOCATION.md`](../RELOCATION.md) until the
-split content has been reviewed. The files below are topic-oriented copies
-prepared for comparison; the source file has not been changed.
+This directory is the canonical source for the application relocation
+contract. The content is organized by design direction, safety, implementation
+pipeline, and evidence boundary.
 
 ## Prepared sections
 
