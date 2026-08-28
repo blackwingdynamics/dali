@@ -180,6 +180,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "dali-board-stm32f405"
+version = "0.1.0-alpha.2"
+dependencies = [
+ "cortex-m",
+ "dali-amrn",
+ "dali-driver-api",
+ "dali-kernel-api",
+ "dali-targets",
+ "fugit",
+ "rtt-target",
+ "stm32f4xx-hal",
+ "usb-device",
+ "usbd-serial",
+]
+
+[[package]]
+name = "dali-boards"
+version = "0.1.0-alpha.2"
+dependencies = [
+ "dali-kernel-api",
+]
+
+[[package]]
 name = "dali-cli"
 version = "0.1.0-alpha.2"
 dependencies = [
@@ -210,6 +233,16 @@ name = "dali-driver-api"
 version = "0.1.0-alpha.2"
 
 [[package]]
+name = "dali-firmware"
+version = "0.1.0-alpha.2"
+dependencies = [
+ "cortex-m-rt",
+ "dali-board-stm32f405",
+ "dali-kernel",
+ "panic-halt",
+]
+
+[[package]]
 name = "dali-kernel"
 version = "0.1.0-alpha.2"
 dependencies = [
@@ -219,6 +252,7 @@ dependencies = [
  "dali-amrn",
  "dali-crypto",
  "dali-driver-api",
+ "dali-kernel-api",
  "dali-metadata",
  "dali-targets",
  "dali-usb",
@@ -226,9 +260,16 @@ dependencies = [
  "fugit",
  "panic-halt",
  "rtt-target",
- "stm32f4xx-hal",
  "usb-device",
  "usbd-serial",
+]
+
+[[package]]
+name = "dali-kernel-api"
+version = "0.1.0-alpha.2"
+dependencies = [
+ "dali-driver-api",
+ "dali-targets",
 ]
 
 [[package]]

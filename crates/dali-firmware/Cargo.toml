@@ -1,0 +1,25 @@
+[package]
+name = "dali-firmware"
+version = "0.1.0-alpha.2"
+edition = "2024"
+publish = false
+autobins = false
+
+[features]
+default = []
+stm32f405 = ["dep:dali-board-stm32f405"]
+
+[dependencies]
+dali-kernel = { path = "../../kernel", default-features = false, features = ["sdio"] }
+dali-board-stm32f405 = { path = "../dali-boards/dali-board-stm32f405", optional = true, features = ["board-stm32f405-sd"] }
+cortex-m-rt = "0.7"
+panic-halt = "1.0"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "dali-f405"
+path = "src/bin/dali-f405.rs"
+harness = false
+required-features = ["stm32f405"]

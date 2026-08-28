@@ -10,9 +10,9 @@ pre-commit:
     workspace-check:
       run: cargo check --workspace --exclude dali-kernel
     clippy:
-      run: cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
+      run: cargo clippy --workspace --all-targets --exclude dali-kernel --exclude dali-firmware -- -D warnings
     kernel-clippy:
-      run: cargo clippy -p dali-kernel --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
+      run: just kernel-clippy
     tests:
       run: cargo test -p dali -p dali-app-hello -p dali-cli
     diff:

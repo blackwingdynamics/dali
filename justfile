@@ -4,8 +4,8 @@
 set shell := ["bash", "-cu"]
 
 target := "thumbv7em-none-eabihf"
-kernel_package := "dali-kernel"
-kernel_binary := "dali-kernel"
+kernel_package := "dali-firmware"
+kernel_binary := "dali-f405"
 kernel_elf := "target/" + target + "/debug/" + kernel_binary
 f405_kernel_bin := "target/" + target + "/debug/" + kernel_binary + "-f405.bin"
 app_package := "dali-app-hello"
@@ -57,7 +57,7 @@ workspace-check:
 
 # Check the embedded kernel target.
 kernel-check board="f405":
-    cargo check -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else { error("Unsupported board. Use f405.") } }} --target {{target}}
+    cargo check -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "stm32f405" } else { error("Unsupported board. Use f405.") } }} --bin {{kernel_binary}} --target {{target}}
 
 # Run host-side tests.
 test:
@@ -65,28 +65,28 @@ test:
 
 # Run host-side Clippy with warnings denied.
 clippy:
-    cargo clippy --workspace --all-targets --exclude {{kernel_package}} -- -D warnings
+    cargo clippy --workspace --all-targets --exclude dali-kernel --exclude {{kernel_package}} -- -D warnings
 
 # Run kernel-target Clippy with warnings denied.
 kernel-clippy board="f405":
-    cargo clippy -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else { error("Unsupported board. Use f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -D warnings
+    cargo clippy -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "stm32f405" } else { error("Unsupported board. Use f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -D warnings
 
 # Run all local CI checks.
 ci: format-check workspace-check kernel-check test clippy kernel-clippy diff-check
 
 # Build the embedded kernel ELF.
 build board="f405":
-    cargo build -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "board-stm32f405-sd,usb-cdc" } else { error("Unsupported board. Use f405.") } }} --target {{target}}
+    cargo build -p {{kernel_package}} --no-default-features --features {{ if board == "f405" { "stm32f405" } else { error("Unsupported board. Use f405.") } }} --bin {{kernel_binary}} --target {{target}}
 
 # Run the kernel in Renode. Requires Renode and uses the STM32F4 reference model.
 simulate board="f405":
-    cargo build -p {{kernel_package}} --no-default-features --features board-stm32f405-sd --target {{target}}
+    cargo build -p {{kernel_package}} --no-default-features --features stm32f405 --bin {{kernel_binary}} --target {{target}}
     renode --console --disable-gui {{renode_script}}
 
 # Convert the kernel ELF to a raw binary. Requires cargo-binutils and llvm-tools.
 bin board="f405":
     just build {{board}}
-    cargo objcopy -p {{kernel_package}} --no-default-features --features board-stm32f405-sd,usb-cdc --target {{target}} --bin {{kernel_binary}} -- -O binary {{f405_kernel_bin}}
+    cargo objcopy -p {{kernel_package}} --no-default-features --features stm32f405 --target {{target}} --bin {{kernel_binary}} -- -O binary {{f405_kernel_bin}}
 
 # Build the native demo payload for the documented application SRAM region.
 app-build:

@@ -1,6 +1,6 @@
 # Universal Dali OS Platform Architecture
 
-Status: **Active — architecture definition and migration planning**.
+Status: **Active — external backend extraction in progress**.
 
 This roadmap converts Dali OS from an F405-first kernel into a portable OS
 with independently packaged platform backends. A new board must be implemented
@@ -11,17 +11,17 @@ security policy, or existing backend code.
 ## Architectural target
 
 ```text
-Dali OS core
+Dali OS core (hardware-neutral)
 ├── boot policy
 ├── runtime and scheduler policy
 ├── loader and cartridge policy
 ├── security policy
 ├── hardware-neutral driver contracts
 └── platform backend boundary
-    ├── f405/
-    ├── pico-rp2040/
-    ├── pico-rp2350/
-    └── fpga-<soc>/
+    ├── crates/dali-boards/dali-board-stm32f405/
+    ├── crates/dali-boards/dali-board-pico-rp2040/
+    ├── crates/dali-boards/dali-board-pico-rp2350/
+    └── crates/dali-boards/dali-board-fpga-<soc>/
 ```
 
 The core consumes typed capabilities and services. Only a platform backend may
@@ -65,6 +65,12 @@ board pin mapping.
 - [ ] Update architecture and target-manifest documentation before code changes.
 - [ ] Obtain review approval for the platform boundary.
 
+Migration checkpoint: `crates/dali-boards` now contains the public
+hardware-neutral contracts and the copied STM32F405 backend. The kernel must
+not depend on `dali-board-stm32f405`; the remaining legacy kernel platform
+directory is being removed only as the external firmware composition layer is
+introduced, so the target build does not lose its entry point mid-migration.
+
 Evidence gate: the F405 baseline trace must be reproducible and attached to the
 checkpoint. No migration begins while the baseline is ambiguous.
 
@@ -87,9 +93,9 @@ traces with the Phase 0 baseline before proceeding.
 
 ## Phase 2 — Self-contained F405 backend
 
-- [ ] Consolidate F405 clock, GPIO, timer, serial, I2C, SPI, watchdog,
+- [x] Copy F405 clock, GPIO, timer, serial, I2C, SPI, watchdog,
   interrupts, SDIO, USB, linker, and memory ownership under
-  `kernel/src/platform/f405/`.
+  `crates/dali-boards/dali-board-stm32f405/` for comparison.
 - [ ] Remove accidental F405 assumptions from shared modules.
 - [ ] Move F405 MPU register programming, CCM/SRAM section placement, and
   processor-specific fault setup into the F405 backend.
