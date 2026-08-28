@@ -8,6 +8,7 @@ from urllib.parse import unquote
 
 
 LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
+TREE_ENTRY_PATTERN = re.compile(r"^(?P<prefix>(?:│   )*)(?:├──|└──) (?P<item>.*)$")
 
 
 def link_target(raw_target: str) -> str:
@@ -56,6 +57,31 @@ def check_documentation_indexes(root: Path) -> list[str]:
     return errors
 
 
+def check_repository_tree(root: Path) -> list[str]:
+    tree_path = root / "docs/file-structure/repository-tree.md"
+    lines = tree_path.read_text(encoding="utf-8").splitlines()
+    stack: list[str] = []
+    errors: list[str] = []
+    for line_number, line in enumerate(lines, start=1):
+        match = TREE_ENTRY_PATTERN.match(line)
+        if not match:
+            continue
+        depth = len(match.group("prefix")) // 4
+        stack = stack[:depth]
+        parent = root.joinpath(*stack)
+        item = match.group("item").split("#", 1)[0].strip()
+        names = [name.strip() for name in item.split(",") if name.strip()]
+        for name in names:
+            candidate = parent / name.rstrip("/")
+            if candidate.parts and candidate.parts[len(root.parts)] == "docs" and not candidate.exists():
+                errors.append(
+                    f"{tree_path}:{line_number}: missing tree entry: {candidate.relative_to(root)}"
+                )
+        if item.endswith("/") and len(names) == 1:
+            stack.append(names[0].rstrip("/"))
+    return errors
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     markdown_files = sorted(
@@ -68,6 +94,7 @@ def main() -> int:
     )
     errors = [error for path in markdown_files for error in check_file(path, root)]
     errors.extend(check_documentation_indexes(root))
+    errors.extend(check_repository_tree(root))
     if errors:
         print("Documentation validation failed:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)

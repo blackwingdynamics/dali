@@ -27,7 +27,7 @@ approval.
 
 - [x] Add an internal-link checker for Markdown files.
 - [x] Validate that every documented file and directory exists.
-- [ ] Validate roadmap indexes and repository-tree entries against the actual
+- [x] Validate roadmap indexes and repository-tree entries against the actual
   repository structure.
 - [x] Run documentation checks in CI and preserve actionable failure output.
 - [ ] Keep formatting and whitespace validation compatible with existing hooks.
