@@ -9,3 +9,4 @@ workflow documentation. The files below contain its topic-oriented sections.
 - [Workspace and commands](workspace-and-commands.md)
 - [Build, flash, and simulation](build-flash-and-simulation.md)
 - [Debugging and troubleshooting](debugging-and-troubleshooting.md)
+- [Operations and release workflow](operations-and-release.md)

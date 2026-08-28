@@ -161,7 +161,8 @@ dali-kernel/
 │   │   ├── build-flash-and-simulation.md
 │   │   ├── debugging-and-troubleshooting.md
 │   │   ├── setup-and-console.md
-│   │   └── workspace-and-commands.md
+│   │   ├── workspace-and-commands.md
+│   │   └── operations-and-release.md
 │   ├── roadmap/                    # Roadmap gateway and detailed phase plans
 │   │   ├── README.md
 │   │   ├── current-status-and-execution.md
@@ -176,7 +177,9 @@ dali-kernel/
 │   │   ├── README.md
 │   │   ├── baseline-and-current-boundary.md
 │   │   ├── remaining-work-and-production-trust.md
-│   │   └── f405-isolation-foundation.md
+│   │   ├── f405-isolation-foundation.md
+│   │   ├── disclosure-and-incident-response.md
+│   │   └── threat-model-and-evidence.md
 │   ├── mvp-acceptance/             # Categorized MVP acceptance documentation
 │   │   ├── README.md
 │   │   ├── recorded-evidence.md
@@ -194,6 +197,7 @@ dali-kernel/
 │   │   ├── comments-and-documentation.md
 │   │   ├── language-hardcoding-and-discipline.md
 │   │   ├── modules-naming-and-logging.md
+│   │   ├── review-checklist.md
 │   │   ├── safety-errors-and-realtime.md
 │   │   ├── testing-review-and-prohibited-practices.md
 │   │   └── terminology-and-style.md

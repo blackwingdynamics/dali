@@ -56,12 +56,12 @@ approval.
 
 ## 6. Security, operations, and contribution guidance
 
-- [ ] Document threat-model scope, security guarantees, non-guarantees, and
+- [x] Document threat-model scope, security guarantees, non-guarantees, and
   evidence requirements in one navigable structure.
-- [ ] Add security disclosure and incident-response procedures.
-- [ ] Document onboarding, development setup, release preparation, rollback,
+- [x] Add security disclosure and incident-response procedures.
+- [x] Document onboarding, development setup, release preparation, rollback,
   and troubleshooting workflows.
-- [ ] Define review expectations for architecture, unsafe code, hardware
+- [x] Define review expectations for architecture, unsafe code, hardware
   changes, documentation claims, and generated artifacts.
 
 ## 7. Release and maintenance readiness

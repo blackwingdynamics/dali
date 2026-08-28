@@ -60,7 +60,7 @@ reference a more authoritative contract.
 | Platform backends | Target-specific hardware boundary | [Platform backend index](platform-backends/README.md) |
 | Relocation | Movable application design | [Relocation index](relocation/README.md) |
 | Roadmap | Project phases and execution order | [Roadmap index](roadmap/README.md) |
-| Security | Security guarantees and limitations | [Security index](security/README.md) |
+| Security | Security scope, guarantees, limitations, and evidence | [Security index](security/README.md) |
 | SDK | Application service contracts and compatibility | [SDK index](sdk/README.md) |
 | Target manifest | TOML schema and field rules | [Target manifest index](target-manifest/README.md) |
 | Target profiles | Generated profile ownership | [Target profile index](target-profiles/README.md) |
