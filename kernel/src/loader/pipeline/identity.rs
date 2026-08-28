@@ -17,11 +17,14 @@ use crate::storage::filesystem::AmrnFile;
 #[cfg(not(feature = "repository-loader"))]
 use super::execution::LoadedApplication;
 
+/// Encoded size of one format-4 relocation entry.
 const RELOCATION_BYTES: usize = v4::RELOCATION_ENTRY_SIZE;
 #[cfg(not(feature = "repository-loader"))]
+/// Capacity used when loading a single legacy package.
 const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
 
 #[cfg(not(feature = "repository-loader"))]
+/// Loads, validates, relocates, and prepares one format-4 package.
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -86,6 +89,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Selects a target slot whose format-4 contract accepts the header.
 pub(super) fn parse_target_header(
     bytes: &[u8; v4::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -113,6 +117,7 @@ pub(super) fn parse_target_header(
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Converts launch validation failures into format-4 loader errors.
 fn prepare_launch(
     entry_address: u32,
     stack_origin: u32,
@@ -125,6 +130,7 @@ fn prepare_launch(
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Reads one complete format-4 header from storage.
 pub(crate) fn read_header<D>(
     file: &AmrnFile<'_, D>,
 ) -> Result<[u8; v4::HEADER_SIZE], super::LoaderError>
@@ -137,6 +143,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Computes the encoded format-4 package length.
 fn package_length(header: v3::Header) -> Option<u32> {
     u32::try_from(v4::HEADER_SIZE)
         .ok()?
@@ -150,6 +157,7 @@ fn package_length(header: v3::Header) -> Option<u32> {
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Verifies the format-4 payload and relocation stream.
 fn validate_payload<D>(
     file: &AmrnFile<'_, D>,
     header: v4::Header,
@@ -162,6 +170,7 @@ where
     crate::loader_contract::validate_stream(&reader, header, contract).map_err(map_stream_error)
 }
 
+/// Copies package segments and applies validated relocations.
 pub(super) fn copy_segments_and_relocate<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -180,6 +189,7 @@ where
     apply_relocations(file, header, contract)
 }
 
+/// Applies each encoded relocation to the loaded segments.
 fn apply_relocations<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -199,6 +209,7 @@ where
     Ok(())
 }
 
+/// Copies one validated segment into its target address.
 pub(super) fn copy_segment<D>(
     file: &AmrnFile<'_, D>,
     destination: u32,
@@ -229,6 +240,7 @@ where
     Ok(())
 }
 
+/// Returns a mutable view of one validated target segment.
 pub(super) fn mutable_segment(
     address: u32,
     size: u32,
@@ -241,6 +253,7 @@ pub(super) fn mutable_segment(
     Ok(target)
 }
 
+/// Clears one validated target memory segment.
 pub(super) fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let target = mutable_segment(destination, size)?;
     target.fill(0);
@@ -248,10 +261,12 @@ pub(super) fn zero_segment(destination: u32, size: u32) -> Result<(), super::Loa
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Reader adapter exposing package-file reads to the streaming validator.
 pub(super) struct FileReader<'a, 'file, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
+    /// Borrowed package file used by the reader adapter.
     file: &'a AmrnFile<'file, D>,
 }
 
@@ -272,6 +287,7 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
+/// Maps streaming validation failures into loader errors.
 fn map_stream_error(
     error: crate::loader_contract::StreamError<embedded_sdmmc::Error<StorageError>>,
 ) -> super::LoaderError {
@@ -284,10 +300,12 @@ fn map_stream_error(
     }
 }
 
+/// Wraps a format-4 parser error in the loader error type.
 pub(crate) fn v4_error(error: v4::Error) -> super::LoaderError {
     super::LoaderError::V4IdentityPackage(error)
 }
 
+/// Maps a relocation parser error to the format-4 loader error.
 fn relocation_error(_: v3::Error) -> super::LoaderError {
     v4_error(v4::Error::InvalidRelocation)
 }

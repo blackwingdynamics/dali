@@ -10,6 +10,7 @@ use dali_sdk::svc::{ExceptionFrame, ServiceId, ServiceStatus};
 
 #[unsafe(export_name = "SVCall")]
 #[unsafe(naked)]
+/// Naked SVC entry wrapper for the application service gateway.
 unsafe extern "C" fn svcall_handler() {
     // SAFETY: The wrapper preserves the application register used as scratch,
     // selects the hardware-stacked frame before changing MSP, and restores the
@@ -29,6 +30,7 @@ unsafe extern "C" fn svcall_handler() {
     );
 }
 
+/// Validates an SVC frame and dispatches the requested service.
 fn handle_svc(frame_address: u32, exception_return: u32) {
     if !valid_exception_return(exception_return) {
         fault::report(FaultRecord::without_frame(
@@ -65,6 +67,7 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
     dispatch(frame, slot);
 }
 
+/// Validates that an exception return names an application PSP basic frame.
 fn valid_exception_return(value: u32) -> bool {
     const EXC_RETURN_SIGNATURE_MASK: u32 = 0xFF00_0000;
     const EXC_RETURN_SIGNATURE: u32 = 0xFF00_0000;
@@ -78,6 +81,7 @@ fn valid_exception_return(value: u32) -> bool {
         && value & BASIC_FRAME_FLAG != 0
 }
 
+/// Dispatches one validated service request into the application frame.
 fn dispatch(frame: &mut ExceptionFrame, slot: dali_targets::IsolationSlot) {
     let status = match ServiceId::from_raw(frame.r0) {
         Some(ServiceId::Log) => dispatch_log(frame, slot),
@@ -97,6 +101,7 @@ fn dispatch(frame: &mut ExceptionFrame, slot: dali_targets::IsolationSlot) {
 }
 
 #[cfg(feature = "dma-test-fixture")]
+/// Rejects the fixture DMA request and records the denial.
 fn dispatch_dma_request_denied() -> ServiceStatus {
     logging::info(
         logging::SECURITY_SUBSYSTEM,
@@ -106,6 +111,7 @@ fn dispatch_dma_request_denied() -> ServiceStatus {
 }
 
 #[cfg(feature = "abi-test-fixtures")]
+/// Exercises invalid-PSP validation through the fixture service.
 fn dispatch_invalid_psp(slot: dali_targets::IsolationSlot) -> ServiceStatus {
     const INVALID_PSP_OFFSET: u32 = 4;
     let Some(invalid_psp) = slot.data_origin.checked_add(INVALID_PSP_OFFSET) else {
@@ -121,6 +127,7 @@ fn dispatch_invalid_psp(slot: dali_targets::IsolationSlot) -> ServiceStatus {
 }
 
 #[cfg(feature = "abi-test-fixtures")]
+/// Exercises the no-frame hard-fault path through the fixture service.
 fn dispatch_no_frame_hardfault(slot: dali_targets::IsolationSlot) -> ServiceStatus {
     const USAGEFAULT_ENABLE_BIT: u32 = 1 << 18;
     // This path is compiled only for the non-production fixture kernel.
@@ -131,6 +138,7 @@ fn dispatch_no_frame_hardfault(slot: dali_targets::IsolationSlot) -> ServiceStat
     dispatch_invalid_psp(slot)
 }
 
+/// Validates and emits an application log request.
 fn dispatch_log(frame: &ExceptionFrame, slot: dali_targets::IsolationSlot) -> ServiceStatus {
     let message = frame.r1 as usize;
     let length = frame.r2 as usize;
@@ -150,6 +158,7 @@ fn dispatch_log(frame: &ExceptionFrame, slot: dali_targets::IsolationSlot) -> Se
     ServiceStatus::accepted()
 }
 
+/// Checks that a caller-owned range lies within an application slot.
 fn contains(slot: dali_targets::IsolationSlot, start: usize, length: usize) -> bool {
     if start > u32::MAX as usize || length > u32::MAX as usize {
         return false;

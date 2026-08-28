@@ -11,8 +11,10 @@ use crate::{
 
 use super::execution::LoadedApplication;
 
+/// Encoded size of one format-3 relocation entry.
 const RELOCATION_BYTES: usize = v3::RELOCATION_ENTRY_SIZE;
 
+/// Loads, validates, relocates, and prepares one format-3 package.
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -71,6 +73,7 @@ where
     })
 }
 
+/// Selects a target slot whose format-3 contract accepts the header.
 fn parse_target_header(
     bytes: &[u8; v3::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -102,6 +105,7 @@ fn parse_target_header(
     Err(super::LoaderError::V3RelocationPackage(last_error))
 }
 
+/// Converts launch validation failures into format-3 loader errors.
 fn prepare_launch(
     entry_address: u32,
     stack_origin: u32,
@@ -117,6 +121,7 @@ fn prepare_launch(
     })
 }
 
+/// Reads one complete format-3 header from storage.
 fn read_header<D>(file: &AmrnFile<'_, D>) -> Result<[u8; v3::HEADER_SIZE], super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -126,6 +131,7 @@ where
     Ok(header)
 }
 
+/// Computes the encoded format-3 package length.
 fn package_length(header: v3::Header) -> Option<u32> {
     u32::try_from(v3::HEADER_SIZE)
         .ok()?
@@ -138,6 +144,7 @@ fn package_length(header: v3::Header) -> Option<u32> {
         )
 }
 
+/// Verifies payload and relocation checksums and bounds.
 fn validate_payload<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -169,6 +176,7 @@ where
     Ok(())
 }
 
+/// Reads and hashes one bounded payload segment.
 fn read_checksum_bytes<D>(
     file: &AmrnFile<'_, D>,
     size: u32,
@@ -190,6 +198,7 @@ where
     Ok(())
 }
 
+/// Copies package segments and applies validated relocations.
 fn copy_segments_and_relocate<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -212,6 +221,7 @@ where
     apply_relocations(file, header, contract)
 }
 
+/// Applies each encoded relocation to the loaded segments.
 fn apply_relocations<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -233,6 +243,7 @@ where
     Ok(())
 }
 
+/// Copies one validated segment into its target address.
 fn copy_segment<D>(
     file: &AmrnFile<'_, D>,
     destination: u32,
@@ -266,6 +277,7 @@ where
     Ok(())
 }
 
+/// Returns a mutable view of one validated target segment.
 fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::LoaderError> {
     let length = usize::try_from(size)
         .map_err(|_| super::LoaderError::V3RelocationPackage(v3::Error::InvalidPayload))?;
@@ -276,6 +288,7 @@ fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::
     Ok(target)
 }
 
+/// Clears one validated target memory segment.
 fn zero_segment(destination: u32, size: u32) -> Result<(), super::LoaderError> {
     let target = mutable_segment(destination, size)?;
     target.fill(0);

@@ -113,13 +113,13 @@ verification; first obtain the signed chain or bootstrap it with `init`.
 Run these commands from the repository root:
 
 ```bash
-cd /home/magradze/Projects/rust/dali-kernel
+cd /path/to/dali-kernel
 
-export DALI_ROOT=/home/magradze/Projects/rust/dali-kernel
+export DALI_ROOT=/path/to/dali-kernel
 export DALI_CLI="$DALI_ROOT/target/debug/dali"
-export DALI_KEYS=/home/magradze/.config/dali/keys
+export DALI_KEYS=/secure/path/dali/keys
 export DALI_REPO=/tmp/dali-repository
-export DALI_MOUNT=/run/media/magradze/DALI
+export DALI_MOUNT=/run/media/user/DALI
 
 mkdir -p "$DALI_KEYS"
 chmod 700 "$DALI_KEYS"
@@ -395,11 +395,11 @@ In terminal 1, start the console:
 ```bash
 pkill -TERM -f '^picocom ' || true
 "$DALI_CLI" device list
-"$DALI_CLI" device console --port /dev/ttyACM0
+"$DALI_CLI" device console --port "$DALI_CONSOLE_PORT"
 ```
 
 Use the available CDC port reported by `dali device list` if it is not
-`/dev/ttyACM0`.
+the selected CDC console port.
 
 In terminal 2, flash the kernel:
 

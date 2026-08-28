@@ -75,6 +75,7 @@ impl crate::platform::Backend for board::Board {
 use dali_targets::TargetProfile;
 
 #[cfg(feature = "abi-current")]
+/// Target profile used by the feature-gated application loader.
 pub(crate) const TARGET_PROFILE: &TargetProfile = &dali_targets::TARGET_F405;
 
 /// DMA-visible region reserved by the target manifest for kernel transport buffers.

@@ -6,27 +6,43 @@ use dali_sdk::svc::ExceptionFrame;
 
 use super::FaultKind;
 
+/// Magic identifying a retained fault-capture record.
 const MAGIC: u32 = 0x4441_4643;
+/// Version of the retained fault-capture layout.
 const VERSION: u16 = 1;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
+/// Reset-persistent fault record stored in the linker-declared section.
 struct Capture {
+    /// Record validity marker.
     magic: u32,
+    /// Persistent record layout version.
     version: u16,
+    /// Encoded fault kind.
     kind: u8,
+    /// Reserved layout byte.
     reserved: u8,
+    /// Architectural exception-return value.
     exception_return: u32,
+    /// Address of the captured stack frame.
     frame_address: u32,
+    /// Captured exception frame.
     frame: ExceptionFrame,
+    /// Configurable fault-status register value.
     cfsr: u32,
+    /// Hard-fault status register value.
     hfsr: u32,
+    /// Memory-management fault address.
     mmfar: u32,
+    /// Bus-fault address.
     bfar: u32,
+    /// Integrity checksum for the record.
     checksum: u32,
 }
 
 impl Capture {
+    /// Creates an empty invalid capture with the current layout version.
     const fn empty() -> Self {
         Self {
             magic: 0,
@@ -53,6 +69,7 @@ impl Capture {
         }
     }
 
+    /// Computes the integrity checksum excluding the stored checksum field.
     fn checksum(&self) -> u32 {
         let mut value = u32::from(self.version) ^ u32::from(self.kind);
         value ^= self.exception_return ^ self.frame_address;
@@ -63,6 +80,7 @@ impl Capture {
     }
 }
 
+/// Interior-mutable wrapper used for the reset-persistent capture.
 struct Retained(UnsafeCell<Capture>);
 
 // SAFETY: A fault handler is the sole writer, and boot reads the record before
@@ -71,6 +89,7 @@ unsafe impl Sync for Retained {}
 
 #[used]
 #[unsafe(link_section = ".fault_capture")]
+/// Persistent capture storage retained across software reset.
 static RETAINED: Retained = Retained(UnsafeCell::new(Capture::empty()));
 
 unsafe extern "C" {
@@ -78,18 +97,28 @@ unsafe extern "C" {
     static _stack_end: u8;
 }
 
+/// Decoded fault evidence read from reset-persistent storage.
 #[derive(Clone, Copy)]
 pub(crate) struct Evidence {
+    /// Decoded fault kind.
     pub(crate) kind: FaultKind,
+    /// Architectural exception-return value.
     pub(crate) exception_return: u32,
+    /// Address of the captured stack frame.
     pub(crate) frame_address: u32,
+    /// Captured exception frame.
     pub(crate) frame: ExceptionFrame,
+    /// Configurable fault-status register value.
     pub(crate) cfsr: u32,
+    /// Hard-fault status register value.
     pub(crate) hfsr: u32,
+    /// Memory-management fault address.
     pub(crate) mmfar: u32,
+    /// Bus-fault address.
     pub(crate) bfar: u32,
 }
 
+/// Stores a bounded fault capture for inspection after reboot.
 pub(crate) fn capture(
     kind: FaultKind,
     exception_return: u32,
@@ -122,6 +151,7 @@ pub(crate) fn capture(
     }
 }
 
+/// Validates and consumes the retained fault capture.
 pub(crate) fn take() -> Option<Evidence> {
     let capture = unsafe {
         // SAFETY: Boot reads the retained slot before handing execution to the
@@ -151,6 +181,7 @@ pub(crate) fn take() -> Option<Evidence> {
     })
 }
 
+/// Computes the raw frame address selected by an exception return value.
 fn raw_frame_address(address: u32, exception_return: u32) -> u32 {
     if address != 0 {
         return address;
@@ -165,6 +196,7 @@ fn raw_frame_address(address: u32, exception_return: u32) -> u32 {
     }
 }
 
+/// Reads a frame known to reside on the kernel stack.
 fn read_kernel_frame(address: u32) -> Option<ExceptionFrame> {
     let start = core::ptr::addr_of!(_stack_end) as usize;
     let end = core::ptr::addr_of!(_stack_start) as usize;
@@ -183,6 +215,7 @@ fn read_kernel_frame(address: u32) -> Option<ExceptionFrame> {
     }
 }
 
+/// Encodes a fault kind for the persistent record.
 fn kind_code(kind: FaultKind) -> u8 {
     match kind {
         FaultKind::MemManage => 1,
@@ -193,6 +226,7 @@ fn kind_code(kind: FaultKind) -> u8 {
     }
 }
 
+/// Decodes a persisted fault kind, defaulting to hard fault.
 fn kind_from_code(code: u8) -> FaultKind {
     match code {
         1 => FaultKind::MemManage,

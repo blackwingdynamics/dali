@@ -30,8 +30,8 @@ observation does not identify which physical component is responsible.
 
 On 2026-08-16, the F405 board was programmed through the Pico 2 CMSIS-DAP
 probe while the STM32 USB CDC port was connected separately. The host
-identified the STM32 console as `/dev/ttyACM1`, distinct from the Pico's
-`/dev/ttyACM0`. The console received the complete boot sequence, successful
+identified the STM32 console as a host CDC port distinct from the Pico's
+debug interface. The console received the complete boot sequence, successful
 SDIO initialization, block-zero read, AMRN validation, and three application
 log records. With the SD card removed, the board showed the documented slow
 storage-status blink. After the card was inserted, it showed three short

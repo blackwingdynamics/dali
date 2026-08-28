@@ -40,6 +40,7 @@ pub struct WritableBlockDeviceAdapter<R> {
 /// Borrows an existing block device for repeated read-only filesystem passes.
 #[cfg(feature = "abi-current")]
 pub struct BlockDeviceRef<'a, D> {
+    /// Borrowed block device used by the filesystem adapter.
     device: &'a D,
 }
 

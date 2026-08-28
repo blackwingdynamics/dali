@@ -38,6 +38,7 @@ pub type UserKey = config::UserKey;
 /// SDIO pins selected by the board configuration.
 pub type SdioPins = config::SdioPins;
 #[cfg(feature = "abi-current")]
+/// Memory layout selected by the F405 target profile.
 pub const MEMORY_PROFILE: dali_targets::MemoryProfile = config::MEMORY_PROFILE;
 #[cfg(feature = "abi-mpu")]
 pub use config::activate_application_regions;

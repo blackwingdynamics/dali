@@ -80,7 +80,7 @@ real console capture. Keep the two scenarios separate:
 The release acceptance firmware from kernel revision `619c84d`, built with
 the `driver-hardware-test` feature, was flashed and verified on the WeAct
 Studio STM32F405RGT6 Core Board through a Raspberry Pi Pico 2 CMSIS-DAP probe.
-The F405 USB CDC console was `/dev/ttyACM0`; `/dev/ttyACM1` was not used.
+The F405 USB CDC console was the selected host CDC port; a second port was not used.
 Board revision, exact SWD wiring, and power source were not recorded in this
 run.
 
@@ -124,7 +124,7 @@ Board revision: v1.1
 Wiring: SWDIO, SWCLK, and GND connected; exact peripheral wiring not recorded
 Firmware revision: 619c84d
 Power source: USB
-Transport: USB CDC console on /dev/ttyACM0; Pico 2 CMSIS-DAP for flashing
+Transport: USB CDC console on the selected host port; Pico 2 CMSIS-DAP for flashing
 Expected trace: Timer timeout; stalled SPI timeout; recovery transfer; ownership release
 Observed trace: All expected timer and SPI markers listed above
 Limitations: No independent logic-analyzer or oscilloscope capture
@@ -139,9 +139,9 @@ that were unavailable in the historical capture remain explicitly marked
 
 Phase 2 hardware acceptance was run on the WeAct Studio STM32F405RGT6 Core
 Board using the release acceptance firmware and a real Raspberry Pi Pico 2
-CMSIS-DAP probe. The active CDC console was `/dev/ttyACM0`; the device list
-reported it as `available`. The probe identifier was
-`2e8a:000c-0:D08DDA0AD07514B4`. The firmware source revision used for this
+CMSIS-DAP probe. The active CDC console was the selected host port; the device list
+reported it as `available`. The probe identifier was not retained in this public
+record. The firmware source revision used for this
 capture was not recorded separately from the flashed acceptance image. Board
 revision, exact wiring, and power source were also not recorded.
 
@@ -191,7 +191,7 @@ Board revision: v1.1
 Wiring: SWDIO, SWCLK, GND, I2C1 PB6=SCL, PB7=SDA, VCC, and GND connected
 Firmware revision: Not recorded separately from the flashed acceptance image
 Power source: USB; I2C device powered at 3.3 V
-Transport: USB CDC console on /dev/ttyACM0; Pico 2 CMSIS-DAP for flashing
+Transport: USB CDC console on the selected host port; Pico 2 CMSIS-DAP for flashing
 Expected trace: Bounded I2C timeout followed by bus recovery
 Observed trace: Bounded transfer timeout enforced; Bus recovered
 Limitations: No external-device ACK or OLED rendering was observed in this run

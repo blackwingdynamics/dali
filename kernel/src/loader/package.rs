@@ -12,10 +12,12 @@ use crate::{
 };
 
 #[cfg(feature = "abi-current")]
+/// Bounded collection of applications loaded by the current ABI pipeline.
 pub(crate) type LoadedPackages =
     pipeline::execution::LoadedApplications<{ storage::filesystem::MAX_ROOT_AMRN_FILES }>;
 
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
+/// Loads the current ABI package set from the storage root.
 pub(crate) fn load_current_abi<D>(
     device: D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
@@ -61,6 +63,7 @@ where
 }
 
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
+/// Loads one package using its format-specific parser.
 fn load_current_abi_file<D>(
     file: storage::filesystem::AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,

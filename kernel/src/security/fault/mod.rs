@@ -9,14 +9,23 @@ use dali_sdk::svc::ExceptionFrame;
 mod persistent;
 pub(crate) mod scb;
 
+/// Mask identifying an ARM exception-return encoding.
 const EXC_RETURN_SIGNATURE_MASK: u32 = 0xFF00_0000;
+/// Signature required for an exception-return encoding.
 const EXC_RETURN_SIGNATURE: u32 = 0xFF00_0000;
+/// Exception-return bit selecting Thread mode.
 const EXC_RETURN_THREAD_MODE: u32 = 1 << 3;
+/// Exception-return bit selecting the process stack.
 const EXC_RETURN_PSP: u32 = 1 << 2;
+/// Exception-return bit selecting a basic frame.
 const EXC_RETURN_BASIC_FRAME: u32 = 1 << 4;
+/// Configurable-fault bit indicating a valid MMFAR value.
 const MEMMANAGE_ADDRESS_VALID: u32 = 1 << 7;
+/// Configurable-fault bit indicating a valid BFAR value.
 const BUSFAULT_ADDRESS_VALID: u32 = 1 << 15;
+/// Usage-fault bit indicating an invalid program counter.
 const USAGEFAULT_INVALID_PC: u32 = 1 << 18;
+/// CFSR mask covering bus-fault status bits.
 const BUSFAULT_STATUS_MASK: u32 = 0x0000_FF00;
 
 /// Fault sources that must terminate an isolated application.
@@ -98,6 +107,7 @@ pub(crate) fn report_persistent() {
 
 #[unsafe(export_name = "MemoryManagement")]
 #[unsafe(naked)]
+/// Naked entry wrapper for memory-management faults.
 unsafe extern "C" fn memory_management_handler() {
     // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
     // exception return value while transferring control to the kernel handler.
@@ -114,6 +124,7 @@ unsafe extern "C" fn memory_management_handler() {
 
 #[unsafe(export_name = "BusFault")]
 #[unsafe(naked)]
+/// Naked entry wrapper for bus faults.
 unsafe extern "C" fn bus_fault_handler() {
     // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
     // exception return value while transferring control to the kernel handler.
@@ -130,6 +141,7 @@ unsafe extern "C" fn bus_fault_handler() {
 
 #[unsafe(export_name = "UsageFault")]
 #[unsafe(naked)]
+/// Naked entry wrapper for usage faults.
 unsafe extern "C" fn usage_fault_handler() {
     // SAFETY: The wrapper selects the hardware-stacked frame and preserves the
     // exception return value while transferring control to the kernel handler.
@@ -146,6 +158,7 @@ unsafe extern "C" fn usage_fault_handler() {
 
 #[unsafe(export_name = "HardFault")]
 #[unsafe(naked)]
+/// Naked entry wrapper for hard faults.
 unsafe extern "C" fn hard_fault_handler() {
     // SAFETY: The wrapper preserves only the architectural exception-return
     // value. The Rust handler validates it before reading either stack pointer.
@@ -156,18 +169,22 @@ unsafe extern "C" fn hard_fault_handler() {
     );
 }
 
+/// Handles a memory-management fault after the naked wrapper selects its frame.
 extern "C" fn handle_memory_management(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::MemManage, frame_address, exception_return)
 }
 
+/// Handles a bus fault after the naked wrapper selects its frame.
 extern "C" fn handle_bus_fault(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::BusFault, frame_address, exception_return)
 }
 
+/// Handles a usage fault after the naked wrapper selects its frame.
 extern "C" fn handle_usage_fault(frame_address: u32, exception_return: u32) -> ! {
     handle_with_frame(FaultKind::UsageFault, frame_address, exception_return)
 }
 
+/// Handles a hard fault and classifies bus-fault status when available.
 extern "C" fn handle_hard_fault(exception_return: u32) -> ! {
     let status = self::scb::read_cfsr();
     let kind = if status & BUSFAULT_STATUS_MASK != 0 {
@@ -179,6 +196,7 @@ extern "C" fn handle_hard_fault(exception_return: u32) -> ! {
     handle_with_frame(kind, frame_address, exception_return)
 }
 
+/// Selects the application stack pointer named by a validated return value.
 fn application_frame_address(exception_return: u32) -> u32 {
     if !valid_application_exception_return(exception_return) {
         return 0;
@@ -190,6 +208,7 @@ fn application_frame_address(exception_return: u32) -> u32 {
     }
 }
 
+/// Captures, reports, and recovers from a fault with a candidate frame.
 fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32) -> ! {
     let (status, fault_address) = read_status(kind);
     persistent::capture(
@@ -237,6 +256,7 @@ fn handle_with_frame(kind: FaultKind, frame_address: u32, exception_return: u32)
     super::launch::recover()
 }
 
+/// Reads fault status and the address register applicable to its kind.
 fn read_status(kind: FaultKind) -> (u32, Option<u32>) {
     let status = self::scb::read_cfsr();
     let fault_address = match kind {
@@ -249,6 +269,7 @@ fn read_status(kind: FaultKind) -> (u32, Option<u32>) {
     (status, fault_address)
 }
 
+/// Reads an application frame after validating its address and slot bounds.
 fn read_application_frame(frame_address: u32, exception_return: u32) -> Option<ExceptionFrame> {
     if !valid_application_exception_return(exception_return) {
         return None;
@@ -272,6 +293,7 @@ fn read_application_frame(frame_address: u32, exception_return: u32) -> Option<E
     }
 }
 
+/// Validates that a return value names an application PSP basic frame.
 fn valid_application_exception_return(value: u32) -> bool {
     value & EXC_RETURN_SIGNATURE_MASK == EXC_RETURN_SIGNATURE
         && value & EXC_RETURN_THREAD_MODE != 0
