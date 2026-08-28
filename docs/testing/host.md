@@ -71,8 +71,9 @@ real console capture. Keep the two scenarios separate:
   `[DRIVER][SPI] Stalled transfer timeout enforced` and
   `[DRIVER][SPI] Recovery transfer completed`; the probe then deselected the
   device and released bus ownership before continuing boot.
-- [ ] Record board revision, wiring, power source, firmware revision, logging
-  transport, expected trace, observed trace, and result.
+- [x] Record board revision, wiring, power source, firmware revision, logging
+  transport, expected trace, observed trace, result, and limitations for the
+  Phase 1 run below. Unknown values are explicitly recorded as `Not recorded`.
 
 ### F405 bounded-timeout acceptance run — 2026-08-25
 
@@ -108,13 +109,24 @@ path, application lifecycle, and DMA denial. The probe's bounded recovery path
 released SPI device and bus ownership before the kernel continued boot.
 
 Result: Partial record; the timer-timeout and stalled-SPI recovery acceptance
-items passed. Board revision, exact wiring, and power source remain to be
-recorded for the complete evidence record.
+items passed. Board revision, exact wiring, and power source are explicitly
+recorded as `Not recorded` below.
+
+```text
+Board revision: Not recorded
+Wiring: Exact SWD and peripheral wiring not recorded
+Firmware revision: 619c84d
+Power source: Not recorded
+Transport: USB CDC console on /dev/ttyACM0; Pico 2 CMSIS-DAP for flashing
+Expected trace: Timer timeout; stalled SPI timeout; recovery transfer; ownership release
+Observed trace: All expected timer and SPI markers listed above
+Limitations: No independent logic-analyzer or oscilloscope capture
+```
 
 The timer timeout and stalled-recovery markers close the two remaining Phase 1
-functional acceptance items. The separate evidence-record metadata item
-remains open until the board revision, exact wiring, and power source are
-recorded for this capture.
+functional acceptance items. The metadata fields are recorded above; values
+that were unavailable in the historical capture remain explicitly marked
+`Not recorded`.
 
 ### Phase 2 F405 I2C acceptance record — 2026-08-25
 
@@ -159,6 +171,17 @@ external OLED device rendering result. Phase 2 is closed. Missing board
 revision, exact wiring, power source, and separately recorded firmware
 revision remain evidence metadata limitations, not failed I2C behavior.
 
+```text
+Board revision: Not recorded
+Wiring: I2C1 PB6/PB7 wiring and SWD wiring not recorded
+Firmware revision: Not recorded separately from the flashed acceptance image
+Power source: Not recorded
+Transport: USB CDC console on /dev/ttyACM0; Pico 2 CMSIS-DAP for flashing
+Expected trace: Bounded I2C timeout followed by bus recovery
+Observed trace: Bounded transfer timeout enforced; Bus recovered
+Limitations: No external-device ACK or OLED rendering was observed in this run
+```
+
 ### Phase 3 F405 OLED and diagnostics-console acceptance — 2026-08-25
 
 Phase 3 hardware acceptance was completed on the WeAct Studio STM32F405RGT6
@@ -189,6 +212,17 @@ reported F405 Silicon Trace and physical display result. A separately archived
 raw OLED trace, board revision, exact wiring record, power source, and firmware
 revision were not supplied for this entry and remain evidence metadata
 limitations.
+
+```text
+Board revision: Not recorded
+Wiring: I2C1 PB6/PB7 and OLED power wiring not recorded
+Firmware revision: Not recorded
+Power source: Not recorded
+Transport: USB CDC console; physical OLED panel observation
+Expected trace: Bounded OLED initialization and boot diagnostics rendering
+Observed trace: Boot diagnostics trace; physical OLED rendering reported successful
+Limitations: No raw OLED frame capture or independent electrical trace archived
+```
 
 The F405 backend maps bounded SDIO command/data timeouts to `CardRemoved`
 because this board exposes no card-detect GPIO. The recovery heartbeat retains

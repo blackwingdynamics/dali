@@ -50,16 +50,20 @@ Tester: Giorgi Magradze
 Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
 Board revision: v1.1
 Probe: Raspberry Pi Pico 2 running CMSIS-DAP
+Wiring: Exact SWD, USB CDC, SDIO, LED, and key wiring not recorded
 Power source: STM32 USB and Pico USB
+Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 SD card and filesystem: 128 GB microSD, FAT32
 Kernel revision: 4fb7b41
 Application package revision: hello.amrn
 Package size: 3999 bytes
 Package CRC32: 0xBFDB25F5
 Observed log: Complete boot, SDIO, AMRN validation, and three application log records
+Expected trace: Successful boot, SDIO initialization, AMRN validation, and application logs
 Observed LED pattern: Slow storage blink without SD card; three short flashes and
   a long pause with the SD card inserted
 Result: PASS
+Limitations: Exact wiring and independent electrical signals were not recorded.
 Known issues: None for the documented MVP acceptance path.
 ```
 
@@ -72,7 +76,11 @@ on the FAT32 SD card used for the hardware run.
 Date: 2026-08-22 12:27:00
 Tester: Giorgi Magradze
 Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Board revision: Not recorded
 Probe: Raspberry Pi Pico 2 running CMSIS-DAP
+Wiring: Not recorded
+Power source: Not recorded
+Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 SD card and filesystem: FAT32 Binary v2 repository bundle
 Kernel revision: 714339c
 Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
@@ -81,8 +89,9 @@ Observed log: SDIO initialized; trust-store read/write passed; block zero read;
   loaded into slot 1; Ready -> Running; Relocation fixture executed
 Observed slot: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
 Result: PASS
-Known issues: Package size, board revision, and power source were not captured.
-  Watchdog reset/Safe Mode is tracked as a separate acceptance scenario.
+Expected trace: SDIO, trust-store, AMRN validation, slot loading, Ready, and Running
+Limitations: Package size, wiring, board revision, and power source were not captured.
+Known issues: Watchdog reset/Safe Mode is tracked as a separate acceptance scenario.
 ```
 
 This record proves the configured release-anchor Binary v2 path on physical
@@ -95,7 +104,11 @@ DMA isolation, or power-loss recovery.
 Date: 2026-08-22 13:16:45
 Tester: Giorgi Magradze
 Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Board revision: Not recorded
 Probe: Raspberry Pi Pico 2 running CMSIS-DAP
+Wiring: Not recorded
+Power source: Not recorded
+Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 SD card and filesystem: FAT32 Binary v2 repository bundle
 Kernel revision: baa9a47
 Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
@@ -104,7 +117,8 @@ Observed log: Trust-store artifact write/flush/read-back passed; AMRN header
   slot 1; Ready -> Running; Relocation fixture executed
 Observed slot: code=0x20010000+16384 data=0x20014000+16384 psp_top=0x20015010
 Result: PASS
-Known issues: This run proves the bounded F405 flush/read-back sequence. A
+Expected trace: Trust-store artifact write, flush, read-back, and subsequent signed load
+Limitations: Wiring, board revision, and power source were not captured. This run proves the bounded F405 flush/read-back sequence. A
   power-loss/interrupted-write recovery test remains separate.
 ```
 
@@ -120,17 +134,22 @@ isolation.
 Date: 2026-08-22 14:37:05
 Tester: Giorgi Magradze
 Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Board revision: Not recorded
 Probe: Raspberry Pi Pico 2 running CMSIS-DAP
+Wiring: Not recorded
+Power source: Not recorded
+Transport: USB CDC console; manual hardware reboot after SD-card reseat
 SD card and filesystem: FAT32 Binary v2 repository bundle
 Kernel revision: d32ad62
 Package digest: 53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04
 Verification method: Manual hardware run after SD card reseat
+Expected trace: Committed-generation selection followed by signed load and Running state
 Observed log: Committed generation selected: version=1 sequence=2 slot=B;
   trust-store write/flush/read-back passed; AMRN header and payload validated;
   AMRN signature verified; one package loaded into slot 1; Ready -> Running;
   Relocation fixture executed
 Result: PASS
-Known issues: This run verifies committed-journal recovery after reboot. It
+Limitations: Wiring, board revision, and power source were not captured. This run verifies committed-journal recovery after reboot. It
   does not prove Prepared-only interruption recovery or power-loss recovery.
 ```
 

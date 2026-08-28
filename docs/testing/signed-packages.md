@@ -153,6 +153,17 @@ execution. The package file size, board revision, and power source were not
 captured in this run and remain unspecified evidence fields. The separate
 watchdog reset/Safe Mode scenario remains a distinct test.
 
+```text
+Board revision: Not recorded
+Wiring: Exact SWD, USB CDC, and SD-card wiring not recorded
+Firmware revision: Not recorded separately from the 2026-08-22 build record
+Power source: Not recorded
+Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
+Expected trace: SDIO, trust-store, signed AMRN validation, slot loading, and Running state
+Observed trace: All Binary v2 trace lines listed above
+Limitations: Package size and physical power details were not captured; this is not Secure Boot or power-loss evidence
+```
+
 - [x] Host AMRN tests cover v5 header/trailer split parsing and signed-range
   boundary validation.
 - [x] The feature-gated kernel target build covers v5 streaming signature,
