@@ -45,13 +45,13 @@ approval.
 
 ## 5. CLI and SDK documentation
 
-- [ ] Complete CLI installation, command, option, output, error, and workflow
+- [x] Complete CLI installation, command, option, output, error, and workflow
   references.
-- [ ] Document SDK contracts, service boundaries, version compatibility, and
+- [x] Document SDK contracts, service boundaries, version compatibility, and
   supported application patterns.
-- [ ] Add reproducible examples for package creation, inspection, signing,
+- [x] Add reproducible examples for package creation, inspection, signing,
   installation, and device interaction.
-- [ ] Document unsupported modes and failure recovery without inventing
+- [x] Document unsupported modes and failure recovery without inventing
   hardware behavior.
 
 ## 6. Security, operations, and contribution guidance

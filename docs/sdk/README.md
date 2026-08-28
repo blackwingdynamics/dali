@@ -31,6 +31,17 @@ The current SDK surface is intentionally small. Additional services require a
 versioned ABI decision, documentation, host coverage, target validation, and
 recorded hardware evidence where physical behavior is involved.
 
+## Supported application pattern
+
+The supported application pattern is a native cartridge payload that receives
+the documented service table at entry and submits bounded log messages through
+the kernel-owned logging service. Applications should keep hardware access,
+storage access, scheduling, and recovery policy outside the SDK boundary.
+
+The [application workflow](../application-workflow/README.md) and [CLI
+project contract](../cli/APPLICATION_PROJECT.md) define how this pattern is
+scaffolded and packaged.
+
 ## Compatibility
 
 SDK compatibility is jointly constrained by the SDK version, application ABI

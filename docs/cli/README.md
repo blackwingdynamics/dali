@@ -10,6 +10,8 @@ executable is named dali.
 | --- | --- | --- |
 | dali doctor | Check host toolchain and embedded build prerequisites | Supported |
 | dali target list | List supported Dali application targets | Supported |
+| dali target info | Display target profile metadata | Supported |
+| dali target scaffold | Generate a reviewable target scaffold | Supported |
 | dali package | Wrap a linked native payload in an AMRN cartridge | Supported |
 | dali inspect | Validate and display an AMRN cartridge | Supported |
 | dali key generate | Generate an Ed25519 release trust-anchor pair | Supported |
@@ -21,7 +23,8 @@ executable is named dali.
 | dali device info | Display selected device and target metadata | Supported |
 | dali device attach | Start a debug-probe attachment | Supported |
 | dali device console | Open a runtime USB CDC console | Supported |
-| dali device flash | Flash an explicit firmware through DFU | Supported |
+| dali device flash | Flash firmware through a declared transport | Supported |
+| dali metadata | Create and verify repository metadata | Supported |
 
 ## Command layers
 
@@ -61,6 +64,23 @@ application root or a directory containing exactly one `.amrn` file. An
 explicit `--input` is required for another location or when multiple packages
 exist.
 
+## Reproducible workflow map
+
+Use these procedures as the canonical examples for the complete host and
+device workflow:
+
+- [Installation](INSTALLATION.md) — install and verify the CLI.
+- [Quickstart](QUICKSTART.md) — create, build, package, and inspect a cartridge.
+- [Key management](KEY_MANAGEMENT.md) — generate and use signing material.
+- [Binary v2 developer workflow](BINARY_V2_DEVELOPER_WORKFLOW.md) — authorize,
+  sign, verify, copy, flash, and capture device evidence.
+- [Device discovery](DEVICE_DISCOVERY.md) and [device commands](COMMANDS.md) —
+  identify a transport and select a console or flashing operation.
+
+Every example separates host artifact validation from embedded compilation,
+flashing, and Silicon Trace acceptance. The CLI cannot turn a successful host
+operation into hardware evidence.
+
 ## Documentation map
 
 - [Installation](INSTALLATION.md) — install and verify the executable.
@@ -70,6 +90,7 @@ exist.
 - [Target list](commands/target-list.md) — supported target profiles.
 - [Target info](commands/target-info.md) — complete target metadata and machine-readable fields.
 - [Target scaffold](commands/target-scaffold.md) — reviewable board backend scaffold generation.
+- [Metadata workflows](BINARY_V2_DEVELOPER_WORKFLOW.md) — repository metadata and authorization workflow.
 - [Workflows](WORKFLOWS.md) — end-to-end user procedures.
 - [Output](OUTPUT.md) — output and stream conventions.
 - [Errors](ERRORS.md) — failure categories and recovery guidance.
@@ -96,6 +117,8 @@ Command-specific documentation lives in [commands/](commands/):
 - [app init](commands/app-init.md)
 - [app build](commands/app-build.md)
 - [app package](commands/app-package.md)
+- [target info](commands/target-info.md)
+- [target scaffold](commands/target-scaffold.md)
 
 ## Scope boundary
 
