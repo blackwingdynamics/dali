@@ -1,7 +1,9 @@
 //! Bounded FAT read operations for kernel-owned artifacts.
 
+use core::ops::ControlFlow;
+
 use crate::drivers::StorageError;
-use embedded_sdmmc::{Error, Mode, RawFile, VolumeIdx, VolumeManager};
+use embedded_sdmmc::{Error, LfnBuffer, Mode, RawFile, VolumeIdx, VolumeManager};
 
 use super::{FilesystemManager, KernelTimeSource};
 
@@ -113,7 +115,7 @@ fn read_named_file<D>(
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    let file = manager.open_long_name_file_in_dir(directory, file_name, Mode::ReadOnly)?;
+    let file = open_existing_file(manager, directory, file_name)?;
     let length = match manager.file_length(file) {
         Ok(length) => length,
         Err(error) => return close_file_with_error(manager, file, Err(error)),
@@ -127,6 +129,36 @@ where
     }
     let result = read_exact(manager, file, &mut output[..length]).map(|()| length);
     close_file_with_error(manager, file, result)
+}
+
+/// Opens a long-name file, recovering its short alias for the FAT reader.
+fn open_existing_file<D>(
+    manager: &FilesystemManager<D>,
+    directory: embedded_sdmmc::RawDirectory,
+    file_name: &str,
+) -> Result<RawFile, Error<StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    match manager.open_long_name_file_in_dir(directory, file_name, Mode::ReadOnly) {
+        Ok(file) => Ok(file),
+        Err(Error::FilenameError(embedded_sdmmc::FilenameError::NameTooLong)) => {
+            let mut lfn_storage = [0u8; super::LFN_BUFFER_BYTES];
+            let mut lfn_buffer = LfnBuffer::new(&mut lfn_storage);
+            let mut short_name = None;
+            manager.iterate_dir_lfn(directory, &mut lfn_buffer, |entry, long_name| {
+                if long_name == Some(file_name) {
+                    short_name = Some(entry.name);
+                    ControlFlow::Break(())
+                } else {
+                    ControlFlow::Continue(())
+                }
+            })?;
+            let short_name = short_name.ok_or(Error::NotFound)?;
+            manager.open_file_in_dir(directory, short_name, Mode::ReadOnly)
+        }
+        Err(error) => Err(error),
+    }
 }
 
 /// Performs the `stream_named_file` operation for this subsystem.
