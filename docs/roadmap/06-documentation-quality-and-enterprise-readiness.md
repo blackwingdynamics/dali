@@ -8,10 +8,10 @@ approval.
 
 ## 1. Documentation inventory and ownership
 
-- [ ] Maintain one canonical `README.md` index for each documentation domain.
+- [x] Maintain one canonical `README.md` index for each documentation domain.
 - [ ] Verify that every document has one clear owner, scope, and source of truth.
 - [ ] Remove stale paths, duplicate guidance, and contradictory claims.
-- [ ] Keep `docs/file-structure/repository-tree.md` synchronized with the real
+- [x] Keep `docs/file-structure/repository-tree.md` synchronized with the real
   repository.
 
 ## 2. Terminology and writing consistency
