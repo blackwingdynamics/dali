@@ -52,13 +52,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Check host workspace
-        run: cargo check --workspace --exclude dali-kernel
+        run: cargo check --workspace --exclude dali-kernel --exclude dali-firmware
 
       - name: Run host tests
         run: cargo test --workspace --exclude dali-kernel
 
       - name: Run host Clippy
-        run: cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
+        run: cargo clippy --workspace --all-targets --exclude dali-kernel --exclude dali-firmware -- -D warnings
 
   embedded:
     name: ${{ matrix.profile }} embedded checks (${{ matrix.contract }})
@@ -69,13 +69,13 @@ jobs:
         include:
           - profile: f405
             contract: legacy
-            features: board-stm32f405-sd,usb-cdc
+            features: stm32f405,usb-cdc
           - profile: f405
             contract: isolation
-            features: board-stm32f405-sd,usb-cdc,abi-current,abi-mpu,abi-relocation
+            features: stm32f405,usb-cdc,abi-current,abi-mpu,abi-relocation
           - profile: f405
             contract: production
-            features: board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write
+            features: stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -86,18 +86,18 @@ jobs:
           targets: thumbv7em-none-eabihf
 
       - name: Check kernel
-        run: cargo check -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
+        run: cargo check -p dali-firmware --bin dali-f405 --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
 
       - name: Run kernel Clippy
-        run: cargo clippy -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
+        run: cargo clippy -p dali-firmware --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf --bin dali-f405 -- -D warnings
 
       - name: Build kernel
         if: matrix.contract != 'production'
-        run: cargo build -p dali-kernel --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
+        run: cargo build -p dali-firmware --bin dali-f405 --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
 
       - name: Build production kernel
         if: matrix.contract == 'production'
-        run: cargo build -p dali-kernel --release --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
+        run: cargo build -p dali-firmware --release --bin dali-f405 --no-default-features --features ${{ matrix.features }} --target thumbv7em-none-eabihf
 
       - name: Install LLVM tools
         if: matrix.contract == 'production'
