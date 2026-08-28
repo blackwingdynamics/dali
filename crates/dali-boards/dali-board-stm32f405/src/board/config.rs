@@ -22,7 +22,7 @@ pub fn activate_application_regions(slot: dali_targets::IsolationSlot) -> bool {
     else {
         return false;
     };
-    crate::security::mpu::activate_application_regions(layout);
+    crate::mpu::activate_application_regions(layout);
     true
 }
 
