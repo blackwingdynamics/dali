@@ -86,8 +86,8 @@ where
 
     #[cfg(feature = "abi-current")]
     let mut slot_manager = match crate::runtime::memory::slots::SlotManager::new(
-        platform::MEMORY_PROFILE
-            .isolation
+        platform::memory_profile()
+            .and_then(|memory| memory.isolation)
             .map(|isolation| isolation.slots)
             .unwrap_or(&[]),
     ) {

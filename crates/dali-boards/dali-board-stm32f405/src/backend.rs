@@ -14,10 +14,6 @@ mod sdio_raw;
 
 #[cfg(feature = "board-stm32f405-sd")]
 pub use board::Board;
-#[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
-pub use board::MEMORY_PROFILE;
-#[cfg(all(feature = "board-stm32f405-sd", feature = "abi-mpu"))]
-pub use board::{ISOLATION_LAYOUT, activate_application_regions};
 #[cfg(all(feature = "board-stm32f405-sd", feature = "sdio"))]
 pub use sdio::Stm32f405SdioTransport;
 
@@ -28,6 +24,8 @@ impl dali_kernel_api::BoardBackend for board::Board {
     type UserKey = board::UserKey;
     type Watchdog = crate::F405Watchdog;
     type StorageReader = sdio::SdioBlockReader;
+    #[cfg(feature = "usb-cdc")]
+    type UsbResources = board::UsbResources;
 
     fn memory_protection_operations() -> Option<dali_kernel_api::MemoryProtectionOperations> {
         #[cfg(feature = "abi-mpu")]
@@ -95,23 +93,32 @@ impl dali_kernel_api::BoardBackend for board::Board {
     fn application_execution_supported() -> bool {
         true
     }
+
+    #[cfg(feature = "usb-cdc")]
+    fn take_usb_resources(&mut self) -> Option<Self::UsbResources> {
+        self.take_usb_resources()
+    }
+
+    #[cfg(feature = "usb-cdc")]
+    fn unmask_usb_irq() {
+        board::unmask_usb_irq();
+    }
+
+    #[cfg(feature = "usb-cdc")]
+    fn pend_usb_irq() {
+        board::pend_usb_irq();
+    }
+
+    #[cfg(feature = "abi-context-switch")]
+    fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
+        board::enable_scheduler_tick(self, tick_hz)
+    }
+
+    #[cfg(feature = "driver-hardware-test")]
+    fn run_driver_timeout_probe(&mut self) {
+        board::run_driver_timeout_probe(self);
+    }
 }
-
-#[cfg(feature = "abi-current")]
-use dali_targets::TargetProfile;
-
-#[cfg(feature = "abi-current")]
-/// Target profile used by the feature-gated application loader.
-pub(crate) const TARGET_PROFILE: &TargetProfile = &dali_targets::TARGET_F405;
-
-#[cfg(all(feature = "abi-context-switch", feature = "abi-current"))]
-/// Maximum number of application contexts supported by the target profile.
-pub(crate) const CONTEXT_CAPACITY: usize = dali_targets::TARGET_F405_CONTEXT_CAPACITY;
-
-#[cfg(all(feature = "abi-context-switch", feature = "abi-current"))]
-/// Scheduler configuration selected by the target manifest.
-pub(crate) const SCHEDULER_PROFILE: Option<dali_targets::SchedulerProfile> =
-    dali_targets::TARGET_F405.scheduler;
 
 #[cfg(feature = "driver-hardware-test")]
 use stm32f4xx_hal::pac;

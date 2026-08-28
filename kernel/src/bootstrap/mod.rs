@@ -150,7 +150,7 @@ where
     board.write_display_log(b"Hardware bootstrap complete\n");
 
     #[cfg(feature = "driver-hardware-test")]
-    platform::run_driver_timeout_probe(&mut board);
+    board.run_driver_timeout_probe();
 
     #[cfg(feature = "abi-context-switch")]
     if let Err(error) = crate::security::scheduling::initialize() {

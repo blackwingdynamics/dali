@@ -163,7 +163,7 @@ where
                     if platform::activate_application_regions(active.allocation().slot()) {
                         #[cfg(feature = "abi-context-switch")]
                         {
-                            let Some(profile) = platform::SCHEDULER_PROFILE else {
+                            let Some(profile) = platform::scheduler_profile() else {
                                 logging::error(
                                     logging::SECURITY_SUBSYSTEM,
                                     format_args!("[SECURITY] Scheduler profile unavailable"),

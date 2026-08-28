@@ -3,7 +3,7 @@
 #[cfg(feature = "display-oled")]
 use super::super::drivers::ssd1306::F405Ssd1306;
 use super::super::drivers::{F405ExtiPin, F405GpioPin};
-#[cfg(any(feature = "abi-current", feature = "abi-mpu"))]
+#[cfg(feature = "abi-mpu")]
 use dali_targets::MemoryProfile;
 use dali_targets::TARGET_F405;
 use stm32f4xx_hal::gpio;
@@ -36,9 +36,6 @@ pub fn configure_memory_protection(memory: MemoryProfile) {
 
 /// System clock target derived from the declarative F405 target profile.
 pub const SYSTEM_CLOCK_HZ: u32 = TARGET_F405.clock.system_hz;
-#[cfg(feature = "abi-current")]
-/// Memory layout selected by the F405 target profile.
-pub const MEMORY_PROFILE: MemoryProfile = TARGET_F405.memory;
 /// Unit conversion used by the boot log's human-readable clock value.
 const HZ_PER_MHZ: u32 = 1_000_000;
 /// System clock in megahertz for the common platform facade.
@@ -46,8 +43,6 @@ pub const SYSTEM_CLOCK_MHZ: u32 = SYSTEM_CLOCK_HZ / HZ_PER_MHZ;
 const _: () = assert!(TARGET_F405.amrn_target_id == dali_amrn::TARGET_ID);
 #[cfg(feature = "abi-current")]
 const _: () = assert!(TARGET_F405.abi_version == dali_amrn::v2::ABI_VERSION);
-#[cfg(not(feature = "abi-current"))]
-const _: () = assert!(TARGET_F405.abi_version == dali_amrn::ABI_VERSION);
 const _: () = assert!(
     TARGET_F405.memory.application_origin == dali_amrn::LOAD_ADDRESS
         && TARGET_F405.memory.application_length == dali_amrn::MAX_PAYLOAD_SIZE as u32

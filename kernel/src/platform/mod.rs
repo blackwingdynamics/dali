@@ -59,6 +59,22 @@ pub(crate) fn scheduler_profile() -> Option<dali_targets::SchedulerProfile> {
     target_profile().and_then(|target| target.scheduler)
 }
 
+/// Returns trust anchors selected by the registered target and build policy.
+#[cfg(feature = "abi-authentication")]
+pub(crate) fn trust_anchors() -> &'static [dali_targets::TrustAnchorProfile] {
+    let Some(target) = target_profile() else {
+        return &[];
+    };
+    #[cfg(feature = "abi-test-fixtures")]
+    {
+        target.authentication.development_trust_anchors
+    }
+    #[cfg(not(feature = "abi-test-fixtures"))]
+    {
+        target.authentication.release_trust_anchors
+    }
+}
+
 /// Failure returned by the kernel-owned watchdog service boundary.
 #[derive(Debug)]
 pub(crate) enum WatchdogServiceError {
@@ -120,12 +136,6 @@ where
     /// Returns the selected backend metadata.
     pub(crate) fn info() -> dali_kernel_api::BoardInfo {
         B::info()
-    }
-
-    /// Returns the selected backend memory contract.
-    #[cfg(feature = "abi-mpu")]
-    pub(crate) fn memory() -> dali_targets::MemoryProfile {
-        B::info().memory
     }
 
     /// Returns the reset cause captured by the backend.
@@ -275,5 +285,17 @@ where
         runtime
             .feed(crate::runtime::watchdog::FeedOwner::KernelHeartbeat)
             .map_err(|_| WatchdogServiceError::Feed)
+    }
+
+    /// Enables the selected backend scheduler tick.
+    #[cfg(feature = "abi-context-switch")]
+    pub(crate) fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
+        self.backend.enable_scheduler_tick(tick_hz)
+    }
+
+    /// Runs the selected backend hardware acceptance probe.
+    #[cfg(feature = "driver-hardware-test")]
+    pub(crate) fn run_driver_timeout_probe(&mut self) {
+        self.backend.run_driver_timeout_probe();
     }
 }

@@ -2,7 +2,7 @@
 
 use super::super::drivers::F405TimerDriver;
 use super::{Board, SYSTEM_CLOCK_HZ, TimerMode};
-use dali_driver_api::{Duration, TimerDriver};
+use dali_driver_api::Duration;
 #[cfg(feature = "driver-hardware-test")]
 use dali_targets::TARGET_F405;
 

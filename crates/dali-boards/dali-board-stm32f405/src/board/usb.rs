@@ -1,6 +1,6 @@
 //! F405 USB FS resource ownership and host re-enumeration.
 
-use crate::logging::usb_cdc::{UsbBusReset, UsbResetDelay, UsbResources as UsbResourceContract};
+use dali_kernel_api::{UsbBusReset, UsbResetDelay, UsbResources as UsbResourceContract};
 use stm32f4xx_hal::{gpio, pac, rcc::Clocks};
 
 /// USB FS resources connected to the board's USB-C data pins.

@@ -9,6 +9,7 @@ use crate::runtime::scheduling::{
 
 /// Scheduler type sized from the active platform context profile.
 const MAX_CONTEXT_CAPACITY: usize = 2;
+/// Scheduler storage type selected by the active context capacity.
 type TargetScheduler = Scheduler<MAX_CONTEXT_CAPACITY>;
 
 /// Static scheduler storage used during the kernel lifecycle.

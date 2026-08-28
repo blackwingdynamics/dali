@@ -12,10 +12,11 @@ log-colors = []
 usb-cdc = [
     "dep:usb-device",
     "dep:usbd-serial",
+    "dali-kernel-api/usb-cdc",
 ]
 abi-current = []
 abi-mpu = ["abi-current"]
-abi-context-switch = ["abi-mpu"]
+abi-context-switch = ["abi-mpu", "dali-kernel-api/abi-context-switch"]
 abi-relocation = ["abi-mpu"]
 abi-test-fixtures = ["abi-mpu"]
 dma-test-fixture = ["abi-relocation"]
@@ -25,7 +26,7 @@ storage-write = ["dali-kernel-api/storage-write"]
 storage-interruption-test = ["storage-write"]
 storage-rollback-test = ["storage-write"]
 watchdog-feed-failure-test = []
-driver-hardware-test = []
+driver-hardware-test = ["dali-kernel-api/driver-hardware-test"]
 display-oled = []
 
 [lints]

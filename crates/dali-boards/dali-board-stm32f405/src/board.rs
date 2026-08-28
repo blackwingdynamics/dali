@@ -31,8 +31,6 @@ pub(crate) use usb::{pend_usb_irq, unmask_usb_irq};
 /// System clock target derived from the declarative F405 target profile.
 pub const SYSTEM_CLOCK_HZ: u32 = config::SYSTEM_CLOCK_HZ;
 /// MPU layout derived from the target memory contract.
-#[cfg(feature = "abi-mpu")]
-pub const ISOLATION_LAYOUT: Option<crate::mpu::IsolationLayout> = config::ISOLATION_LAYOUT;
 /// System clock in megahertz for the common platform facade.
 pub const SYSTEM_CLOCK_MHZ: u32 = config::SYSTEM_CLOCK_MHZ;
 /// Status LED output pin selected by the board configuration.
@@ -41,9 +39,6 @@ pub type StatusLed = config::StatusLed;
 pub type UserKey = config::UserKey;
 /// SDIO pins selected by the board configuration.
 pub type SdioPins = config::SdioPins;
-#[cfg(feature = "abi-current")]
-/// Memory layout selected by the F405 target profile.
-pub const MEMORY_PROFILE: dali_targets::MemoryProfile = config::MEMORY_PROFILE;
 #[cfg(feature = "abi-mpu")]
 pub use config::{activate_application_regions, configure_memory_protection};
 pub use initialization::initialize;

@@ -62,7 +62,7 @@ where
     let public_key = repository_key
         .copied()
         .or_else(|| {
-            crate::platform::TRUST_ANCHORS
+            crate::platform::trust_anchors()
                 .iter()
                 .find(|anchor| header.signature.key_id == anchor.key_id)
                 .map(|anchor| anchor.public_key)
@@ -153,7 +153,8 @@ fn select_header<'a>(
     envelope: &'a [u8; SIGNATURE_BYTES],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
 ) -> Result<(v5::Header<'a>, v3::Contract, SlotAllocation), super::LoaderError> {
-    let target = crate::platform::TARGET_PROFILE;
+    let target =
+        crate::platform::target_profile().ok_or(super::LoaderError::UnsupportedCurrentAbiTarget)?;
     let isolation = target
         .memory
         .isolation
