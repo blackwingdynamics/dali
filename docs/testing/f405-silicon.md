@@ -1,5 +1,10 @@
 # Recorded F405 hardware evidence
 
+Board identity, pinout, wiring, clocks, and memory facts are canonical in
+[the STM32F405 board documentation](../boards/stm32f405/README.md). This file
+retains the historical execution records, expected markers, observed traces,
+and evidence status for those facts.
+
 The following tests have been executed on the STM32F405RGT6 board with a
 Raspberry Pi Pico 2 CMSIS-DAP probe and USB CDC console. These records are
 evidence of the listed behavior only; they do not claim arbitrary

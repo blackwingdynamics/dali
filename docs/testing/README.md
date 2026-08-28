@@ -7,6 +7,8 @@ This file is the testing documentation entry point and navigation index. The
 documents below preserve the original testing material by
 category:
 
+Board-specific wiring and evidence context: [STM32F405 board documentation](../boards/stm32f405/README.md).
+
 1. [Host tests](host.md) — hardware-neutral contracts, parser tests, and host
    validation commands.
 2. [Target tests](target.md) — embedded target checks and their limits.

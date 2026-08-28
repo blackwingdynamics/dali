@@ -135,6 +135,14 @@ dali-kernel/
 │   │   └── build/                 # Manifest loader, validation, and generators
 │   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
+│   ├── boards/                    # Board-local physical specifications and evidence
+│   │   ├── README.md
+│   │   └── stm32f405/
+│   │       ├── README.md
+│   │       ├── pinout-and-clocks.md
+│   │       ├── memory-map.md
+│   │       ├── hardware-evidence.md
+│   │       └── schematics.md
 │   ├── hardware/                   # Boards, memory, electrical, and acceptance docs
 │   │   ├── README.md
 │   │   ├── boards-and-memory.md

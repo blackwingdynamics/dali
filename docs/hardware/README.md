@@ -3,6 +3,8 @@
 This directory is the canonical source for supported boards, memory layout,
 electrical requirements, clocks, logging, and hardware acceptance evidence.
 
+Board-specific facts are indexed in [Board documentation](../boards/README.md).
+
 ## Sections
 
 - [Boards and memory layout](boards-and-memory.md)

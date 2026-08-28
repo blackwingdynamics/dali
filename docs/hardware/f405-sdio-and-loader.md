@@ -1,5 +1,10 @@
 # Current MVP SDIO board
 
+The canonical F405 board identity, pinout, wiring, clocks, and memory summary
+is maintained in [the board documentation](../boards/stm32f405/README.md).
+This page retains the SDIO and repository-loader implementation contract and
+its evidence.
+
 - Board: WeAct Studio STM32F405RGT6 Core Board, 64-pin
 - MCU: STM32F405RGT6
 - HSE: 8 MHz
