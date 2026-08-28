@@ -1,7 +1,7 @@
 //! Board-neutral USB CDC serial logging backend.
 
 use core::cell::RefCell;
-use cortex_m::interrupt::{Mutex, free};
+use critical_section::Mutex;
 use usb_device::{bus::UsbBusAllocator, class_prelude::*, prelude::*};
 use usbd_serial::SerialPort;
 
@@ -81,7 +81,7 @@ pub(super) fn initialize(
         if force_reenumeration {
             device.bus().force_reenumeration(delay);
         }
-        free(|cs| {
+        critical_section::with(|cs| {
             *USB_SERIAL.borrow(cs).borrow_mut() = Some(serial);
             *USB_DEVICE.borrow(cs).borrow_mut() = Some(device);
         });
@@ -109,13 +109,15 @@ where
     // these ISR-local statics are the sole USB owner.
     unsafe {
         if (*core::ptr::addr_of!(USB_DEVICE_ISR)).is_none() {
-            let Some(device) = free(|cs| USB_DEVICE.borrow(cs).replace(None)) else {
+            let Some(device) = critical_section::with(|cs| USB_DEVICE.borrow(cs).replace(None))
+            else {
                 return;
             };
             (*core::ptr::addr_of_mut!(USB_DEVICE_ISR)) = Some(device);
         }
         if (*core::ptr::addr_of!(USB_SERIAL_ISR)).is_none() {
-            let Some(serial) = free(|cs| USB_SERIAL.borrow(cs).replace(None)) else {
+            let Some(serial) = critical_section::with(|cs| USB_SERIAL.borrow(cs).replace(None))
+            else {
                 return;
             };
             (*core::ptr::addr_of_mut!(USB_SERIAL_ISR)) = Some(serial);
