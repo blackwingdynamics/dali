@@ -126,6 +126,8 @@ dali-kernel/
 │   │   ├── src/commands/           # Top-level dispatch and command domains
 │   │   └── templates/app/          # Generated application project files
 │   ├── dali-device/               # Hardware-neutral device records
+│   ├── dali-driver-api/           # Hardware-neutral driver contracts and mocks
+│   ├── dali-metadata/             # Binary v2 metadata and trust-store contracts
 │   ├── dali-sdk/                  # Application ABI and SVC API
 │   ├── dali-targets/              # TOML validation and generated registry
 │   │   ├── src/lib.rs             # Public typed target-profile API

@@ -282,11 +282,11 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 
 ### Display
 
-- [ ] Define a bounded framebuffer or command-stream contract.
-- [ ] Define initialization, flush, reset, and unavailable-display errors.
-- [ ] Add host tests for dimensions, clipping, and bounded update behavior.
-- [ ] Implement a target adapter only after a display capability is selected.
-- [ ] Record target rendering and failure-recovery evidence.
+- [x] Define a bounded framebuffer or command-stream contract.
+- [x] Define initialization, flush, reset, and unavailable-display errors.
+- [x] Add host tests for dimensions, clipping, and bounded update behavior.
+- [x] Implement a target adapter only after a display capability is selected.
+- [ ] Record physical target rendering and failure-recovery evidence.
 
 ### CAN
 

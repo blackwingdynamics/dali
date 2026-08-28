@@ -62,21 +62,37 @@ crates/dali-cli/templates/app/
 └── memory.x.template, memory.v3.x.template
 
 crates/dali-device/src/lib.rs
+crates/dali-driver-api/src/
+├── lib.rs
+├── error/mod.rs
+├── display/{mod.rs,console.rs,dimensions.rs,driver.rs,text.rs}
+├── gpio/{mod.rs,interrupt.rs,pins.rs}
+├── i2c/{mod.rs,address.rs,driver.rs}
+├── uart/{mod.rs,config.rs,read.rs,write.rs,ownership.rs}
+├── spi/{mod.rs,ownership.rs,transfer.rs}
+└── timer/{mod.rs,countdown.rs,driver.rs}
 crates/dali-metadata/src/
-├── codec/
-│   ├── mod.rs, binary/mod.rs
-│   └── bundle.rs, delegation.rs, envelope.rs, revocation.rs, root.rs,
-│       signatures.rs, snapshot.rs, targets.rs, timestamp.rs, writer.rs
+├── lib.rs, authorization.rs, chain.rs, crypto.rs, limits.rs, model.rs,
+│   streaming.rs, trust_store.rs, validation.rs, verification.rs
+├── codec/{mod.rs,binary/mod.rs,bundle.rs,delegation.rs,envelope.rs,
+│   revocation.rs,root.rs,signatures.rs,snapshot.rs,targets.rs,timestamp.rs,
+│   writer.rs,tests.rs}
+├── model/{bundle.rs,core.rs,delegation.rs,repository.rs,revocation.rs,
+│   snapshot.rs,targets.rs,trust_store.rs}
 ├── parser/
-│   ├── mod.rs, tests.rs, binary/mod.rs
+│   ├── mod.rs,tests.rs
+│   ├── binary/{mod.rs,bundle.rs,delegation.rs,helpers.rs,revocation.rs,
+│   │   root.rs,snapshot.rs,targets.rs,tests.rs,trust_store.rs}
 │   ├── canonical/
-│   │   ├── mod.rs, cursor.rs, bundle.rs, envelope.rs, signatures.rs
-│   │   └── delegation.rs, revocation.rs, root.rs, snapshot.rs,
-│   │       targets.rs, timestamp.rs
+│   │   ├── mod.rs,cursor.rs,bundle.rs,envelope.rs,signatures.rs,
+│   │   └── delegation.rs,revocation.rs,root.rs,snapshot.rs,targets.rs,
+│   │       timestamp.rs
 │   └── streaming/
-│       ├── mod.rs, chain.rs
-│       └── delegation.rs, revocation.rs, root.rs, snapshot.rs
-└── model.rs, validation.rs, verification.rs, chain.rs, trust_store.rs
+│       ├── mod.rs,chain.rs,delegation.rs,revocation.rs,root.rs,snapshot.rs
+│       └── bundle/{mod.rs,parser.rs,queue.rs,tests.rs}
+├── secure_boot/{mod.rs,descriptor.rs,tests.rs}
+└── validation/{bundle.rs,common.rs,core.rs,delegation.rs,records.rs,
+    tests.rs,trust_store.rs}
 crates/dali-sdk/src/{lib.rs,svc.rs,svc_log.rs}
 crates/dali-targets/src/lib.rs
 crates/dali-targets/build.rs

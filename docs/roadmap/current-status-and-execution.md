@@ -64,7 +64,7 @@ The detailed action sequence is maintained in
 This is the active development track while laboratory hardware validation is
 pending.
 
-- [ ] Reconcile architecture, roadmap, testing, and file-structure
+- [x] Reconcile architecture, roadmap, testing, and file-structure
   documentation with the implemented repository.
 - [ ] Inventory large files, mixed responsibilities, misplaced modules, and
   obsolete or duplicated code without changing runtime behavior.
@@ -79,5 +79,5 @@ pending.
 
 ### Current work — documentation quality and enterprise readiness
 
-- [ ] **Active:** Execute the documentation quality and enterprise-readiness
+- [x] Execute the documentation quality and enterprise-readiness
   roadmap in [06 — Documentation Quality and Enterprise Readiness](06-documentation-quality-and-enterprise-readiness.md).
