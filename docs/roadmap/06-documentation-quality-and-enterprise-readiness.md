@@ -34,7 +34,7 @@ approval.
 
 ## 4. Requirements and evidence traceability
 
-- [ ] Map major requirements to implementation modules, tests, documentation,
+- [x] Map major requirements to implementation modules, tests, documentation,
   and hardware evidence.
 - [ ] Separate host validation, embedded compilation, flashing, and Silicon
   Trace evidence in every acceptance record.

@@ -243,7 +243,8 @@ dali-kernel/
 │   ├── testing/                   # Categorized testing procedures and evidence
 │   │   ├── README.md
 │   │   ├── evidence-boundary.md, f405-silicon.md, host.md
-│   │   ├── mvp-acceptance.md, signed-packages.md
+│   │   ├── mvp-acceptance.md, requirements-and-evidence.md
+│   │   ├── signed-packages.md
 │   │   └── target.md
 │   ├── ustari-protocol/            # Categorized Ustari protocol documentation
 │   │   ├── README.md

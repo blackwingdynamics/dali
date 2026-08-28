@@ -18,6 +18,8 @@ category:
    and signed-package validation records.
 6. [MVP acceptance](mvp-acceptance.md) — the baseline end-to-end acceptance
    procedure.
+7. [Requirements and evidence traceability](requirements-and-evidence.md) —
+   implementation, validation-layer, and Silicon Trace mapping.
 
 The extracted files are documentation reorganizations only. They must not
 change the meaning of a test, acceptance claim, or hardware evidence record.
