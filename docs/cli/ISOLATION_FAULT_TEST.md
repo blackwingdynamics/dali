@@ -33,8 +33,8 @@ Build the kernel with `abi-mpu`, connect the Pico as the SWD probe, and
 flash the kernel through the probe. Keep RTT output visible:
 
 ```text
-cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-current,abi-mpu --target thumbv7em-none-eabihf
-dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-kernel
+cargo build -p dali-firmware --bin dali-f405 --no-default-features --features stm32f405,usb-cdc,abi-current,abi-mpu --target thumbv7em-none-eabihf
+dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-f405
 ```
 
 Expected output includes:
@@ -111,8 +111,8 @@ its fixture reads the code origin of the manifest-declared slot0. Build and
 flash the MPU-enabled kernel:
 
 ```text
-cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-relocation --target thumbv7em-none-eabihf
-dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-kernel
+cargo build -p dali-firmware --bin dali-f405 --no-default-features --features stm32f405,usb-cdc,abi-relocation --target thumbv7em-none-eabihf
+dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-f405
 ```
 
 Expected output is:
@@ -209,8 +209,8 @@ BusFault handler. The change exists only in the live debug session and is
 never part of the production firmware.
 
 ```text
-cargo build -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-current,abi-mpu --target thumbv7em-none-eabihf
-dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-kernel
+cargo build -p dali-firmware --bin dali-f405 --no-default-features --features stm32f405,usb-cdc,abi-current,abi-mpu --target thumbv7em-none-eabihf
+dali device flash f405 --transport probe --input target/thumbv7em-none-eabihf/debug/dali-f405
 ```
 
 Expected output is:
@@ -279,9 +279,9 @@ dali app build
 Build the kernel with the explicitly test-only service enabled:
 
 ```text
-cargo build -p dali-kernel \
+cargo build -p dali-firmware --bin dali-f405 \
   --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-current,abi-test-fixtures \
+  --features stm32f405,usb-cdc,abi-current,abi-test-fixtures \
   --target thumbv7em-none-eabihf
 ```
 

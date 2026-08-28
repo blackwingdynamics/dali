@@ -383,10 +383,10 @@ find "$DALI_MOUNT" -maxdepth 3 -type f \
 ```bash
 cd "$DALI_ROOT"
 
-cargo build -p dali-kernel \
+cargo build -p dali-firmware --bin dali-f405 \
   --release \
   --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-relocation,repository-loader,storage-write \
+  --features stm32f405,usb-cdc,abi-relocation,repository-loader,storage-write \
   --target thumbv7em-none-eabihf
 ```
 
@@ -408,7 +408,7 @@ pkill -TERM -f '^probe-rs ' || true
 
 sudo "$DALI_CLI" device flash f405 \
   --transport probe \
-  --input "$DALI_ROOT/target/thumbv7em-none-eabihf/release/dali-kernel"
+  --input "$DALI_ROOT/target/thumbv7em-none-eabihf/release/dali-f405"
 ```
 
 ## 13. Expected hardware evidence

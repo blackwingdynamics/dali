@@ -4,7 +4,7 @@
 using sysbus
 
 $name?="Dali_OS_STM32F4_Reference"
-$bin?=@target/thumbv7em-none-eabihf/debug/dali-kernel
+$bin?=@target/thumbv7em-none-eabihf/debug/dali-f405
 
 mach create $name
 machine LoadPlatformDescription @platforms/boards/stm32f4_discovery-kit.repl

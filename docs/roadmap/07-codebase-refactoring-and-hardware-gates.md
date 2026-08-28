@@ -38,7 +38,7 @@ The following paths are excluded from this refactoring track unless a
 separate architecture approval explicitly changes their status:
 
 - `kernel/src/storage/`;
-- `kernel/src/platform/f405/sdio_raw/`;
+- `crates/dali-boards/dali-board-stm32f405/`;
 - USB CDC core servicing and polling loops;
 - SPI display and ILI9341 experiments;
 - `crates/dali-targets/src/lib.rs`, which remains the stable public typed

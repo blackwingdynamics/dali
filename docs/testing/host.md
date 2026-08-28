@@ -36,8 +36,7 @@ Storage lifecycle host coverage includes initialization, ready operations,
 card-removal classification, fault transitions, and bounded reinitialization:
 
 ```text
-cargo test -p dali-kernel --lib --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write
+cargo test -p dali-kernel --lib
 ```
 
 The Phase 1 bounded-timeout host coverage is hardware-neutral contract
@@ -330,24 +329,24 @@ state and completed signed cartridge verification, slot loading, and
 Build the rollback fixture explicitly:
 
 ```text
-cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-rollback-test \
+cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-rollback-test \
   --target thumbv7em-none-eabihf
 ```
 
 Build the interruption profile explicitly:
 
 ```text
-cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-interruption-test \
+cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-interruption-test \
   --target thumbv7em-none-eabihf
 ```
 
 Build this mode explicitly; it is not part of the default kernel profile:
 
 ```text
-cargo build -p dali-kernel --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-relocation,storage-write \
+cargo build -p dali-firmware --bin dali-f405 --no-default-features \
+  --features stm32f405,usb-cdc,abi-relocation,storage-write \
   --target thumbv7em-none-eabihf
 ```
 

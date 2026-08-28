@@ -24,7 +24,7 @@ The Binary v2 CLI dispatch and metadata codec were checked with:
 cargo test -p dali-cli -p dali-metadata
 51 dali-cli tests passed
 54 dali-metadata tests passed
-cargo check -p dali-kernel --no-default-features --features board-stm32f405-sd,usb-cdc,abi-relocation,repository-loader,storage-write --target thumbv7em-none-eabihf
+cargo check -p dali-firmware --bin dali-f405 --no-default-features --features stm32f405,usb-cdc,abi-relocation,repository-loader,storage-write --target thumbv7em-none-eabihf
 passed
 ```
 
@@ -33,8 +33,8 @@ The release image was rebuilt with the repository-loader feature set,
 `/tmp/dali-f405-memory.map`. The exact build configuration was:
 
 ```text
-CARGO_PROFILE_RELEASE_DEBUG=2 cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write \
+CARGO_PROFILE_RELEASE_DEBUG=2 cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write \
   --target thumbv7em-none-eabihf
 ```
 

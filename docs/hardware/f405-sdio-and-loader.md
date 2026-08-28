@@ -23,7 +23,8 @@ its evidence.
 | SDIO data 2 | PC10 |
 | SDIO data 3 | PC11 |
 
-The F405 board is selected with the `board-stm32f405-sd` Cargo feature. Its
+The F405 board is selected with the private firmware composition's
+`stm32f405` Cargo feature. Its
 SDIO pin tuple is owned by the board backend and is consumed by the storage
 subsystem. The current F405 backend uses HAL card initialization and a
 board-local DMA2 Stream 3, Channel 4 receive path with an aligned word buffer

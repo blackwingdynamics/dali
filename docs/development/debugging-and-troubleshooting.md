@@ -28,8 +28,8 @@ just bin
 Run `just build` first and confirm that the ELF exists. Then run `just bin` and inspect:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel
-target/thumbv7em-none-eabihf/debug/dali-kernel.bin
+target/thumbv7em-none-eabihf/debug/dali-f405
+target/thumbv7em-none-eabihf/debug/dali-f405-f405.bin
 ```
 
 The `.bin` file is created only after the ELF-to-binary conversion succeeds.

@@ -3,18 +3,13 @@
 - `kernel/src/security/mpu/` owns MPU descriptors, memory-layout validation,
   and privileged activation of application regions.
 - `kernel/src/platform/mod.rs` owns the hardware-neutral platform facade and
-  backend selection. Each `kernel/src/platform/<backend-id>/` directory owns
-  one target backend's PAC/HAL integration, clocks, pins, interrupts,
-  linker/memory definitions, and peripheral resources. Backend ownership and
-  contributor workflow are defined in `docs/platform-backends/README.md`.
-- `kernel/src/platform/f405/sdio.rs` and `kernel/src/platform/f405/sdio_raw/`
-  own the F405 PAC/HAL SDIO transport; bootstrap consumes it only through the
-  platform facade. Other boards must provide their own backend-local storage
-  adapter rather than modifying the F405 implementation.
-- `kernel/src/platform/f405/watchdog/` owns the F405 IWDG and RCC reset-cause
-  register adapter; watchdog policy remains in `kernel/src/runtime/watchdog/`.
-  Equivalent adapters for other targets belong in their own backend
-  directories.
+  backend registration. Board PAC/HAL integration, clocks, pins, interrupts,
+  linker/memory definitions, and peripheral resources belong under
+  `crates/dali-boards/<board-crate>/`. Backend ownership and contributor
+  workflow are defined in `docs/platform-backends/README.md`.
+- `crates/dali-boards/dali-board-stm32f405/` owns the F405 PAC/HAL SDIO and
+  watchdog adapters; bootstrap consumes them only through the platform
+  contracts. Other boards provide their own backend-local adapters.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
 - `kernel/src/drivers/sdio.rs` owns the generic SDIO transport contract and

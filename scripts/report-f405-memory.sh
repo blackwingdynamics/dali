@@ -5,8 +5,8 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPOSITORY_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 readonly EMBEDDED_TARGET="thumbv7em-none-eabihf"
-readonly KERNEL_ELF="${REPOSITORY_ROOT}/target/${EMBEDDED_TARGET}/release/dali-kernel"
-readonly PRODUCTION_FEATURES="board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write"
+readonly FIRMWARE_ELF="${REPOSITORY_ROOT}/target/${EMBEDDED_TARGET}/release/dali-f405"
+readonly PRODUCTION_FEATURES="stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write"
 readonly REPORT_DIR="${DALI_REPORT_DIR:-${REPOSITORY_ROOT}/target/f405-memory-report}"
 readonly MAP_FILE="${REPORT_DIR}/dali-f405-memory.map"
 
@@ -34,19 +34,19 @@ build_kernel() {
     mkdir -p -- "${REPORT_DIR}"
     CARGO_PROFILE_RELEASE_DEBUG=2 \
         RUSTFLAGS="${existing_flags} -C link-arg=-Tlink.x -C link-arg=-Map=${MAP_FILE}" \
-        cargo build -p dali-kernel --release --no-default-features \
+        cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
             --features "${PRODUCTION_FEATURES}" \
             --target "${EMBEDDED_TARGET}"
 }
 
 write_report() {
     local llvm_tools_dir="$1"
-    "${llvm_tools_dir}/llvm-size" -A "${KERNEL_ELF}" > "${REPORT_DIR}/llvm-size.txt"
-    "${llvm_tools_dir}/llvm-nm" --print-size --size-sort "${KERNEL_ELF}" > "${REPORT_DIR}/llvm-nm.txt"
-    "${llvm_tools_dir}/llvm-objdump" -h "${KERNEL_ELF}" > "${REPORT_DIR}/sections.txt"
-    sha256sum "${KERNEL_ELF}" > "${REPORT_DIR}/dali-kernel.sha256"
+    "${llvm_tools_dir}/llvm-size" -A "${FIRMWARE_ELF}" > "${REPORT_DIR}/llvm-size.txt"
+    "${llvm_tools_dir}/llvm-nm" --print-size --size-sort "${FIRMWARE_ELF}" > "${REPORT_DIR}/llvm-nm.txt"
+    "${llvm_tools_dir}/llvm-objdump" -h "${FIRMWARE_ELF}" > "${REPORT_DIR}/sections.txt"
+    sha256sum "${FIRMWARE_ELF}" > "${REPORT_DIR}/dali-f405.sha256"
     printf 'target=%s\nfeatures=%s\nelf=%s\nmap=%s\n' \
-        "${EMBEDDED_TARGET}" "${PRODUCTION_FEATURES}" "${KERNEL_ELF}" "${MAP_FILE}" \
+        "${EMBEDDED_TARGET}" "${PRODUCTION_FEATURES}" "${FIRMWARE_ELF}" "${MAP_FILE}" \
         > "${REPORT_DIR}/build-metadata.txt"
 }
 
@@ -61,7 +61,7 @@ main() {
     write_report "${llvm_tools_dir}"
     for report in "${REPORT_DIR}/llvm-size.txt" "${REPORT_DIR}/llvm-nm.txt" \
         "${REPORT_DIR}/sections.txt" "${REPORT_DIR}/dali-f405-memory.map" \
-        "${REPORT_DIR}/dali-kernel.sha256" "${REPORT_DIR}/build-metadata.txt"; do
+        "${REPORT_DIR}/dali-f405.sha256" "${REPORT_DIR}/build-metadata.txt"; do
         [[ -s "${report}" ]] || {
             printf 'ERROR: report artifact is empty: %s\n' "${report}" >&2
             exit 1

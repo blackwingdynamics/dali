@@ -28,8 +28,8 @@ card before inserting it into the F405 board.
 Build the diagnostic kernel:
 
 ```text
-cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,dma-test-fixture \
+cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,dma-test-fixture \
   --target thumbv7em-none-eabihf
 ```
 

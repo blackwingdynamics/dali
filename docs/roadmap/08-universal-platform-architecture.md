@@ -1,6 +1,6 @@
 # Universal Dali OS Platform Architecture
 
-Status: **Active — external backend extraction in progress**.
+Status: **Active — core extraction complete; hardware acceptance pending**.
 
 This roadmap converts Dali OS from an F405-first kernel into a portable OS
 with independently cartridged platform backends. A new board must be implemented
@@ -53,7 +53,8 @@ board pin mapping.
 
 - [ ] Record the current F405 revision, build profile, test results, boot trace,
   storage trace, and known I2C/OLED hardware limitation.
-- [ ] Inventory every F405 dependency outside `kernel/src/platform/f405/`.
+- [x] Inventory and remove F405 implementation dependencies from the kernel
+  core; the remaining board code is under `crates/dali-boards/`.
 - [ ] Audit all `#[link_section]` attributes, linker symbols, static buffers,
   and hardware memory addresses outside backend directories.
 - [ ] Audit all MPU/PMP or processor-protection register accesses outside
@@ -65,11 +66,11 @@ board pin mapping.
 - [ ] Update architecture and target-manifest documentation before code changes.
 - [ ] Obtain review approval for the platform boundary.
 
-Migration checkpoint: `crates/dali-boards` now contains the public
-hardware-neutral contracts and the copied STM32F405 backend. The kernel must
-not depend on `dali-board-stm32f405`; the remaining legacy kernel platform
-directory is being removed only as the external firmware composition layer is
-introduced, so the target build does not lose its entry point mid-migration.
+Migration checkpoint: `crates/dali-kernel-api` contains the public contracts,
+`crates/dali-boards` contains the board backend, and the private
+`crates/dali-firmware` composition selects them. The kernel does not depend on
+`dali-board-stm32f405`, and no board implementation remains under
+`kernel/src/platform/`.
 
 Evidence gate: the F405 baseline trace must be reproducible and attached to the
 checkpoint. No migration begins while the baseline is ambiguous.

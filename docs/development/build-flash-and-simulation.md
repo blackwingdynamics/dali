@@ -29,7 +29,7 @@ just build
 The embedded ELF is created at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel
+target/thumbv7em-none-eabihf/debug/dali-f405
 ```
 
 The ELF contains symbols and debug information and is the preferred artifact for probe-based debugging.
@@ -43,7 +43,7 @@ just bin
 This runs `cargo objcopy` and creates:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel.bin
+target/thumbv7em-none-eabihf/debug/dali-f405-f405.bin
 ```
 
 The `.bin` file is a raw firmware image suitable for flashing tools. It is generated output, is ignored by Git, and is not written to the repository root.
@@ -94,7 +94,7 @@ just kernel-check f405
 The generated ELF is located at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel
+target/thumbv7em-none-eabihf/debug/dali-f405
 ```
 
 For F405 SWD flashing, run:
@@ -112,7 +112,7 @@ just flash-dfu f405
 The raw F405 binary is generated at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel-f405.bin
+target/thumbv7em-none-eabihf/debug/dali-f405-f405.bin
 ```
 
 ### 6. Observe RTT output

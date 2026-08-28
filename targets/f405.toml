@@ -16,8 +16,8 @@ mpu = true
 relocation = true
 
 [artifacts]
-kernel_binary = "dali-kernel-f405.bin"
-kernel_elf = "dali-kernel"
+kernel_binary = "dali-f405-f405.bin"
+kernel_elf = "dali-f405"
 
 [profile.dfu]
 vendor_id = 0x0483

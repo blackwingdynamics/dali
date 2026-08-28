@@ -1,7 +1,7 @@
 # Active safety boundaries
 
 - [x] SDIO implementation and storage behavior remain at the Known-Good
-  baseline; no changes are permitted in `kernel/src/platform/f405/sdio_raw/`,
+baseline; no changes are permitted in `crates/dali-boards/dali-board-stm32f405/`,
   `kernel/src/storage/`, or SDIO manifest limits during these phases.
 - [x] USB CDC core servicing and polling loops are frozen.
 - [x] ILI9341 and all SPI display experiments are frozen.

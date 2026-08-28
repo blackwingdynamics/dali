@@ -140,9 +140,9 @@ The F405 signed-loader image must use the release profile because the
 feature-complete development link does not fit the board's flash region:
 
 ```text
-cargo build -p dali-kernel --release \
+cargo build -p dali-firmware --bin dali-f405 --release \
   --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-authentication \
+  --features stm32f405,usb-cdc,abi-authentication \
   --target thumbv7em-none-eabihf
 ```
 
