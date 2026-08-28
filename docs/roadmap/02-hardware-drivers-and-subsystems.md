@@ -50,7 +50,8 @@ observed backend and board configuration.
 - [x] Implement the F405 I2C OLED adapter only behind the display capability.
 - [x] Define and implement a bounded text-mode diagnostics console for boot
   status and diagnostic stream records.
-- [x] Record target rendering, unavailable-display, and recovery evidence.
+- [ ] Record physical target rendering, unavailable-display, and recovery
+  evidence.
 
 The Phase 3 implementation is complete, but physical OLED acceptance is still
 pending. The available F405 trace confirms boot progress and bounded I2C

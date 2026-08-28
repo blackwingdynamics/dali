@@ -103,6 +103,13 @@ The observed trace from the completed run was:
 [APP] DMA application request rejected
 ```
 
+Validation layers:
+
+- Host: driver contract coverage for bounded timer and SPI recovery.
+- Embedded: release F405 target build with `driver-hardware-test`.
+- Flashing: verified through the Raspberry Pi Pico 2 CMSIS-DAP probe.
+- Silicon Trace: the console output listed above from the real F405 target.
+
 This run confirms the UART bounded-timeout marker, stalled SPI timeout,
 recovery transfer, timer timeout, timer integration, storage and signed-loader
 path, application lifecycle, and DMA denial. The probe's bounded recovery path
@@ -113,10 +120,10 @@ items passed. Board revision, exact wiring, and power source are explicitly
 recorded as `Not recorded` below.
 
 ```text
-Board revision: Not recorded
-Wiring: Exact SWD and peripheral wiring not recorded
+Board revision: v1.1
+Wiring: SWDIO, SWCLK, and GND connected; exact peripheral wiring not recorded
 Firmware revision: 619c84d
-Power source: Not recorded
+Power source: USB
 Transport: USB CDC console on /dev/ttyACM0; Pico 2 CMSIS-DAP for flashing
 Expected trace: Timer timeout; stalled SPI timeout; recovery transfer; ownership release
 Observed trace: All expected timer and SPI markers listed above
@@ -164,6 +171,14 @@ The complete relevant console output also recorded:
 [APP] DMA application request rejected
 ```
 
+Validation layers:
+
+- Host: I2C ownership, repeated-start, timeout, and bus-error contract tests.
+- Embedded: release F405 target build with the I2C backend enabled.
+- Flashing: acceptance image downloaded through the Raspberry Pi Pico 2
+  CMSIS-DAP probe.
+- Silicon Trace: the console output listed above from the real F405 target.
+
 Result: the F405 I2C bounded-timeout and bus-recovery acceptance is confirmed
 by real Silicon Trace. Repeated-start semantics remain covered by the
 hardware-neutral contract and host tests; this trace does not claim an
@@ -172,10 +187,10 @@ revision, exact wiring, power source, and separately recorded firmware
 revision remain evidence metadata limitations, not failed I2C behavior.
 
 ```text
-Board revision: Not recorded
-Wiring: I2C1 PB6/PB7 wiring and SWD wiring not recorded
+Board revision: v1.1
+Wiring: SWDIO, SWCLK, GND, I2C1 PB6=SCL, PB7=SDA, VCC, and GND connected
 Firmware revision: Not recorded separately from the flashed acceptance image
-Power source: Not recorded
+Power source: USB; I2C device powered at 3.3 V
 Transport: USB CDC console on /dev/ttyACM0; Pico 2 CMSIS-DAP for flashing
 Expected trace: Bounded I2C timeout followed by bus recovery
 Observed trace: Bounded transfer timeout enforced; Bus recovered
@@ -184,43 +199,46 @@ Limitations: No external-device ACK or OLED rendering was observed in this run
 
 ### Phase 3 F405 OLED and diagnostics-console acceptance — 2026-08-25
 
-Phase 3 hardware acceptance was completed on the WeAct Studio STM32F405RGT6
-Core Board with the manifest-configured SSD1306 I2C OLED profile. The OLED was
-connected through the board-owned I2C1 bus on PB6/PB7 and used the same
-manifest-driven timeout and address configuration as the F405 backend. The
-acceptance firmware retained one I2C1 singleton shared between the OLED and
-the optional driver probe.
+Phase 3 hardware setup used the WeAct Studio STM32F405RGT6 Core Board with the
+manifest-configured SSD1306 I2C OLED profile. The OLED was connected through
+the board-owned I2C1 bus on PB6/PB7 and powered at 3.3 V. The acceptance
+firmware retained one I2C1 singleton shared between the OLED and the optional
+driver probe.
 
 The expected result was successful bounded OLED initialization and rendering
 of the boot diagnostics console, with deterministic text-grid updates. A
 missing or non-responsive display was required to select headless operation
-without blocking kernel boot. The user-provided F405 Silicon Trace and
-physical acceptance result reported 100% success for the OLED and console
-path. The implementation does not emit a separate OLED trace marker; the
-existing boot trace remains the transport-visible evidence while display
-rendering is observed on the physical panel.
+without blocking kernel boot. The observed hardware result was negative: the
+OLED did not illuminate and no text was visible. The boot console continued,
+but that is not display-rendering evidence.
 
 - [x] Manifest-driven SSD1306 profile generated and consumed by the F405 backend.
 - [x] One I2C1 singleton shared between the OLED backend and acceptance probe.
-- [x] Bounded diagnostics console rendered on the physical F405 OLED.
-- [x] Display-unavailable path selected headless operation without freezing boot.
+- [ ] Bounded diagnostics console rendered on the physical F405 OLED.
+- [ ] Display-unavailable path selected headless operation without freezing boot.
 - [x] Deterministic clipping, cursor tracking, scrolling, and overflow behavior
   covered by 21 passing hardware-neutral driver tests.
 
-Result: Phase 3 OLED and diagnostics-console acceptance is closed based on the
-reported F405 Silicon Trace and physical display result. A separately archived
-raw OLED trace, board revision, exact wiring record, power source, and firmware
-revision were not supplied for this entry and remain evidence metadata
-limitations.
+Validation layers:
+
+- Host: display contract and diagnostics-console tests.
+- Embedded: release F405 target build with the OLED and hardware-test features.
+- Flashing: acceptance image downloaded to the F405 target.
+- Silicon Trace: boot console output was captured; raw OLED frame evidence was
+  not archived.
+
+Result: Unverified. The OLED did not illuminate and no text rendering was
+observed. Board revision and wiring are now recorded; firmware revision and a
+raw OLED/electrical trace remain unavailable.
 
 ```text
-Board revision: Not recorded
-Wiring: I2C1 PB6/PB7 and OLED power wiring not recorded
+Board revision: v1.1
+Wiring: SWDIO, SWCLK, GND, I2C1 PB6=SCL, PB7=SDA, VCC, and GND connected
 Firmware revision: Not recorded
-Power source: Not recorded
+Power source: USB; OLED powered at 3.3 V
 Transport: USB CDC console; physical OLED panel observation
 Expected trace: Bounded OLED initialization and boot diagnostics rendering
-Observed trace: Boot diagnostics trace; physical OLED rendering reported successful
+Observed trace: Boot diagnostics trace; OLED did not illuminate and no text was visible
 Limitations: No raw OLED frame capture or independent electrical trace archived
 ```
 

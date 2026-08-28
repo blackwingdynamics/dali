@@ -41,7 +41,8 @@ display backend is introduced.
 - [x] Select and specify an SSD1306 or SH1106 128x64 I2C display contract.
 - [x] Implement a bounded I2C OLED adapter only after Phase 2 acceptance.
 - [x] Add a lightweight text console for boot status, memory, and diagnostics.
-- [x] Record target rendering and unavailable-display recovery evidence.
+- [ ] Record physical target rendering and unavailable-display recovery
+  evidence.
 
 The Phase 3 implementation is complete, but physical OLED acceptance is
 pending. The F405 Silicon Trace confirms the boot path and bounded I2C error

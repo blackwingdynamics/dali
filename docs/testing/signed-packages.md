@@ -164,6 +164,13 @@ Observed trace: All Binary v2 trace lines listed above
 Limitations: Package size and physical power details were not captured; this is not Secure Boot or power-loss evidence
 ```
 
+Validation layers:
+
+- Host: CLI, metadata, cryptographic, and loader contract tests.
+- Embedded: release F405 repository-loader target build.
+- Flashing: Pico 2 CMSIS-DAP programming.
+- Silicon Trace: the F405 USB CDC output listed above.
+
 - [x] Host AMRN tests cover v5 header/trailer split parsing and signed-range
   boundary validation.
 - [x] The feature-gated kernel target build covers v5 streaming signature,

@@ -55,6 +55,7 @@ Power source: STM32 USB and Pico USB
 Transport: USB CDC console; Pico 2 CMSIS-DAP for flashing
 SD card and filesystem: 128 GB microSD, FAT32
 Kernel revision: 4fb7b41
+Firmware revision: 4fb7b41 (kernel revision)
 Application package revision: hello.amrn
 Package size: 3999 bytes
 Package CRC32: 0xBFDB25F5
@@ -66,6 +67,13 @@ Result: PASS
 Limitations: Exact wiring and independent electrical signals were not recorded.
 Known issues: None for the documented MVP acceptance path.
 ```
+
+Validation layers:
+
+- Host: AMRN and application contract tests.
+- Embedded: F405 target build.
+- Flashing: Pico 2 CMSIS-DAP programming.
+- Silicon Trace: USB CDC boot and application output recorded above.
 
 The package metadata was recovered from the exact `hello.amrn` file retained
 on the FAT32 SD card used for the hardware run.
@@ -94,6 +102,13 @@ Limitations: Package size, wiring, board revision, and power source were not cap
 Known issues: Watchdog reset/Safe Mode is tracked as a separate acceptance scenario.
 ```
 
+Validation layers:
+
+- Host: Binary v2 metadata, repository, and loader contract tests.
+- Embedded: release F405 repository-loader target build.
+- Flashing: Pico 2 CMSIS-DAP programming.
+- Silicon Trace: USB CDC output recorded above from the F405 target.
+
 This record proves the configured release-anchor Binary v2 path on physical
 F405 hardware. It does not claim Secure Boot, production key custody, general
 DMA isolation, or power-loss recovery.
@@ -121,6 +136,13 @@ Expected trace: Trust-store artifact write, flush, read-back, and subsequent sig
 Limitations: Wiring, board revision, and power source were not captured. This run proves the bounded F405 flush/read-back sequence. A
   power-loss/interrupted-write recovery test remains separate.
 ```
+
+Validation layers:
+
+- Host: durable journal and repository write/read-back contract tests.
+- Embedded: release F405 storage-write target build.
+- Flashing: Pico 2 CMSIS-DAP programming.
+- Silicon Trace: flush/read-back output recorded above from the F405 target.
 
 This record proves the F405 SDIO durable-flush boundary for the acceptance
 artifacts: candidate data is written, flushed, and read back before the
@@ -152,6 +174,13 @@ Result: PASS
 Limitations: Wiring, board revision, and power source were not captured. This run verifies committed-journal recovery after reboot. It
   does not prove Prepared-only interruption recovery or power-loss recovery.
 ```
+
+Validation layers:
+
+- Host: journal recovery and repository-selection contract tests.
+- Embedded: release F405 repository-loader target build.
+- Flashing: Pico 2 CMSIS-DAP programming and manual board reboot.
+- Silicon Trace: reboot and USB CDC output recorded above from the F405 target.
 
 This is manually observed F405 evidence for the reboot recovery selector and
 the complete signed Binary v2 boot path. The separate Prepared interruption

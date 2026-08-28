@@ -6,6 +6,28 @@ evidence of the listed behavior only; they do not claim arbitrary
 DMA-controller isolation or multi-application isolation beyond the documented
 F405 scope.
 
+## Aggregate evidence metadata
+
+The sections below aggregate multiple F405 runs rather than describing one
+single firmware image. The metadata that is common to the recorded runs is:
+
+```text
+Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Board revision: v1.1 for the reported I2C/OLED setup; historical runs may differ
+Wiring: Reported I2C/OLED setup used SWDIO, SWCLK, GND, PB6=SCL, PB7=SDA, VCC, and GND
+Firmware revision: Varies by acceptance record; see the procedure-specific record
+Power source: USB for the reported I2C/OLED setup
+Transport: Raspberry Pi Pico 2 CMSIS-DAP/SWD and USB CDC console where stated
+Expected trace: The markers and register observations defined by each section
+Observed trace: The evidence explicitly quoted by each section
+Limitations: Aggregate entries must not be generalized beyond their quoted behavior
+```
+
+The procedure-specific records in [`host.md`](host.md),
+[`../mvp-acceptance/recorded-evidence.md`](../mvp-acceptance/recorded-evidence.md),
+and [`signed-packages.md`](signed-packages.md) remain the source for
+run-specific metadata and status.
+
 ## Boot, storage, and application path
 
 - [x] F405 boot, 168 MHz clock, PB2 LED, PC13 key, SDIO initialization, and block-zero

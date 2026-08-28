@@ -36,11 +36,11 @@ approval.
 
 - [x] Map major requirements to implementation modules, tests, documentation,
   and hardware evidence.
-- [ ] Separate host validation, embedded compilation, flashing, and Silicon
+- [x] Separate host validation, embedded compilation, flashing, and Silicon
   Trace evidence in every acceptance record.
-- [ ] Record board, wiring, firmware revision, power source, transport,
+- [x] Record board, wiring, firmware revision, power source, transport,
   expected trace, observed trace, and limitations for physical claims.
-- [ ] Ensure incomplete hardware validation cannot be presented as completed
+- [x] Ensure incomplete hardware validation cannot be presented as completed
   functionality.
 
 ## 5. CLI and SDK documentation
