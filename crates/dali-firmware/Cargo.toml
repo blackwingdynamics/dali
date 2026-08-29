@@ -35,6 +35,9 @@ dali-board-stm32f405 = { path = "../dali-boards/dali-board-stm32f405", optional 
 cortex-m-rt = "0.7"
 panic-halt = "1.0"
 
+[build-dependencies]
+dali-targets = { path = "../dali-targets" }
+
 [lints]
 workspace = true
 

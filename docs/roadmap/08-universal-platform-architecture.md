@@ -124,7 +124,7 @@ acceptance items and cannot be inferred from this migration.
 
 - [x] Define an explicit backend directory contract containing implementation,
   target metadata, linker/memory integration, and validation commands.
-- [ ] Make backend discovery manifest-driven or generated, so adding a new
+- [x] Make backend discovery manifest-driven or generated, so adding a new
   directory does not require editing OS core source.
 - [ ] Generate backend/profile registries from target metadata.
 - [ ] Keep Cargo features or generated cfg values limited to compile-time

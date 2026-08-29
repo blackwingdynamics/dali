@@ -19,4 +19,6 @@ The selected board backend linker-generation step reads
 profile belongs to that backend, it may be omitted; if multiple profiles
 belong to the backend, the build fails until the profile is set explicitly.
 The backend build script owns the generated `memory.x`; the kernel does not
-generate or select linker memory regions.
+generate or select linker memory regions. The firmware composition validates
+that the selected profile's backend feature is enabled and that its backend
+crate exports the linker artifact before compiling the binary.

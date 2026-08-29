@@ -242,6 +242,7 @@ dependencies = [
  "cortex-m-rt",
  "dali-board-stm32f405",
  "dali-kernel",
+ "dali-targets",
  "panic-halt",
 ]
 
