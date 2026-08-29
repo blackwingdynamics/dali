@@ -125,7 +125,19 @@ where
 {
     /// Initializes the externally selected backend.
     pub(crate) fn initialize() -> Result<Self, BoardError> {
+        #[cfg(any(
+            feature = "sdio",
+            feature = "usb-cdc",
+            feature = "abi-mpu",
+            feature = "abi-relocation"
+        ))]
         let info = B::info();
+        #[cfg(any(
+            feature = "sdio",
+            feature = "usb-cdc",
+            feature = "abi-mpu",
+            feature = "abi-relocation"
+        ))]
         validate_feature_capabilities(info.capabilities)?;
         let _ = read_fault_register as fn(dali_kernel_api::FaultRegister) -> u32;
         let _ = recover_to_kernel as unsafe fn(u32) -> !;
@@ -172,7 +184,7 @@ where
     }
 
     /// Returns the manifest-owned application execution policy.
-    #[cfg(not(feature = "abi-current"))]
+    #[cfg(all(feature = "sdio", not(feature = "abi-current")))]
     pub(crate) fn supports_application_execution() -> bool {
         B::info().target.application_supported
     }
@@ -205,6 +217,12 @@ where
 }
 
 /// Rejects feature selections that the manifest does not declare.
+#[cfg(any(
+    feature = "sdio",
+    feature = "usb-cdc",
+    feature = "abi-mpu",
+    feature = "abi-relocation"
+))]
 fn validate_feature_capabilities(
     capabilities: dali_targets::CapabilitiesProfile,
 ) -> Result<(), BoardError> {
