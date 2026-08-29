@@ -1,10 +1,13 @@
 //! Storage initialization and AMRN loading policy.
 
+#[cfg(feature = "sdio")]
 use super::super::StorageRuntime;
 use super::super::lifecycle::status;
+use crate::platform;
+#[cfg(feature = "sdio")]
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
-    logging, platform,
+    logging,
 };
 
 #[cfg(feature = "sdio")]
@@ -12,7 +15,7 @@ use super::recovery::{
     BOOT_RETRY_LOG_INTERVAL, initialize_with_recovery, read_block_with_recovery,
 };
 
-#[cfg(not(feature = "storage-write"))]
+#[cfg(all(feature = "sdio", not(feature = "storage-write")))]
 use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]

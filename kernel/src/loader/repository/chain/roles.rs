@@ -62,11 +62,7 @@ fn verify_revocations<S>(
     storage: &mut S,
     root: &RootMetadata,
     snapshot: &dali_metadata::SnapshotMetadata,
-    chunk: &mut [u8],
-    output: &mut MaybeUninit<dali_metadata::RevocationMetadata>,
-    parser: &mut BinaryRevocationBodyStreamParser<MAX_BINARY_REVOCATION_RECORDS>,
-    role_verifier: &mut MaybeUninit<StreamingRoleVerifier>,
-    progress: fn() -> bool,
+    context: RevocationVerificationContext<'_>,
 ) -> Result<(), BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
@@ -75,16 +71,19 @@ where
         storage,
         RepositoryDocument::Revocations,
         MetadataRole::Revocation,
-        parser,
+        context.parser,
         root,
         RoleVerificationContext {
-            output,
-            role_verifier,
-            input: RoleVerificationInput { chunk, progress },
+            output: context.output,
+            role_verifier: context.role_verifier,
+            input: RoleVerificationInput {
+                chunk: context.chunk,
+                progress: context.progress,
+            },
         },
     )?;
     // SAFETY: verify_role_from_root writes the revocations before returning.
-    let revocation_metadata = unsafe { output.assume_init_ref() };
+    let revocation_metadata = unsafe { context.output.assume_init_ref() };
     if !same_reference(
         snapshot.revocations.version,
         snapshot.revocations.length,
@@ -96,6 +95,20 @@ where
         return Err(BinaryRepositoryError::RevocationReferenceMismatch);
     }
     Ok(())
+}
+
+/// Internal inputs and workspace for revocation verification.
+struct RevocationVerificationContext<'a> {
+    /// Scratch chunk used while streaming the role.
+    chunk: &'a mut [u8],
+    /// Output slot populated by the role parser.
+    output: &'a mut MaybeUninit<dali_metadata::RevocationMetadata>,
+    /// Parser used for the revocation role body.
+    parser: &'a mut BinaryRevocationBodyStreamParser<MAX_BINARY_REVOCATION_RECORDS>,
+    /// Workspace used to verify the role signatures.
+    role_verifier: &'a mut MaybeUninit<StreamingRoleVerifier>,
+    /// Progress callback polled during streaming.
+    progress: fn() -> bool,
 }
 
 #[inline(never)]

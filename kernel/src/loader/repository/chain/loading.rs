@@ -105,11 +105,13 @@ where
         storage,
         root,
         snapshot,
-        &mut buffers.chunk,
-        &mut buffers.revocations,
-        unsafe { buffers.metadata_parser.revocations() },
-        unsafe { buffers.scratch.target_verifier() },
-        progress,
+        RevocationVerificationContext {
+            chunk: &mut buffers.chunk,
+            output: &mut buffers.revocations,
+            parser: unsafe { buffers.metadata_parser.revocations() },
+            role_verifier: unsafe { buffers.scratch.target_verifier() },
+            progress,
+        },
     )?;
     // SAFETY: the preceding helper writes the revocation metadata before this
     // reference is used, and the workspace remains exclusively borrowed here.

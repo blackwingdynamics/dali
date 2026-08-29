@@ -35,6 +35,7 @@ pub enum StorageStatus {
     #[cfg(feature = "sdio")]
     Removed,
     /// The storage medium is available, but no application cartridge is present.
+    #[cfg(feature = "sdio")]
     Idle,
     /// The card initialized and block zero was read successfully.
     #[cfg(all(feature = "sdio", not(feature = "abi-mpu")))]
@@ -43,6 +44,7 @@ pub enum StorageStatus {
     #[cfg(feature = "sdio")]
     Failure,
     /// Recovery boot intentionally skipped cartridge loading.
+    #[cfg(feature = "sdio")]
     SafeMode,
 }
 
@@ -54,6 +56,7 @@ pub const SLOW_BLINK_PERIOD_MS: u32 = 1_000;
 pub const FAST_BLINK_PERIOD_MS: u32 = 100;
 
 /// Delay between safe-mode status LED transitions.
+#[cfg(feature = "sdio")]
 pub const SAFE_MODE_BLINK_PERIOD_MS: u32 = 250;
 
 /// Delay between Safe Mode watchdog refresh diagnostics.

@@ -6,21 +6,27 @@ use super::status::FAST_BLINK_PERIOD_MS;
 /// Defines the `FAILURE_LOG_PERIOD_MS` bound used by this subsystem.
 /// Defines the `FAILURE_LOG_PERIOD_MS` bound used by this subsystem.
 const FAILURE_LOG_PERIOD_MS: u32 = 2_000;
+#[cfg(feature = "sdio")]
+use super::status::SAFE_MODE_BLINK_PERIOD_MS;
 use super::status::{
-    HEARTBEAT_PERIOD_MS, SAFE_MODE_BLINK_PERIOD_MS, SAFE_MODE_LOG_PERIOD_MS, SLOW_BLINK_PERIOD_MS,
-    StorageStatus,
+    HEARTBEAT_PERIOD_MS, SAFE_MODE_LOG_PERIOD_MS, SLOW_BLINK_PERIOD_MS, StorageStatus,
 };
 use crate::{bootstrap::StorageRuntime, platform};
 
 /// Displays the storage status and polls retained storage during recovery.
-pub fn run<B>(mut board: platform::Platform<B>, mut storage: StorageRuntime<B>) -> !
+pub fn run<B>(mut board: platform::Platform<B>, storage: StorageRuntime<B>) -> !
 where
     B: dali_kernel_api::BoardBackend,
     B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
+    #[cfg(feature = "sdio")]
+    let mut storage = storage;
     let mut led_on = false;
     let mut elapsed_ms = 0;
+    #[cfg(feature = "sdio")]
     let safe_mode = matches!(storage.status(), StorageStatus::SafeMode);
+    #[cfg(not(feature = "sdio"))]
+    let safe_mode = false;
     let mut safe_mode_log_elapsed_ms = 0;
     #[cfg(feature = "sdio")]
     let mut failure_log_elapsed_ms = 0;
@@ -54,6 +60,7 @@ where
             StorageStatus::Ready => {
                 let _ = board.set_status_led(true);
             }
+            #[cfg(feature = "sdio")]
             StorageStatus::Idle => {
                 if elapsed_ms >= SLOW_BLINK_PERIOD_MS {
                     led_on = !led_on;
@@ -77,6 +84,7 @@ where
                     elapsed_ms = 0;
                 }
             }
+            #[cfg(feature = "sdio")]
             StorageStatus::SafeMode => {
                 if elapsed_ms >= SAFE_MODE_BLINK_PERIOD_MS {
                     led_on = !led_on;

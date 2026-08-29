@@ -1,6 +1,8 @@
 //! Cartridge validation, slot activation, and application launch policy.
 
+#[cfg(feature = "sdio")]
 use super::super::lifecycle::status;
+#[cfg(feature = "sdio")]
 use crate::{drivers::StorageError, logging, platform};
 
 #[cfg(feature = "sdio")]

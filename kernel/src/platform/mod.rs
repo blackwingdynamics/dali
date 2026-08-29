@@ -43,9 +43,12 @@ static SCHEDULER_WATCHDOG: critical_section::Mutex<core::cell::RefCell<Option<Wa
     critical_section::Mutex::new(core::cell::RefCell::new(None));
 
 #[cfg(feature = "abi-context-switch")]
+/// Kernel-owned watchdog callback registered for application context switches.
 #[derive(Clone, Copy)]
 struct WatchdogService {
+    /// Opaque address of the platform facade that owns the watchdog.
     platform: usize,
+    /// Backend-independent callback used to feed the watchdog.
     feed: unsafe fn(usize) -> bool,
 }
 
@@ -101,6 +104,7 @@ pub(crate) fn trust_anchors() -> &'static [dali_targets::TrustAnchorProfile] {
 #[derive(Debug)]
 pub(crate) enum WatchdogServiceError {
     /// The watchdog runtime was already installed.
+    #[cfg(feature = "sdio")]
     AlreadyInstalled,
     /// Feeding the watchdog failed.
     Feed,
@@ -386,11 +390,13 @@ where
     }
 
     /// Transfers the backend-owned watchdog into the kernel runtime.
+    #[cfg(feature = "sdio")]
     pub(crate) fn take_watchdog(&mut self) -> Result<B::Watchdog, BoardError> {
         self.backend.take_watchdog()
     }
 
     /// Installs a watchdog runtime after its ownership contract is armed.
+    #[cfg(feature = "sdio")]
     pub(crate) fn install_watchdog(
         &mut self,
         runtime: crate::runtime::watchdog::WatchdogRuntime<B::Watchdog>,
@@ -447,6 +453,12 @@ pub(crate) fn service_watchdog_from_scheduler() {
 }
 
 #[cfg(feature = "abi-context-switch")]
+/// Feeds the watchdog through the platform facade stored in `platform`.
+///
+/// # Safety
+///
+/// `platform` must be the address of a live `Platform<B>` value whose watchdog
+/// runtime is installed.
 unsafe fn feed_watchdog<B>(platform: usize) -> bool
 where
     B: BoardBackend,
