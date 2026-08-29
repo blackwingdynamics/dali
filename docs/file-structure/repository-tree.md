@@ -16,7 +16,7 @@ dali-kernel/
 │   ├── f405.toml                 # Supported STM32F405 target metadata
 │   └── f411.toml                 # Generator-only board metadata
 ├── kernel/
-│   ├── Cargo.toml, build.rs
+│   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
@@ -98,9 +98,10 @@ dali-kernel/
 │   ├── dali-app-fault-psp/
 │   └── dali-app-fault-usage/
 ├── crates/
-│   ├── dali-boards/              # Hardware backend crate and board implementations
+│   ├── dali-boards/              # Hardware backend crates and board implementations
 │   │   ├── src/lib.rs            # Hardware-neutral board-crate facade
 │   │   └── dali-board-stm32f405/ # Current extracted F405 backend
+│   │       ├── build.rs           # F405 linker artifact generation
 │   │       └── src/              # F405 board, drivers, SDIO, MPU, and watchdog
 │   ├── dali-amrn/                 # AMRN format contracts and validation
 │   ├── dali-crypto/               # no_std Ed25519 signing/verification primitives
@@ -108,6 +109,9 @@ dali-kernel/
 │   │   ├── src/main.rs
 │   │   ├── src/commands/           # Top-level dispatch and command domains
 │   │   └── templates/app/          # Generated application project files
+│   ├── dali-firmware/              # Private firmware composition and binaries
+│   │   ├── Cargo.toml, build.rs
+│   │   └── src/bin/dali-f405.rs
 │   ├── dali-device/               # Hardware-neutral device records
 │   ├── dali-driver-api/           # Hardware-neutral driver contracts and mocks
 │   ├── dali-metadata/             # Binary v2 metadata and trust-store contracts

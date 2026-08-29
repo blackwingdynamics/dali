@@ -4,6 +4,7 @@ version = "0.1.0-alpha.2"
 edition = "2024"
 publish = false
 autobins = false
+build = "build.rs"
 
 [features]
 default = []

@@ -3,6 +3,7 @@ name = "dali-board-stm32f405"
 version = "0.1.0-alpha.2"
 edition = "2024"
 publish = true
+links = "dali_board_stm32f405"
 description = "Dali OS backend for STM32F405 boards"
 license = "MIT OR Apache-2.0"
 
@@ -19,6 +20,9 @@ usb-device = { version = "=0.3.2", optional = true }
 usbd-serial = { version = "=0.2.2", optional = true }
 fugit = "=0.3.9"
 stm32f4xx-hal = { version = "0.20", default-features = false, features = ["stm32f405", "sdio", "sdio-host"] }
+
+[build-dependencies]
+dali-targets = { path = "../../dali-targets" }
 
 [features]
 watchdog-feed-failure-test = []

@@ -108,7 +108,7 @@ traces with the Phase 0 baseline before proceeding.
 - [x] Remove accidental F405 assumptions from shared modules.
 - [x] Move F405 MPU register programming and processor-specific fault setup
   into the F405 backend.
-- [ ] Move backend-specific CCM/SRAM section placement out of shared build
+- [x] Move backend-specific CCM/SRAM section placement out of shared build
   logic while preserving manifest-owned memory validation.
 - [ ] Keep SDIO, Storage, USB CDC core, and SPI/ILI9341 frozen unless a separate
   approved change explicitly reopens them.

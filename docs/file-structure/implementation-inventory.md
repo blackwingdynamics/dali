@@ -27,7 +27,7 @@ kernel/src/
 crates/dali-boards/
 ├── src/lib.rs
 └── dali-board-stm32f405/
-    ├── Cargo.toml
+    ├── Cargo.toml, build.rs
     └── src/{lib.rs,architecture.rs,backend.rs,board.rs,exceptions.rs,logging.rs,
         mpu.rs,scheduling.rs,sdio.rs,watchdog.rs,
         board/{acceptance.rs,config.rs,initialization.rs,input.rs,resources.rs,
@@ -36,6 +36,10 @@ crates/dali-boards/
         timeout.rs,timer.rs,uart.rs},
         sdio_raw/{mod.rs,dma.rs,init.rs,status.rs,write.rs},
         mpu/{descriptor.rs,hardware.rs,layout.rs}}
+
+crates/dali-firmware/
+├── Cargo.toml, build.rs
+└── src/bin/dali-f405.rs
 
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports
@@ -119,8 +123,9 @@ Each application fixture has its own `Cargo.toml`, `build.rs`, `src/lib.rs`,
 and `src/main.rs`. The fault and SVC fixtures additionally have a local
 `.cargo/config.toml`, `Cargo.lock`, and `dali.toml`. The relocation fixture has
 its own `Cargo.lock` but uses the root build configuration. `dali-app-hello`
-The kernel build script generates its linker `memory.x` from the selected
-target manifest; the generated script is not tracked.
+The selected board backend build script generates its linker `memory.x` from
+the target manifest, and the firmware composition forwards that generated
+artifact to the final linker; the generated script is not tracked.
 
 The CLI documentation files currently tracked under `docs/cli/commands/` are:
 

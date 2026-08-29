@@ -31,6 +31,7 @@ artifacts in one directory, for example:
 ```text
 crates/dali-boards/<board-crate>/
 ├── Cargo.toml
+├── build.rs                  # Backend-owned linker/memory artifact generation
 └── src/
     ├── lib.rs
     ├── backend.rs
@@ -41,9 +42,9 @@ crates/dali-boards/<board-crate>/
 targets/<profile>.toml              # Repository-level target metadata
 ```
 
-The exact files depend on the platform; linker and memory artifacts may be
-generated from the selected target profile rather than stored in the backend
-crate. The current F405 implementation is at
+The exact files depend on the platform; generated linker and memory artifacts
+are produced by the backend build script from the selected target profile
+rather than stored in the backend crate. The current F405 implementation is at
 `crates/dali-boards/dali-board-stm32f405/`. A new board must not require
 changes to existing backend directories or shared kernel policy. If a new
 backend requires such a change, stop and refine the boundary before adding
