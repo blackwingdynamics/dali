@@ -184,6 +184,9 @@ fn validate_unique_profile(
         if other.profile.name == manifest.profile.name {
             return Err(format!("duplicate target profile `{}`", manifest.profile.name).into());
         }
+        if other.profile.backend == manifest.profile.backend {
+            return Err(format!("duplicate backend id `{}`", manifest.profile.backend).into());
+        }
         if manifest.profile.amrn_target_id != 0
             && other.profile.amrn_target_id == manifest.profile.amrn_target_id
         {
