@@ -184,6 +184,10 @@ pub(super) struct Usb {
 pub(super) struct Storage {
     pub(super) controller: String,
     pub(super) bus_width: u8,
+    pub(super) data_timeout_cycles: u32,
+    pub(super) command_poll_limit: u32,
+    pub(super) data_poll_limit: u32,
+    pub(super) dma_stop_poll_limit: u32,
     pub(super) clock: Pin,
     pub(super) command: Pin,
     pub(super) data: [Pin; 4],

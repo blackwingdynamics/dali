@@ -13,14 +13,15 @@ mod status;
 mod write;
 use status::{clear_interrupts, status_error};
 
+const SDIO_PROFILE: dali_targets::StorageProfile = match dali_targets::TARGET_F405.storage {
+    Some(profile) => profile,
+    None => panic!("F405 SDIO requires a storage target profile"),
+};
+
 /// Defines the BLOCK BYTES used by this module.
 const BLOCK_BYTES: usize = 512;
 /// Defines the BLOCK SIZE EXPONENT used by this module.
 const BLOCK_SIZE_EXPONENT: u8 = 9;
-/// Defines the DATA TIMEOUT CYCLES used by this module.
-const DATA_TIMEOUT_CYCLES: u32 = u32::MAX;
-/// Defines the COMMAND POLL LIMIT used by this module.
-const COMMAND_POLL_LIMIT: u32 = u32::MAX;
 /// Defines the DATA WORD COUNT used by this module.
 const DATA_WORD_COUNT: u16 = 128;
 /// Defines the DMA STREAM INDEX used by this module.
@@ -140,7 +141,12 @@ impl RawSdioReader {
         let argument = self.command_argument(address)?;
         let registers = Self::registers();
 
-        Self::send_command(registers, CMD_SET_BLOCK_LENGTH, BLOCK_BYTES as u32)?;
+        Self::send_command(
+            registers,
+            CMD_SET_BLOCK_LENGTH,
+            BLOCK_BYTES as u32,
+            SDIO_PROFILE.command_poll_limit,
+        )?;
         unsafe {
             // SAFETY: The public SDIO wrapper executes this method inside a
             // critical section, so this single DMA scratch buffer has one
@@ -153,7 +159,7 @@ impl RawSdioReader {
                 .map_err(|_| StorageError::Transport)?;
             let words = dma_words.as_mut_slice();
             Self::configure_dma(registers, words);
-            Self::start_receive(registers);
+            Self::start_receive(registers, SDIO_PROFILE.data_timeout_cycles);
             Self::start_read_command(registers, argument);
             #[cfg(feature = "dma-test-fixture")]
             let dma = &*pac::DMA2::ptr();
@@ -177,8 +183,8 @@ impl RawSdioReader {
             // SAFETY: The fixture marker is kernel-owned diagnostic state
             // written inside the same exclusive transfer critical section.
             core::ptr::write_volatile(core::ptr::addr_of_mut!(DMA_TRACE_MARKER), DMA_TRACE_ACTIVE);
-            let result = Self::receive_block(registers, words);
-            Self::stop_dma();
+            let result = Self::receive_block(registers, words, SDIO_PROFILE.data_poll_limit);
+            Self::stop_dma()?;
             #[cfg(feature = "dma-test-fixture")]
             // SAFETY: The marker remains kernel-owned and the transfer has
             // stopped before the completion state is published.
@@ -257,10 +263,11 @@ impl RawSdioReader {
         registers: &pac::sdio::RegisterBlock,
         index: u8,
         argument: u32,
+        poll_limit: u32,
     ) -> Result<(), StorageError> {
         Self::write_command(registers, index, argument);
 
-        let mut remaining = COMMAND_POLL_LIMIT;
+        let mut remaining = poll_limit;
         loop {
             let status = registers.sta.read();
             if status.cmdact().bit_is_clear()
@@ -303,10 +310,10 @@ impl RawSdioReader {
     /// Starts the `start receive` operation for this subsystem.
     ///
     /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    fn start_receive(registers: &pac::sdio::RegisterBlock) {
+    fn start_receive(registers: &pac::sdio::RegisterBlock, timeout_cycles: u32) {
         registers
             .dtimer
-            .write(|writer| writer.datatime().bits(DATA_TIMEOUT_CYCLES));
+            .write(|writer| writer.datatime().bits(timeout_cycles));
         registers
             .dlen
             .write(|writer| writer.datalength().bits(BLOCK_BYTES as u32));

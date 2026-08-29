@@ -138,7 +138,12 @@ fn validate_optional_sections(manifest: &Manifest) -> Result<(), Box<dyn std::er
         .into());
     }
     if let Some(storage) = &manifest.storage
-        && (storage.bus_width == 0 || storage.bus_width > 4)
+        && (storage.bus_width == 0
+            || storage.bus_width > 4
+            || storage.data_timeout_cycles == 0
+            || storage.command_poll_limit == 0
+            || storage.data_poll_limit == 0
+            || storage.dma_stop_poll_limit == 0)
     {
         return Err(format!(
             "target manifest {} has an invalid storage width",

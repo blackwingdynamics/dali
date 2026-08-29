@@ -2,15 +2,11 @@
 
 use super::init::{Response, send};
 use super::status::{clear_interrupts, status_error};
-use super::{CMD_SET_BLOCK_LENGTH, CMD_WRITE_SINGLE_BLOCK, RawSdioReader};
+use super::{CMD_SET_BLOCK_LENGTH, CMD_WRITE_SINGLE_BLOCK, RawSdioReader, SDIO_PROFILE};
 use dali_kernel_api::storage::{Block, BlockAddress, StorageError};
 
 /// SD block size required by the raw SDIO write command.
 const BLOCK_BYTES: usize = 512;
-/// Hardware data timeout value used by the raw SDIO transaction.
-const DATA_TIMEOUT_CYCLES: u32 = u32::MAX;
-/// Maximum status polling iterations for a raw SDIO write.
-const POLL_LIMIT: u32 = 1_000_000;
 
 /// Writes one complete block through the raw SDIO command path.
 pub(super) fn write_block(
@@ -36,7 +32,7 @@ pub(super) fn write_block(
     clear_interrupts(&registers.icr);
     registers
         .dtimer
-        .write(|writer| writer.datatime().bits(DATA_TIMEOUT_CYCLES));
+        .write(|writer| writer.datatime().bits(SDIO_PROFILE.data_timeout_cycles));
     registers
         .dlen
         .write(|writer| writer.datalength().bits(BLOCK_BYTES as u32));
@@ -54,7 +50,7 @@ pub(super) fn write_block(
     send(registers, CMD_WRITE_SINGLE_BLOCK, argument, Response::Short)?;
 
     let mut offset = 0;
-    for _ in 0..POLL_LIMIT {
+    for _ in 0..SDIO_PROFILE.data_poll_limit {
         let status = registers.sta.read();
         status_error(&status)?;
         if offset < BLOCK_BYTES && status.txfifohe().bit_is_set() {
@@ -76,7 +72,7 @@ pub(super) fn write_block(
     if offset != BLOCK_BYTES {
         return Err(StorageError::Timeout);
     }
-    for _ in 0..POLL_LIMIT {
+    for _ in 0..SDIO_PROFILE.data_poll_limit {
         let status = registers.sta.read();
         status_error(&status)?;
         if status.txact().bit_is_clear() {

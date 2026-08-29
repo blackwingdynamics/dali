@@ -69,8 +69,9 @@ impl RawSdioReader {
     pub(super) fn receive_block(
         registers: &pac::sdio::RegisterBlock,
         words: &mut [u32],
+        poll_limit: u32,
     ) -> Result<(), StorageError> {
-        loop {
+        for _ in 0..poll_limit {
             let status = registers.sta.read();
             status_error(&status)?;
             let flags = Self::dma2().lisr.read();
@@ -84,7 +85,13 @@ impl RawSdioReader {
                 return Err(StorageError::Timeout);
             }
             if registers.dcount.read().datacount().bits() == 0 {
-                return Self::finish_dma_tail(registers, words);
+                if registers.sta.read().rxdavl().bit() {
+                    return Self::finish_dma_tail(registers, words);
+                }
+                if Self::dma2().st[DMA_STREAM_INDEX].ndtr.read().ndt().bits() == 0 {
+                    return Ok(());
+                }
+                continue;
             }
             if status.rxact().bit_is_clear()
                 && status.cmdact().bit_is_clear()
@@ -93,6 +100,7 @@ impl RawSdioReader {
                 return Err(StorageError::Transport);
             }
         }
+        Err(StorageError::Timeout)
     }
 
     /// Finishes the `finish dma tail` operation for this subsystem.
@@ -110,7 +118,7 @@ impl RawSdioReader {
             return Err(StorageError::Transport);
         }
 
-        Self::stop_dma();
+        Self::stop_dma()?;
         let offset = words.len() - remaining;
         for word in &mut words[offset..] {
             *word = registers.fifo.read().bits();
@@ -121,10 +129,15 @@ impl RawSdioReader {
     /// Stops the `stop dma` operation for this subsystem.
     ///
     /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(super) fn stop_dma() {
+    pub(super) fn stop_dma() -> Result<(), StorageError> {
         let stream = &Self::dma2().st[DMA_STREAM_INDEX];
         stream.cr.modify(|_, writer| writer.en().clear_bit());
-        while stream.cr.read().en().bit() {}
+        for _ in 0..SDIO_PROFILE.dma_stop_poll_limit {
+            if stream.cr.read().en().bit_is_clear() {
+                return Ok(());
+            }
+        }
+        Err(StorageError::Timeout)
     }
 
     /// Performs the `rcc` operation for this subsystem.

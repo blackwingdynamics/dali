@@ -187,9 +187,13 @@ pub(super) fn generate_storage(storage: &Storage) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "StorageProfile {{ controller: {}, bus_width: {}, clock: {}, command: {}, data: [{}] }}",
+        "StorageProfile {{ controller: {}, bus_width: {}, data_timeout_cycles: {}, command_poll_limit: {}, data_poll_limit: {}, dma_stop_poll_limit: {}, clock: {}, command: {}, data: [{}] }}",
         string_literal(&storage.controller),
         storage.bus_width,
+        storage.data_timeout_cycles,
+        storage.command_poll_limit,
+        storage.data_poll_limit,
+        storage.dma_stop_poll_limit,
         generate_pin(&storage.clock),
         generate_pin(&storage.command),
         data

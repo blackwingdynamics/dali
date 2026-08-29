@@ -327,6 +327,14 @@ pub struct StorageProfile {
     pub controller: &'static str,
     /// Number of data lines used by the storage bus.
     pub bus_width: u8,
+    /// SDIO hardware data timeout in peripheral clock cycles.
+    pub data_timeout_cycles: u32,
+    /// Maximum SDIO command polling iterations.
+    pub command_poll_limit: u32,
+    /// Maximum SDIO data-transfer polling iterations.
+    pub data_poll_limit: u32,
+    /// Maximum polling iterations while stopping the SDIO DMA stream.
+    pub dma_stop_poll_limit: u32,
     /// Clock pin.
     pub clock: PinProfile,
     /// Command pin.

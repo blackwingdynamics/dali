@@ -1,6 +1,6 @@
 //! Bounded SD card identification and bus setup for the F405 SDIO peripheral.
 
-use super::{RawSdioReader, status::clear_interrupts, status::status_error};
+use super::{RawSdioReader, SDIO_PROFILE, status::clear_interrupts, status::status_error};
 use dali_kernel_api::storage::StorageError;
 use stm32f4xx_hal::{
     pac,
@@ -9,8 +9,6 @@ use stm32f4xx_hal::{
 
 /// Defines the POWER SETTLE CYCLES used by this module.
 const POWER_SETTLE_CYCLES: u32 = 336_000;
-/// Defines the COMMAND POLL LIMIT used by this module.
-const COMMAND_POLL_LIMIT: u32 = 1_000_000;
 /// Defines the OCR POLL LIMIT used by this module.
 const OCR_POLL_LIMIT: u32 = 1_000_000;
 /// Defines the VOLTAGE WINDOW used by this module.
@@ -216,7 +214,7 @@ fn send_inner(
             Response::Long => writer.waitresp().long_response(),
         }
     });
-    for _ in 0..COMMAND_POLL_LIMIT {
+    for _ in 0..SDIO_PROFILE.command_poll_limit {
         let status = registers.sta.read();
         let complete = if matches!(response, Response::None) {
             status.cmdsent().bit_is_set()
