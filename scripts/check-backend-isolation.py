@@ -6,9 +6,17 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 
 FIRMWARE_PACKAGE = "dali-firmware"
+KERNEL_DIRECTORY = Path("kernel")
+FORBIDDEN_KERNEL_MARKERS = (
+    "f405",
+    "stm32f405",
+    "target_f405",
+    "dali-f405",
+)
 
 
 def firmware_metadata() -> dict:
@@ -57,7 +65,25 @@ def cargo_tree(features: str | None) -> str:
     return result.stdout
 
 
+def check_kernel_source() -> bool:
+    violations = []
+    for path in KERNEL_DIRECTORY.rglob("*"):
+        if not path.is_file() or path.suffix not in {".rs", ".toml", ".x"}:
+            continue
+        text = path.read_text(encoding="utf-8").lower()
+        for marker in FORBIDDEN_KERNEL_MARKERS:
+            if marker in text:
+                violations.append(f"{path}: {marker}")
+    if violations:
+        print("Board-specific markers found in kernel source:", file=sys.stderr)
+        print("\n".join(violations), file=sys.stderr)
+        return False
+    return True
+
+
 def main() -> int:
+    if not check_kernel_source():
+        return 1
     unselected = cargo_tree(None)
     for feature, package in backend_features():
         if package in unselected:

@@ -94,10 +94,11 @@ The selection mechanism must reject zero, multiple, or incompatible backend
 selections at build time. Adding a board must remain a directory-local
 backend/profile change from the perspective of shared kernel policy.
 
-Run `just backend-isolation` before hardware work. It verifies that the F405
-backend is absent when its firmware feature is disabled and present only when
-that feature is selected. The check covers the Cargo dependency graph; it does
-not replace target compilation or physical acceptance.
+Run `just backend-isolation` before hardware work. It scans the kernel for
+board-specific markers and verifies every optional backend dependency declared
+by the firmware is absent when its feature is disabled and present when that
+feature is selected. The check covers source and Cargo dependency isolation;
+it does not replace target compilation or physical acceptance.
 
 ## Evidence gate
 
