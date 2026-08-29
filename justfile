@@ -57,7 +57,7 @@ workspace-check:
 
 # Check the embedded kernel target.
 kernel-check board="f405":
-    DALI_TARGET_PROFILE={{board}} cargo check -p {{kernel_cartridge}} --no-default-features --features {{ if board == "f405" { "stm32f405" } else { error("Unsupported board. Use f405.") } }} --bin {{kernel_binary}} --target {{target}}
+    DALI_TARGET_PROFILE={{board}} cargo check -p {{kernel_cartridge}} --no-default-features --features "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field backend)" --bin "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field kernel-elf)" --target {{target}}
 
 # Run host-side tests.
 test:
@@ -69,24 +69,24 @@ clippy:
 
 # Run kernel-target Clippy with warnings denied.
 kernel-clippy board="f405":
-    DALI_TARGET_PROFILE={{board}} cargo clippy -p {{kernel_cartridge}} --no-default-features --features {{ if board == "f405" { "stm32f405" } else { error("Unsupported board. Use f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -D warnings
+    DALI_TARGET_PROFILE={{board}} cargo clippy -p {{kernel_cartridge}} --no-default-features --features "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field backend)" --target {{target}} --bin "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field kernel-elf)" -- -D warnings
 
 # Run all local CI checks.
 ci: format-check workspace-check backend-isolation kernel-check test clippy kernel-clippy diff-check
 
 # Build the embedded kernel ELF.
 build board="f405":
-    DALI_TARGET_PROFILE={{board}} cargo build -p {{kernel_cartridge}} --no-default-features --features {{ if board == "f405" { "stm32f405" } else { error("Unsupported board. Use f405.") } }} --bin {{kernel_binary}} --target {{target}}
+    DALI_TARGET_PROFILE={{board}} cargo build -p {{kernel_cartridge}} --no-default-features --features "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field backend)" --bin "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field kernel-elf)" --target {{target}}
 
 # Run the kernel in Renode. Requires Renode and uses the STM32F4 reference model.
 simulate board="f405":
-    DALI_TARGET_PROFILE={{board}} cargo build -p {{kernel_cartridge}} --no-default-features --features stm32f405 --bin {{kernel_binary}} --target {{target}}
+    DALI_TARGET_PROFILE={{board}} cargo build -p {{kernel_cartridge}} --no-default-features --features "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field backend)" --bin "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field kernel-elf)" --target {{target}}
     renode --console --disable-gui {{renode_script}}
 
 # Convert the kernel ELF to a raw binary. Requires cargo-binutils and llvm-tools.
 bin board="f405":
     just build {{board}}
-    DALI_TARGET_PROFILE={{board}} cargo objcopy -p {{kernel_cartridge}} --no-default-features --features stm32f405 --target {{target}} --bin {{kernel_binary}} -- -O binary {{f405_kernel_bin}}
+    DALI_TARGET_PROFILE={{board}} cargo objcopy -p {{kernel_cartridge}} --no-default-features --features "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field backend)" --target {{target}} --bin "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field kernel-elf)" -- -O binary "target/{{target}}/debug/$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field kernel-binary)"
 
 # Build the native demo payload for the documented application SRAM region.
 app-build:

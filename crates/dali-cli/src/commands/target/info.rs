@@ -1,5 +1,8 @@
 const FIELD_FLAG: &str = "--field";
 const PROBE_CHIP_FIELD: &str = "probe-chip";
+const BACKEND_FIELD: &str = "backend";
+const KERNEL_BINARY_FIELD: &str = "kernel-binary";
+const KERNEL_ELF_FIELD: &str = "kernel-elf";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let profile_name = arguments.get(2).ok_or_else(usage)?;
@@ -9,14 +12,18 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         println!("{}", render_profile(profile));
         return Ok(());
     }
-    if arguments.len() == 5
-        && arguments.get(3).map(String::as_str) == Some(FIELD_FLAG)
-        && arguments.get(4).map(String::as_str) == Some(PROBE_CHIP_FIELD)
-    {
-        return profile
-            .probe_chip
-            .ok_or_else(|| format!("board profile '{profile_name}' has no probe chip"))
-            .map(|chip| println!("{chip}"));
+    if arguments.len() == 5 && arguments.get(3).map(String::as_str) == Some(FIELD_FLAG) {
+        let field = arguments[4].as_str();
+        let value = match field {
+            PROBE_CHIP_FIELD => profile.probe_chip,
+            BACKEND_FIELD => Some(profile.backend),
+            KERNEL_BINARY_FIELD => profile.kernel_binary,
+            KERNEL_ELF_FIELD => profile.kernel_elf,
+            _ => return Err(usage()),
+        }
+        .ok_or_else(|| format!("board profile '{profile_name}' has no {field}"))?;
+        println!("{value}");
+        return Ok(());
     }
     Err(usage())
 }
@@ -88,7 +95,8 @@ fn render_pin(pin: dali_targets::PinProfile) -> String {
 }
 
 fn usage() -> String {
-    "usage: dali target info <profile> [--field probe-chip]".to_owned()
+    "usage: dali target info <profile> [--field probe-chip|backend|kernel-binary|kernel-elf]"
+        .to_owned()
 }
 
 #[cfg(test)]
@@ -103,5 +111,12 @@ mod tests {
         assert!(output.contains("dfu: 0x0483:0xDF11"));
         assert!(output.contains("status_led: PB2 AF0 active-high"));
         assert!(output.contains("storage: SDIO (4-bit)"));
+    }
+
+    #[test]
+    fn exposes_build_selection_fields() {
+        let profile = dali_targets::find_board("f405").expect("generated F405 profile");
+        assert_eq!(profile.backend, "stm32f405");
+        assert_eq!(profile.kernel_elf, Some("dali-f405"));
     }
 }
