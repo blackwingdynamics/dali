@@ -16,11 +16,15 @@ dali target scaffold <profile> [--output <workspace-root>]
 Without --output, the command searches the current directory and its parents
 for the Dali workspace root. With --output, the directory must already exist.
 
-The command creates:
+The current command creates a review template at the legacy kernel-platform
+location and board documentation:
 
 - kernel/src/platform/<profile>/mod.rs.template;
 - docs/boards/<profile>.md.
 
+The template location has not yet been migrated to the extracted
+`crates/dali-boards/<board-crate>/` backend layout. It is therefore a review
+scaffold only and must not be treated as an accepted backend implementation.
 Existing files are never overwritten.
 
 The generated template includes named constants for the manifest's clock,

@@ -1,6 +1,7 @@
 # Universal Dali OS Platform Architecture
 
-Status: **Active — core extraction complete; hardware acceptance pending**.
+Status: **Active — F405 backend extraction landed; universal registration,
+selection, and additional backend acceptance remain pending**.
 
 This roadmap converts Dali OS from an F405-first kernel into a portable OS
 with independently cartridged platform backends. A new board must be implemented
@@ -30,7 +31,8 @@ board pin mapping.
 
 ## Non-negotiable invariants
 
-- [ ] A new board is added under a new platform/backend directory.
+- [ ] A new board is added under a new `crates/dali-boards/<board-crate>/`
+  backend directory.
 - [ ] A new board adds or extends only its target manifest/profile and backend
   registration metadata; existing OS core source files remain unchanged.
 - [ ] Backend selection is compile-time isolated through a dedicated backend
@@ -129,7 +131,8 @@ verify the binary, boot order, and runtime traces are unchanged.
 ## Phase 4 — Pico backend
 
 - [ ] Identify the exact board and MCU: RP2040 or RP2350.
-- [ ] Create a self-contained `kernel/src/platform/pico-<chip>/` backend.
+- [ ] Create a self-contained `crates/dali-boards/dali-board-pico-<chip>/`
+  backend.
 - [ ] Add only the Pico target manifest/profile and backend-local integration.
 - [ ] Implement clocks, GPIO, timer, watchdog, interrupts, and USB through the
   common contracts.
@@ -147,7 +150,8 @@ Pico success must not be inferred from F405 success or simulation output.
 - [ ] Select the execution model: ARM SoC, RISC-V SoC, or supported soft-core.
 - [ ] Define CPU, memory, interrupt controller, timer, serial, and
   memory-mapped peripheral contracts.
-- [ ] Create a self-contained `kernel/src/platform/fpga-<soc>/` backend.
+- [ ] Create a self-contained `crates/dali-boards/dali-board-fpga-<soc>/`
+  backend.
 - [ ] Add the FPGA target profile and linker/memory definition locally.
 - [ ] Keep FPGA-specific peripherals behind the common capability boundary.
 - [ ] Keep MPU, PMP, or equivalent protection register programming inside the

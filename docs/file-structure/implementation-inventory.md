@@ -12,17 +12,30 @@ kernel/src/
 │   fault/{mod.rs,persistent.rs,scb.rs},launch/{mod.rs},
 │   mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs},
 │   privilege/{mod.rs,svc.rs},scheduling/{mod.rs}}
-├── platform/{mod.rs,f405/{mod.rs,board.rs,board/{acceptance.rs,config.rs,initialization.rs,input.rs,resources.rs,scheduler.rs,services.rs,usb.rs},drivers/{mod.rs,gpio.rs,i2c.rs,i2c/operations.rs,interrupt.rs,probe.rs,spi.rs,timeout.rs,timer.rs,uart.rs},sdio.rs,sdio_raw/{mod.rs,dma.rs,init.rs,status.rs,write.rs},watchdog/mod.rs}}
+├── platform/{mod.rs}
 ├── bootstrap/{mod.rs,
 │   startup/{mod.rs,logging.rs,watchdog.rs},
 │   lifecycle/{mod.rs,heartbeat.rs,status.rs},
 │   storage/{mod.rs,initialization.rs,acceptance.rs},
 │   loading/{mod.rs,cartridge.rs}}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader/{mod.rs,repository/{mod.rs,amrn.rs,chain.rs,discovery.rs,io.rs,streaming.rs,trust.rs,tests.rs},contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
+├── loader/{mod.rs,repository/{mod.rs,amrn.rs,chain/{mod.rs,bundle.rs,loading.rs,roles.rs,streaming.rs,types.rs,validation.rs},discovery.rs,installation.rs,io.rs,streaming.rs,trust.rs,tests.rs},contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,context_switch.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs},watchdog/mod.rs}
 └── storage/{mod.rs,durable.rs,durable/{journal.rs,coordinator.rs},filesystem/{mod.rs,artifacts.rs,multi.rs,read.rs,tests.rs,write.rs},repository.rs}
+
+crates/dali-boards/
+├── src/lib.rs
+└── dali-board-stm32f405/
+    ├── Cargo.toml
+    └── src/{lib.rs,architecture.rs,backend.rs,board.rs,exceptions.rs,logging.rs,
+        mpu.rs,scheduling.rs,sdio.rs,watchdog.rs,
+        board/{acceptance.rs,config.rs,initialization.rs,input.rs,resources.rs,
+        scheduler.rs,services.rs,usb.rs},
+        drivers/{mod.rs,gpio.rs,i2c.rs,interrupt.rs,probe.rs,spi.rs,ssd1306.rs,
+        timeout.rs,timer.rs,uart.rs},
+        sdio_raw/{mod.rs,dma.rs,init.rs,status.rs,write.rs},
+        mpu/{descriptor.rs,hardware.rs,layout.rs}}
 
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports

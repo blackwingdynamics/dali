@@ -78,12 +78,16 @@ The command does not invoke `sudo`. Configure the host's USB permissions separat
 ### 5a. Select a board backend
 
 The default board is the F405 reference board. Select it explicitly as a
-recipe argument without writing Cargo features or environment variables:
+recipe argument:
 
 ```text
 just build
 just build f405
 ```
+
+For direct Cargo builds with more than one application-supported target, set
+`DALI_TARGET_PROFILE` explicitly. The kernel build script accepts an omitted
+value only when the supported-target registry contains exactly one target.
 
 The F405 backend can be checked with:
 

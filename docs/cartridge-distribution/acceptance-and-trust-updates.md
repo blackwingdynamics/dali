@@ -136,7 +136,7 @@ storage/durable/journal.rs
   104-byte DALI-CMT.BIN encoder/decoder and CRC32 validation
 storage/durable/coordinator.rs
   bounded persistence transitions and adapter calls
-platform/f405/sdio*.rs
+crates/dali-boards/dali-board-stm32f405/src/sdio*.rs
   F405 SDIO mechanics and mapping to generic StorageError
 ```
 

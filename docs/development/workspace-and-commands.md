@@ -84,7 +84,9 @@ Hardware recipes accept one optional positional board argument. The default is
 | --- | --- | --- | --- |
 | `f405` | WeAct Studio STM32F405RGT6 Core Board | PB2 | On-board SDIO 4-bit socket; PC13 user key |
 
-Use the same recipe names for either board:
+The currently implemented firmware board is `f405`; `f411` is manifest-only
+metadata and has no firmware backend. Use the recipe names for the implemented
+board:
 
 ```text
 just build
@@ -98,8 +100,8 @@ just flash-probe f405
 ### Storage status LED
 
 The kernel reports the initial storage state through the board-specific status
-LED. The board backend hides LED polarity, so the logical behavior is identical
-on both supported boards:
+LED. The board backend hides LED polarity, so the logical behavior is defined
+through the selected target profile. The currently supported board is F405:
 
 | Storage state | LED behavior | Meaning |
 | --- | --- | --- |

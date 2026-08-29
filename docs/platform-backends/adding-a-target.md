@@ -29,16 +29,22 @@ An accepted backend should contain its implementation and target-specific
 artifacts in one directory, for example:
 
 ```text
-kernel/src/platform/<backend-id>/
-├── mod.rs
-├── board.rs
-├── drivers/
-├── interrupts.rs
-└── memory.x
-targets/<profile>.toml
+crates/dali-boards/<board-crate>/
+├── Cargo.toml
+└── src/
+    ├── lib.rs
+    ├── backend.rs
+    ├── board.rs
+    ├── drivers/
+    ├── exceptions.rs
+    └── watchdog.rs
+targets/<profile>.toml              # Repository-level target metadata
 ```
 
-The exact files depend on the platform, but a new board must not require
+The exact files depend on the platform; linker and memory artifacts may be
+generated from the selected target profile rather than stored in the backend
+crate. The current F405 implementation is at
+`crates/dali-boards/dali-board-stm32f405/`. A new board must not require
 changes to existing backend directories or shared kernel policy. If a new
 backend requires such a change, stop and refine the boundary before adding
 the board.

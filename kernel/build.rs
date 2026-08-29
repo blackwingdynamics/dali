@@ -3,11 +3,11 @@ use std::{env, fs, path::PathBuf};
 use dali_targets::SUPPORTED_TARGETS;
 
 const FAULT_CAPTURE_REGION_LENGTH: u32 = 128;
+const TARGET_PROFILE_ENV: &str = "DALI_TARGET_PROFILE";
 
 fn main() {
-    let target = SUPPORTED_TARGETS
-        .first()
-        .expect("an application-supported target is required");
+    println!("cargo:rerun-if-env-changed={TARGET_PROFILE_ENV}");
+    let target = selected_target();
     let dma = target.memory.dma;
     let runtime = dali_targets::TargetMemoryRegion {
         origin: target.memory.runtime_origin,
@@ -35,6 +35,22 @@ fn main() {
         .expect("generated memory.x must be writable");
     println!("cargo:rustc-link-search={}", output_directory.display());
     println!("cargo:rerun-if-changed=../targets");
+}
+
+fn selected_target() -> &'static dali_targets::TargetProfile {
+    if let Ok(name) = env::var(TARGET_PROFILE_ENV) {
+        return dali_targets::find_target(&name).unwrap_or_else(|| {
+            panic!("DALI_TARGET_PROFILE={name:?} does not name an application-supported target")
+        });
+    }
+
+    match SUPPORTED_TARGETS {
+        [target] => target,
+        [] => panic!("an application-supported target is required"),
+        _ => panic!(
+            "multiple application-supported targets exist; set {TARGET_PROFILE_ENV} explicitly"
+        ),
+    }
 }
 
 fn render_linker_script(

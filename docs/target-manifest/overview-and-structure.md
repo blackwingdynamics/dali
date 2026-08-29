@@ -4,7 +4,7 @@ Add one manifest for each board profile. The profile must describe facts from
 the board and MCU documentation, not values guessed from another board.
 
 Adding a manifest alone does not add kernel support. An accepted board also
-requires a reviewed `kernel/src/platform/` backend, target checks, documentation,
+requires a reviewed `crates/dali-boards/<board-crate>/` backend, target checks, documentation,
 and hardware evidence. Do not copy values into CLI commands or ordinary
 implementation modules.
 

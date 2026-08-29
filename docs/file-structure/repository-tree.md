@@ -34,36 +34,7 @@ dali-kernel/
 │       │   │   └── svc.rs         # SVC dispatch and frame validation
 │       │   └── scheduling/        # Kernel-owned scheduler initialization boundary
 │       │       └── mod.rs         # Target-profile scheduler storage initialization
-│       ├── platform/mod.rs        # Platform facade and target entry points
-│       ├── platform/f405/          # F405-specific platform backend
-│       │   ├── mod.rs              # F405 target profile and IRQ bindings
-│       │   ├── board.rs            # Small F405 board backend facade
-│       │   ├── board/              # Board configuration and resource ownership
-│       │   │   ├── config.rs       # Target metadata and typed board aliases
-│       │   │   ├── resources.rs    # Board resources and ownership methods
-│       │   │   ├── initialization.rs # Singleton acquisition and setup
-│       │   │   ├── acceptance.rs   # Hardware acceptance probe logging
-│       │   │   ├── services.rs     # LED and delay services
-│       │   │   ├── input.rs        # Board-local input polling
-│       │   │   ├── scheduler.rs    # Board-local SysTick scheduler
-│       │   │   └── usb.rs          # USB FS resource ownership
-│       │   ├── drivers/            # F405 hardware driver adapters
-│       │   │   ├── mod.rs          # Platform driver exports
-│       │   │   ├── gpio.rs         # F405 GPIO adapter
-│       │   │   ├── interrupt.rs    # F405 EXTI adapter
-│       │   │   ├── uart.rs         # Bounded F405 UART adapter
-│       │   │   ├── spi.rs          # Bounded F405 SPI adapter
-│       │   │   ├── i2c.rs          # Bounded F405 I2C adapter
-│       │   │   ├── timeout.rs      # F405 polling timeout policy
-│       │   │   └── probe.rs        # F405 driver acceptance probe
-│       │   ├── sdio.rs             # F405 SDIO transport implementation
-│       │   ├── sdio_raw/           # F405 SDIO register transport
-│       │       ├── mod.rs          # DMA-backed raw block reader
-│       │       ├── init.rs         # Bounded SDIO card initialization
-│       │       ├── status.rs       # SDIO status and interrupt helpers
-│       │       └── write.rs        # Bounded CPU/FIFO block writes
-│       │   └── watchdog/            # F405 watchdog register adapter
-│       │       └── mod.rs          # IWDG and reset-cause implementation
+│       ├── platform/mod.rs         # Hardware-neutral platform facade
 │       ├── bootstrap/             # Categorized kernel startup orchestration
 │       │   ├── startup/           # Logging, boot banner, and watchdog setup
 │       │   ├── lifecycle/         # Storage status and heartbeat behavior
@@ -74,12 +45,20 @@ dali-kernel/
 │       ├── loader/repository/      # Repository chain, streaming selection, and tests
 │       │   ├── mod.rs              # Bounded chain and durable install
 │       │   ├── amrn.rs             # Streamed AMRN v5 validation
-│       │   ├── chain.rs            # Generic role capture and replay
-│       │   ├── discovery.rs        # Target cartridge selection
-│       │   ├── io.rs               # Repository stream I/O helpers
-│       │   ├── streaming.rs        # Binary v2 selective target scan
-│       │   ├── trust.rs            # Root trust-anchor membership
-│       │   └── tests.rs            # Repository loader contract tests
+│       │   ├── chain/               # Repository chain capture, validation, and loading
+│       │   │   ├── mod.rs           # Chain module boundary
+│       │   │   ├── bundle.rs        # Bundle role handling
+│       │   │   ├── loading.rs       # Repository loading orchestration
+│       │   │   ├── roles.rs         # Role capture and replay
+│       │   │   ├── streaming.rs     # Selective target scan and streaming
+│       │   │   ├── types.rs         # Bounded parser workspace types
+│       │   │   └── validation.rs    # Chain validation
+│       │   ├── discovery.rs         # Target cartridge selection
+│       │   ├── installation.rs      # Durable installation coordination
+│       │   ├── io.rs                # Repository stream I/O helpers
+│       │   ├── streaming.rs         # Repository streaming primitives
+│       │   ├── trust.rs             # Root trust-anchor membership
+│       │   └── tests.rs             # Repository loader contract tests
 │       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
 │       │   ├── catalog.rs          # Cartridge catalog policy
@@ -119,6 +98,10 @@ dali-kernel/
 │   ├── dali-app-fault-psp/
 │   └── dali-app-fault-usage/
 ├── crates/
+│   ├── dali-boards/              # Hardware backend crate and board implementations
+│   │   ├── src/lib.rs            # Hardware-neutral board-crate facade
+│   │   └── dali-board-stm32f405/ # Current extracted F405 backend
+│   │       └── src/              # F405 board, drivers, SDIO, MPU, and watchdog
 │   ├── dali-amrn/                 # AMRN format contracts and validation
 │   ├── dali-crypto/               # no_std Ed25519 signing/verification primitives
 │   ├── dali-cli/                  # Installed `dali` CLI
