@@ -13,16 +13,17 @@ fn main() -> Result<(), io::Error> {
     let target = selected_target()?;
     if let Some(target) = target {
         let feature = backend_feature_name(target.backend);
+        ensure_only_selected_backend(target.backend)?;
+        println!(
+            "cargo:rustc-env=DALI_SELECTED_TARGET_PROFILE={}",
+            target.name
+        );
         if env::var_os(&feature).is_none() {
             return Err(io::Error::other(format!(
                 "target profile {:?} requires enabled backend feature {:?}",
                 target.name, feature
             )));
         }
-        println!(
-            "cargo:rustc-env=DALI_SELECTED_TARGET_PROFILE={}",
-            target.name
-        );
     }
     forward_backend_linker_artifact()?;
     Ok(())
@@ -69,6 +70,32 @@ fn selected_target() -> Result<Option<&'static dali_targets::TargetProfile>, io:
         ));
     }
     Ok(Some(target))
+}
+
+fn ensure_only_selected_backend(selected_backend: &str) -> Result<(), io::Error> {
+    let enabled = dali_targets::SUPPORTED_BACKENDS
+        .iter()
+        .filter_map(|backend| {
+            let feature = backend_feature_name(backend);
+            env::var_os(&feature).map(|_| (*backend, feature))
+        })
+        .collect::<Vec<_>>();
+    if enabled.len() == 1 && enabled[0].0 == selected_backend {
+        return Ok(());
+    }
+    if enabled.is_empty() {
+        return Err(io::Error::other(format!(
+            "target backend {selected_backend:?} requires its backend feature"
+        )));
+    }
+    let enabled_names = enabled
+        .iter()
+        .map(|(backend, _)| *backend)
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(io::Error::other(format!(
+        "target backend {selected_backend:?} requires exactly one enabled backend; found {enabled_names}"
+    )))
 }
 
 fn backend_feature_name(backend: &str) -> String {
