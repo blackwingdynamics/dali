@@ -114,9 +114,10 @@ key. Applications must not depend on
 the physical polarity; the board backend owns that mapping.
 
 Do not pass Cargo feature names to these recipes. The recipe converts the board
-argument into the correct compile-time backend automatically. `just ci` checks
-the default F405 backend; use `just kernel-check f405` and
-`just kernel-clippy f405` for the F405 target checks.
+argument into the correct compile-time backend and sets `DALI_TARGET_PROFILE`
+for kernel linker generation. `just ci` checks the default F405 backend; use
+`just kernel-check f405` and `just kernel-clippy f405` for the F405 target
+checks.
 
 Verify the tools before using hardware commands:
 
