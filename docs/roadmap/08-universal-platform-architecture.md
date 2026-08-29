@@ -131,7 +131,7 @@ acceptance items and cannot be inferred from this migration.
   backend isolation; they must not encode board policy in shared modules.
 - [ ] Reject duplicate backend IDs, target IDs, capabilities, and memory ranges.
 - [x] Add a template or documented checklist for new backend directories.
-- [ ] Add a compatibility test proving an unselected backend is not linked.
+- [x] Add a compatibility test proving an unselected backend is not linked.
 
 Evidence gate: build the F405 backend from its directory-local registration and
 verify the binary, boot order, and runtime traces are unchanged.

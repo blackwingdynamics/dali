@@ -72,7 +72,7 @@ kernel-clippy board="f405":
     DALI_TARGET_PROFILE={{board}} cargo clippy -p {{kernel_cartridge}} --no-default-features --features {{ if board == "f405" { "stm32f405" } else { error("Unsupported board. Use f405.") } }} --target {{target}} --bin {{kernel_binary}} -- -D warnings
 
 # Run all local CI checks.
-ci: format-check workspace-check kernel-check test clippy kernel-clippy diff-check
+ci: format-check workspace-check backend-isolation kernel-check test clippy kernel-clippy diff-check
 
 # Build the embedded kernel ELF.
 build board="f405":
@@ -118,6 +118,10 @@ attach board="f405":
 # Check committed and working-tree whitespace errors.
 diff-check:
     git diff --check
+
+# Check that an unselected backend is absent from the firmware dependency graph.
+backend-isolation:
+    python3 scripts/check-backend-isolation.py
 
 # Check internal Markdown links and documented repository paths.
 docs-check:
