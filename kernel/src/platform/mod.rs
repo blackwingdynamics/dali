@@ -125,6 +125,8 @@ where
 {
     /// Initializes the externally selected backend.
     pub(crate) fn initialize() -> Result<Self, BoardError> {
+        let info = B::info();
+        validate_feature_capabilities(info.capabilities)?;
         let _ = read_fault_register as fn(dali_kernel_api::FaultRegister) -> u32;
         let _ = recover_to_kernel as unsafe fn(u32) -> !;
         critical_section::with(|cs| {
@@ -146,9 +148,9 @@ where
             feature = "abi-context-switch"
         ))]
         critical_section::with(|cs| {
-            let mut info = BOARD_INFO.borrow(cs).borrow_mut();
-            if info.is_none() {
-                *info = Some(B::info());
+            let mut registered = BOARD_INFO.borrow(cs).borrow_mut();
+            if registered.is_none() {
+                *registered = Some(info);
             }
         });
         #[cfg(feature = "usb-cdc")]
@@ -200,6 +202,29 @@ where
     {
         B::Architecture::enable_interrupts();
     }
+}
+
+/// Rejects feature selections that the manifest does not declare.
+fn validate_feature_capabilities(
+    capabilities: dali_targets::CapabilitiesProfile,
+) -> Result<(), BoardError> {
+    #[cfg(feature = "sdio")]
+    if !capabilities.storage {
+        return Err(BoardError::InvalidProfile);
+    }
+    #[cfg(feature = "usb-cdc")]
+    if !capabilities.usb_console {
+        return Err(BoardError::InvalidProfile);
+    }
+    #[cfg(feature = "abi-mpu")]
+    if !capabilities.mpu {
+        return Err(BoardError::InvalidProfile);
+    }
+    #[cfg(feature = "abi-relocation")]
+    if !capabilities.relocation {
+        return Err(BoardError::InvalidProfile);
+    }
+    Ok(())
 }
 
 /// Requests a deferred context switch through the installed architecture.
