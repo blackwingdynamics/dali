@@ -12,7 +12,9 @@ pub mod repository;
 
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
 pub(crate) use cartridge::load_current_abi;
-pub use cartridge::{load_amrn_file, start_application, validate_amrn_file};
+#[cfg(not(feature = "abi-current"))]
+pub use cartridge::start_application;
+pub use cartridge::{load_amrn_file, validate_amrn_file};
 #[cfg(all(feature = "abi-current", feature = "repository-loader"))]
 pub(crate) use repository_boot::load_repository_cartridge;
 

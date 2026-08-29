@@ -13,18 +13,20 @@ use crate::{
 };
 
 use super::{
-    AmrnFile, FilesystemManager, KernelTimeSource, TrustStoreArtifact, read_trust_store_artifact,
-    stream_repository_file, stream_root_file, write_trust_store_artifact,
+    AmrnFile, CARTRIDGE_NAME_BYTES, FilesystemManager, KernelTimeSource, TrustStoreArtifact,
+    read_trust_store_artifact, stream_repository_file, stream_root_file,
+    write_trust_store_artifact,
 };
 
 /// Defines the `CARTRIDGE_NAME_BYTES` bound used by this subsystem.
-const CARTRIDGE_NAME_BYTES: usize = 64 + 5;
 /// Defines the `DELEGATION_NAME_BYTES` bound used by this subsystem.
 const DELEGATION_NAME_BYTES: usize = 64 + 5;
 /// Defines the `METADATA_NAME_BYTES` bound used by this subsystem.
 const METADATA_NAME_BYTES: usize = 16;
 /// Defines the `DELEGATIONS_DIRECTORY` bound used by this subsystem.
 const DELEGATIONS_DIRECTORY: &str = "delegat";
+/// Defines the content-addressed AMRN directory name.
+const AMRNS_DIRECTORY: &str = "amrns";
 /// Defines the `BUNDLE_MANIFEST_NAME` bound used by this subsystem.
 const BUNDLE_MANIFEST_NAME: &str = "bundle.manifest";
 
@@ -132,10 +134,14 @@ where
     D: embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
     F: for<'a> FnOnce(AmrnFile<'a, D>) -> Result<R, E>,
 {
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Opening verified cartridge for execution"),
+    );
     let manager = VolumeManager::new(device, KernelTimeSource);
     let volume = manager.open_volume(VolumeIdx(0))?;
     let root = manager.open_root_dir(volume.to_raw_volume())?;
-    let cartridges = match manager.open_dir(root, "cartridges") {
+    let cartridges = match super::open_existing_directory(&manager, root, AMRNS_DIRECTORY) {
         Ok(directory) => directory,
         Err(error) => return super::close_directories(&manager, [root, root, root], 1, Err(error)),
     };
@@ -162,6 +168,10 @@ where
             );
         }
     };
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Verified cartridge file opened"),
+    );
     let length = match manager.file_length(raw_file) {
         Ok(length) => length,
         Err(error) => {
@@ -172,6 +182,10 @@ where
             );
         }
     };
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Verified cartridge length read: {}", length),
+    );
     let file = match AmrnFile::from_content_addressed(&manager, raw_file, length) {
         Ok(file) => file,
         Err(error) => {
@@ -182,6 +196,10 @@ where
             );
         }
     };
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Verified cartridge view created"),
+    );
     let result = callback(file);
     finish_content_addressed(&manager, [root, cartridges, cartridges], raw_file, result)
 }
@@ -296,15 +314,32 @@ where
     {
         let mut name = [0u8; CARTRIDGE_NAME_BYTES];
         let name = append_cartridge_suffix(&digest.0, &mut name)?;
-        stream_file(
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!(
+                "[STORAGE] Streaming content-addressed cartridge; name length={}",
+                name.len()
+            ),
+        );
+        let result = stream_file(
             self.device,
-            "cartridges",
+            AMRNS_DIRECTORY,
             None,
             name,
             chunk,
             consumer,
             self.chunk_pet,
-        )
+        );
+        if let Err(error) = &result {
+            crate::logging::error(
+                crate::logging::BOOT_SUBSYSTEM,
+                format_args!(
+                    "[STORAGE] Content-addressed cartridge stream failed: {:?}",
+                    error
+                ),
+            );
+        }
+        result
     }
 }
 

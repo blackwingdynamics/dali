@@ -98,6 +98,10 @@ where
     }
     let mut loaded = LoadedCartridges::new();
     for authorization in authorizations.iter() {
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[LOADER] Loading verified cartridge into its declared slot"),
+        );
         let applications = storage::filesystem::with_content_addressed_cartridge(
             device,
             crate::storage::repository::RepositoryCartridgeDigest(authorization.target.sha256.0),
@@ -111,6 +115,10 @@ where
             },
         )
         .map_err(LoaderError::Filesystem)??;
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[LOADER] Verified cartridge execution image loaded"),
+        );
         for application in applications.iter().copied() {
             if !loaded.push(application) {
                 return Err(LoaderError::CurrentAbiCartridge(
@@ -143,8 +151,9 @@ fn map_repository_error(
     crate::logging::error(
         crate::logging::BOOT_SUBSYSTEM,
         format_args!(
-            "[LOADER] Binary v2 repository verification failed: {}\r\n",
-            repository_error_label(&error)
+            "[LOADER] Binary v2 repository verification failed: {} ({:?})\r\n",
+            repository_error_label(&error),
+            error
         ),
     );
     if matches!(

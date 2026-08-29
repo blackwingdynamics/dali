@@ -30,7 +30,7 @@ pub const TARGET_PROFILE_FLAG: &str = "--target-profile";
 pub const VERSION_FLAG: &str = "--version";
 pub const METADATA_DIRECTORY: &str = "metadata";
 pub const DELEGATIONS_DIRECTORY: &str = "delegat";
-pub const CARTRIDGES_DIRECTORY: &str = "cartridges";
+pub const CARTRIDGES_DIRECTORY: &str = "amrns";
 
 pub fn required(arguments: &[String], flag: &str) -> Result<String, String> {
     let position = arguments

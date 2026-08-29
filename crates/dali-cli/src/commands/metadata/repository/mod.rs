@@ -117,7 +117,7 @@ mod tests {
         let delegation =
             parse_binary_delegation_body(delegation_envelope.body).expect("parse delegation body");
         assert_eq!(delegation.developer_id.as_str(), Some("developer-one"));
-        fs::write(repository.join("cartridges/test.amrn"), b"test cartridge")
+        fs::write(repository.join("amrns/test.amrn"), b"test cartridge")
             .expect("write cartridge fixture");
         publish::run(&[
             "metadata".into(),

@@ -153,8 +153,8 @@ printf '[6/9] Authorizing the developer and registering the cartridge\n'
     --abi 3
 
 readonly CARTRIDGE_DIGEST="$(sha256sum "${APP_CARTRIDGE}" | awk '{print tolower($1)}')"
-cp -- "${APP_CARTRIDGE}" "${DALI_REPO}/cartridges/${CARTRIDGE_DIGEST}.amrn"
-require_file "${DALI_REPO}/cartridges/${CARTRIDGE_DIGEST}.amrn"
+    cp -- "${APP_CARTRIDGE}" "${DALI_REPO}/amrns/${CARTRIDGE_DIGEST}.amrn"
+    require_file "${DALI_REPO}/amrns/${CARTRIDGE_DIGEST}.amrn"
 
 "${DALI_CLI}" metadata repository register-cartridge \
     --input "${DALI_REPO}" \
@@ -187,10 +187,10 @@ read -r -p 'Type WRITE to copy the verified repository to this SD card: ' confir
 
 printf '[9/9] Copying verified metadata and cartridges to the SD card\n'
 sudo -v
-sudo mkdir -p -- "${DALI_MOUNT}/metadata" "${DALI_MOUNT}/cartridges"
-sudo find "${DALI_MOUNT}/cartridges" -maxdepth 1 -type f -name '*.amrn' -delete
+sudo mkdir -p -- "${DALI_MOUNT}/metadata" "${DALI_MOUNT}/amrns"
+sudo find "${DALI_MOUNT}/amrns" -maxdepth 1 -type f -name '*.amrn' -delete
 sudo cp -a -- "${DALI_REPO}/metadata/." "${DALI_MOUNT}/metadata/"
-sudo cp -a -- "${DALI_REPO}/cartridges/." "${DALI_MOUNT}/cartridges/"
+sudo cp -a -- "${DALI_REPO}/amrns/." "${DALI_MOUNT}/amrns/"
 sudo cp -- "${DALI_REPO}/bundle.manifest" "${DALI_MOUNT}/bundle.manifest"
 sync
 

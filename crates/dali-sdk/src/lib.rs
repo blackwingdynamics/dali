@@ -15,7 +15,6 @@ pub const LOG_OK: u32 = 0;
 pub const LOG_REJECTED: u32 = 1;
 
 /// Kernel services passed to an AMRN application at its entry point.
-#[cfg(not(feature = "abi-current"))]
 #[repr(C)]
 pub struct ServiceTable {
     /// Submit one bounded UTF-8 message to the kernel logging facade.

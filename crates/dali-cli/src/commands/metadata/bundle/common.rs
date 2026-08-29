@@ -22,7 +22,7 @@ pub(super) const METADATA_FORMAT_FLAG: &str = "--metadata-format";
 pub(super) const MANIFEST_NAME: &str = "bundle.manifest";
 pub(super) const METADATA_DIRECTORY: &str = "metadata";
 pub(super) const DELEGATIONS_DIRECTORY: &str = "delegat";
-pub(super) const CARTRIDGES_DIRECTORY: &str = "cartridges";
+pub(super) const CARTRIDGES_DIRECTORY: &str = "amrns";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) enum MetadataFormat {

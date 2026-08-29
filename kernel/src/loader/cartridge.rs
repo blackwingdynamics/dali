@@ -1,6 +1,7 @@
 //! AMRN cartridge validation and application entry support.
 
 use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, parse_header};
+#[cfg(not(feature = "abi-current"))]
 use dali_sdk::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable};
 
 #[cfg(feature = "abi-current")]
@@ -115,6 +116,7 @@ where
     storage::filesystem::with_amrn_file(device, load_file).map_err(LoaderError::Filesystem)?
 }
 
+#[cfg(not(feature = "abi-current"))]
 /// Transfers control to a validated native application entry point.
 pub fn start_application(payload: ValidatedPayload) -> ! {
     let entry_address = payload.entry_address | 1;
@@ -130,11 +132,13 @@ pub fn start_application(payload: ValidatedPayload) -> ! {
     }
 }
 
+#[cfg(not(feature = "abi-current"))]
 /// Stores the shared `APPLICATION_SERVICES` state used by this subsystem.
 static APPLICATION_SERVICES: ServiceTable = ServiceTable {
     log: application_log,
 };
 
+#[cfg(not(feature = "abi-current"))]
 /// Performs the `application_log` operation for this subsystem.
 unsafe extern "C" fn application_log(message: *const u8, length: usize) -> u32 {
     let start = message as usize;

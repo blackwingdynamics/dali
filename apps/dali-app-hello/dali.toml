@@ -1,0 +1,17 @@
+[application]
+name = "dali-app-hello"
+version = "0.1.0"
+sdk = "dali"
+
+[build]
+target_profile = "f405"
+abi_version = 3
+format_version = 5
+cartridge_id = "D1A00000000000000000000000000004"
+signing_key_id = "492252A1158377BB1D3644573ACA4BD2"
+minimum_kernel_version = "0.1.0"
+required_services = "0x1"
+slot = "slot0"
+profile = "release"
+entry_symbol = "amiran_entry"
+entry_offset = 0

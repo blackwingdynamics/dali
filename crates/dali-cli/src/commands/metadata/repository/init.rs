@@ -111,7 +111,7 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     let delegations = metadata.join(common::DELEGATIONS_DIRECTORY);
     fs::create_dir_all(&delegations)
         .map_err(|error| format!("cannot create repository: {error}"))?;
-    fs::create_dir_all(output.join("cartridges"))
+    fs::create_dir_all(output.join(common::CARTRIDGES_DIRECTORY))
         .map_err(|error| format!("cannot create cartridges directory: {error}"))?;
     common::write_new(
         &common::root_path(&output),

@@ -22,6 +22,7 @@ pub use artifacts::{
     TrustStoreArtifact, read_trust_store_artifact, write_trust_store_artifact,
 };
 pub use multi::with_amrn_files;
+pub(crate) use read::open_existing_directory;
 pub(crate) use read::{close_directories, close_file_with_error, close_root};
 pub use read::{read_repository_file, read_root_file, stream_repository_file};
 pub use repository::{
@@ -38,10 +39,32 @@ pub const MAX_ROOT_AMRN_FILES: usize = 4;
 // UTF-8 encoding used by `embedded-sdmmc`.
 /// Defines the `FAT_LFN_MAX_CHARACTERS` bound used by this subsystem.
 const FAT_LFN_MAX_CHARACTERS: usize = 255;
+/// Defines the maximum byte length of a FAT 8.3 filename.
+const FAT_SHORT_NAME_MAX_BYTES: usize = 12;
 /// Defines the `UTF8_MAX_BYTES_PER_CHARACTER` bound used by this subsystem.
 const UTF8_MAX_BYTES_PER_CHARACTER: usize = 3;
+/// Defines the maximum repository cartridge filename length.
+pub(crate) const CARTRIDGE_NAME_BYTES: usize = 64 + 5;
 /// Defines the `LFN_BUFFER_BYTES` bound used by this subsystem.
 const LFN_BUFFER_BYTES: usize = FAT_LFN_MAX_CHARACTERS * UTF8_MAX_BYTES_PER_CHARACTER;
+/// Storage reserved for repository LFN scans outside the constrained boot stack.
+#[unsafe(link_section = ".repository_workspace")]
+static mut REPOSITORY_LFN_STORAGE: [u8; CARTRIDGE_NAME_BYTES * UTF8_MAX_BYTES_PER_CHARACTER] =
+    [0; CARTRIDGE_NAME_BYTES * UTF8_MAX_BYTES_PER_CHARACTER];
+
+/// Provides the single-threaded repository LFN workspace.
+pub(crate) fn with_repository_lfn_buffer<R>(operation: impl FnOnce(&mut LfnBuffer<'_>) -> R) -> R {
+    // SAFETY: repository loading is single-threaded and completes before
+    // application contexts or scheduler interrupts can access this workspace.
+    unsafe {
+        let storage = core::slice::from_raw_parts_mut(
+            core::ptr::addr_of_mut!(REPOSITORY_LFN_STORAGE).cast::<u8>(),
+            CARTRIDGE_NAME_BYTES * UTF8_MAX_BYTES_PER_CHARACTER,
+        );
+        let mut buffer = LfnBuffer::new(storage);
+        operation(&mut buffer)
+    }
+}
 
 /// Defines the `DEFAULT_TIMESTAMP` bound used by this subsystem.
 const DEFAULT_TIMESTAMP: Timestamp = Timestamp {

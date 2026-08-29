@@ -177,6 +177,7 @@ name = "dali-app-hello"
 version = "0.1.0-alpha.2"
 dependencies = [
  "dali",
+ "dali-targets",
 ]
 
 [[package]]
