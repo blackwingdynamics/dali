@@ -8,7 +8,7 @@ mod buffer {
     /// Defines the `LOG_LINE_CAPACITY` bound used by this subsystem.
     pub(crate) const LOG_LINE_CAPACITY: usize = 128;
     /// Defines the `LOG_QUEUE_CAPACITY` bound used by this subsystem.
-    pub(crate) const LOG_QUEUE_CAPACITY: usize = 32;
+    pub(crate) const LOG_QUEUE_CAPACITY: usize = 64;
     /// Names the bounded `LogLine` type used by this subsystem.
     pub(crate) type LogLine = dali_usb::LogLine<LOG_LINE_CAPACITY>;
     /// Names the bounded `LogQueue` type used by this subsystem.

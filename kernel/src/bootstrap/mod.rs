@@ -114,7 +114,9 @@ where
         );
     }
     #[cfg(feature = "usb-cdc")]
-    if !board.initialize_usb(boot_mode == lifecycle::status::BootMode::SafeMode) {
+    // Re-enumerate on every boot so a host cannot retain endpoint bytes from
+    // the previous CDC session and present them as a new log line.
+    if !board.initialize_usb(true) {
         logging::error(
             logging::BOOT_SUBSYSTEM,
             format_args!("[USB] USB resources unavailable"),
