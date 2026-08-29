@@ -18,6 +18,19 @@ unsafe extern "C" fn pendsv_handler() -> ! {
         "mov r0, sp",
         "bl dali_kernel_prepare_pendsv",
         "add sp, #32",
+        "b {restore}",
+        restore = sym restore_selected,
+    );
+}
+
+/// Restores the selected context after the kernel has chosen the next task.
+///
+/// Keeping the restore sequence in a separate naked function preserves the
+/// exception-return boundary used by the original context-switch backend.
+#[cfg(target_arch = "arm")]
+#[unsafe(naked)]
+unsafe extern "C" fn restore_selected() -> ! {
+    core::arch::naked_asm!(
         "ldr r1, [r0, #{callee_saved}]",
         "mov r4, r1",
         "ldr r1, [r0, #{callee_saved}+4]",

@@ -159,6 +159,7 @@ pub(crate) unsafe extern "C" fn prepare_pendsv(
 /// attempting an exception return before application contexts are wired.
 #[cfg(feature = "abi-context-switch")]
 pub(crate) fn on_systick() {
+    crate::platform::service_watchdog_from_scheduler();
     let scheduler = unsafe {
         // SAFETY: SysTick is a single exception context. PendSV is the only
         // other scheduler access path and remains deferred until this handler

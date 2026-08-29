@@ -14,7 +14,7 @@ usb-cdc = [
     "dep:usbd-serial",
     "dali-kernel-api/usb-cdc",
 ]
-abi-current = []
+abi-current = ["dali_sdk/abi-current"]
 abi-mpu = ["abi-current"]
 abi-context-switch = ["abi-mpu", "dali-kernel-api/abi-context-switch"]
 abi-relocation = ["abi-mpu"]

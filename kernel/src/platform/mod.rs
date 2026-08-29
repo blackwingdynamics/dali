@@ -37,6 +37,18 @@ static MEMORY_PROTECTION: critical_section::Mutex<
 static BOARD_INFO: critical_section::Mutex<core::cell::RefCell<Option<BoardInfo>>> =
     critical_section::Mutex::new(core::cell::RefCell::new(None));
 
+#[cfg(feature = "abi-context-switch")]
+/// Kernel-owned watchdog callback used while an application context is active.
+static SCHEDULER_WATCHDOG: critical_section::Mutex<core::cell::RefCell<Option<WatchdogService>>> =
+    critical_section::Mutex::new(core::cell::RefCell::new(None));
+
+#[cfg(feature = "abi-context-switch")]
+#[derive(Clone, Copy)]
+struct WatchdogService {
+    platform: usize,
+    feed: unsafe fn(usize) -> bool,
+}
+
 /// Returns metadata registered by the selected firmware composition.
 #[cfg(any(
     feature = "abi-current",
@@ -334,6 +346,16 @@ where
             return Err(WatchdogServiceError::AlreadyInstalled);
         }
         self.watchdog = Some(runtime);
+        #[cfg(feature = "abi-context-switch")]
+        critical_section::with(|cs| {
+            let mut service = SCHEDULER_WATCHDOG.borrow(cs).borrow_mut();
+            if service.is_none() {
+                *service = Some(WatchdogService {
+                    platform: self as *mut Self as usize,
+                    feed: feed_watchdog::<B>,
+                });
+            }
+        });
         Ok(())
     }
 
@@ -358,6 +380,27 @@ where
     pub(crate) fn run_driver_timeout_probe(&mut self) {
         self.backend.run_driver_timeout_probe();
     }
+}
+
+#[cfg(feature = "abi-context-switch")]
+/// Feeds the installed watchdog from the kernel-owned scheduler exception.
+pub(crate) fn service_watchdog_from_scheduler() {
+    critical_section::with(|cs| {
+        let service = SCHEDULER_WATCHDOG.borrow(cs).borrow();
+        if let Some(service) = *service {
+            let _ = unsafe { (service.feed)(service.platform) };
+        }
+    });
+}
+
+#[cfg(feature = "abi-context-switch")]
+unsafe fn feed_watchdog<B>(platform: usize) -> bool
+where
+    B: BoardBackend,
+    B::Watchdog: WatchdogBackend,
+{
+    let platform = unsafe { &mut *(platform as *mut Platform<B>) };
+    platform.service_watchdog().is_ok()
 }
 
 /// Services the registered board USB backend through a kernel-owned callback.
