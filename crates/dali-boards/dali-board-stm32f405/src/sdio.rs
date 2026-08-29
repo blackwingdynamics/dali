@@ -4,9 +4,7 @@ use super::board::SdioPins;
 use core::cell::RefCell;
 
 use super::sdio_raw::RawSdioReader;
-use dali_kernel_api::storage::{
-    Block, BlockAddress, BlockReader, SdioTransport, StorageError, StorageLifecycleControl,
-};
+use dali_kernel_api::storage::{Block, BlockAddress, SdioTransport, StorageError};
 use stm32f4xx_hal::{
     pac,
     rcc::Clocks,
@@ -69,82 +67,6 @@ impl SdioTransport for Stm32f405SdioTransport {
     #[cfg(not(feature = "storage-write"))]
     fn flush(&mut self) -> Result<(), StorageError> {
         Err(StorageError::Unsupported)
-    }
-}
-
-/// Lifecycle-aware block reader composed from the F405 SDIO transport.
-pub struct SdioBlockReader {
-    /// Transport owned by this reader.
-    transport: Stm32f405SdioTransport,
-    /// Capacity reported by the initialized card.
-    block_count: Option<u32>,
-}
-
-impl SdioBlockReader {
-    /// Creates an uninitialized reader around the board transport.
-    pub const fn new(transport: Stm32f405SdioTransport) -> Self {
-        Self {
-            transport,
-            block_count: None,
-        }
-    }
-
-    fn initialize_inner(&mut self) -> Result<(), StorageError> {
-        self.block_count = Some(self.transport.initialize()?);
-        Ok(())
-    }
-}
-
-impl StorageLifecycleControl for SdioBlockReader {
-    fn initialize(&mut self) -> Result<(), StorageError> {
-        self.initialize_inner()
-    }
-
-    fn reinitialize(&mut self) -> Result<(), StorageError> {
-        self.initialize_inner()
-    }
-}
-
-impl BlockReader for SdioBlockReader {
-    fn read_block(
-        &mut self,
-        address: BlockAddress,
-        buffer: &mut Block,
-    ) -> Result<(), StorageError> {
-        if self.block_count.is_none() {
-            return Err(StorageError::NotReady);
-        }
-        self.transport.read_block(address, buffer)
-    }
-
-    fn block_count(&self) -> Result<u32, StorageError> {
-        self.block_count.ok_or(StorageError::NotReady)
-    }
-}
-
-impl dali_kernel_api::storage::BlockWriter for SdioBlockReader {
-    #[cfg(not(feature = "storage-write"))]
-    fn write_block(&mut self, _address: BlockAddress, _block: &Block) -> Result<(), StorageError> {
-        Err(StorageError::Unsupported)
-    }
-
-    #[cfg(feature = "storage-write")]
-    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
-        self.transport.write_block(address, block)
-    }
-}
-
-impl dali_kernel_api::storage::BlockTransportFlush for SdioBlockReader {
-    type Error = StorageError;
-
-    #[cfg(not(feature = "storage-write"))]
-    fn flush(&mut self) -> Result<(), Self::Error> {
-        Err(StorageError::Unsupported)
-    }
-
-    #[cfg(feature = "storage-write")]
-    fn flush(&mut self) -> Result<(), Self::Error> {
-        self.transport.flush()
     }
 }
 

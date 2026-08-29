@@ -120,3 +120,148 @@ pub trait StorageLifecycleControl {
     /// Reinitializes the medium after removal or transport failure.
     fn reinitialize(&mut self) -> Result<(), StorageError>;
 }
+
+/// Observable states for a bounded storage medium lifecycle.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StorageLifecycleState {
+    /// No storage presence has been established.
+    Unavailable,
+    /// A storage medium is being probed or has been detected.
+    Present,
+    /// The medium completed initialization and can serve operations.
+    Ready,
+    /// The medium stopped responding during an operation.
+    Removed,
+    /// The medium or transport reported a non-removal failure.
+    Fault,
+}
+
+/// Lifecycle-aware generic adapter for an SDIO transport.
+pub struct SdioBlockReader<T> {
+    transport: T,
+    block_count: Option<u32>,
+    lifecycle: StorageLifecycleState,
+}
+
+impl<T> SdioBlockReader<T> {
+    /// Creates an uninitialized reader around a board-provided transport.
+    pub const fn new(transport: T) -> Self {
+        Self {
+            transport,
+            block_count: None,
+            lifecycle: StorageLifecycleState::Unavailable,
+        }
+    }
+}
+
+impl<T> SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    /// Initializes the card and records its bounded capacity.
+    pub fn initialize(&mut self) -> Result<(), StorageError> {
+        self.lifecycle = StorageLifecycleState::Present;
+        self.block_count = None;
+        match self.transport.initialize() {
+            Ok(block_count) => {
+                self.lifecycle = StorageLifecycleState::Ready;
+                self.block_count = Some(block_count);
+                Ok(())
+            }
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
+    }
+
+    /// Returns the current lifecycle state without probing hardware.
+    pub const fn lifecycle_state(&self) -> StorageLifecycleState {
+        self.lifecycle
+    }
+
+    fn record_error(&mut self, error: StorageError) {
+        self.lifecycle = if matches!(error, StorageError::CardRemoved) {
+            StorageLifecycleState::Removed
+        } else {
+            StorageLifecycleState::Fault
+        };
+    }
+
+    fn is_ready(&self) -> bool {
+        self.lifecycle == StorageLifecycleState::Ready
+    }
+}
+
+impl<T> StorageLifecycleControl for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    fn initialize(&mut self) -> Result<(), StorageError> {
+        Self::initialize(self)
+    }
+
+    fn reinitialize(&mut self) -> Result<(), StorageError> {
+        Self::initialize(self)
+    }
+}
+
+impl<T> BlockReader for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    fn read_block(&mut self, address: BlockAddress, block: &mut Block) -> Result<(), StorageError> {
+        if !self.is_ready() {
+            return Err(StorageError::NotReady);
+        }
+        match self.transport.read_block(address, block) {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
+    }
+
+    fn block_count(&self) -> Result<u32, StorageError> {
+        self.block_count.ok_or(StorageError::NotReady)
+    }
+}
+
+impl<T> BlockWriter for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    fn write_block(&mut self, address: BlockAddress, block: &Block) -> Result<(), StorageError> {
+        if !self.is_ready() {
+            return Err(StorageError::NotReady);
+        }
+        match self.transport.write_block(address, block) {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
+    }
+}
+
+impl<T> BlockTransportFlush for SdioBlockReader<T>
+where
+    T: SdioTransport,
+{
+    type Error = StorageError;
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        if !self.is_ready() {
+            return Err(StorageError::NotReady);
+        }
+        match self.transport.flush() {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                self.record_error(error);
+                Err(error)
+            }
+        }
+    }
+}

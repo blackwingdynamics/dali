@@ -22,8 +22,6 @@ where
     /// Stores the `recovery_reader` value for this bounded state.
     recovery_reader: Option<B::StorageReader>,
     #[cfg(feature = "sdio")]
-    /// Stores the `recovery_retry_log_count` value for this bounded state.
-    recovery_retry_log_count: u32,
     #[cfg(feature = "sdio")]
     /// Stores the `recovery_probe_count` value for this bounded state.
     recovery_probe_count: u32,
@@ -47,14 +45,13 @@ where
             #[cfg(feature = "sdio")]
             recovery_reader: None,
             #[cfg(feature = "sdio")]
-            recovery_retry_log_count: 0,
             #[cfg(feature = "sdio")]
             recovery_probe_count: 0,
         }
     }
 
     #[cfg(feature = "sdio")]
-    /// Creates storage recovery state with an attached SDIO reader.
+    /// Retains the storage reader for bounded card-presence polling.
     pub(super) const fn with_recovery_reader(
         status: lifecycle::status::StorageStatus,
         reader: B::StorageReader,
@@ -63,7 +60,6 @@ where
             marker: core::marker::PhantomData,
             status,
             recovery_reader: Some(reader),
-            recovery_retry_log_count: 0,
             recovery_probe_count: 0,
         }
     }

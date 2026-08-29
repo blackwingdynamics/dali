@@ -56,18 +56,16 @@ where
             StorageError::NotReady | StorageError::Timeout | StorageError::Transport => {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
-                    format_args!(
-                        "[STORAGE] Storage transport unavailable; entering safe recovery loop"
-                    ),
+                    format_args!("[STORAGE] No SD card available; continuing without cartridge"),
                 );
-                StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
+                StorageRuntime::with_recovery_reader(status::StorageStatus::Idle, reader)
             }
             StorageError::CardRemoved => {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
-                    format_args!("[STORAGE] Card removed; entering safe recovery loop"),
+                    format_args!("[STORAGE] No SD card available; continuing without cartridge"),
                 );
-                StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
+                StorageRuntime::with_recovery_reader(status::StorageStatus::Idle, reader)
             }
             error => {
                 logging::error(
@@ -79,6 +77,19 @@ where
         };
     }
 
+    load_initialized_reader(reader, board)
+}
+
+#[cfg(feature = "sdio")]
+/// Loads a cartridge from a reader that has completed SDIO initialization.
+pub(super) fn load_initialized_reader<B>(
+    mut reader: B::StorageReader,
+    board: &mut platform::Platform<B>,
+) -> StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] SDIO card initialized"),
@@ -211,7 +222,7 @@ where
                         "[STORAGE] Trust-store artifact write/flush/read-back test passed"
                     ),
                 );
-                StorageRuntime::from_status(super::super::loading::load(
+                let status = super::super::loading::load(
                     &device,
                     board,
                     committed_generation,
@@ -219,25 +230,37 @@ where
                     &mut slot_manager,
                     #[cfg(feature = "abi-mpu")]
                     &mut context_owner,
-                ))
+                );
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[LOADER] Cartridge loading returned: {:?}", status),
+                );
+                StorageRuntime::from_status(status)
             }
             #[cfg(not(feature = "storage-write"))]
-            StorageRuntime::from_status(super::super::loading::load(
-                BlockDeviceAdapter::new(reader),
-                board,
-                None,
-                #[cfg(feature = "abi-current")]
-                &mut slot_manager,
-                #[cfg(feature = "abi-mpu")]
-                &mut context_owner,
-            ))
+            {
+                let status = super::super::loading::load(
+                    BlockDeviceAdapter::new(reader),
+                    board,
+                    None,
+                    #[cfg(feature = "abi-current")]
+                    &mut slot_manager,
+                    #[cfg(feature = "abi-mpu")]
+                    &mut context_owner,
+                );
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[LOADER] Cartridge loading returned: {:?}", status),
+                );
+                StorageRuntime::from_status(status)
+            }
         }
         Err(StorageError::CardRemoved | StorageError::NotReady | StorageError::Transport) => {
             logging::info(
                 logging::BOOT_SUBSYSTEM,
-                format_args!("[STORAGE] Storage read unavailable; entering safe recovery loop"),
+                format_args!("[STORAGE] No SD card available; continuing without cartridge"),
             );
-            StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
+            StorageRuntime::with_recovery_reader(status::StorageStatus::Idle, reader)
         }
         Err(error) => {
             logging::error(

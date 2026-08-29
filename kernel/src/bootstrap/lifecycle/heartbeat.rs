@@ -41,14 +41,16 @@ where
     loop {
         board.poll_user_key();
         #[cfg(feature = "sdio")]
-        if matches!(storage.status(), StorageStatus::Removed)
-            && storage.recovery_poll_due(elapsed_ms)
+        if matches!(
+            storage.status(),
+            StorageStatus::Idle | StorageStatus::Removed
+        ) && storage.recovery_poll_due(elapsed_ms)
         {
             storage.poll_recovery(&mut board);
             elapsed_ms = 0;
         }
         match storage.status() {
-            #[cfg(feature = "sdio")]
+            #[cfg(all(feature = "sdio", not(feature = "abi-mpu")))]
             StorageStatus::Ready => {
                 let _ = board.set_status_led(true);
             }

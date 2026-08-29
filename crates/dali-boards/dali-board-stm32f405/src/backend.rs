@@ -23,7 +23,7 @@ impl dali_kernel_api::BoardBackend for board::Board {
     type StatusLed = board::StatusLed;
     type UserKey = board::UserKey;
     type Watchdog = crate::F405Watchdog;
-    type StorageReader = sdio::SdioBlockReader;
+    type StorageReader = dali_kernel_api::storage::SdioBlockReader<sdio::Stm32f405SdioTransport>;
 
     fn memory_protection_operations() -> Option<dali_kernel_api::MemoryProtectionOperations> {
         #[cfg(feature = "abi-mpu")]
@@ -79,9 +79,9 @@ impl dali_kernel_api::BoardBackend for board::Board {
         let (peripheral, pins, clocks) = self
             .take_sdio_resources()
             .ok_or(dali_kernel_api::BoardError::ResourceUnavailable)?;
-        Ok(sdio::SdioBlockReader::new(Stm32f405SdioTransport::new(
-            peripheral, pins, clocks,
-        )))
+        Ok(dali_kernel_api::storage::SdioBlockReader::new(
+            Stm32f405SdioTransport::new(peripheral, pins, clocks),
+        ))
     }
 
     fn reset_cause(&self) -> dali_kernel_api::ResetCause {

@@ -26,7 +26,7 @@ impl BootMode {
 }
 
 /// Result of the storage bring-up sequence.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum StorageStatus {
     /// No storage medium was detected or the transport is not configured.
     #[cfg(not(feature = "sdio"))]
@@ -37,7 +37,7 @@ pub enum StorageStatus {
     /// The storage medium is available, but no application cartridge is present.
     Idle,
     /// The card initialized and block zero was read successfully.
-    #[cfg(feature = "sdio")]
+    #[cfg(all(feature = "sdio", not(feature = "abi-mpu")))]
     Ready,
     /// The card or transport reported an operational failure.
     #[cfg(feature = "sdio")]
