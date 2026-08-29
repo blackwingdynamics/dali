@@ -4,6 +4,9 @@ use core::fmt::Arguments;
 
 use super::Level;
 
+/// Retains the complete boot log burst before the host starts reading RTT.
+const RTT_PRINT_BUFFER_BYTES: usize = 4096;
+
 #[cfg(feature = "log-colors")]
 const COLOR_RESET: &str = "\x1b[0m";
 #[cfg(feature = "log-colors")]
@@ -32,7 +35,7 @@ impl Level {
 
 /// Initializes the RTT control block and print channel.
 pub(super) fn initialize() {
-    rtt_target::rtt_init_print!();
+    rtt_target::rtt_init_print!(rtt_target::ChannelMode::NoBlockSkip, RTT_PRINT_BUFFER_BYTES);
 }
 
 /// Writes one message through the non-blocking RTT channel.

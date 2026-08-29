@@ -2,7 +2,7 @@
 
 use core::str;
 
-use embedded_sdmmc::{Error, Mode, VolumeIdx, VolumeManager};
+use embedded_sdmmc::{Error, VolumeIdx, VolumeManager};
 
 use crate::{
     drivers::FlushableBlockDevice,
@@ -157,7 +157,7 @@ where
             );
         }
     };
-    let raw_file = match manager.open_long_name_file_in_dir(cartridges, name, Mode::ReadOnly) {
+    let raw_file = match super::read::open_existing_file(&manager, cartridges, name) {
         Ok(file) => file,
         Err(error) => {
             return super::close_directories(

@@ -13,6 +13,16 @@ pub struct DelegationReference {
     pub length: u32,
     pub sha256: Sha256Digest,
 }
+impl DelegationReference {
+    pub const fn empty() -> Self {
+        Self {
+            id: BoundedText::empty(),
+            version: 0,
+            length: 0,
+            sha256: Sha256Digest([0; crate::SHA256_LENGTH]),
+        }
+    }
+}
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SnapshotMetadata {
     pub header: MetadataHeader,

@@ -53,6 +53,18 @@ impl<const CAPACITY: usize> BinaryRevocationBodyStreamParser<CAPACITY> {
         }
     }
 
+    /// Resets parser state before reusing caller-owned workspace.
+    pub fn reset(&mut self) {
+        self.queue.reset();
+        self.phase = Phase::Version;
+        self.version = 0;
+        self.expires = 0;
+        self.record_count = 0;
+        self.record_index = 0;
+        self.text_length = 0;
+        self.text = [0; TEXT_BYTES];
+    }
+
     /// Feeds one bounded transport fragment.
     pub fn feed(&mut self, bytes: &[u8]) -> Result<(), StreamingBodyError> {
         for byte in bytes {
@@ -79,20 +91,26 @@ impl<const CAPACITY: usize> BinaryRevocationBodyStreamParser<CAPACITY> {
         if self.phase != Phase::Complete || !self.queue.is_empty() {
             return Err(StreamingBodyError::UnexpectedEnd);
         }
-        let mut records = [RevocationRecord::default(); crate::MAX_REVOCATIONS];
-        records[..usize::from(self.record_count)]
-            .copy_from_slice(&self.records[..usize::from(self.record_count)]);
-        let metadata = RevocationMetadata {
-            header: MetadataHeader {
+        let output_ptr = output.as_mut_ptr();
+        // SAFETY: every field of the output is initialized before validation,
+        // and the parser owns the source records for the duration of the copy.
+        unsafe {
+            (*output_ptr).header = MetadataHeader {
                 role: MetadataRole::Revocation,
                 version: self.version,
                 expires: self.expires,
-            },
-            records,
-            record_count: self.record_count,
-        };
-        validate_revocation_metadata(&metadata).map_err(|_| StreamingBodyError::InvalidBody)?;
-        output.write(metadata);
+            };
+            for index in 0..crate::MAX_REVOCATIONS {
+                (*output_ptr).records[index] = if index < usize::from(self.record_count) {
+                    self.records[index]
+                } else {
+                    RevocationRecord::default()
+                };
+            }
+            (*output_ptr).record_count = self.record_count;
+            validate_revocation_metadata(&*output_ptr)
+                .map_err(|_| StreamingBodyError::InvalidBody)?;
+        }
         Ok(())
     }
 
@@ -237,6 +255,9 @@ impl ByteQueue {
             bytes: [0; QUEUE_BYTES],
             length: 0,
         }
+    }
+    fn reset(&mut self) {
+        self.length = 0;
     }
     fn push(&mut self, byte: u8) -> Result<(), Error> {
         if self.length == QUEUE_BYTES {

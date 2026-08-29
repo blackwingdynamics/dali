@@ -53,6 +53,13 @@ impl<const CAPACITY: usize> Default for BoundedText<CAPACITY> {
     }
 }
 impl<const CAPACITY: usize> BoundedText<CAPACITY> {
+    pub const fn empty() -> Self {
+        Self {
+            bytes: [0; CAPACITY],
+            length: 0,
+        }
+    }
+
     pub fn new(value: &str) -> Result<Self, TextError> {
         if value.is_empty() {
             return Err(TextError::Empty);

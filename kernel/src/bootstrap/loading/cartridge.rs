@@ -177,6 +177,9 @@ where
                                 );
                                 return status::StorageStatus::Failure;
                             }
+                            // SysTick must not run until the scheduler and the
+                            // first application context are fully initialized.
+                            platform::Platform::<B>::enable_interrupts();
                         }
                         crate::security::launch::enter(cartridge.launch_frame);
                     }

@@ -39,6 +39,8 @@ pub const MAX_ROOT_AMRN_FILES: usize = 4;
 // UTF-8 encoding used by `embedded-sdmmc`.
 /// Defines the `FAT_LFN_MAX_CHARACTERS` bound used by this subsystem.
 const FAT_LFN_MAX_CHARACTERS: usize = 255;
+/// Defines the maximum byte length of a FAT 8.3 filename.
+const FAT_SHORT_NAME_MAX_BYTES: usize = 12;
 /// Defines the `UTF8_MAX_BYTES_PER_CHARACTER` bound used by this subsystem.
 const UTF8_MAX_BYTES_PER_CHARACTER: usize = 3;
 /// Defines the maximum repository cartridge filename length.

@@ -53,6 +53,8 @@ pub(crate) enum StreamedRoleError<E> {
 pub struct BinaryRepositoryBuffers {
     /// Shared bounded metadata and cartridge transport chunk.
     chunk: [u8; streaming::STREAMING_METADATA_CHUNK_BYTES],
+    /// Snapshot parser state retained outside the constrained boot stack.
+    pub(crate) metadata_parser: RepositoryMetadataParser,
     /// Fixed AMRN header and signature trailer retained between passes.
     amrn: amrn::AmrnStreamBuffers,
     /// Root policy retained after target-provisioned anchor validation.
@@ -74,6 +76,17 @@ pub(crate) union RepositoryScratch {
     pub(crate) target_verifier: ManuallyDrop<streaming::TargetVerifierWorkspace>,
     /// Root parser state retained outside the loader stack frame.
     pub(crate) root_parser: ManuallyDrop<MaybeUninit<BinaryRootBodyStreamParser>>,
+}
+
+/// Reuses one workspace region for sequential Snapshot and Revocation parsing.
+pub(crate) union RepositoryMetadataParser {
+    /// Parser used while verifying Snapshot metadata.
+    pub(crate) snapshot: ManuallyDrop<MaybeUninit<
+        BinarySnapshotBodyStreamParser<MAX_BINARY_REPOSITORY_CARTRIDGES>,
+    >>,
+    /// Parser used while verifying Revocation metadata.
+    pub(crate) revocations:
+        ManuallyDrop<MaybeUninit<BinaryRevocationBodyStreamParser<MAX_BINARY_REVOCATION_RECORDS>>>,
 }
 
 /// Metadata storage shared after Snapshot delegation references are copied.
@@ -122,6 +135,34 @@ impl RepositoryMetadataScratch {
     }
 }
 
+impl RepositoryMetadataParser {
+    /// Returns the reusable Snapshot parser workspace.
+    unsafe fn snapshot(
+        &mut self,
+    ) -> &mut BinarySnapshotBodyStreamParser<MAX_BINARY_REPOSITORY_CARTRIDGES> {
+        // SAFETY: the boot loader exclusively owns this workspace and writes
+        // the parser before creating the mutable reference.
+        unsafe {
+            let parser = self.snapshot.as_mut_ptr();
+            parser.write(BinarySnapshotBodyStreamParser::new());
+            &mut *parser
+        }
+    }
+
+    /// Returns the reusable Revocation parser workspace.
+    unsafe fn revocations(
+        &mut self,
+    ) -> &mut BinaryRevocationBodyStreamParser<MAX_BINARY_REVOCATION_RECORDS> {
+        // SAFETY: the boot loader exclusively owns this workspace and writes
+        // the parser before creating the mutable reference.
+        unsafe {
+            let parser = self.revocations.as_mut_ptr();
+            parser.write(BinaryRevocationBodyStreamParser::new());
+            &mut *parser
+        }
+    }
+}
+
 /// Internal helper for `reset_parser`.
 fn reset_parser<P>(slot: &mut P, parser: P) -> &mut P {
     // SAFETY: parser slots are ManuallyDrop union storage and are initialized
@@ -135,6 +176,9 @@ impl BinaryRepositoryBuffers {
     pub const fn new() -> Self {
         Self {
             chunk: [0; streaming::STREAMING_METADATA_CHUNK_BYTES],
+            metadata_parser: RepositoryMetadataParser {
+                snapshot: ManuallyDrop::new(MaybeUninit::uninit()),
+            },
             amrn: amrn::AmrnStreamBuffers::new(),
             root: MaybeUninit::uninit(),
             metadata: RepositoryMetadataScratch {

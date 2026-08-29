@@ -5,6 +5,7 @@ fn verify_timestamp_and_snapshot<S>(
     root: &RootMetadata,
     chunk: &mut [u8],
     output: &mut MaybeUninit<dali_metadata::SnapshotMetadata>,
+    snapshot_parser: &mut BinarySnapshotBodyStreamParser<MAX_BINARY_REPOSITORY_CARTRIDGES>,
     role_verifier: &mut MaybeUninit<StreamingRoleVerifier>,
     progress: fn() -> bool,
 ) -> Result<(), BinaryRepositoryError<S::Error>>
@@ -27,13 +28,12 @@ where
     )?;
     // SAFETY: verify_role_from_root writes the timestamp before returning.
     let timestamp_metadata = unsafe { timestamp_output.assume_init_ref() };
-    let mut snapshot_parser =
-        BinarySnapshotBodyStreamParser::<MAX_BINARY_REPOSITORY_CARTRIDGES>::new();
+    snapshot_parser.reset();
     let snapshot = verify_role_from_root(
         storage,
         RepositoryDocument::Snapshot,
         MetadataRole::Snapshot,
-        &mut snapshot_parser,
+        snapshot_parser,
         root,
         RoleVerificationContext {
             output,
@@ -64,18 +64,18 @@ fn verify_revocations<S>(
     snapshot: &dali_metadata::SnapshotMetadata,
     chunk: &mut [u8],
     output: &mut MaybeUninit<dali_metadata::RevocationMetadata>,
+    parser: &mut BinaryRevocationBodyStreamParser<MAX_BINARY_REVOCATION_RECORDS>,
     role_verifier: &mut MaybeUninit<StreamingRoleVerifier>,
     progress: fn() -> bool,
 ) -> Result<(), BinaryRepositoryError<S::Error>>
 where
     S: RepositoryStreamStorage,
 {
-    let mut parser = BinaryRevocationBodyStreamParser::<MAX_BINARY_REVOCATION_RECORDS>::new();
     let revocations = verify_role_from_root(
         storage,
         RepositoryDocument::Revocations,
         MetadataRole::Revocation,
-        &mut parser,
+        parser,
         root,
         RoleVerificationContext {
             output,

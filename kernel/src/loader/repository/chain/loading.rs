@@ -69,6 +69,7 @@ where
         root,
         &mut buffers.chunk,
         unsafe { buffers.metadata.snapshot() },
+        unsafe { buffers.metadata_parser.snapshot() },
         unsafe { buffers.scratch.target_verifier() },
         progress,
     )?;
@@ -106,16 +107,29 @@ where
         snapshot,
         &mut buffers.chunk,
         &mut buffers.revocations,
+        unsafe { buffers.metadata_parser.revocations() },
         unsafe { buffers.scratch.target_verifier() },
         progress,
     )?;
     // SAFETY: the preceding helper writes the revocation metadata before this
     // reference is used, and the workspace remains exclusively borrowed here.
     let revocations = unsafe { buffers.revocations.assume_init_ref() };
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Revocations accepted; reconstructing trust state"),
+    );
     let security_state =
         dali_metadata::TrustStoreSecurityState::from_verified_metadata(root, revocations)
             .map_err(|_| BinaryRepositoryError::SecurityState)?;
+    crate::logging::info(
+        crate::logging::SECURITY_SUBSYSTEM,
+        format_args!("[SECURITY] Trust state reconstructed"),
+    );
     collect_delegation_references(snapshot, &targets, &mut buffers.delegation_references)?;
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[LOADER] Delegation references collected"),
+    );
     let mut authorizations = verify_cartridges_into(
         storage,
         root,
