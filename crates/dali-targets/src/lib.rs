@@ -364,7 +364,7 @@ pub fn find_by_amrn_target_id(target_id: u8) -> Option<&'static TargetProfile> {
 
 #[cfg(test)]
 mod tests {
-    use super::{DfuProfile, SUPPORTED_TARGETS, find_board};
+    use super::{DfuProfile, SUPPORTED_BACKENDS, SUPPORTED_TARGETS, find_board};
 
     #[test]
     fn exposes_manifest_metadata() {
@@ -373,6 +373,7 @@ mod tests {
         assert_eq!(SUPPORTED_TARGETS[0].scheduler.unwrap().tick_hz, 1_000);
         assert_eq!(SUPPORTED_TARGETS[0].name, "f405");
         assert_eq!(SUPPORTED_TARGETS[0].backend, "stm32f405");
+        assert_eq!(SUPPORTED_BACKENDS, &["stm32f405", "stm32f411"]);
         assert_eq!(SUPPORTED_TARGETS[0].status_led.port, "PB");
         assert_eq!(SUPPORTED_TARGETS[0].status_led.number, 2);
         assert_eq!(SUPPORTED_TARGETS[0].display.controller, "SSD1306");

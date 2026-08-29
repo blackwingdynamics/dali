@@ -126,7 +126,7 @@ acceptance items and cannot be inferred from this migration.
   target metadata, linker/memory integration, and validation commands.
 - [x] Make backend discovery manifest-driven or generated, so adding a new
   directory does not require editing OS core source.
-- [ ] Generate backend/profile registries from target metadata.
+- [x] Generate backend/profile registries from target metadata.
 - [ ] Keep Cargo features or generated cfg values limited to compile-time
   backend isolation; they must not encode board policy in shared modules.
 - [ ] Reject duplicate backend IDs, target IDs, capabilities, and memory ranges.

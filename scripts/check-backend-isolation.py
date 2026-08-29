@@ -3,13 +3,44 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 
 
 FIRMWARE_PACKAGE = "dali-firmware"
-F405_FEATURE = "stm32f405"
-F405_PACKAGE = "dali-board-stm32f405"
+
+
+def firmware_metadata() -> dict:
+    result = subprocess.run(
+        ["cargo", "metadata", "--no-deps", "--format-version", "1"],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        print(result.stdout, end="")
+        print(result.stderr, end="", file=sys.stderr)
+        raise SystemExit(result.returncode)
+    return json.loads(result.stdout)
+
+
+def backend_features() -> list[tuple[str, str]]:
+    metadata = firmware_metadata()
+    firmware = next(
+        package for package in metadata["packages"] if package["name"] == FIRMWARE_PACKAGE
+    )
+    optional_dependencies = {
+        dependency["name"]
+        for dependency in firmware["dependencies"]
+        if dependency["optional"]
+    }
+    return sorted(
+        (feature, value.removeprefix("dep:"))
+        for feature, values in firmware["features"].items()
+        for value in values
+        if value.startswith("dep:") and value.removeprefix("dep:") in optional_dependencies
+    )
 
 
 def cargo_tree(features: str | None) -> str:
@@ -28,22 +59,22 @@ def cargo_tree(features: str | None) -> str:
 
 def main() -> int:
     unselected = cargo_tree(None)
-    if F405_PACKAGE in unselected:
-        print(
-            f"{F405_PACKAGE} is present without the {F405_FEATURE} feature",
-            file=sys.stderr,
-        )
-        return 1
+    for feature, package in backend_features():
+        if package in unselected:
+            print(
+                f"{package} is present without the {feature} feature",
+                file=sys.stderr,
+            )
+            return 1
+        selected = cargo_tree(feature)
+        if package not in selected:
+            print(
+                f"{package} is missing with the {feature} feature",
+                file=sys.stderr,
+            )
+            return 1
 
-    selected = cargo_tree(F405_FEATURE)
-    if F405_PACKAGE not in selected:
-        print(
-            f"{F405_PACKAGE} is missing with the {F405_FEATURE} feature",
-            file=sys.stderr,
-        )
-        return 1
-
-    print("Backend isolation check passed.")
+    print("Backend isolation checks passed.")
     return 0
 
 

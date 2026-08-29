@@ -67,13 +67,10 @@ Put the board into its STM32 DFU boot mode, connect USB, verify that the host de
 just flash-dfu
 ```
 
-This builds the raw binary and writes it to the documented internal Flash address. Use `DALI_DFU_DEVICE` to override the USB device identifier:
-
-```text
-DALI_DFU_DEVICE=0483:df11 just flash-dfu
-```
-
-The command does not invoke `sudo`. Configure the host's USB permissions separately.
+This builds the raw binary and uses the DFU identity, alternate interface,
+Flash address, and runtime transition declared by the selected target
+manifest. The command does not invoke `sudo`; configure the host's USB
+permissions separately.
 
 ### 5a. Select a board backend
 

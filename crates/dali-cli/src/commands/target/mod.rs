@@ -258,7 +258,7 @@ fn print_targets() -> Result<(), String> {
 }
 
 fn usage() -> String {
-    "usage:\n  dali target list\n  dali target info <profile> [--field probe-chip]\n  dali target scaffold <profile> [--output <workspace-root>]"
+    "usage:\n  dali target list\n  dali target info <profile> [--field probe-chip|backend|kernel-binary|kernel-elf]\n  dali target scaffold <profile> [--output <workspace-root>]"
         .to_owned()
 }
 

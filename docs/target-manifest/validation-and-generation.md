@@ -22,3 +22,8 @@ The backend build script owns the generated `memory.x`; the kernel does not
 generate or select linker memory regions. The firmware composition validates
 that the selected profile's backend feature is enabled and that its backend
 crate exports the linker artifact before compiling the binary.
+
+The generated target module also exposes `SUPPORTED_BACKENDS`, a deduplicated
+list of backend identifiers from the repository manifests. Build and isolation
+checks must consume this registry or the selected profile's `backend` field;
+they must not maintain a second board list in build scripts.

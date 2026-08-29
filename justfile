@@ -5,20 +5,15 @@ set shell := ["bash", "-cu"]
 
 target := "thumbv7em-none-eabihf"
 kernel_cartridge := "dali-firmware"
-kernel_binary := "dali-f405"
-kernel_elf := "target/" + target + "/debug/" + kernel_binary
-f405_kernel_bin := "target/" + target + "/debug/" + kernel_binary + "-f405.bin"
 app_cartridge := "dali-app-hello"
 app_binary := "dali-app-hello"
 app_payload := "target/" + target + "/debug/" + app_binary + ".bin"
 app_cartridge_file := "target/" + target + "/debug/hello.amrn"
 app_entry_offset := "0"
 renode_script := "simulation/renode/dali_blackpill.resc"
-dfu_device := env_var_or_default("DALI_DFU_DEVICE", "0483:df11")
 usb_console_port := env_var_or_default("DALI_USB_CONSOLE_PORT", "")
 usb_console_baud := "115200"
 usb_console_retry_delay := "1"
-flash_address := "0x08000000"
 
 default:
     @just --list
@@ -100,12 +95,12 @@ cartridge-hello: app-build
 # Flash the kernel with a connected probe. Requires probe-rs.
 flash-probe board="f405":
     just build {{board}}
-    probe-rs run --chip "$(cargo run --quiet -p dali-cli --bin dali -- target info {{board}} --field probe-chip)" {{kernel_elf}}
+    cargo run --quiet -p dali-cli --bin dali -- device flash {{board}} --transport probe
 
 # Flash the raw binary through STM32 DFU mode. Requires dfu-util and host permissions.
 flash-dfu board="f405":
     just bin {{board}}
-    dfu-util -d {{dfu_device}} -a 0 -s {{flash_address}}:leave -D {{f405_kernel_bin}}
+    cargo run --quiet -p dali-cli --bin dali -- device flash {{board}} --transport dfu
 
 # Open the USB CDC runtime console. Requires picocom.
 console port=usb_console_port:
