@@ -1,13 +1,13 @@
-use std::{env, fs, path::PathBuf};
+use std::{env, fs, io, path::PathBuf};
 
 use dali_targets::SUPPORTED_TARGETS;
 
 const FAULT_CAPTURE_REGION_LENGTH: u32 = 128;
 const TARGET_PROFILE_ENV: &str = "DALI_TARGET_PROFILE";
 
-fn main() {
+fn main() -> Result<(), io::Error> {
     println!("cargo:rerun-if-env-changed={TARGET_PROFILE_ENV}");
-    let target = selected_target();
+    let target = selected_target()?;
     let dma = target.memory.dma;
     let runtime = dali_targets::TargetMemoryRegion {
         origin: target.memory.runtime_origin,
@@ -16,11 +16,12 @@ fn main() {
     let ccm = target
         .memory
         .ccm
-        .expect("the active target must declare CCM runtime memory");
-    assert!(
-        ccm.length > FAULT_CAPTURE_REGION_LENGTH,
-        "the active target CCM must reserve space for retained fault evidence"
-    );
+        .ok_or_else(|| io::Error::other("the active target must declare CCM runtime memory"))?;
+    if ccm.length <= FAULT_CAPTURE_REGION_LENGTH {
+        return Err(io::Error::other(
+            "the active target CCM must reserve space for retained fault evidence",
+        ));
+    }
     let retained = dali_targets::TargetMemoryRegion {
         origin: ccm.origin,
         length: FAULT_CAPTURE_REGION_LENGTH,
@@ -29,27 +30,33 @@ fn main() {
         origin: ccm.origin + FAULT_CAPTURE_REGION_LENGTH,
         length: ccm.length - FAULT_CAPTURE_REGION_LENGTH,
     };
-    let output_directory = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR is required"));
+    let output_directory = PathBuf::from(
+        env::var_os("OUT_DIR").ok_or_else(|| io::Error::other("OUT_DIR is required"))?,
+    );
     let linker_script = render_linker_script(target.memory.flash, ram, dma, runtime, retained);
-    fs::write(output_directory.join("memory.x"), linker_script)
-        .expect("generated memory.x must be writable");
+    fs::write(output_directory.join("memory.x"), linker_script)?;
     println!("cargo:rustc-link-search={}", output_directory.display());
     println!("cargo:rerun-if-changed=../targets");
+    Ok(())
 }
 
-fn selected_target() -> &'static dali_targets::TargetProfile {
+fn selected_target() -> Result<&'static dali_targets::TargetProfile, io::Error> {
     if let Ok(name) = env::var(TARGET_PROFILE_ENV) {
-        return dali_targets::find_target(&name).unwrap_or_else(|| {
-            panic!("DALI_TARGET_PROFILE={name:?} does not name an application-supported target")
+        return dali_targets::find_target(&name).ok_or_else(|| {
+            io::Error::other(format!(
+                "DALI_TARGET_PROFILE={name:?} does not name an application-supported target"
+            ))
         });
     }
 
     match SUPPORTED_TARGETS {
-        [target] => target,
-        [] => panic!("an application-supported target is required"),
-        _ => panic!(
+        [target] => Ok(target),
+        [] => Err(io::Error::other(
+            "an application-supported target is required",
+        )),
+        _ => Err(io::Error::other(format!(
             "multiple application-supported targets exist; set {TARGET_PROFILE_ENV} explicitly"
-        ),
+        ))),
     }
 }
 
