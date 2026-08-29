@@ -148,9 +148,6 @@ pub trait BoardBackend {
     /// Returns the reset source captured during early initialization.
     fn reset_cause(&self) -> ResetCause;
 
-    /// Reports whether native application execution is supported.
-    fn application_execution_supported() -> bool;
-
     /// Initializes the board-owned USB logger state.
     #[cfg(feature = "usb-cdc")]
     fn initialize_usb(&mut self, force_reenumeration: bool) -> bool;

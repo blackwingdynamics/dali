@@ -88,10 +88,6 @@ impl dali_kernel_api::BoardBackend for board::Board {
         self.reset_cause()
     }
 
-    fn application_execution_supported() -> bool {
-        true
-    }
-
     #[cfg(feature = "usb-cdc")]
     fn initialize_usb(&mut self, force_reenumeration: bool) -> bool {
         board::usb::initialize(self, force_reenumeration)

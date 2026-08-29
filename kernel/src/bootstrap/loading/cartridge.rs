@@ -34,7 +34,7 @@ where
     #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
     let cartridge = crate::loader::load_current_abi::<D, B>(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]
-    let cartridge = if B::application_execution_supported() {
+    let cartridge = if platform::Platform::<B>::supports_application_execution() {
         crate::loader::load_amrn_file(device)
     } else {
         crate::loader::validate_amrn_file(device)
@@ -52,7 +52,7 @@ where
                 format_args!("[SECURITY] AMRN signature verified"),
             );
             #[cfg(not(feature = "abi-current"))]
-            if B::application_execution_supported() {
+            if platform::Platform::<B>::supports_application_execution() {
                 crate::loader::start_application(cartridge);
             }
             #[cfg(feature = "abi-current")]

@@ -169,6 +169,12 @@ where
         B::info()
     }
 
+    /// Returns the manifest-owned application execution policy.
+    #[cfg(not(feature = "abi-current"))]
+    pub(crate) fn supports_application_execution() -> bool {
+        B::info().target.application_supported
+    }
+
     /// Returns the reset cause captured by the backend.
     pub(crate) fn reset_cause(&self) -> ResetCause {
         self.backend.reset_cause()
