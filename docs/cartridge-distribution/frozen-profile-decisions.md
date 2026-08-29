@@ -79,7 +79,7 @@ metadata/snapshot.json
 metadata/targets.json
 metadata/delegations/<delegation-id>.json
 metadata/revocations.json
-cartridges/<cartridge-sha256>.amrn
+amrns/<cartridge-sha256>.amrn
 bundle.manifest
 ```
 

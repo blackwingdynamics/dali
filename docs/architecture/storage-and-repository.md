@@ -44,9 +44,10 @@ observation; integrity and transport errors remain faults. Initialization and
 the first block read use a bounded reinitialization window before returning to
 the kernel recovery heartbeat. When recovery retains the SDIO reader, the
 heartbeat performs bounded presence probes and reinitializes the reader at the
-configured recovery interval; a successful probe transitions the runtime to
-`Ready`. The existing boot-only repository contract is unchanged, and a
-recovered card is not used to relaunch an application without a new boot.
+configured recovery interval. A successful probe re-enters the normal
+initialized-reader loading path, so a present cartridge can be verified and
+launched without a kernel reset. If no card is present, the kernel remains in
+its heartbeat and recovery state.
 
 ## Board-agnostic repository and durable-storage boundary
 
@@ -82,7 +83,7 @@ replaceable without changing trust policy or loader logic.
 When the `repository-loader` feature is enabled, the F405 boot path constructs
 the concrete FAT adapter, requests the board target profile, selects every
 matching executable Binary v2 Targets record within the bounded execution
-capacity, opens each lowercase content-addressed `cartridges/<sha256>.amrn`
+capacity, opens each lowercase content-addressed `amrns/<sha256>.amrn`
 object, and passes the verified streams to the existing slot/relocation loader.
 The target memory contract is resolved from each manifest-owned slot at the
 dependency-injection boundary; the generic repository loader contains no F405
@@ -93,10 +94,10 @@ development-profile hardware evidence, but it is not the default MVP profile.
 The concrete F405 adapter is `FatRepositoryStorage<D>`. Its constructor accepts
 an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
 board-agnostic logical documents through `metadata/`,
-`metadata/delegat/`, and `cartridges/`, using FAT-compatible bounded directory names, while durable artifacts remain
+`metadata/delegat/`, and `amrns/`, using FAT-compatible bounded directory names, while durable artifacts remain
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
 The adapter also exposes `with_content_addressed_cartridge()`, which opens only
-the lowercase SHA-256 cartridge filename under `cartridges/` and hands the file to
+the lowercase SHA-256 cartridge filename under `amrns/` and hands the file to
 the existing bounded AMRN execution loaders.
 
 The adapter now exposes the streaming contract directly. The shared Binary v2

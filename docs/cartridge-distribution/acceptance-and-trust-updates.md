@@ -10,7 +10,7 @@ The target-side acceptance flow is fixed:
 6. resolve every executable target record for the boot profile within the
    bounded execution capacity; zero records, duplicate identities, or records
    beyond the capacity MUST be rejected;
-7. open `cartridges/<lowercase-sha256>.amrn` from the content-addressed cartridge
+7. open `amrns/<lowercase-sha256>.amrn` from the content-addressed cartridge
    directory, never by directory order or an untrusted display name;
 8. verify cartridge length and complete-file hash;
 9. verify the developer delegation and its validity/revocation state;

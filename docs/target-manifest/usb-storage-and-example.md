@@ -95,6 +95,10 @@ dp = { port = "PA", number = 12, alternate_function = 10, active_high = false }
 [storage]
 controller = "SDIO"
 bus_width = 4
+data_timeout_cycles = 1_000_000
+command_poll_limit = 1_000_000
+data_poll_limit = 1_000_000
+dma_stop_poll_limit = 1_000_000
 clock = { port = "PC", number = 12, alternate_function = 12, active_high = false }
 command = { port = "PD", number = 2, alternate_function = 12, active_high = false }
 data = [

@@ -60,7 +60,7 @@ The repository then contains:
 <repository>/metadata/targets.dmb
 <repository>/metadata/revocations.dmb
 <repository>/metadata/delegat/
-<repository>/cartridges/
+<repository>/amrns/
 ```
 
 `repository add-developer` adds a signed delegation file, adds its delegation
@@ -98,7 +98,7 @@ cartridge and one delegation before publication can produce a valid bundle:
   --version 1
 ```
 
-The cartridge must be copied to `cartridges/<sha256>.amrn` before `publish`.
+The cartridge must be copied to `amrns/<sha256>.amrn` before `publish`.
 Cartridge authorization records in `targets.dmb` are a separate required
 operation for kernel execution and are created by `register-cartridge` below.
 Do not claim a hardware-ready repository until that record references the
@@ -293,15 +293,15 @@ if [ -e "$DALI_REPO" ]; then
   echo "Repository already exists: $DALI_REPO"
   echo "Review it before continuing; do not delete it automatically."
 else
-  mkdir -p "$DALI_REPO/cartridges"
+  mkdir -p "$DALI_REPO/amrns"
 fi
 
 export CARTRIDGE_DIGEST="$(
   sha256sum "$APP_CARTRIDGE" | awk '{print tolower($1)}'
 )"
 
-cp "$APP_CARTRIDGE" "$DALI_REPO/cartridges/${CARTRIDGE_DIGEST}.amrn"
-test -f "$DALI_REPO/cartridges/${CARTRIDGE_DIGEST}.amrn"
+cp "$APP_CARTRIDGE" "$DALI_REPO/amrns/${CARTRIDGE_DIGEST}.amrn"
+test -f "$DALI_REPO/amrns/${CARTRIDGE_DIGEST}.amrn"
 echo "$CARTRIDGE_DIGEST"
 ```
 
@@ -369,7 +369,7 @@ Copy only after confirming that the target is the Dali SD card:
 
 ```bash
 sudo cp -a "$DALI_REPO/metadata" "$DALI_MOUNT/"
-sudo cp -a "$DALI_REPO/cartridges" "$DALI_MOUNT/"
+sudo cp -a "$DALI_REPO/amrns" "$DALI_MOUNT/"
 sudo cp "$DALI_REPO/bundle.manifest" "$DALI_MOUNT/"
 sync
 

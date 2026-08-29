@@ -21,7 +21,7 @@ cargo run --manifest-path ../../crates/dali-cli/Cargo.toml -- app build
 ```
 
 Register the cartridge in the existing Binary v2 repository and keep it under
-the repository `cartridges/` directory with its matching metadata. This kernel
+the repository `amrns/` directory with its matching metadata. This kernel
 path does not scan the FAT root for arbitrary AMRN files. Safely unmount the
 card before inserting it into the F405 board.
 
