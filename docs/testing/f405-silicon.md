@@ -35,6 +35,28 @@ run-specific metadata and status.
 
 ## Boot, storage, and application path
 
+### Latest F405 signed-cartridge regression — 2026-08-29
+
+The release F405 image built from source revision `0cfa1dd` was flashed with
+the Raspberry Pi Pico 2 CMSIS-DAP/SWD probe at 1000 kHz. The board's USB CDC
+console was opened using the path reported by `dali device list`. The SD card
+contained Binary v2 generation `version=1`, `sequence=2`, `slot=B`, with the
+current 329-byte AMRN cartridge.
+
+The target reported `Reset cause: Software`, initialized SDIO, loaded the
+Root, Bundle, Timestamp, Snapshot, and Revocations roles, reconstructed trust
+state, verified the AMRN signature, and loaded slot 0 with code at
+`0x20008000` and data at `0x2000C000`. The observed application output was
+exactly one:
+
+```text
+[INFO][APP] Hello World from AMRN
+```
+
+Result: passed for this F405 boot, Binary v2 repository, signed-cartridge,
+and USB CDC path. This is not evidence for I2C/OLED rendering, Secure Boot,
+arbitrary DMA isolation, or multi-application isolation.
+
 - [x] F405 boot, 168 MHz clock, PB2 LED, PC13 key, SDIO initialization, and block-zero
   read.
 - [x] FAT32 root scan and `.amrn` cartridge discovery.

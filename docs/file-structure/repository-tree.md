@@ -82,6 +82,7 @@ dali-kernel/
 │               └── multi.rs      # Bounded multi-cartridge enumeration
 ├── apps/
 │   ├── dali-app-hello/
+│   ├── dali-app-dma-denial/          # Kernel-owned DMA denial fixture
 │   ├── dali-app-slot0-fixture/       # AMRN v4 relocation fixture for slot 0
 │   ├── dali-app-relocation-fixture/
 │   ├── dali-app-svc-rejections/
@@ -169,7 +170,11 @@ dali-kernel/
 │   │   ├── 03-system-gui-and-launcher.md
 │   │   ├── 04-first-stage-bootloader.md
 │   │   ├── 05-interactive-shell-telemetry-and-control.md
-│   │   └── 06-documentation-quality-and-enterprise-readiness.md
+│   │   ├── 06-documentation-quality-and-enterprise-readiness.md
+│   │   ├── 07-codebase-refactoring-and-hardware-gates.md
+│   │   └── 08-universal-platform-architecture.md
+│   ├── assets/                      # Tracked documentation assets
+│   │   └── dali-logo.svg
 │   ├── security/
 │   │   ├── README.md
 │   │   ├── baseline-and-current-boundary.md

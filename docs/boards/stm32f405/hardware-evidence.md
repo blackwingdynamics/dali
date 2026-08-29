@@ -22,3 +22,20 @@ that silicon evidence.
 
 The required next measurement is a signal-level check of SCL and SDA with an
 oscilloscope or logic analyzer when suitable laboratory equipment is available.
+
+## Latest F405 regression record
+
+- Date: 2026-08-29
+- Firmware source revision: `0cfa1dd`
+- Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+- Power: USB
+- Flash transport: Raspberry Pi Pico 2 CMSIS-DAP/SWD at 1000 kHz
+- Console transport: the board's USB CDC console, selected through `dali device list`
+- Storage: the connected SD card with Binary v2 generation `version=1`, `sequence=2`, `slot=B`
+- Expected result: one complete repository load, signed AMRN validation, and one application log
+- Observed result: SDIO initialization, Root/Bundle/Timestamp/Snapshot/Revocations loading,
+  trust-state reconstruction, AMRN signature verification, slot-0 placement, and exactly
+  one `[INFO][APP] Hello World from AMRN` line
+- Result: passed for this F405 boot, storage, signed-cartridge, and USB CDC path
+- Limitation: this record does not establish I2C/OLED acceptance, Secure Boot, arbitrary
+  DMA isolation, or multi-application isolation

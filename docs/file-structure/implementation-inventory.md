@@ -123,6 +123,9 @@ Each application fixture has its own `Cargo.toml`, `build.rs`, `src/lib.rs`,
 and `src/main.rs`. The fault and SVC fixtures additionally have a local
 `.cargo/config.toml`, `Cargo.lock`, and `dali.toml`. The relocation fixture has
 its own `Cargo.lock` but uses the root build configuration. `dali-app-hello`
+contains the tracked application source and manifest files listed by its
+package, while generated application targets and linker output remain
+ignored.
 The selected board backend build script generates its linker `memory.x` from
 the target manifest, and the firmware composition forwards that generated
 artifact to the final linker; the generated script is not tracked.
