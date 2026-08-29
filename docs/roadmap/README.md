@@ -13,6 +13,7 @@ acceptance boundaries, and the repository-quality work track.
 - [06 — Documentation Quality and Enterprise Readiness](06-documentation-quality-and-enterprise-readiness.md)
 - [07 — Codebase Refactoring and Hardware Evidence Gates](07-codebase-refactoring-and-hardware-gates.md)
 - [08 — Universal Platform Architecture](08-universal-platform-architecture.md)
+- [09 — Baseline Regression Isolation and Recovery](09-baseline-regression-isolation.md)
 
 ## Prepared sections from the roadmap gateway
 
