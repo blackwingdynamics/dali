@@ -77,6 +77,12 @@ Migration checkpoint: `crates/dali-kernel-api` contains the public contracts,
 Evidence gate: the F405 baseline trace must be reproducible and attached to the
 checkpoint. No migration begins while the baseline is ambiguous.
 
+Current checkpoint: the F405 implementation is extracted from the kernel
+platform module into `crates/dali-boards/dali-board-stm32f405/`, and the kernel
+platform module contains only the hardware-neutral facade. The remaining
+universalization work is explicit backend selection, directory-local
+registration, and validation for additional backends.
+
 ## Phase 1 — Hardware-neutral kernel boundary
 
 - [ ] Move common platform-facing policy behind typed hardware-neutral
@@ -99,9 +105,11 @@ traces with the Phase 0 baseline before proceeding.
 - [x] Copy F405 clock, GPIO, timer, serial, I2C, SPI, watchdog,
   interrupts, SDIO, USB, linker, and memory ownership under
   `crates/dali-boards/dali-board-stm32f405/` for comparison.
-- [ ] Remove accidental F405 assumptions from shared modules.
-- [ ] Move F405 MPU register programming, CCM/SRAM section placement, and
-  processor-specific fault setup into the F405 backend.
+- [x] Remove accidental F405 assumptions from shared modules.
+- [x] Move F405 MPU register programming and processor-specific fault setup
+  into the F405 backend.
+- [ ] Move backend-specific CCM/SRAM section placement out of shared build
+  logic while preserving manifest-owned memory validation.
 - [ ] Keep SDIO, Storage, USB CDC core, and SPI/ILI9341 frozen unless a separate
   approved change explicitly reopens them.
 - [ ] Generate the F405 backend manifest/profile without duplicating values in
@@ -114,7 +122,7 @@ acceptance items and cannot be inferred from this migration.
 
 ## Phase 3 — Directory-local backend registration
 
-- [ ] Define an explicit backend directory contract containing implementation,
+- [x] Define an explicit backend directory contract containing implementation,
   target metadata, linker/memory integration, and validation commands.
 - [ ] Make backend discovery manifest-driven or generated, so adding a new
   directory does not require editing OS core source.
@@ -122,7 +130,7 @@ acceptance items and cannot be inferred from this migration.
 - [ ] Keep Cargo features or generated cfg values limited to compile-time
   backend isolation; they must not encode board policy in shared modules.
 - [ ] Reject duplicate backend IDs, target IDs, capabilities, and memory ranges.
-- [ ] Add a template or documented checklist for new backend directories.
+- [x] Add a template or documented checklist for new backend directories.
 - [ ] Add a compatibility test proving an unselected backend is not linked.
 
 Evidence gate: build the F405 backend from its directory-local registration and
@@ -192,12 +200,12 @@ not hardware acceptance.
 
 ## Completion criteria
 
-- [ ] F405 is isolated behind the platform boundary.
+- [x] F405 is isolated behind the platform boundary.
 - [ ] A new backend requires no edits to OS core policy modules.
 - [ ] A new backend can be added in its own directory with local metadata,
   linker/memory definitions, and validation.
 - [ ] F405, Pico, and at least one FPGA/SoC backend pass their own evidence
   gates, where those backends are implemented.
-- [ ] Documentation, generated profiles, build matrix, and repository tree
-  match the actual implementation.
+- [x] Documentation and repository tree match the current F405 implementation;
+  generated profile and build-matrix expansion remain open.
 - [ ] No unsupported portability, security, or hardware claims remain.

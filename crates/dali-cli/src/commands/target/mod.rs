@@ -10,10 +10,10 @@ pub(super) use info::render_profile;
 const LIST_COMMAND: &str = "list";
 const SCAFFOLD_COMMAND: &str = "scaffold";
 const OUTPUT_FLAG: &str = "--output";
-const PLATFORM_DIRECTORY: &str = "kernel/src/platform";
+const BOARDS_DIRECTORY: &str = "crates/dali-boards";
 const DOCUMENTATION_DIRECTORY: &str = "docs/boards";
 const BACKEND_SUFFIX: &str = ".rs.template";
-const DOCUMENTATION_SUFFIX: &str = ".md";
+const DOCUMENTATION_FILE: &str = "README.md";
 
 pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     match arguments.get(1).map(String::as_str) {
@@ -35,13 +35,17 @@ fn scaffold(arguments: &[String]) -> Result<(), String> {
     };
     let profile = dali_targets::find_board(profile_name)
         .ok_or_else(|| format!("unknown board profile '{profile_name}'"))?;
-    let backend = output_root
-        .join(PLATFORM_DIRECTORY)
-        .join(profile_name)
-        .join(format!("mod{BACKEND_SUFFIX}"));
+    let backend_crate = output_root
+        .join(BOARDS_DIRECTORY)
+        .join(format!("dali-board-{}", profile.backend));
+    reject_existing(&backend_crate)?;
+    let backend = backend_crate
+        .join("src")
+        .join(format!("backend{BACKEND_SUFFIX}"));
     let documentation = output_root
         .join(DOCUMENTATION_DIRECTORY)
-        .join(format!("{profile_name}{DOCUMENTATION_SUFFIX}"));
+        .join(profile_name)
+        .join(DOCUMENTATION_FILE);
     reject_existing(&backend)?;
     reject_existing(&documentation)?;
     write_scaffold(&backend, &backend_template(profile))?;
@@ -102,7 +106,7 @@ fn backend_template(profile: &dali_targets::TargetProfile) -> String {
     let metadata = metadata_template(profile);
     format!(
         "//! Review scaffold generated from targets/{name}.toml.\n\
-//! Map the profile to typed HAL resources before adding this backend to the platform facade.\n\
+//! Map the profile to typed HAL resources before adding this backend to the firmware composition.\n\
 //!\n\
 //! Required review areas:\n\
 //! - clock and reset configuration\n\
@@ -221,13 +225,13 @@ pub const {prefix}_ACTIVE_HIGH: bool = {active_high};\n\
 fn documentation_template(profile: &dali_targets::TargetProfile) -> String {
     format!(
         "# {board}\n\n\
-Generated from targets/{name}.toml. Complete and review this document before accepting the kernel backend.\n\n\
+Generated from targets/{name}.toml. Complete and review this document before accepting the board backend.\n\n\
 - MCU: {mcu}\n\
 - Rust target: {target}\n\
 - AMRN target ID: 0x{id:02X}\n\
 - ABI version: {abi}\n\
 - Application support: {application_supported}\n\
-- Kernel mapping status: pending typed HAL implementation\n\
+- Backend mapping status: pending typed HAL implementation\n\
 - Hardware acceptance status: pending\n",
         board = profile.board,
         name = profile.name,

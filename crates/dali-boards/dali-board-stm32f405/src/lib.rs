@@ -4,8 +4,8 @@
 //! STM32F405 board backend.
 //!
 //! The implementation is intentionally introduced as a separate public crate.
-//! Existing kernel F405 code is migrated here in subsequent atomic checkpoints;
-//! this first checkpoint establishes the publication and dependency boundary.
+//! The firmware composition selects this backend while the kernel consumes it
+//! through the hardware-neutral `BoardBackend` contract.
 
 mod architecture;
 #[cfg(feature = "board-stm32f405-sd")]
