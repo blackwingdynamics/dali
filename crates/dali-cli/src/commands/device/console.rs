@@ -88,9 +88,7 @@ fn read_console(mut serial: Box<dyn serialport::SerialPort>, stop: Arc<AtomicBoo
                 for byte in &bytes[..count] {
                     if *byte == b'\n' {
                         if !discard && line.first() == Some(&b'[') {
-                            let _ = io::stdout().write_all(&line[..length]);
-                            let _ = io::stdout().write_all(b"\n");
-                            let _ = io::stdout().flush();
+                            write_line(&line[..length]);
                         }
                         length = 0;
                         discard = false;
@@ -108,6 +106,12 @@ fn read_console(mut serial: Box<dyn serialport::SerialPort>, stop: Arc<AtomicBoo
             Err(_) => break,
         }
     }
+}
+
+fn write_line(line: &[u8]) {
+    let _ = io::stdout().write_all(line);
+    let _ = io::stdout().write_all(b"\n");
+    let _ = io::stdout().flush();
 }
 
 fn forward_input(
