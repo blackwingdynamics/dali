@@ -66,6 +66,8 @@ pub struct ArchitectureOperations {
     pub request_context_switch: fn(),
     /// Builds the initial context record for a validated application frame.
     pub initial_context: fn(u32, u32) -> ContextRecord,
+    /// Captures an exception-save area into the architecture context record.
+    pub capture_context: unsafe fn(*const u32, u32, u32, u32) -> ContextRecord,
     /// Reads the process stack pointer.
     pub read_process_stack_pointer: fn() -> u32,
     /// Writes the process stack pointer.
@@ -108,4 +110,17 @@ pub trait ArchitectureBackend {
 
     /// Builds the initial context record for a validated application frame.
     fn initial_context(psp: u32, exception_return: u32) -> ContextRecord;
+
+    /// Captures an exception-save area into the architecture context record.
+    ///
+    /// # Safety
+    ///
+    /// The pointer must reference the complete, aligned save area produced by
+    /// the architecture's exception entry wrapper.
+    unsafe fn capture_context(
+        saved_registers: *const u32,
+        psp: u32,
+        control: u32,
+        exception_return: u32,
+    ) -> ContextRecord;
 }

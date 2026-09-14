@@ -60,7 +60,8 @@ reviewed behind an architecture-owned boundary:
 - `kernel/src/security/launch/` — portable launch validation mixed with
   architecture-specific frame materialization and entry transfer;
 - `kernel/src/security/scheduling/mod.rs` — PendSV/SysTick handlers and
-  architecture-specific exported exception symbols;
+  architecture-specific exported exception symbols; raw context capture is
+  now delegated to the architecture operations boundary;
 - `kernel/src/security/privilege/svc.rs` — ARM exception frame and EXC_RETURN
   semantics mixed with service policy;
 - `kernel/src/platform/mod.rs` — architecture operations are composed here,
@@ -154,8 +155,8 @@ The review found these concrete issues for Phase 1 implementation:
 - [ ] Approve this ownership map as the Phase 1 implementation boundary.
 - [x] Split `kernel/src/platform/mod.rs` into focused composition modules with
   no behavior change.
-- [ ] Separate portable context/scheduler records from ARM exception mechanics
-  beyond the opaque record, layout, and initial-context boundaries.
+- [x] Separate portable context/scheduler records from ARM exception mechanics
+  beyond the opaque record, layout, initial-context, and capture boundaries.
 - [ ] Move SCB and exception-frame operations behind the architecture port.
 - [ ] Recheck kernel-wide dependency direction and forbidden hardware names.
 - [ ] Run the complete software validation suite.

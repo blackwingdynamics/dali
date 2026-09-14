@@ -6,6 +6,8 @@ use dali_kernel_api::{ArchitectureBackend, ArchitectureOperations, ContextRecord
 pub struct CortexMArchitecture;
 
 const PSP_WORD: usize = 0;
+const CALLEE_SAVED_START: usize = 1;
+const CALLEE_SAVED_WORDS: usize = 8;
 const CONTROL_WORD: usize = 9;
 const EXCEPTION_RETURN_WORD: usize = 10;
 
@@ -24,6 +26,7 @@ impl ArchitectureBackend for CortexMArchitecture {
             enable_interrupts: Self::enable_interrupts,
             request_context_switch: Self::request_context_switch,
             initial_context: Self::initial_context,
+            capture_context: Self::capture_context,
             read_process_stack_pointer: Self::read_process_stack_pointer,
             write_process_stack_pointer: Self::write_process_stack_pointer,
             read_main_stack_pointer: Self::read_main_stack_pointer,
@@ -54,6 +57,25 @@ impl ArchitectureBackend for CortexMArchitecture {
         let mut words = [0; dali_kernel_api::CONTEXT_RECORD_WORDS];
         words[PSP_WORD] = psp;
         words[CONTROL_WORD] = UNPRIVILEGED_PSP_CONTROL;
+        words[EXCEPTION_RETURN_WORD] = exception_return;
+        ContextRecord::new(words)
+    }
+
+    unsafe fn capture_context(
+        saved_registers: *const u32,
+        psp: u32,
+        control: u32,
+        exception_return: u32,
+    ) -> ContextRecord {
+        let saved = unsafe {
+            // SAFETY: The PendSV wrapper passes an aligned pointer to the
+            // complete callee-saved register area on the kernel stack.
+            *(saved_registers as *const [u32; CALLEE_SAVED_WORDS])
+        };
+        let mut words = [0; dali_kernel_api::CONTEXT_RECORD_WORDS];
+        words[PSP_WORD] = psp;
+        words[CALLEE_SAVED_START..CALLEE_SAVED_START + CALLEE_SAVED_WORDS].copy_from_slice(&saved);
+        words[CONTROL_WORD] = control;
         words[EXCEPTION_RETURN_WORD] = exception_return;
         ContextRecord::new(words)
     }

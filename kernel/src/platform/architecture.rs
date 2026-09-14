@@ -39,6 +39,28 @@ pub(crate) fn initial_context(
     })
 }
 
+/// Captures the architecture-owned exception save area into a context record.
+///
+/// # Safety
+///
+/// `saved_registers` must point to the complete, aligned save area produced by
+/// the selected architecture's exception wrapper.
+#[cfg(feature = "abi-context-switch")]
+pub(crate) unsafe fn capture_context(
+    saved_registers: *const u32,
+    psp: u32,
+    control: u32,
+    exception_return: u32,
+) -> Option<dali_kernel_api::ContextRecord> {
+    critical_section::with(|cs| {
+        ARCHITECTURE.borrow(cs).borrow().map(|operations| unsafe {
+            // SAFETY: The caller satisfies the selected architecture
+            // backend's save-area invariant.
+            (operations.capture_context)(saved_registers, psp, control, exception_return)
+        })
+    })
+}
+
 /// Waits through the installed architecture after bootstrap registration.
 #[cfg(feature = "abi-current")]
 pub(crate) fn wait_for_registered_interrupt() -> ! {
