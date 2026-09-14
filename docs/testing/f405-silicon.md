@@ -86,6 +86,28 @@ Result: passed for no-AMRN boot continuity, empty Flash artifact detection,
 SD fallback, bounded no-card recovery, and kernel heartbeat entry. This does
 not yet prove writing an AMRN to Flash or executing one without SD.
 
+### Hot SD reinsertion and AMRN relaunch — 2026-09-14
+
+After the SDIO card-ready polling bound was corrected in source revision
+`d631b63`, the same release firmware was booted without an SD card. The card
+was inserted while the kernel recovery heartbeat was active. The recovery
+probe initialized SDIO, replayed the repository verification path, and
+executed the signed AMRN without a reset.
+
+The previously observed stall after the second Root open was not reproduced;
+the bounded repository progress hook kept the installed watchdog serviced
+during recovery-triggered loading.
+
+```text
+[STORAGE] SDIO card initialized
+[SECURITY] AMRN signature verified
+[SECURITY] Active application context: Running
+[INFO][APP] Hello World from AMRN
+```
+
+Result: passed for SD removal, heartbeat recovery, live SD reinsertion,
+repository reload, signed AMRN verification, and application relaunch.
+
 ### ABI v3 isolation and fault recovery
 
 - [x] Kernel-RAM read and write rejection with `MemManage` recovery.
