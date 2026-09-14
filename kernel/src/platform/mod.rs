@@ -39,12 +39,12 @@ pub(crate) use usb::{pend_irq as pend_usb_irq, service_irq as service_usb_irq};
 
 use dali_kernel_api::{ArchitectureBackend, BoardBackend, BoardError, ResetCause, WatchdogBackend};
 
-#[cfg(feature = "abi-context-switch")]
+#[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
 /// Kernel-owned watchdog callback used while an application context is active.
 static SCHEDULER_WATCHDOG: critical_section::Mutex<core::cell::RefCell<Option<WatchdogService>>> =
     critical_section::Mutex::new(core::cell::RefCell::new(None));
 
-#[cfg(feature = "abi-context-switch")]
+#[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
 /// Kernel-owned watchdog callback registered for application context switches.
 #[derive(Clone, Copy)]
 struct WatchdogService {
@@ -189,7 +189,7 @@ where
             return Err(WatchdogServiceError::AlreadyInstalled);
         }
         self.watchdog = Some(runtime);
-        #[cfg(feature = "abi-context-switch")]
+        #[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
         critical_section::with(|cs| {
             let mut service = SCHEDULER_WATCHDOG.borrow(cs).borrow_mut();
             if service.is_none() {
@@ -225,6 +225,18 @@ where
     }
 }
 
+#[cfg(feature = "repository-loader")]
+/// Services the installed watchdog from bounded non-interrupt boot work.
+pub(crate) fn service_watchdog_from_progress() -> bool {
+    critical_section::with(|cs| {
+        let service = SCHEDULER_WATCHDOG.borrow(cs).borrow();
+        match *service {
+            Some(service) => unsafe { (service.feed)(service.platform) },
+            None => true,
+        }
+    })
+}
+
 #[cfg(feature = "abi-context-switch")]
 /// Feeds the installed watchdog from the kernel-owned scheduler exception.
 pub(crate) fn service_watchdog_from_scheduler() {
@@ -236,7 +248,7 @@ pub(crate) fn service_watchdog_from_scheduler() {
     });
 }
 
-#[cfg(feature = "abi-context-switch")]
+#[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
 /// Feeds the watchdog through the platform facade stored in `platform`.
 ///
 /// # Safety

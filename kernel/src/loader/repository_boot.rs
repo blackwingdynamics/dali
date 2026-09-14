@@ -133,7 +133,11 @@ where
 /// Provides the bounded repository storage progress hook.
 #[cfg(feature = "repository-loader")]
 fn repository_chunk_pet() -> Result<(), crate::drivers::StorageError> {
-    Ok(())
+    if crate::platform::service_watchdog_from_progress() {
+        Ok(())
+    } else {
+        Err(crate::drivers::StorageError::Transport)
+    }
 }
 
 /// Keeps repository verification progressing when no interrupt-owned service
