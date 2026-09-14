@@ -14,6 +14,8 @@ mod usb;
 pub(crate) use architecture::request_context_switch;
 #[cfg(feature = "abi-test-fixtures")]
 pub(crate) use architecture::write_fault_register;
+#[cfg(feature = "abi-context-switch")]
+pub(crate) use architecture::{capture_context, initial_context};
 #[cfg(feature = "abi-current")]
 pub(crate) use architecture::{
     main_stack_pointer, process_stack_pointer, set_process_stack_pointer,
@@ -28,11 +30,7 @@ pub(crate) use protection::{
 pub(crate) use registry::memory_profile;
 #[cfg(feature = "abi-context-switch")]
 pub(crate) use registry::scheduler_profile;
-#[cfg(any(
-    feature = "abi-authentication",
-    feature = "repository-loader",
-    feature = "abi-context-switch"
-))]
+#[cfg(any(feature = "abi-authentication", feature = "repository-loader"))]
 pub(crate) use registry::target_profile;
 #[cfg(feature = "abi-authentication")]
 pub(crate) use registry::trust_anchors;
