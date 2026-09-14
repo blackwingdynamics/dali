@@ -1,238 +1,385 @@
-# Dali OS Coding Agent Instructions
+# Dali OS Agent Contract
 
-This document is the operating contract for any coding agent working in this repository. Read it before inspecting or modifying code. The repository is an early-stage embedded Rust platform, so correctness, explicit safety boundaries, and evidence are more important than implementation speed.
+This document is the mandatory operating contract for every coding agent in
+this repository. Read it before inspecting, editing, testing, or deleting
+anything. `AGENTS.bak` preserves the previous contract and is historical
+reference only; this file is the active contract.
 
-## 1. Project mission
+Dali OS is an early-stage `no_std` embedded operating system. Correctness,
+explicit ownership boundaries, reversible changes, and real hardware evidence
+are more important than implementation speed.
 
-Dali OS is a `no_std` Rust operating system and embedded runtime for STM32 microcontrollers and future autonomous or industrial devices.
+## 1. Highest priority: stabilize the kernel foundation
 
-The first milestone is deliberately narrow:
+The active branch is `kernel-foundation`. The highest-priority work is to
+clean up, simplify, and stabilize a universal kernel foundation.
 
-1. boot a Rust kernel on the STM32F405RGT6 WeAct Studio Core Board;
-2. initialize the clock, PB2 status LED, PC13 user key, and RTT logging;
-3. read a FAT16/FAT32 SD card over SDIO;
-4. discover an `.amrn` package in the card root;
-5. validate a fixed 32-byte AMRN header and CRC32 payload checksum;
-6. load a native payload into the reserved SRAM region at `0x20008000`;
-7. transfer control to `unsafe extern "C" fn(*const ServiceTable) -> !`;
-8. verify execution through a deterministic application LED pattern.
+The target is a hardware-neutral kernel core with explicit architecture and
+board ports. It is not one binary that runs on every CPU. A new CPU or board
+must be addable through a new port without editing existing kernel policy.
 
-The MVP application is trusted native code. It is not sandboxed, isolated,
-signed, encrypted, dynamically linked, or interrupt-owning. The repository also
-contains feature-gated ABI v3 single-application processor-side isolation and
-AMRN v3/v4 loader paths; these are not the default MVP configuration and must
-not be described as complete sandboxing, secure boot, DMA isolation, or
-multi-application isolation. See `docs/security/README.md`, `docs/abi/README.md`, and
-`docs/testing/README.md` for the current evidence boundary.
+The active foundation roadmap is `docs/roadmap/00-kernel-foundation.md`.
+It takes priority over GUI, Ustari, cartridge distribution, metadata,
+commercial workflows, new AMRN versions, new boards, and unrelated feature
+work.
 
-## 2. Source of truth
+The foundation work must be conservative:
 
-Read the relevant documents before making a change:
+- preserve the F405 behavior and evidence baseline;
+- make small, atomic, reversible changes;
+- do not delete working subsystems merely to make the tree look smaller;
+- park non-foundation features instead of removing them without a replacement;
+- do not weaken an existing contract or evidence claim silently;
+- stop and request approval before an architecture, ABI, boot, storage, loader,
+  memory, or feature-contract change.
 
-- `docs/architecture/README.md` — system boundaries and MVP scope;
-- `docs/amrn-format/README.md` — package bytes and validation rules;
-- `docs/abi/README.md` — kernel/application execution contract;
-- `docs/hardware/README.md` — board, pins, clock, and SRAM layout;
-- `docs/coding-standards/README.md` — code, comments, unsafe, testing, and review rules;
-- `docs/roadmap/README.md` — atomic implementation order;
-- `docs/testing/README.md` — test strategy;
-- `docs/mvp-acceptance/README.md` — physical acceptance procedure;
-- `docs/versioning/README.md` — version and compatibility rules;
+The protected recovery points are:
+
+- `parked/f405-platform-state-2026-09-14` — current full F405 state;
+- `parked/pre-foundation-main` — previous `main` state.
+
+Do not rewrite, delete, or develop on parked branches as part of foundation
+work.
+
+## 2. Source of truth and baseline contracts
+
+Read the relevant documents before changing code:
+
+- `docs/architecture/README.md` — kernel boundaries and scope;
+- `docs/file-structure/README.md` — repository ownership;
+- `docs/amrn-format/README.md` — cartridge bytes and validation;
+- `docs/abi/README.md` — application execution contract;
+- `docs/hardware/README.md` — board and memory facts;
+- `docs/coding-standards/README.md` — engineering and safety rules;
+- `docs/roadmap/README.md` — execution order and acceptance gates;
+- `docs/testing/README.md` — evidence categories;
+- `docs/mvp-acceptance/README.md` — physical MVP procedure;
+- `docs/platform-backends/README.md` — port ownership and addition rules;
 - `CONTRIBUTING.md` — branch, commit, PR, and CI rules.
 
-If code and documentation disagree, stop and resolve the contract before implementing. Do not silently choose a new behavior.
+If code and documentation disagree, stop and resolve the contract before
+implementing. Do not silently choose a new behavior.
 
-## 3. Repository boundaries
+The first reference target is the WeAct Studio STM32F405RGT6 Core Board with
+`thumbv7em-none-eabihf`, a 168 MHz clock, PB2 status LED, PC13 active-low key,
+and hardware SDIO in 4-bit mode. These are F405 port facts, not universal
+kernel facts.
 
-```text
-kernel/               Embedded kernel and bootstrap
-apps/dali-app-hello/  Independent demo application
-crates/dali-sdk/      Application SDK scaffold
-crates/dali-cli/      Package and device CLI scaffold
-crates/dali-usb/      Hardware-neutral bounded USB delivery primitives and host tests
-crates/dali-amrn/     Hardware-neutral AMRN format parser and validation
-crates/dali-device/   Hardware-neutral device discovery records and ordering
-docs/                 Architecture and process documentation
-scripts/              Validation and release automation
-.github/              CI, release workflow, and PR policy
-```
-
-Module ownership:
-
-- `kernel/src/main.rs` — bootstrap orchestration only;
-- `kernel/src/platform/f405/board.rs` — board-specific pins, clocks, and peripheral ownership;
-- `kernel/src/logging/` — logging facade and hardware backend boundary;
-- `crates/dali-usb/` — transport-neutral bounded log delivery state and tests;
-- `crates/dali-amrn/` — AMRN header, payload bounds, and CRC32 validation;
-- `crates/dali-device/` — transport-neutral discovery records, states, and ordering;
-- `kernel/src/storage/` — SD and filesystem access;
-- `kernel/src/loader/` — AMRN parsing, CRC32, bounds checks, and execution;
-- `kernel/src/runtime/` — future tasks, scheduling, IPC, services, and watchdogs.
-
-Keep package parsing independent from filesystem internals and hardware. Keep hardware-specific code out of package-format logic.
-
-## 4. Non-negotiable technical contracts
-
-### Absolute no-hardcoding rule
-
-Hardcoding is forbidden in implementation code. Do not place hardware, configuration, deployment, or runtime values directly in functions, loaders, drivers, or applications.
-
-The following must be named constants, typed values, configuration fields, or documented board/build definitions:
-
-- memory addresses and SRAM ranges;
-- GPIO pins and peripheral identifiers;
-- clock frequencies, baud rates, timeouts, and delays;
-- buffer sizes, payload limits, stack sizes, and queue capacities;
-- filesystem paths and package names;
-- protocol versions, target IDs, ABI versions, and feature flags;
-- device identifiers, retry counts, and safety thresholds.
-
-Allowed literals are limited to simple language mechanics and values explicitly defined by a specification. Even protocol magic values must be represented by named constants and documented. If a value can change between boards, builds, deployments, or runtime configurations, it must not be a raw literal in implementation code.
-
-Any exception must be reviewed, named, documented, and justified by the relevant architecture or hardware specification.
-
-### Target
-
-- MCU: STM32F405RGT6;
-- board: WeAct Studio STM32F405RGT6 Core Board;
-- target: `thumbv7em-none-eabihf`;
-- clock target: 168 MHz;
-- status LED: PB2, active-high; user key: PC13, active-low with pull-up;
-- SD interface: hardware SDIO in 4-bit mode.
-
-### SRAM
-
-```text
-0x20000000 - 0x20007FFF   Kernel reserved RAM
-0x20008000 - 0x20017FFF   Application region, 64 KiB
-0x20018000 - 0x2001FFFF   Kernel runtime and stack RAM
-```
-
-Do not change this layout without updating `kernel/memory.x`, the AMRN format, the ABI, hardware documentation, tests, and roadmap.
-
-### AMRN
-
-- extension: `.amrn`;
-- magic: `DALI`;
-- header size: 32 bytes;
-- integer encoding: little-endian;
-- payload integrity: CRC32;
-- load address: `0x20008000`;
-- maximum payload: 64 KiB;
-- relocation and dynamic linking: unsupported in the MVP.
-
-The loader must reject invalid magic, version, target, sizes, offsets, addresses, CRC32, and entry points before copying or jumping.
-
-### ABI
+The baseline MVP uses a 32-byte little-endian AMRN header, `DALI` magic,
+CRC32 payload integrity, a maximum 64 KiB payload, fixed application SRAM
+origin `0x20008000`, and the documented entry contract:
 
 ```rust
 unsafe extern "C" fn(*const ServiceTable) -> !
 ```
 
-MVP applications do not own interrupts, do not use a scheduler, do not access kernel-private symbols, and do not depend on shared RTT logging.
+The loader must validate magic, version, target, sizes, offsets, addresses,
+CRC32, and entry point before copying or jumping. Do not change the ABI, AMRN
+format, memory map, or loader mode without updating its specification, tests,
+documentation, versioning, and roadmap, followed by explicit approval.
 
-## 5. Required implementation workflow
+## 3. Non-negotiable hardware-neutrality rules
 
-### Architecture change gate
+### Absolute no-hardcoding rule
 
-Never change the repository architecture, module ownership, boot path,
-storage layout, backend selection, loader mode, feature contract, ABI, or
-filesystem package layout as part of an implementation task. If the requested
-behavior appears to require an architectural change, stop before editing,
-describe the exact proposed change and its impact, and obtain explicit user
-approval. Do not silently substitute a different build profile, loader path,
-package location, or storage contract to make a fixture or validation flow
-work.
+**HARDCODING IS STRICTLY FORBIDDEN.** Do not place hardware, configuration,
+deployment, protocol, or runtime values directly in functions, loaders,
+drivers, applications, or kernel policy.
+
+Values that change between boards, CPUs, builds, deployments, or runtime
+configurations must be represented by named constants, types, validated
+configuration, target metadata, manifest fields, or documented board/build
+definitions. This includes:
+
+- memory addresses, SRAM ranges, linker regions, and stack boundaries;
+- GPIO pins, peripheral identifiers, interrupt numbers, and register values;
+- clock frequencies, baud rates, timeouts, delays, and polling limits;
+- buffer sizes, payload limits, queue capacities, and retry counts;
+- filesystem paths, package names, target IDs, ABI versions, and feature flags;
+- protocol magic values, device IDs, safety thresholds, and policy limits.
+
+Protocol literals explicitly required by a specification must still be named,
+documented constants. Any exception must be reviewed, named, documented, and
+justified by the owning specification.
+
+### No concrete board in the kernel
+
+**A CONCRETE BOARD, MCU, PAC, HAL, PIN, REGISTER, OR BOARD ID MUST NEVER BE
+HARD-CODED INTO KERNEL POLICY.**
+
+The following are forbidden in `kernel/src` and hardware-neutral contracts:
+
+- `stm32`, `stm32f4xx-hal`, `f405`, `f411`, or another concrete board name;
+- vendor PAC/HAL types, register addresses, pin numbers, linker symbols, or
+  board-specific interrupt handlers;
+- ARM-specific implementation details in a supposedly architecture-neutral
+  policy module;
+- board-specific branches in shared runtime, loader, storage policy, or
+  scheduler code.
+
+Vendor PAC/HAL code, unsafe MMIO, clocks, pins, interrupts, linker/memory
+definitions, and processor-specific exception code belong in the selected
+architecture or board backend under `crates/dali-boards/` or an equivalent
+port-owned directory.
+
+The kernel may consume typed capabilities, regions, timing profiles, and
+operations supplied by a port. It may not know how that port implements them.
+
+### Dependency direction
+
+Dependencies must point toward stable, hardware-neutral contracts:
+
+```text
+kernel policy -> hardware-neutral contracts
+architecture and board ports -> kernel contracts
+drivers -> port-provided resources and driver contracts
+CLI, SDK, and applications -> public application contracts
+```
+
+The kernel core must not depend on a concrete board crate, vendor HAL, CLI,
+SDK, application, or deployment tool. A port may depend on the kernel API, but
+the kernel API must not depend on a port. Reverse dependencies, cyclic module
+ownership, and hidden cross-layer imports are architectural defects.
+
+### Module and file placement
+
+**FILES MUST NOT BE DROPPED INTO A DIRECTORY WITHOUT AN EXPLICIT MODULE
+OWNER.** Before adding a file, identify its responsibility, owning module,
+public/private boundary, dependency direction, and reason it cannot live in an
+existing focused module.
+
+Group code into small, coherent modules and submodules whenever separation is
+possible. Split mixed responsibilities such as policy, parsing, transport,
+hardware access, formatting, and error mapping. Keep `mod.rs` and façade files
+focused on composition and exports; do not use them as dumping grounds for
+implementation code.
+
+Every new module must have a clear name, one primary responsibility, explicit
+visibility, and a documented source-of-truth relationship. Remove duplicate
+implementations instead of adding a second path that can drift.
+
+### No large implementation files
+
+**RUST IMPLEMENTATION FILES MUST NOT EXCEED 300 LINES.**
+
+Split files by explicit responsibility and ownership before they become large.
+Do not create monolithic modules, giant traits, broad façade files, or mixed
+policy/driver/backend implementations. A documented, reviewed exception must
+identify the file, explain why a split would damage the boundary, and be
+approved before the file exceeds the limit.
+
+Existing oversized files are inventory items, not permission for blind deletion
+or mechanical splitting. Split one responsibility at a time, preserve public
+behavior, validate the affected target path, and record the ownership reason.
+
+Functions should normally remain below 50 lines, use no more than three
+nesting levels, and perform one responsibility. Split them otherwise.
+
+## 4. Architecture and ownership model
+
+Keep these layers explicit:
+
+- `kernel core`: policy, state, lifecycle, scheduling policy, memory policy,
+  typed errors, and hardware-neutral contracts;
+- `architecture port`: exception entry, interrupt control, stack/context
+  operations, atomics, fault registers, and architecture-specific unsafe code;
+- `board backend`: clocks, pins, peripherals, board interrupts, watchdog,
+  linker/memory integration, and board-owned unsafe code;
+- `driver adapter`: conversion from board resources to hardware-neutral driver
+  contracts;
+- `target metadata`: declarative configuration consumed through validated,
+  typed profiles; it does not replace hardware ownership code.
+
+Keep package parsing independent from filesystems and hardware. Keep storage
+policy independent from SDIO. Keep logging policy independent of RTT, USB,
+UART, or another transport. Keep application APIs independent from kernel
+private symbols.
+
+Primary ownership:
+
+- `kernel/src/` — kernel policy and orchestration only;
+- `crates/dali-kernel-api/` — public hardware-neutral port contracts;
+- `crates/dali-boards/` — board and architecture implementations;
+- `crates/dali-driver-api/` — allocation-free driver contracts and errors;
+- `crates/dali-targets/` — target manifest validation and generated profiles;
+- `crates/dali-amrn/` — hardware-neutral AMRN parsing and validation;
+- `kernel/src/storage/` — filesystem and repository policy;
+- `kernel/src/loader/` — validated loading and execution policy;
+- `docs/roadmap/00-kernel-foundation.md` — active foundation sequence.
+
+## 5. Scope and evidence boundary
+
+The F405 MVP remains the first regression target: boot, clock, GPIO, SDIO,
+read-only FAT16/FAT32 access, AMRN validation, bounded loading, entry transfer,
+logging, watchdog, and documented recovery behavior.
+
+The baseline ABI v2 application is trusted native code. Do not describe it as
+sandboxed, isolated, secure-booted, signed, encrypted, dynamically linked, or
+multi-application isolated.
+
+Feature-gated ABI v3, MPU, context switching, relocation, signed cartridges,
+repository metadata, and fault fixtures remain bounded capabilities. Do not
+promote them to general security or portability claims without implementation,
+target validation, and the required hardware evidence.
+
+Compilation, flashing, enumeration, simulation, and host tests are not
+hardware acceptance. Report host tests, target checks, embedded builds,
+Silicon Trace, and physical acceptance separately.
+
+Never invent fake hardware, fake storage, fake devices, fake readers, or
+simulated runtime behavior as a substitute for real implementation or target
+evidence. Host doubles are allowed only for genuinely hardware-neutral pure
+contracts and must never be called hardware evidence.
+
+## 6. Mandatory implementation workflow
 
 Before editing:
 
-1. Read the relevant contract documents.
-2. Identify the roadmap task being implemented.
-3. Inspect the current working tree and preserve unrelated user changes.
-4. Decide which module owns the change.
-5. Define failure cases and validation evidence.
-6. State any contract change before implementing it.
+1. Read the relevant architecture, ABI, AMRN, hardware, coding, roadmap, and
+   testing documents.
+2. Read this file and inspect the current working tree and branch.
+3. Identify the exact foundation roadmap milestone and owning module.
+4. Preserve unrelated user changes and parked recovery points.
+5. Define failure cases, invariants, and required evidence.
+6. State any proposed contract or architecture change before implementing it.
 
 While editing:
 
+- use `apply_patch` for local file edits;
 - make the smallest coherent change;
-- use `apply_patch` for file edits;
-- always generate minimal, surgically precise Git diffs or patches;
-- do not rewrite an entire multi-hundred-line file when changing a single function;
-- do not create large monolithic files; split code into small, focused modules and submodules;
-- keep each Rust implementation file at or below 300 lines unless an explicit architectural exception is documented;
-- keep module boundaries explicit;
-- avoid unrelated refactoring;
-- use English for all code, comments, logs, errors, and documentation;
-- update documentation when behavior or a contract changes;
-- add tests or record hardware evidence for the affected behavior.
-
-### No fake hardware or substitute fixtures
-
-- Do not create fake hardware, fake devices, fake storage, fake readers, or
-  simulated runtime behavior as a substitute for the real implementation or
-  hardware acceptance.
-- A test application is allowed only when it is a real compiled package that
-  exercises the documented contract on the target; it must not stand in for a
-  missing kernel or device implementation.
-- Host tests are allowed only for genuinely hardware-neutral codecs,
-  validators, and pure contracts using caller-owned byte slices or explicit
-  test values. They must never be described as hardware evidence.
-- Storage, loader, slot-allocation, fault, and lifecycle behavior that depends
-  on device state must be verified through the real implementation and the
-  required target hardware; if hardware is unavailable, record the limitation
-  instead of inventing a substitute.
+- preserve public APIs, boot order, generated output, and frozen paths;
+- avoid mass formatting, renaming, migration, and unrelated refactoring;
+- use English for code, comments, logs, errors, and documentation;
+- add or update tests and documentation for changed behavior;
+- do not add untracked TODOs; reference a roadmap item or issue instead.
 
 After editing:
 
-1. Run the narrowest relevant tests while iterating.
-2. Run the complete validation suite before handoff.
-3. Inspect the diff and staged file list.
-4. Report what changed, what passed, and what remains unverified.
+1. Run the narrowest relevant checks while iterating.
+2. Run the complete applicable validation suite before handoff.
+3. Inspect the diff, file list, and staged file list.
+4. Run `git diff --check`.
+5. Report changed files, passed checks, hardware evidence, and limitations.
 
-## 6. Safety and `unsafe`
+### Definition of Done
 
-`unsafe` is forbidden by default. MVP use is limited to validated MMIO, validated SRAM copying, the validated native entry jump, and unavoidable low-level HAL operations.
+A milestone is not complete because the code compiles. It is complete only
+when all applicable items are satisfied:
 
-`unsafe` must remain centralized in `board`, `loader/exec`, or an explicitly documented low-level module. It must not spread into parsers, storage policy, SDK APIs, or ordinary runtime logic.
+- implementation matches the owning contract and module boundary;
+- failure cases and invariants are covered by focused tests;
+- documentation and roadmap status match the implementation;
+- target checks and strict lints pass;
+- required real-hardware evidence is recorded, or the limitation is explicit;
+- generated output and public APIs are unchanged or documented;
+- the diff contains no unrelated cleanup or hidden behavior change;
+- the change is reversible through an identified commit or recovery point.
 
-Every unsafe block must:
+### Permanent-quality rule
 
-- be as small as possible;
-- follow complete input and bounds validation;
-- have an immediate `SAFETY` comment;
-- state the invariant that makes it valid;
-- be wrapped in a safe abstraction when reused.
+**TEMPORARY, TOY, AD-HOC, OR “JUST TO MAKE THE TEST PASS” SOLUTIONS MUST NOT
+BE COMMITTED AS PRODUCTION CODE.**
 
-Never use `unsafe` to bypass an ownership problem, silence the compiler, or make an unreviewed design shortcut.
+Do not add timing hacks, arbitrary delays, caller-level polling, silent
+fallbacks, placeholder hardware behavior, fake implementations, commented-out
+code, or unbounded retry loops as a temporary measure. If the correct design
+is not ready, stop at a documented boundary, add a roadmap item, and report
+the limitation. Every committed path must meet the same high engineering and
+enterprise-quality standard whether it is marked experimental or production.
 
-Do not add `#[allow(...)]` to hide warnings, safety issues, dead code, or failed lint rules. Any exception must identify the exact warning, explain why it is safe, and be reviewed.
+Quality must be continuously controlled through focused ownership, typed
+errors, bounded behavior, reviewable diffs, strict linting, tests, and evidence.
+Do not defer known quality defects under the label of future cleanup.
 
-## 7. Error and realtime policy
+### Architecture decision records
 
-- Do not use runtime `unwrap()`, `expect()`, `panic!()`, or `unreachable!()` without a documented and reviewed invariant.
-- Do not ignore `Result` values.
-- Use typed errors that preserve meaningful failure causes.
-- Treat all SD-card and package data as untrusted input.
-- Do not panic on malformed external data.
-- Do not allocate from the heap in safety-critical or realtime paths.
-- Use fixed-size buffers and bounded queues.
-- Keep blocking SD operations away from future safety-critical tasks.
-- Make integer overflow behavior explicit.
-- Replace magic addresses, pin numbers, sizes, and protocol values with named constants or types.
-- Do not introduce silent fallbacks for invalid configuration, missing storage, malformed packages, or hardware failures unless the fallback is explicitly documented.
+Any change to a kernel/port boundary, ABI, memory layout, scheduler,
+storage/loader contract, public API, or feature ownership requires a concise
+decision record before implementation. It must state the problem, options
+considered, selected design, rejected alternatives, compatibility impact,
+validation plan, and rollback path. Link the record from the relevant roadmap
+item or contract document.
 
-## 8. Comment and documentation policy
+## 7. Architecture change gate
 
-Comments must explain why, not restate what the code does. Explain hardware constraints, protocol rules, invariants, timing assumptions, and safety arguments.
+Do not silently change repository architecture, module ownership, boot path,
+storage layout, backend selection, loader mode, feature contract, ABI,
+filesystem layout, or memory layout.
 
-Do not add commented-out code, decorative banners, stale comments, or untracked TODOs. A TODO requires an issue or roadmap reference.
+If a task requires such a change, stop before editing and document:
 
-Public APIs require accurate Rust documentation. Use `# Errors`, `# Panics`, and `# Safety` sections where applicable.
+- the exact proposed change;
+- the affected modules and contracts;
+- compatibility and migration impact;
+- test and hardware evidence required;
+- why the change is necessary for the foundation milestone.
 
-## 9. Validation commands
+Obtain explicit approval before implementation. Never substitute a different
+profile, loader, package path, or fixture merely to make a check pass.
 
-Run these from the repository root:
+## 8. Safety, unsafe, errors, and realtime
+
+`unsafe` is forbidden by default. It is limited to validated low-level MMIO,
+validated SRAM copying, validated native entry transfer, architecture-port
+operations, and unavoidable HAL operations.
+
+Every unsafe block must be minimal, have an immediate `SAFETY` comment, state
+the invariant that makes it valid, and be hidden behind a safe abstraction when
+reused. Never use unsafe to bypass ownership or silence the compiler.
+
+Do not add `#[allow(...)]` to hide warnings, safety issues, dead code, or lint
+failures. Exceptions require a precise warning, safety explanation, and review.
+
+Do not use runtime `unwrap()`, `expect()`, `panic!()`, or `unreachable!()`
+without a documented, reviewed invariant. Do not ignore `Result` values.
+Use typed errors that preserve meaningful causes. External data is untrusted.
+Do not panic on malformed storage or package data.
+
+Do not allocate from the heap in safety-critical or realtime paths. Use fixed
+buffers and bounded queues. Make overflow behavior explicit. Do not introduce
+silent fallbacks for invalid configuration, missing hardware, malformed data,
+or failed services.
+
+### Interrupt and concurrency discipline
+
+- Blocking storage, filesystem, logging flushes, and long policy operations
+  are forbidden in interrupt context.
+- Interrupt handlers must be short, bounded, reentrant where required, and
+  limited to ownership-safe event capture or acknowledgement.
+- Critical sections must be as short as possible and must never hide an
+  unbounded loop or hardware wait.
+- Shared state requires an explicit owner, synchronization rule, and lifetime.
+- Watchdog feed ownership must be unique and documented.
+- Every polling loop requires a named bound, progress rule, and typed timeout.
+- Do not fix starvation or lifecycle defects with arbitrary delays or caller-
+  level extra polling.
+
+### Generated and configured content
+
+Generated files must not be edited by hand. The generator and its source
+manifest are authoritative. Board facts must have one source of truth in the
+target manifest or backend configuration and must not be copied into kernel
+policy, CLI code, tests, or documentation as independent values. A generator
+change must include generated-output validation and documentation updates.
+
+## 9. Frozen and protected paths
+
+During kernel foundation work, do not change these paths without explicit
+approval and a separate evidence plan:
+
+- `kernel/src/storage/` and the accepted SDIO/storage behavior;
+- F405 SDIO raw transport and DMA setup;
+- USB CDC core servicing and polling/interrupt ownership;
+- SPI/ILI9341 experiments;
+- memory layout, linker ownership, ABI, and AMRN MVP format;
+- parked branches and recorded hardware evidence.
+
+Refactoring must preserve behavior. A passing host build is not permission to
+change a frozen hardware path.
+
+## 10. Validation commands
+
+Run from the repository root as applicable:
 
 ```text
 cargo fmt --all -- --check
@@ -245,64 +392,63 @@ cargo build-kernel
 git diff --check
 ```
 
-The Lefthook pre-commit hook runs the relevant checks automatically. GitHub Actions repeats them for pushes and pull requests. A host build does not prove embedded hardware behavior.
+For hardware changes, record board, wiring, firmware revision, SD card/filesystem,
+power, logging/transport, expected trace, observed trace, result, and limits.
 
-For hardware changes, record the board, wiring, firmware revision, SD card/filesystem, power source, logging channel, expected output, observed output, and result.
+## 11. Git, commits, and deletion policy
 
-Never claim completion based only on compilation. Distinguish clearly between source compilation, host tests, embedded target checks, hardware tests, and MVP acceptance.
-
-## 10. Git and release policy
-
-Use Conventional Commits:
+Use Conventional Commits and keep commits atomic:
 
 ```text
-feat(loader): validate AMRN payload bounds
-fix(storage): reject truncated SD blocks
-docs(amrn): define the CRC32 field
+refactor(api): split architecture and board contracts
+refactor(platform): isolate board composition from kernel policy
+test(kernel): add portable capability contract coverage
+docs(roadmap): define kernel foundation execution plan
 ```
 
-Keep commits atomic. Do not combine unrelated formatting, dependencies, behavior, or documentation changes.
+Do not combine formatting, dependencies, behavior, documentation, and
+unrelated cleanup in one commit. Do not commit `target/`, binaries, secrets,
+credentials, IDE files, or generated local artifacts.
 
-### Branch-to-main documentation gate
+No drive-by cleanup is allowed. Do not rename, reformat, reorganize, delete,
+or migrate code merely because a nearby task makes it convenient. Every
+cleanup change needs its own scope, owner, rationale, validation, and atomic
+commit. Unrelated quality findings must become separate roadmap items.
 
-Before merging an active feature branch into `main`, compare the branch's
-implementation, tests, and hardware evidence with the repository
-documentation. Every user-visible behavior, contract change, acceptance
-result, limitation, and security claim introduced on the branch must be
-reflected in the appropriate `docs/` file and, when applicable, the relevant
-roadmap checklist. Replace stale claims rather than appending contradictory
-text. If the branch work is not accurately documented, update the
-documentation and validate it before merging; do not merge first and defer
-the documentation audit to `main`. This is a merge-gate audit, not a
-requirement to reread every document for each individual commit.
+Do not add a dependency without checking `no_std` compatibility, license,
+maintenance, auditability, transitive impact, and binary/RAM cost. Preserve
+lockfiles and reproducible tool versions. Do not edit generated changelogs;
+release changelogs are produced from Conventional Commits.
 
-Changelogs are generated from commit history by `git-cliff`. Do not edit release changelogs manually. Release tags use `vX.Y.Z` or `vX.Y.Z-alpha.N`; the release workflow creates the archived changelog and GitHub Release.
+**DELETION IS NOT A CLEANUP STRATEGY BY DEFAULT.** Do not mass-delete modules,
+features, applications, documents, tests, or evidence. First prove that the
+item is obsolete, identify all references, preserve a recovery point, and get
+explicit approval for material deletion. Prefer parking, feature isolation,
+or a focused deprecation step.
 
-## 11. Things an agent must not do
+Never use `git reset --hard`, `git clean -fd`, force push, bulk deletion, or
+history rewriting without explicit user approval. Never overwrite unrelated
+user changes.
 
-- Do not expand the MVP without a roadmap and contract update.
-- Do not claim sandboxing, secure boot, authenticity, memory isolation, or fault isolation before implementation and evidence exist.
-- Do not add dynamic linking, new relocation contracts, application-owned interrupts, or SDK APIs prematurely.
-- Do not overwrite user changes or use destructive Git commands.
-- Do not commit `target/`, binaries, secrets, credentials, or local IDE files.
-- Do not make external messages, releases, or repository settings changes unless explicitly requested.
-- Do not commit code that bypasses a failed CI or Lefthook check.
-- Do not add dependencies without checking `no_std` compatibility, license, maintenance, auditability, transitive impact, and binary/RAM cost.
-- Do not change an ABI, AMRN field, memory layout, public API, or security claim without updating its specification, tests, and versioning.
-- Do not disable or ignore tests without an issue or roadmap reference and a documented reason.
-- Do not log secrets, credentials, private keys, sensitive device data, or unnecessary memory dumps.
-- Do not perform mass formatting, renaming, migration, or repository rewrites outside the task scope.
-- Do not use `git reset --hard`, `git clean -fd`, force push, or bulk deletion without explicit user approval.
-- Do not claim hardware or acceptance completion without the required evidence.
-- Do not add unpinned or unexplained dependencies.
+Before merging `kernel-foundation` into `main`, audit implementation, tests,
+hardware evidence, documentation, roadmap status, and security claims. Fix
+stale or contradictory documentation before merging.
 
-Functions should normally remain below 50 lines, use no more than three nesting levels, and perform one responsibility. Split a function when it exceeds these limits unless the exception is documented.
+Do not make external messages, releases, repository-settings changes, or
+remote administrative changes unless explicitly requested.
 
-Builds must remain reproducible: preserve lockfiles, pin important tools and dependencies, and document commands that produce generated artifacts.
+## 12. Documentation and language
 
-## 12. Handoff format
+Documentation must state why, ownership, invariants, limits, and evidence.
+Comments must explain why rather than repeat code. Public APIs require accurate
+Rust documentation with `# Errors`, `# Panics`, and `# Safety` where applicable.
 
-At the end of a coding task, report:
+All repository artifacts produced by implementation work must use English:
+code, comments, logs, errors, tests, and documentation.
+
+## 13. Handoff format
+
+Every coding handoff must report:
 
 ```text
 Summary:
@@ -318,4 +464,5 @@ Remaining limitations:
 - ...
 ```
 
-Do not call work complete when it only compiles if the task requires hardware acceptance, integration, or documentation evidence.
+Never call work complete when it only compiles if the task requires runtime,
+integration, target, hardware, or documentation evidence.

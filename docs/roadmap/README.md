@@ -3,6 +3,15 @@
 This directory is the canonical source for roadmap status, phase plans,
 acceptance boundaries, and the repository-quality work track.
 
+## Highest priority
+
+- [00 — Kernel Foundation and Universal Port Architecture](00-kernel-foundation.md)
+  — the active roadmap for reducing scope, stabilizing the hardware-neutral
+  kernel core, isolating architecture and board ports, preserving the F405
+  baseline, and reaching a validated stable foundation. Work on this roadmap
+  takes priority over all other roadmap tracks on the `kernel-foundation`
+  branch.
+
 ## Detailed phase plans
 
 - [01 — Kernel Core and Security](01-kernel-core-and-security.md)
