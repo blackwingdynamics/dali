@@ -26,12 +26,12 @@ pub const REPOSITORY_DIGEST_BYTES: usize = 32;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RepositoryCartridgeDigest(pub [u8; REPOSITORY_DIGEST_BYTES]);
 
-/// Chunk-streaming repository source consumed by the board-agnostic loader.
+/// Chunk-streaming logical artifact source consumed by the board-agnostic loader.
 ///
 /// The contract deliberately exposes no whole-document read operation. A
 /// storage adapter must deliver bytes through the caller-owned chunk, so the
 /// loader can choose its RAM budget independently from the filesystem backend.
-pub trait RepositoryStreamStorage {
+pub trait ArtifactSource {
     /// Adapter-specific storage failure type.
     type Error;
 
@@ -55,3 +55,6 @@ pub trait RepositoryStreamStorage {
     where
         F: FnMut(&[u8]) -> Result<(), Self::Error>;
 }
+
+/// Compatibility name for existing repository-loader integrations.
+pub use ArtifactSource as RepositoryStreamStorage;

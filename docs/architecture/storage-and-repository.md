@@ -104,11 +104,12 @@ the existing bounded AMRN execution loaders.
 
 SDIO is one storage adapter, not the kernel's permanent cartridge source. A
 future flash-backed artifact store, NVMe adapter, or other durable medium must
-feed the same logical artifact-source and repository contracts. USB CDC is an
-installation transport only: it may deliver an AMRN artifact to a staged
-persistent-storage region, but it must not become a second loader policy or be
-mixed with the logging stream. The accepted architecture and staged rollout
-are recorded in [ADR-0001](adr/0001-multi-source-artifact-storage.md).
+implement the hardware-neutral `ArtifactSource` contract in
+`kernel/src/storage/repository.rs`. USB CDC is an installation transport only:
+it may deliver an AMRN artifact to a staged persistent-storage region, but it
+must not become a second loader policy or be mixed with the logging stream. The
+accepted architecture and staged rollout are recorded in
+[ADR-0001](adr/0001-multi-source-artifact-storage.md).
 
 The adapter now exposes the streaming contract directly. The shared Binary v2
 envelope parser validates fragmented envelopes without retaining their body;
