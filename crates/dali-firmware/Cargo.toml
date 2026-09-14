@@ -10,6 +10,7 @@ build = "build.rs"
 default = []
 stm32f405 = ["dep:dali-board-stm32f405"]
 usb-cdc = ["stm32f405", "dali-kernel/usb-cdc", "dali-board-stm32f405/usb-cdc"]
+artifact-flash = ["stm32f405", "dali-kernel/artifact-flash"]
 abi-current = ["stm32f405", "dali-kernel/abi-current", "dali-board-stm32f405/abi-current"]
 abi-mpu = ["abi-current", "dali-kernel/abi-mpu", "dali-board-stm32f405/abi-mpu"]
 abi-context-switch = [

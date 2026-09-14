@@ -24,6 +24,7 @@ impl dali_kernel_api::BoardBackend for board::Board {
     type UserKey = board::UserKey;
     type Watchdog = crate::F405Watchdog;
     type StorageReader = dali_kernel_api::storage::SdioBlockReader<sdio::Stm32f405SdioTransport>;
+    type ArtifactReader = crate::FlashArtifactReader;
 
     fn memory_protection_operations() -> Option<dali_kernel_api::MemoryProtectionOperations> {
         #[cfg(feature = "abi-mpu")]
@@ -82,6 +83,12 @@ impl dali_kernel_api::BoardBackend for board::Board {
         Ok(dali_kernel_api::storage::SdioBlockReader::new(
             Stm32f405SdioTransport::new(peripheral, pins, clocks),
         ))
+    }
+
+    fn take_artifact_reader(
+        &mut self,
+    ) -> Result<Self::ArtifactReader, dali_kernel_api::BoardError> {
+        Ok(crate::FlashArtifactReader::new())
     }
 
     fn reset_cause(&self) -> dali_kernel_api::ResetCause {

@@ -1,6 +1,9 @@
 //! Hardware-neutral board backend contracts.
 
-use crate::storage::{BlockReader, BlockTransportFlush, BlockWriter, StorageLifecycleControl};
+use crate::storage::{
+    ArtifactReader as ArtifactReaderContract, BlockReader, BlockTransportFlush, BlockWriter,
+    StorageLifecycleControl,
+};
 use dali_targets::WatchdogProfile;
 use dali_targets::{CapabilitiesProfile, IsolationSlot, MemoryProfile, TargetProfile};
 
@@ -109,6 +112,8 @@ pub trait BoardBackend {
     type UserKey;
     /// Board-owned watchdog backend.
     type Watchdog;
+    /// Board-owned read-only persistent artifact reader.
+    type ArtifactReader: ArtifactReaderContract;
     /// Board-owned storage reader and lifecycle controller.
     type StorageReader: BlockReader
         + StorageLifecycleControl
@@ -144,6 +149,11 @@ pub trait BoardBackend {
 
     /// Transfers the initialized storage reader to the kernel owner.
     fn take_storage_reader(&mut self) -> Result<Self::StorageReader, BoardError>;
+
+    /// Transfers the board-owned artifact reader to the kernel owner.
+    fn take_artifact_reader(&mut self) -> Result<Self::ArtifactReader, BoardError> {
+        Err(BoardError::UnsupportedCapability)
+    }
 
     /// Returns the reset source captured during early initialization.
     fn reset_cause(&self) -> ResetCause;
