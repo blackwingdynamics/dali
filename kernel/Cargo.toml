@@ -8,7 +8,6 @@ autobins = false
 [features]
 default = []
 sdio = []
-artifact-flash = []
 log-colors = []
 usb-cdc = [
     "dep:usb-device",
