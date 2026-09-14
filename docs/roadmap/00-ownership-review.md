@@ -1,6 +1,6 @@
 # Kernel Foundation Ownership Review
 
-Status: **First composition split complete — architecture separation remains open**.
+Status: **Architecture layout boundary started — exception mechanics remain open**.
 
 This review maps the current implementation to the foundation layers before
 any code movement. The map is an ownership contract for the next refactoring
@@ -48,8 +48,9 @@ but must not implement vendor register access or CPU exception mechanics.
 The following current code contains architecture-specific behavior and must be
 reviewed behind an architecture-owned boundary:
 
-- `crates/dali-kernel-api/src/architecture.rs` — contract is valid, but
-  `ARMV7M_SAVED_CONTEXT` and ARM field semantics leak into the common API;
+- `crates/dali-kernel-api/src/architecture.rs` — the saved-context layout is
+  now supplied by the selected architecture port; exception operations and
+  ARM field semantics remain under review;
 - `kernel/src/runtime/scheduling/saved_state.rs` — ARM `CONTROL`, PSP, and
   exception-return layout;
 - `kernel/src/security/fault/scb.rs` — Cortex-M SCB MMIO;
@@ -152,7 +153,8 @@ The review found these concrete issues for Phase 1 implementation:
 - [ ] Approve this ownership map as the Phase 1 implementation boundary.
 - [x] Split `kernel/src/platform/mod.rs` into focused composition modules with
   no behavior change.
-- [ ] Separate portable context/scheduler records from ARM exception mechanics.
+- [ ] Separate portable context/scheduler records from ARM exception mechanics
+  beyond the layout constant boundary.
 - [ ] Move SCB and exception-frame operations behind the architecture port.
 - [ ] Recheck kernel-wide dependency direction and forbidden hardware names.
 - [ ] Run the complete software validation suite.

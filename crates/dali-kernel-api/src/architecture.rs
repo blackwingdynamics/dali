@@ -14,14 +14,6 @@ pub struct SavedContextLayout {
     pub exception_return: usize,
 }
 
-/// ARMv7-M saved context layout used by the current scheduler ABI.
-pub const ARMV7M_SAVED_CONTEXT: SavedContextLayout = SavedContextLayout {
-    psp: 0,
-    callee_saved: 4,
-    control: 36,
-    exception_return: 40,
-};
-
 /// Fault-status register exposed through an architecture backend.
 #[derive(Clone, Copy)]
 pub enum FaultRegister {
@@ -66,6 +58,14 @@ pub struct ArchitectureOperations {
 /// kernel consumes this contract without naming a CPU vendor or instruction
 /// set.
 pub trait ArchitectureBackend {
+    /// Layout of the context record consumed by this architecture's restore
+    /// primitive.
+    ///
+    /// The architecture port owns the record layout. Kernel policy may use
+    /// the opaque offsets when passing a record to the port, but must not
+    /// name CPU registers or exception-return values.
+    const SAVED_CONTEXT_LAYOUT: SavedContextLayout;
+
     /// Returns the architecture operations for kernel runtime use.
     fn operations() -> ArchitectureOperations;
 

@@ -6,6 +6,14 @@ use dali_kernel_api::{ArchitectureBackend, ArchitectureOperations, FaultRegister
 pub struct CortexMArchitecture;
 
 impl ArchitectureBackend for CortexMArchitecture {
+    const SAVED_CONTEXT_LAYOUT: dali_kernel_api::SavedContextLayout =
+        dali_kernel_api::SavedContextLayout {
+            psp: 0,
+            callee_saved: 4,
+            control: 36,
+            exception_return: 40,
+        };
+
     fn operations() -> ArchitectureOperations {
         ArchitectureOperations {
             wait_for_interrupt: Self::wait_for_interrupt,

@@ -1,10 +1,14 @@
 //! Cortex-M context-switch exception entry for the F405 backend.
 
-const CONTEXT_PSP_OFFSET: usize = dali_kernel_api::ARMV7M_SAVED_CONTEXT.psp;
-const CONTEXT_CALLEE_SAVED_OFFSET: usize = dali_kernel_api::ARMV7M_SAVED_CONTEXT.callee_saved;
-const CONTEXT_CONTROL_OFFSET: usize = dali_kernel_api::ARMV7M_SAVED_CONTEXT.control;
+use dali_kernel_api::ArchitectureBackend;
+
+use crate::architecture::CortexMArchitecture;
+
+const CONTEXT_PSP_OFFSET: usize = CortexMArchitecture::SAVED_CONTEXT_LAYOUT.psp;
+const CONTEXT_CALLEE_SAVED_OFFSET: usize = CortexMArchitecture::SAVED_CONTEXT_LAYOUT.callee_saved;
+const CONTEXT_CONTROL_OFFSET: usize = CortexMArchitecture::SAVED_CONTEXT_LAYOUT.control;
 const CONTEXT_EXCEPTION_RETURN_OFFSET: usize =
-    dali_kernel_api::ARMV7M_SAVED_CONTEXT.exception_return;
+    CortexMArchitecture::SAVED_CONTEXT_LAYOUT.exception_return;
 
 #[cfg(target_arch = "arm")]
 #[unsafe(export_name = "PendSV")]

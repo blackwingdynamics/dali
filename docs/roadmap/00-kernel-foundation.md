@@ -113,7 +113,7 @@ Goal: remove CPU assumptions from common kernel APIs while preserving the
 current ARMv7-M behavior in its port.
 
 - [ ] Inventory all ARMv7-M assumptions in `dali-kernel-api` and `kernel/src`.
-- [ ] Move ARM-specific saved-context layout out of the generic contract.
+- [x] Move ARM-specific saved-context layout out of the generic contract.
 - [ ] Replace raw ARM exception semantics in common policy with typed
   architecture operations and validated opaque context records.
 - [ ] Keep exception entry, PSP/MSP operations, PendSV/SysTick mechanics, and
