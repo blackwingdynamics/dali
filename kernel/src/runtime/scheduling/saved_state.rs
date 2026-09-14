@@ -1,10 +1,7 @@
 //! CPU state preserved across a future PendSV context switch.
 
-/// Number of ARM callee-saved registers preserved by a context switch.
+/// Number of callee-saved registers preserved by the active context port.
 pub const CALLEE_SAVED_REGISTER_COUNT: usize = 8;
-
-/// ARM `CONTROL` value for unprivileged Thread mode using PSP.
-pub const UNPRIVILEGED_PSP_CONTROL: u32 = 0b11;
 
 /// Kernel-owned CPU state required to resume one application context.
 #[repr(C)]

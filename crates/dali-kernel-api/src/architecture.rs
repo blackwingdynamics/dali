@@ -38,6 +38,8 @@ pub struct ArchitectureOperations {
     pub enable_interrupts: fn(),
     /// Requests a deferred context switch.
     pub request_context_switch: fn(),
+    /// Returns the control state required for a first application context.
+    pub initial_application_control: fn() -> u32,
     /// Reads the process stack pointer.
     pub read_process_stack_pointer: fn() -> u32,
     /// Writes the process stack pointer.
@@ -77,4 +79,7 @@ pub trait ArchitectureBackend {
 
     /// Requests the architecture's deferred context-switch exception.
     fn request_context_switch();
+
+    /// Returns the control state required for a first application context.
+    fn initial_application_control() -> u32;
 }

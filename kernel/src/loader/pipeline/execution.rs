@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[cfg(feature = "abi-context-switch")]
-use crate::runtime::scheduling::{record::ScheduledContext, saved_state::UNPRIVILEGED_PSP_CONTROL};
+use crate::runtime::scheduling::record::ScheduledContext;
 
 /// Values retained after an ABI v3 cartridge has been copied into SRAM.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,13 +37,13 @@ pub struct LoadedApplication {
 impl LoadedApplication {
     /// Builds the initial scheduler record from the validated launch frame.
     #[cfg(feature = "abi-context-switch")]
-    pub(crate) const fn scheduler_context(self) -> ScheduledContext {
-        ScheduledContext::initial(
+    pub(crate) fn scheduler_context(self) -> Option<ScheduledContext> {
+        Some(ScheduledContext::initial(
             self.launch_frame.psp,
-            UNPRIVILEGED_PSP_CONTROL,
+            crate::platform::initial_application_control()?,
             self.launch_frame.exception_return,
             self.slot,
-        )
+        ))
     }
 }
 

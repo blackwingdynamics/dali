@@ -25,6 +25,17 @@ pub(crate) fn request_context_switch() {
     }
 }
 
+/// Returns the selected architecture's initial application control state.
+#[cfg(feature = "abi-context-switch")]
+pub(crate) fn initial_application_control() -> Option<u32> {
+    critical_section::with(|cs| {
+        ARCHITECTURE
+            .borrow(cs)
+            .borrow()
+            .map(|operations| (operations.initial_application_control)())
+    })
+}
+
 /// Waits through the installed architecture after bootstrap registration.
 #[cfg(feature = "abi-current")]
 pub(crate) fn wait_for_registered_interrupt() -> ! {

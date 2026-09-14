@@ -51,8 +51,9 @@ reviewed behind an architecture-owned boundary:
 - `crates/dali-kernel-api/src/architecture.rs` — the saved-context layout is
   now supplied by the selected architecture port; exception operations and
   ARM field semantics remain under review;
-- `kernel/src/runtime/scheduling/saved_state.rs` — ARM `CONTROL`, PSP, and
-  exception-return layout;
+- `kernel/src/runtime/scheduling/saved_state.rs` — the saved record still
+  carries architecture-defined fields, but application control-state
+  selection now comes from the architecture capability boundary;
 - `kernel/src/security/fault/scb.rs` — Cortex-M SCB MMIO;
 - `kernel/src/security/fault/mod.rs` — architecture-specific fault status and
   exception-return decoding mixed with kernel recovery policy;
@@ -154,7 +155,7 @@ The review found these concrete issues for Phase 1 implementation:
 - [x] Split `kernel/src/platform/mod.rs` into focused composition modules with
   no behavior change.
 - [ ] Separate portable context/scheduler records from ARM exception mechanics
-  beyond the layout constant boundary.
+  beyond the layout and initial-control capability boundaries.
 - [ ] Move SCB and exception-frame operations behind the architecture port.
 - [ ] Recheck kernel-wide dependency direction and forbidden hardware names.
 - [ ] Run the complete software validation suite.

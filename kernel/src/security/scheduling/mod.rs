@@ -33,6 +33,8 @@ pub(crate) enum SchedulerAccessError {
     Storage(SchedulerStorageError),
     /// The scheduler rejected the requested context transition.
     Scheduler(SchedulerError),
+    /// The architecture context capability was not registered.
+    MissingArchitectureContext,
 }
 
 /// Initializes scheduler state once from the selected target profile.
@@ -64,15 +66,18 @@ fn with_scheduler<R>(
 
 /// Registers validated application launch contexts in manifest order.
 pub(crate) fn register_contexts(
-    contexts: impl IntoIterator<Item = ScheduledContext>,
+    contexts: impl IntoIterator<Item = Option<ScheduledContext>>,
 ) -> Result<(), SchedulerAccessError> {
-    with_scheduler(|scheduler| {
-        contexts
-            .into_iter()
-            .try_for_each(|context| scheduler.insert(context).map(|_| ()))
+    with_scheduler(|scheduler| -> Result<(), SchedulerAccessError> {
+        contexts.into_iter().try_for_each(|context| {
+            let context = context.ok_or(SchedulerAccessError::MissingArchitectureContext)?;
+            scheduler
+                .insert(context)
+                .map(|_| ())
+                .map_err(SchedulerAccessError::Scheduler)
+        })
     })
     .map_err(SchedulerAccessError::Storage)?
-    .map_err(SchedulerAccessError::Scheduler)
 }
 
 /// Activates the first registered context without performing an exception return.

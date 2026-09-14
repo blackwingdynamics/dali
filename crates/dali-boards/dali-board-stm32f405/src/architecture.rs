@@ -19,6 +19,7 @@ impl ArchitectureBackend for CortexMArchitecture {
             wait_for_interrupt: Self::wait_for_interrupt,
             enable_interrupts: Self::enable_interrupts,
             request_context_switch: Self::request_context_switch,
+            initial_application_control: Self::initial_application_control,
             read_process_stack_pointer: Self::read_process_stack_pointer,
             write_process_stack_pointer: Self::write_process_stack_pointer,
             read_main_stack_pointer: Self::read_main_stack_pointer,
@@ -42,6 +43,11 @@ impl ArchitectureBackend for CortexMArchitecture {
 
     fn request_context_switch() {
         cortex_m::peripheral::SCB::set_pendsv();
+    }
+
+    fn initial_application_control() -> u32 {
+        const UNPRIVILEGED_PSP_CONTROL: u32 = 0b11;
+        UNPRIVILEGED_PSP_CONTROL
     }
 }
 
