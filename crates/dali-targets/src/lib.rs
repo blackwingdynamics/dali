@@ -217,11 +217,15 @@ pub struct WatchdogProfile {
     pub reset_cause_supported: bool,
 }
 
-/// SRAM regions declared by a board manifest.
+/// Memory regions declared by a board manifest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MemoryProfile {
-    /// Start and size of the kernel flash image region.
+    /// Total physical flash region exposed by the target.
     pub flash: TargetMemoryRegion,
+    /// Flash region reserved for the firmware image and linker output.
+    pub firmware: TargetMemoryRegion,
+    /// Optional flash region reserved for persistent application artifacts.
+    pub artifact: Option<TargetMemoryRegion>,
     /// Start of the kernel-reserved region.
     pub kernel_origin: u32,
     /// Size of the kernel-reserved region in bytes.

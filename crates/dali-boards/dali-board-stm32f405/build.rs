@@ -78,7 +78,8 @@ fn render_linker_script(target: &TargetProfile) -> Result<String, io::Error> {
         length: target.memory.runtime_length,
     };
     Ok(format_linker_script(
-        target.memory.flash,
+        target.memory.firmware,
+        target.memory.artifact,
         ram,
         target.memory.dma,
         runtime,
@@ -87,16 +88,24 @@ fn render_linker_script(target: &TargetProfile) -> Result<String, io::Error> {
 }
 
 fn format_linker_script(
-    flash: TargetMemoryRegion,
+    firmware: TargetMemoryRegion,
+    artifact: Option<TargetMemoryRegion>,
     ram: TargetMemoryRegion,
     dma: TargetMemoryRegion,
     runtime: TargetMemoryRegion,
     retained: TargetMemoryRegion,
 ) -> String {
+    let artifact_memory = artifact.map_or_else(String::new, |region| {
+        format!(
+            "    ARTIFACT (rx) : ORIGIN = 0x{:08X}, LENGTH = {}\n",
+            region.origin, region.length
+        )
+    });
     format!(
-        "MEMORY\n{{\n    FLASH (rx) : ORIGIN = 0x{:08X}, LENGTH = {}\n    RAM (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n    DMA (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n    RUNTIME (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n    RETAINED (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n}}\n\nSECTIONS\n{{\n    .dma_buffer (NOLOAD) : ALIGN(4)\n    {{\n        KEEP(*(.dma_buffer))\n    }} > DMA\n\n    .fault_capture (NOLOAD) : ALIGN(4)\n    {{\n        KEEP(*(.fault_capture))\n    }} > RETAINED\n\n    .repository_workspace (NOLOAD) : ALIGN(4)\n    {{\n        KEEP(*(.repository_workspace))\n    }} > RUNTIME\n}}\n",
-        flash.origin,
-        flash.length,
+        "MEMORY\n{{\n    FLASH (rx) : ORIGIN = 0x{:08X}, LENGTH = {}\n{}    RAM (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n    DMA (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n    RUNTIME (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n    RETAINED (xrw) : ORIGIN = 0x{:08X}, LENGTH = {}\n}}\n\nSECTIONS\n{{\n    .dma_buffer (NOLOAD) : ALIGN(4)\n    {{\n        KEEP(*(.dma_buffer))\n    }} > DMA\n\n    .fault_capture (NOLOAD) : ALIGN(4)\n    {{\n        KEEP(*(.fault_capture))\n    }} > RETAINED\n\n    .repository_workspace (NOLOAD) : ALIGN(4)\n    {{\n        KEEP(*(.repository_workspace))\n    }} > RUNTIME\n}}\n",
+        firmware.origin,
+        firmware.length,
+        artifact_memory,
         ram.origin,
         ram.length,
         dma.origin,

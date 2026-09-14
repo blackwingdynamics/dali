@@ -84,6 +84,8 @@ release_trust_anchors = [
 
 [memory]
 flash = { origin = 0x0800_0000, length = 524_288 }
+firmware = { origin = 0x0800_0000, length = 458_752 }
+artifact = { origin = 0x0807_0000, length = 65_536 }
 kernel_origin = 0x2000_0000
 kernel_length = 32_768
 application_origin = 0x2000_8000

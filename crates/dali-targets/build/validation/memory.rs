@@ -7,12 +7,34 @@ pub(super) fn validate_memory_regions(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let regions = [
         ("flash", &manifest.memory.flash),
+        ("firmware", &manifest.memory.firmware),
         ("dma", &manifest.memory.dma),
     ];
     for (name, region) in regions {
         if region.length == 0 || region.origin.checked_add(region.length).is_none() {
             return Err(format!(
                 "target {} has invalid {name} memory bounds",
+                manifest.profile.name
+            )
+            .into());
+        }
+    }
+    validate_region_within(
+        manifest,
+        "firmware",
+        &manifest.memory.firmware,
+        &manifest.memory.flash,
+    )?;
+    if let Some(artifact) = &manifest.memory.artifact {
+        if artifact.length == 0 {
+            return Err(
+                format!("target {} has empty artifact memory", manifest.profile.name).into(),
+            );
+        }
+        validate_region_within(manifest, "artifact", artifact, &manifest.memory.flash)?;
+        if regions_overlap(&manifest.memory.firmware, artifact) {
+            return Err(format!(
+                "target {} firmware and artifact flash regions overlap",
                 manifest.profile.name
             )
             .into());
@@ -55,6 +77,50 @@ pub(super) fn validate_memory_regions(
         .into());
     }
     Ok(())
+}
+
+fn validate_region_within(
+    manifest: &Manifest,
+    name: &str,
+    region: &super::super::manifest::TargetMemoryRegion,
+    container: &super::super::manifest::TargetMemoryRegion,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let region_end = region.origin.checked_add(region.length).ok_or_else(|| {
+        format!(
+            "target {} has overflowing {name} memory",
+            manifest.profile.name
+        )
+    })?;
+    let container_end = container
+        .origin
+        .checked_add(container.length)
+        .ok_or_else(|| {
+            format!(
+                "target {} has overflowing flash memory",
+                manifest.profile.name
+            )
+        })?;
+    if region.origin < container.origin || region_end > container_end {
+        return Err(format!(
+            "target {} {name} memory must fit inside flash",
+            manifest.profile.name
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn regions_overlap(
+    first: &super::super::manifest::TargetMemoryRegion,
+    second: &super::super::manifest::TargetMemoryRegion,
+) -> bool {
+    let Some(first_end) = first.origin.checked_add(first.length) else {
+        return true;
+    };
+    let Some(second_end) = second.origin.checked_add(second.length) else {
+        return true;
+    };
+    first.origin < second_end && second.origin < first_end
 }
 
 fn validate_named_region(

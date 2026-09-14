@@ -203,10 +203,10 @@ Goal: reconnect only the services required for the first supported board
 without contaminating kernel policy.
 
 - [ ] Define the generic block-storage boundary independently of SDIO.
-- [ ] Define the logical artifact-source boundary independently of the
+- [x] Define the logical artifact-source boundary independently of the
   persistent medium.
 - [ ] Keep FAT/filesystem policy above the block transport boundary.
-- [ ] Define target-owned flash artifact regions separately from the firmware
+- [x] Define target-owned flash artifact regions separately from the firmware
   image and linker regions.
 - [ ] Keep AMRN parsing independent of both filesystem and board code.
 - [ ] Keep logging policy independent of RTT, USB CDC, UART, or another

@@ -127,6 +127,8 @@ pub(super) struct TrustAnchor {
 #[derive(Debug, Deserialize)]
 pub(super) struct Memory {
     pub(super) flash: TargetMemoryRegion,
+    pub(super) firmware: TargetMemoryRegion,
+    pub(super) artifact: Option<TargetMemoryRegion>,
     pub(super) kernel_origin: u32,
     pub(super) kernel_length: u32,
     pub(super) application_origin: u32,
