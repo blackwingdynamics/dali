@@ -186,6 +186,8 @@ subsystems.
 - [ ] Define fixed-size memory-region and buffer ownership policy.
 - [ ] Define lifecycle states for boot, ready, running, faulted, recovering,
   and terminated contexts.
+- [x] Keep the kernel alive in a no-AMRN state with bounded watchdog,
+  heartbeat, and storage-recovery progress.
 - [ ] Ensure malformed external input returns typed errors and cannot panic or
   jump outside validated execution paths.
 - [ ] Add host tests for state transitions, ownership, bounds, and failure

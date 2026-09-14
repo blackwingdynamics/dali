@@ -65,6 +65,27 @@ arbitrary DMA isolation, or multi-application isolation.
 - [x] ABI v2 application logging through USB CDC.
 - [x] Empty SD/cartridge states remain informational and enter the heartbeat.
 
+### Flash artifact fallback without SD — 2026-09-14
+
+The release image from source revision `7640e0c` was built with the
+`artifact-flash` feature and flashed to the WeAct Studio STM32F405RGT6 board
+through the Raspberry Pi Pico 2 CMSIS-DAP/SWD probe. The SD card was removed
+before reset. The manifest-owned Flash artifact region was empty, so the
+kernel reported the source fallback, performed bounded SD reinitialization,
+and entered the kernel heartbeat without a reset loop.
+
+```text
+[STORAGE] Artifact Flash region empty; falling back to SD
+[STORAGE] Card unavailable; bounded reinitialization attempt 2/3
+[STORAGE] Card unavailable; bounded reinitialization attempt 3/3
+[STORAGE] No SD card available; continuing without cartridge
+Entering kernel heartbeat
+```
+
+Result: passed for no-AMRN boot continuity, empty Flash artifact detection,
+SD fallback, bounded no-card recovery, and kernel heartbeat entry. This does
+not yet prove writing an AMRN to Flash or executing one without SD.
+
 ### ABI v3 isolation and fault recovery
 
 - [x] Kernel-RAM read and write rejection with `MemManage` recovery.
