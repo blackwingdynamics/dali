@@ -335,6 +335,8 @@ pub struct StorageProfile {
     pub data_timeout_cycles: u32,
     /// Maximum SDIO command polling iterations.
     pub command_poll_limit: u32,
+    /// Maximum card-ready polling iterations during SD initialization.
+    pub ocr_poll_limit: u32,
     /// Maximum SDIO data-transfer polling iterations.
     pub data_poll_limit: u32,
     /// Maximum polling iterations while stopping the SDIO DMA stream.

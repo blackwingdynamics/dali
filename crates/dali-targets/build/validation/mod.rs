@@ -142,6 +142,7 @@ fn validate_optional_sections(manifest: &Manifest) -> Result<(), Box<dyn std::er
             || storage.bus_width > 4
             || storage.data_timeout_cycles == 0
             || storage.command_poll_limit == 0
+            || storage.ocr_poll_limit == 0
             || storage.data_poll_limit == 0
             || storage.dma_stop_poll_limit == 0)
     {

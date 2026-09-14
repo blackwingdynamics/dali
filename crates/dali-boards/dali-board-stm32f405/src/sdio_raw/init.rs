@@ -9,8 +9,6 @@ use stm32f4xx_hal::{
 
 /// Defines the POWER SETTLE CYCLES used by this module.
 const POWER_SETTLE_CYCLES: u32 = 336_000;
-/// Defines the OCR POLL LIMIT used by this module.
-const OCR_POLL_LIMIT: u32 = 1_000_000;
 /// Defines the VOLTAGE WINDOW used by this module.
 const VOLTAGE_WINDOW: u32 = 1 << 20;
 /// Defines the OCR HIGH CAPACITY used by this module.
@@ -149,7 +147,7 @@ fn set_transfer_clock(registers: &pac::sdio::RegisterBlock) {
 /// # Errors
 /// Returns a typed error when validation, state, or hardware access fails.
 fn initialize_card(registers: &pac::sdio::RegisterBlock) -> Result<u32, StorageError> {
-    for _ in 0..OCR_POLL_LIMIT {
+    for _ in 0..SDIO_PROFILE.ocr_poll_limit {
         send(registers, CMD_APP, 0, Response::Short)?;
         let response = send_allow_crc(
             registers,

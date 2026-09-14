@@ -218,6 +218,8 @@ without contaminating kernel policy.
 - [ ] Keep logging policy independent of RTT, USB CDC, UART, or another
   transport.
 - [ ] Connect the existing F405 storage adapter through the generic boundary.
+- [x] Bound SD card-ready polling through target-owned storage metadata so
+  recovery probes cannot expand into an effectively unbounded nested loop.
 - [ ] Connect the existing F405 logging adapter through the generic boundary.
 - [ ] Validate the original single-application boot path as an adapter-level
   integration test.
