@@ -41,6 +41,18 @@ where
     load_file_with_key(file, slot_manager, Some(public_key))
 }
 
+#[cfg(feature = "repository-loader")]
+/// Loads a direct artifact using the platform-provisioned trust anchors.
+pub(crate) fn load_file_from_platform_key<R>(
+    file: R,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+) -> Result<LoadedApplication, super::LoaderError>
+where
+    R: CartridgeReader,
+{
+    load_file_with_key(file, slot_manager, None)
+}
+
 /// Loads and authenticates a file using an optional repository-authorized key.
 fn load_file_with_key<R>(
     mut file: R,

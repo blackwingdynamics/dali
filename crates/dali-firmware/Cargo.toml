@@ -22,6 +22,7 @@ abi-authentication = [
     "abi-relocation",
     "dali-kernel/abi-authentication",
 ]
+artifact-flash = ["abi-authentication", "dali-kernel/artifact-flash"]
 repository-loader = ["abi-authentication", "dali-kernel/repository-loader"]
 storage-write = ["dali-kernel/storage-write", "dali-board-stm32f405/storage-write"]
 driver-hardware-test = ["stm32f405", "dali-kernel/driver-hardware-test", "dali-board-stm32f405/driver-hardware-test"]

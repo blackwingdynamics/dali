@@ -30,10 +30,29 @@ where
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] Read block 0 successfully"),
     );
-    #[cfg(all(feature = "abi-current", feature = "repository-loader"))]
+    #[cfg(all(feature = "artifact-flash", feature = "abi-current"))]
+    let cartridge = match board.take_artifact_reader() {
+        Some(reader) => match crate::loader::load_flash_cartridge(reader, slot_manager) {
+            Ok(cartridge) => Ok(cartridge),
+            Err(crate::loader::LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)) => {
+                load_from_sdio::<D, B>(device, slot_manager, committed_generation)
+            }
+            Err(error) => Err(error),
+        },
+        None => load_from_sdio::<D, B>(device, slot_manager, committed_generation),
+    };
+    #[cfg(all(
+        feature = "abi-current",
+        not(feature = "artifact-flash"),
+        feature = "repository-loader"
+    ))]
     let cartridge =
         crate::loader::load_repository_cartridge(device, slot_manager, committed_generation);
-    #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
+    #[cfg(all(
+        feature = "abi-current",
+        not(feature = "artifact-flash"),
+        not(feature = "repository-loader")
+    ))]
     let cartridge = crate::loader::load_current_abi::<D, B>(device, slot_manager);
     #[cfg(not(feature = "abi-current"))]
     let cartridge = if platform::Platform::<B>::supports_application_execution() {
@@ -217,5 +236,28 @@ where
             );
             status::StorageStatus::Failure
         }
+    }
+}
+
+#[cfg(all(feature = "sdio", feature = "abi-current", feature = "artifact-flash"))]
+/// Preserves the existing SD repository and root loading paths as fallback.
+fn load_from_sdio<D, B>(
+    device: D,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    committed_generation: Option<crate::storage::durable::coordinator::DurableGeneration>,
+) -> Result<crate::loader::LoadedCartridges, crate::loader::LoaderError>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
+    #[cfg(feature = "repository-loader")]
+    {
+        crate::loader::load_repository_cartridge(device, slot_manager, committed_generation)
+    }
+    #[cfg(not(feature = "repository-loader"))]
+    {
+        let _ = committed_generation;
+        crate::loader::load_current_abi::<D, B>(device, slot_manager)
     }
 }

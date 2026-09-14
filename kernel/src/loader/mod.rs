@@ -2,6 +2,8 @@
 
 use crate::{drivers::StorageError, storage::filesystem::AmrnFile};
 
+#[cfg(feature = "artifact-flash")]
+mod artifact;
 mod cartridge;
 mod pipeline;
 #[cfg(all(feature = "abi-current", feature = "repository-loader"))]
@@ -10,8 +12,12 @@ mod repository_boot;
 #[cfg(feature = "repository-loader")]
 pub mod repository;
 
+#[cfg(feature = "abi-current")]
+pub(crate) use cartridge::LoadedCartridges;
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
 pub(crate) use cartridge::load_current_abi;
+#[cfg(all(feature = "artifact-flash", feature = "abi-current"))]
+pub(crate) use cartridge::load_flash_cartridge;
 #[cfg(not(feature = "abi-current"))]
 pub use cartridge::start_application;
 pub use cartridge::{load_amrn_file, validate_amrn_file};

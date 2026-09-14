@@ -217,7 +217,11 @@ without contaminating kernel policy.
 - [ ] Connect the existing F405 logging adapter through the generic boundary.
 - [ ] Validate the original single-application boot path as an adapter-level
   integration test.
-- [ ] Add a read-only flash artifact adapter without changing the SD adapter.
+- [x] Add a read-only flash artifact adapter without changing the SD adapter.
+- [x] Connect the bounded flash artifact reader to the signed AMRN loader with
+  SD fallback when the manifest-owned region is empty.
+- [ ] Attempt flash artifact loading before SD initialization so the board can
+  boot an installed AMRN without an attached SD card.
 - [ ] Add a bounded USB installation protocol with staging and atomic commit.
 - [ ] Add power-loss and flash-endurance evidence before enabling flash writes
   in the default development workflow.

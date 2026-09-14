@@ -4,6 +4,8 @@ use dali_amrn::{HEADER_SIZE, ParseError, PayloadValidator, ValidatedPayload, par
 #[cfg(not(feature = "abi-current"))]
 use dali_sdk::{LOG_OK, LOG_REJECTED, MAX_LOG_MESSAGE_BYTES, ServiceTable};
 
+#[cfg(feature = "artifact-flash")]
+use super::CartridgeReader;
 #[cfg(feature = "abi-current")]
 use super::pipeline;
 use super::{LoaderError, read_exact};
@@ -16,6 +18,29 @@ use crate::{
 /// Bounded collection of applications loaded by the current ABI pipeline.
 pub(crate) type LoadedCartridges =
     pipeline::execution::LoadedApplications<{ storage::filesystem::MAX_ROOT_AMRN_FILES }>;
+
+#[cfg(all(feature = "artifact-flash", feature = "abi-current"))]
+/// Loads one signed cartridge from the board-owned artifact region.
+pub(crate) fn load_flash_cartridge<R>(
+    reader: R,
+    slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+) -> Result<LoadedCartridges, LoaderError>
+where
+    R: dali_kernel_api::storage::ArtifactReader,
+{
+    let mut reader = super::artifact::FlashCartridgeReader::new(reader)?;
+    let mut prefix = [0; dali_amrn::MAGIC.len()];
+    super::read_cartridge_exact(&mut reader, &mut prefix)?;
+    if prefix != dali_amrn::MAGIC {
+        return Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound));
+    }
+    reader.rewind()?;
+    #[cfg(feature = "repository-loader")]
+    let loaded = pipeline::signed::load_file_from_platform_key(reader, slot_manager);
+    #[cfg(not(feature = "repository-loader"))]
+    let loaded = pipeline::signed::load_file(reader, slot_manager);
+    loaded.map(pipeline::execution::LoadedApplications::single)
+}
 
 #[cfg(all(feature = "abi-current", not(feature = "repository-loader")))]
 /// Loads the current ABI cartridge set from the storage root.

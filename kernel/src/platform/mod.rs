@@ -167,6 +167,12 @@ where
         self.backend.take_storage_reader().ok()
     }
 
+    /// Transfers the board-owned artifact reader to the kernel loader.
+    #[cfg(feature = "artifact-flash")]
+    pub(crate) fn take_artifact_reader(&mut self) -> Option<B::ArtifactReader> {
+        self.backend.take_artifact_reader().ok()
+    }
+
     /// Transfers the backend-owned watchdog into the kernel runtime.
     #[cfg(feature = "sdio")]
     pub(crate) fn take_watchdog(&mut self) -> Result<B::Watchdog, BoardError> {
