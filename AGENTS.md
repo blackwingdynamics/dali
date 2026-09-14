@@ -387,7 +387,7 @@ cargo check --workspace --exclude dali-kernel
 cargo check-kernel
 cargo test -p dali -p dali-app-hello -p dali-cli
 cargo clippy --workspace --all-targets --exclude dali-kernel -- -D warnings
-cargo clippy -p dali-kernel --target thumbv7em-none-eabihf --bin dali-kernel -- -D warnings
+just kernel-clippy f405
 cargo build-kernel
 git diff --check
 ```
