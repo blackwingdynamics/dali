@@ -203,7 +203,11 @@ Goal: reconnect only the services required for the first supported board
 without contaminating kernel policy.
 
 - [ ] Define the generic block-storage boundary independently of SDIO.
+- [ ] Define the logical artifact-source boundary independently of the
+  persistent medium.
 - [ ] Keep FAT/filesystem policy above the block transport boundary.
+- [ ] Define target-owned flash artifact regions separately from the firmware
+  image and linker regions.
 - [ ] Keep AMRN parsing independent of both filesystem and board code.
 - [ ] Keep logging policy independent of RTT, USB CDC, UART, or another
   transport.
@@ -211,6 +215,10 @@ without contaminating kernel policy.
 - [ ] Connect the existing F405 logging adapter through the generic boundary.
 - [ ] Validate the original single-application boot path as an adapter-level
   integration test.
+- [ ] Add a read-only flash artifact adapter without changing the SD adapter.
+- [ ] Add a bounded USB installation protocol with staging and atomic commit.
+- [ ] Add power-loss and flash-endurance evidence before enabling flash writes
+  in the default development workflow.
 - [ ] Document which services are essential kernel services and which remain
   optional extensions.
 
