@@ -230,6 +230,8 @@ without contaminating kernel policy.
   boot an installed AMRN without an attached SD card.
 - [ ] Write an AMRN through the installation transport and prove SD-free boot
   on the target hardware.
+- [x] Define a hardware-neutral bounded artifact staging and publication
+  contract without coupling it to USB or Flash geometry.
 - [ ] Add a bounded USB installation protocol with staging and atomic commit.
 - [ ] Add power-loss and flash-endurance evidence before enabling flash writes
   in the default development workflow.

@@ -35,6 +35,13 @@ artifact region. USB installation is a subsequent milestone and must use a
 staging region, complete AMRN validation, integrity/authentication checks, and
 an atomic metadata commit before an artifact becomes bootable.
 
+The hardware-neutral `dali-kernel-api::installation::ArtifactStager` contract
+defines that later installer boundary. It separates candidate transfer from
+publication: `begin_staging` invalidates the previous candidate, bounded
+`write_staging` calls fill it, and `commit_staging` is the only operation that
+may publish it. The contract does not choose USB framing, Flash geometry, or a
+board-specific commit-marker layout.
+
 ## Constraints
 
 - Generic kernel policy must not contain SD, flash, NVMe, USB, vendor, or board

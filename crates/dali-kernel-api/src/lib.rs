@@ -6,6 +6,7 @@
 pub mod architecture;
 pub mod board;
 pub mod dma;
+pub mod installation;
 pub mod storage;
 #[cfg(feature = "usb-cdc")]
 pub mod usb;
