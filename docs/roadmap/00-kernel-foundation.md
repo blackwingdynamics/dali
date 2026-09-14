@@ -88,17 +88,17 @@ checkpoint, and no parked feature is required by the kernel core contract.
 
 Goal: establish the permanent ownership model before moving implementation.
 
-- [ ] Define `kernel core` as policy and state that does not know a CPU vendor
+- [x] Define `kernel core` as policy and state that does not know a CPU vendor
   or board.
-- [ ] Define `architecture port` as CPU exception, interrupt, stack, context,
+- [x] Define `architecture port` as CPU exception, interrupt, stack, context,
   atomic, and fault operations.
-- [ ] Define `board backend` as clocks, pins, peripherals, board interrupts,
+- [x] Define `board backend` as clocks, pins, peripherals, board interrupts,
   linker/memory integration, and board-owned unsafe code.
-- [ ] Define `driver adapter` as the translation from board resources to
+- [x] Define `driver adapter` as the translation from board resources to
   hardware-neutral driver contracts.
-- [ ] Define `target metadata` as declarative configuration, not a replacement
+- [x] Define `target metadata` as declarative configuration, not a replacement
   for board-owned hardware initialization.
-- [ ] Map every current kernel module to exactly one owner.
+- [x] Map every current kernel module to exactly one owner.
 - [ ] Reject ownership mappings that require a shared module to branch on a
   concrete board or CPU.
 - [ ] Update the file-structure and platform-backend documentation to match
@@ -301,3 +301,6 @@ The active implementation branch is `kernel-foundation`.
 
 The first recorded checkpoint is [Kernel Foundation Baseline
 Checkpoint](00-baseline-checkpoint.md).
+
+The Phase 1 ownership map is [Kernel Foundation Ownership
+Review](00-ownership-review.md).
