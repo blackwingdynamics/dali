@@ -73,12 +73,12 @@ the foundation work must preserve.
   platform state.
 - [x] Create `parked/pre-foundation-main` at the previous `main` tip.
 - [x] Create and select the `kernel-foundation` branch.
-- [ ] Record the baseline commit, target profile, enabled feature set, kernel
+- [x] Record the baseline commit, target profile, enabled feature set, kernel
   artifact, and existing F405 evidence in a single checkpoint.
 - [ ] Record the current public kernel and backend contracts before editing.
-- [ ] Mark the storage, SDIO, USB CDC, and SPI paths frozen for this roadmap.
+- [x] Mark the storage, SDIO, USB CDC, and SPI paths frozen for this roadmap.
 - [ ] Classify existing features as foundation, adapter, or parked scope.
-- [ ] Add a short change-control note requiring approval for ABI, memory-map,
+- [x] Add a short change-control note requiring approval for ABI, memory-map,
   boot-path, storage-layout, or loader-mode changes.
 
 Exit gate: the baseline can be rebuilt and compared after every foundation
@@ -298,3 +298,6 @@ The current parked branches are recovery points, not targets for new work:
 - `parked/pre-foundation-main` preserves the previous `main` state.
 
 The active implementation branch is `kernel-foundation`.
+
+The first recorded checkpoint is [Kernel Foundation Baseline
+Checkpoint](00-baseline-checkpoint.md).
