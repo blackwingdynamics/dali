@@ -146,7 +146,13 @@ where
                 &mut context_owner,
             ))
         }
-        Err(crate::loader::LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)) => None,
+        Err(crate::loader::LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)) => {
+            logging::info(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[STORAGE] Artifact Flash region empty; falling back to SD"),
+            );
+            None
+        }
         Err(error) => {
             logging::error(
                 logging::BOOT_SUBSYSTEM,
