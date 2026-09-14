@@ -111,6 +111,10 @@ must not become a second loader policy or be mixed with the logging stream. The
 accepted architecture and staged rollout are recorded in
 [ADR-0001](adr/0001-multi-source-artifact-storage.md).
 
+The public backend API also defines a bounded `ArtifactReader` contract for
+read-only byte-range access. It describes the transport boundary only; AMRN
+validation and execution remain owned by the kernel loader.
+
 The adapter now exposes the streaming contract directly. The shared Binary v2
 envelope parser validates fragmented envelopes without retaining their body;
 typed Root, Timestamp, Snapshot, Delegation, and Revocation parsers are

@@ -205,6 +205,8 @@ without contaminating kernel policy.
 - [ ] Define the generic block-storage boundary independently of SDIO.
 - [x] Define the logical artifact-source boundary independently of the
   persistent medium.
+- [x] Define the bounded read-only artifact-reader contract independently of
+  the selected medium.
 - [ ] Keep FAT/filesystem policy above the block transport boundary.
 - [x] Define target-owned flash artifact regions separately from the firmware
   image and linker regions.

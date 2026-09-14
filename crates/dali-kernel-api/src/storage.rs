@@ -29,6 +29,8 @@ pub enum StorageError {
     NotReady,
     /// The requested block is outside media capacity.
     InvalidBlockAddress,
+    /// The requested byte range is outside artifact capacity.
+    InvalidRange,
     /// The operation exceeded its bounded deadline.
     Timeout,
     /// The transport reported data corruption.
@@ -46,6 +48,7 @@ impl core::fmt::Display for StorageError {
         formatter.write_str(match self {
             Self::NotReady => "storage is not ready",
             Self::InvalidBlockAddress => "invalid block address",
+            Self::InvalidRange => "invalid storage range",
             Self::Timeout => "storage operation timed out",
             Self::DataCorruption => "storage data is corrupted",
             Self::Unsupported => "storage operation is unsupported",
@@ -65,6 +68,19 @@ pub trait BlockReader {
 
     /// Returns the number of addressable blocks.
     fn block_count(&self) -> Result<u32, StorageError>;
+}
+
+/// Reads a bounded persistent artifact from a selected storage medium.
+pub trait ArtifactReader {
+    /// Returns the addressable artifact capacity in bytes.
+    fn artifact_length(&self) -> Result<u32, StorageError>;
+
+    /// Reads one complete caller-owned byte range from the artifact.
+    ///
+    /// Implementations must reject an offset or range that exceeds the
+    /// declared artifact capacity. They must not return a partial successful
+    /// read, so the loader can validate complete AMRN fields deterministically.
+    fn read_artifact(&mut self, offset: u32, buffer: &mut [u8]) -> Result<(), StorageError>;
 }
 
 /// Flushes previously accepted writes.
