@@ -114,6 +114,7 @@ current ARMv7-M behavior in its port.
 
 - [ ] Inventory all ARMv7-M assumptions in `dali-kernel-api` and `kernel/src`.
 - [x] Move ARM-specific saved-context layout out of the generic contract.
+- [x] Store scheduler context records as architecture-owned opaque words.
 - [ ] Replace raw ARM exception semantics in common policy with typed
   architecture operations and validated opaque context records.
 - [ ] Keep exception entry, PSP/MSP operations, PendSV/SysTick mechanics, and

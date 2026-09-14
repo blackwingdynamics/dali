@@ -11,7 +11,8 @@ pub mod storage;
 pub mod usb;
 
 pub use architecture::{
-    ArchitectureBackend, ArchitectureOperations, FaultRegister, SavedContextLayout,
+    ArchitectureBackend, ArchitectureOperations, CONTEXT_RECORD_WORDS, ContextRecord,
+    FaultRegister, SavedContextLayout,
 };
 pub use board::{
     BoardBackend, BoardError, BoardInfo, BoardServices, MemoryProtectionOperations, ResetCause,

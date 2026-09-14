@@ -25,14 +25,17 @@ pub(crate) fn request_context_switch() {
     }
 }
 
-/// Returns the selected architecture's initial application control state.
+/// Builds an initial context through the selected architecture backend.
 #[cfg(feature = "abi-context-switch")]
-pub(crate) fn initial_application_control() -> Option<u32> {
+pub(crate) fn initial_context(
+    psp: u32,
+    exception_return: u32,
+) -> Option<dali_kernel_api::ContextRecord> {
     critical_section::with(|cs| {
         ARCHITECTURE
             .borrow(cs)
             .borrow()
-            .map(|operations| (operations.initial_application_control)())
+            .map(|operations| (operations.initial_context)(psp, exception_return))
     })
 }
 

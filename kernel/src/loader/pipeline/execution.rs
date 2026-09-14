@@ -39,9 +39,10 @@ impl LoadedApplication {
     #[cfg(feature = "abi-context-switch")]
     pub(crate) fn scheduler_context(self) -> Option<ScheduledContext> {
         Some(ScheduledContext::initial(
-            self.launch_frame.psp,
-            crate::platform::initial_application_control()?,
-            self.launch_frame.exception_return,
+            crate::platform::initial_context(
+                self.launch_frame.psp,
+                self.launch_frame.exception_return,
+            )?,
             self.slot,
         ))
     }

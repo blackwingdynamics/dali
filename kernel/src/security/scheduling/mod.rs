@@ -2,10 +2,18 @@
 
 use crate::runtime::scheduling::{
     record::ScheduledContext,
-    saved_state::{CALLEE_SAVED_REGISTER_COUNT, SavedContext},
+    saved_state::{CONTEXT_RECORD_WORDS, ContextRecord},
     scheduler::{Scheduler, SchedulerError},
     storage::{SchedulerStorage, SchedulerStorageError},
 };
+
+/// Word positions used by the active exception adapter's context record.
+const CALLEE_SAVED_REGISTER_COUNT: usize = 8;
+const PSP_WORD: usize = 0;
+const CALLEE_SAVED_START: usize = 1;
+const CALLEE_SAVED_END: usize = CALLEE_SAVED_START + CALLEE_SAVED_REGISTER_COUNT;
+const CONTROL_WORD: usize = CALLEE_SAVED_END;
+const EXCEPTION_RETURN_WORD: usize = CONTROL_WORD + 1;
 
 /// Scheduler type sized from the active platform context profile.
 const MAX_CONTEXT_CAPACITY: usize = 2;
@@ -131,15 +139,12 @@ pub(crate) unsafe extern "C" fn prepare_pendsv(
             return Ok(scheduler.context_cpu_ptr(incoming_id)? as *const u32);
         }
         let active = scheduler.active_context()?;
-        let saved_context = ScheduledContext::new(
-            SavedContext {
-                psp,
-                callee_saved: saved,
-                control,
-                exception_return,
-            },
-            active.slot(),
-        );
+        let mut words = [0; CONTEXT_RECORD_WORDS];
+        words[PSP_WORD] = psp;
+        words[CALLEE_SAVED_START..CALLEE_SAVED_END].copy_from_slice(&saved);
+        words[CONTROL_WORD] = control;
+        words[EXCEPTION_RETURN_WORD] = exception_return;
+        let saved_context = ScheduledContext::new(ContextRecord::new(words), active.slot());
         match scheduler.prepare_pendsv(saved_context)? {
             Some(selection) => {
                 let incoming = scheduler.context(selection.incoming)?;

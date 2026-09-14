@@ -14,6 +14,32 @@ pub struct SavedContextLayout {
     pub exception_return: usize,
 }
 
+/// Number of machine words reserved by the current context-record contract.
+///
+/// The selected architecture owns the interpretation and layout of these
+/// words. Kernel scheduling policy stores the record without naming registers
+/// or exception-return fields.
+pub const CONTEXT_RECORD_WORDS: usize = 11;
+
+/// Opaque register record retained by the portable scheduler policy.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ContextRecord {
+    words: [u32; CONTEXT_RECORD_WORDS],
+}
+
+impl ContextRecord {
+    /// Creates a record from architecture-port-owned word ordering.
+    pub const fn new(words: [u32; CONTEXT_RECORD_WORDS]) -> Self {
+        Self { words }
+    }
+
+    /// Returns the words for an architecture-owned restore adapter.
+    pub const fn words(self) -> [u32; CONTEXT_RECORD_WORDS] {
+        self.words
+    }
+}
+
 /// Fault-status register exposed through an architecture backend.
 #[derive(Clone, Copy)]
 pub enum FaultRegister {
@@ -38,8 +64,8 @@ pub struct ArchitectureOperations {
     pub enable_interrupts: fn(),
     /// Requests a deferred context switch.
     pub request_context_switch: fn(),
-    /// Returns the control state required for a first application context.
-    pub initial_application_control: fn() -> u32,
+    /// Builds the initial context record for a validated application frame.
+    pub initial_context: fn(u32, u32) -> ContextRecord,
     /// Reads the process stack pointer.
     pub read_process_stack_pointer: fn() -> u32,
     /// Writes the process stack pointer.
@@ -80,6 +106,6 @@ pub trait ArchitectureBackend {
     /// Requests the architecture's deferred context-switch exception.
     fn request_context_switch();
 
-    /// Returns the control state required for a first application context.
-    fn initial_application_control() -> u32;
+    /// Builds the initial context record for a validated application frame.
+    fn initial_context(psp: u32, exception_return: u32) -> ContextRecord;
 }

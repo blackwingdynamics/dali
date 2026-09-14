@@ -1,9 +1,13 @@
 //! Cortex-M architecture operations for the STM32F405 firmware composition.
 
-use dali_kernel_api::{ArchitectureBackend, ArchitectureOperations, FaultRegister};
+use dali_kernel_api::{ArchitectureBackend, ArchitectureOperations, ContextRecord, FaultRegister};
 
 /// Cortex-M implementation of the kernel architecture contract.
 pub struct CortexMArchitecture;
+
+const PSP_WORD: usize = 0;
+const CONTROL_WORD: usize = 9;
+const EXCEPTION_RETURN_WORD: usize = 10;
 
 impl ArchitectureBackend for CortexMArchitecture {
     const SAVED_CONTEXT_LAYOUT: dali_kernel_api::SavedContextLayout =
@@ -19,7 +23,7 @@ impl ArchitectureBackend for CortexMArchitecture {
             wait_for_interrupt: Self::wait_for_interrupt,
             enable_interrupts: Self::enable_interrupts,
             request_context_switch: Self::request_context_switch,
-            initial_application_control: Self::initial_application_control,
+            initial_context: Self::initial_context,
             read_process_stack_pointer: Self::read_process_stack_pointer,
             write_process_stack_pointer: Self::write_process_stack_pointer,
             read_main_stack_pointer: Self::read_main_stack_pointer,
@@ -45,9 +49,13 @@ impl ArchitectureBackend for CortexMArchitecture {
         cortex_m::peripheral::SCB::set_pendsv();
     }
 
-    fn initial_application_control() -> u32 {
+    fn initial_context(psp: u32, exception_return: u32) -> ContextRecord {
         const UNPRIVILEGED_PSP_CONTROL: u32 = 0b11;
-        UNPRIVILEGED_PSP_CONTROL
+        let mut words = [0; dali_kernel_api::CONTEXT_RECORD_WORDS];
+        words[PSP_WORD] = psp;
+        words[CONTROL_WORD] = UNPRIVILEGED_PSP_CONTROL;
+        words[EXCEPTION_RETURN_WORD] = exception_return;
+        ContextRecord::new(words)
     }
 }
 
