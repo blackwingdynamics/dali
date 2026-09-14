@@ -77,145 +77,7 @@ where
                 crate::loader::start_application(cartridge);
             }
             #[cfg(feature = "abi-current")]
-            {
-                logging::info(
-                    logging::BOOT_SUBSYSTEM,
-                    format_args!(
-                        "[LOADER] Loaded {} application cartridge(s) into declared slots",
-                        cartridge.len()
-                    ),
-                );
-                for application in cartridge.iter() {
-                    let slot = application.slot;
-                    logging::info(
-                        logging::BOOT_SUBSYSTEM,
-                        format_args!(
-                            "[LOADER] Slot {} ({}) boundaries: code=0x{:08X}+{} data=0x{:08X}+{} psp_top=0x{:08X}",
-                            slot.id,
-                            slot.name,
-                            slot.code_origin,
-                            slot.code_length,
-                            slot.data_origin,
-                            slot.data_length,
-                            application.psp_top,
-                        ),
-                    );
-                }
-                #[cfg(feature = "abi-context-switch")]
-                if let Err(error) = crate::security::scheduling::register_contexts(
-                    cartridge
-                        .iter()
-                        .map(|application| application.scheduler_context()),
-                ) {
-                    logging::error(
-                        logging::SECURITY_SUBSYSTEM,
-                        format_args!(
-                            "[SECURITY] Scheduler context registration failed: {:?}",
-                            error
-                        ),
-                    );
-                    return status::StorageStatus::Failure;
-                }
-                #[cfg(feature = "abi-mpu")]
-                {
-                    let Some(cartridge) = cartridge.first() else {
-                        logging::error(
-                            logging::SECURITY_SUBSYSTEM,
-                            format_args!("[SECURITY] No loaded application context"),
-                        );
-                        return status::StorageStatus::Failure;
-                    };
-                    let Some(mut lifecycle) = cartridge.lifecycle else {
-                        if platform::activate_application_regions(cartridge.slot) {
-                            crate::security::launch::enter(cartridge.launch_frame);
-                        }
-                        logging::error(
-                            logging::SECURITY_SUBSYSTEM,
-                            format_args!("[SECURITY] Application lifecycle unavailable"),
-                        );
-                        return status::StorageStatus::Failure;
-                    };
-                    if lifecycle
-                        .transition(crate::runtime::application::lifecycle::LifecycleEvent::Ready)
-                        .is_err()
-                    {
-                        logging::error(
-                            logging::SECURITY_SUBSYSTEM,
-                            format_args!("[SECURITY] Application lifecycle not load-ready"),
-                        );
-                        return status::StorageStatus::Failure;
-                    }
-                    logging::info(
-                        logging::SECURITY_SUBSYSTEM,
-                        format_args!("[SECURITY] Application lifecycle: Ready"),
-                    );
-                    if let Err(error) = context_owner.activate(&mut lifecycle) {
-                        logging::error(
-                            logging::SECURITY_SUBSYSTEM,
-                            format_args!(
-                                "[SECURITY] Application context activation failed: {:?}",
-                                error
-                            ),
-                        );
-                        return status::StorageStatus::Failure;
-                    }
-                    logging::info(
-                        logging::SECURITY_SUBSYSTEM,
-                        format_args!("[SECURITY] Active application context: Running"),
-                    );
-                    #[cfg(feature = "abi-context-switch")]
-                    if let Err(error) = crate::security::scheduling::activate_first() {
-                        logging::error(
-                            logging::SECURITY_SUBSYSTEM,
-                            format_args!(
-                                "[SECURITY] Scheduler context activation failed: {:?}",
-                                error
-                            ),
-                        );
-                        return status::StorageStatus::Failure;
-                    }
-                    let Some(active) = context_owner.active() else {
-                        logging::error(
-                            logging::SECURITY_SUBSYSTEM,
-                            format_args!("[SECURITY] Active application context unavailable"),
-                        );
-                        return status::StorageStatus::Failure;
-                    };
-                    if platform::activate_application_regions(active.allocation().slot()) {
-                        #[cfg(feature = "abi-context-switch")]
-                        {
-                            let Some(profile) = platform::scheduler_profile() else {
-                                logging::error(
-                                    logging::SECURITY_SUBSYSTEM,
-                                    format_args!("[SECURITY] Scheduler profile unavailable"),
-                                );
-                                return status::StorageStatus::Failure;
-                            };
-                            if !board.enable_scheduler_tick(profile.tick_hz) {
-                                logging::error(
-                                    logging::SECURITY_SUBSYSTEM,
-                                    format_args!("[SECURITY] Scheduler tick configuration invalid"),
-                                );
-                                return status::StorageStatus::Failure;
-                            }
-                            // SysTick must not run until the scheduler and the
-                            // first application context are fully initialized.
-                            platform::Platform::<B>::enable_interrupts();
-                        }
-                        crate::security::launch::enter(cartridge.launch_frame);
-                    }
-                    logging::error(
-                        logging::SECURITY_SUBSYSTEM,
-                        format_args!("[SECURITY] Application MPU layout unavailable"),
-                    );
-                    status::StorageStatus::Failure
-                }
-                #[cfg(not(feature = "abi-mpu"))]
-                {
-                    let _ = cartridge.first();
-                    status::StorageStatus::Ready
-                }
-            }
+            return super::activation::activate(cartridge, board, context_owner);
             #[cfg(not(feature = "abi-current"))]
             status::StorageStatus::Ready
         }
@@ -235,6 +97,62 @@ where
                 format_args!("[LOADER] AMRN validation failed: {:?}", error),
             );
             status::StorageStatus::Failure
+        }
+    }
+}
+
+#[cfg(all(feature = "artifact-flash", feature = "abi-current"))]
+/// Attempts to boot one signed cartridge before initializing removable storage.
+pub(crate) fn try_load_flash<B>(board: &mut platform::Platform<B>) -> Option<status::StorageStatus>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
+    let reader = board.take_artifact_reader()?;
+    let mut slot_manager = match crate::runtime::memory::slots::SlotManager::new(
+        platform::memory_profile()
+            .and_then(|memory| memory.isolation)
+            .map(|isolation| isolation.slots)
+            .unwrap_or(&[]),
+    ) {
+        Ok(manager) => manager,
+        Err(error) => {
+            logging::error(
+                logging::SECURITY_SUBSYSTEM,
+                format_args!("[SECURITY] Slot manager unavailable: {:?}", error),
+            );
+            return Some(status::StorageStatus::Failure);
+        }
+    };
+    #[cfg(feature = "abi-mpu")]
+    let mut context_owner = crate::runtime::application::owner::ActiveContextOwner::new(
+        &crate::runtime::application::owner::ACTIVE_RUNTIME_STATE,
+    );
+    let cartridge = crate::loader::load_flash_cartridge(reader, &mut slot_manager);
+    match cartridge {
+        Ok(cartridge) => {
+            logging::info(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[STORAGE] Booting signed AMRN from artifact Flash"),
+            );
+            logging::info(
+                logging::SECURITY_SUBSYSTEM,
+                format_args!("[SECURITY] AMRN signature verified"),
+            );
+            Some(super::activation::activate(
+                cartridge,
+                board,
+                #[cfg(feature = "abi-mpu")]
+                &mut context_owner,
+            ))
+        }
+        Err(crate::loader::LoaderError::Filesystem(embedded_sdmmc::Error::NotFound)) => None,
+        Err(error) => {
+            logging::error(
+                logging::BOOT_SUBSYSTEM,
+                format_args!("[LOADER] Flash AMRN validation failed: {:?}", error),
+            );
+            Some(status::StorageStatus::Failure)
         }
     }
 }

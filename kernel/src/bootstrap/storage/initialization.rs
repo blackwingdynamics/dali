@@ -39,6 +39,15 @@ where
         return StorageRuntime::from_status(status::StorageStatus::SafeMode);
     }
 
+    #[cfg(all(feature = "artifact-flash", feature = "abi-current"))]
+    if let Some(status) = super::super::loading::try_load_flash(board) {
+        logging::info(
+            logging::BOOT_SUBSYSTEM,
+            format_args!("[STORAGE] Artifact Flash boot attempt completed"),
+        );
+        return StorageRuntime::from_status(status);
+    }
+
     let Some(mut reader) = board.take_sdio_reader() else {
         logging::error(
             logging::BOOT_SUBSYSTEM,

@@ -220,8 +220,10 @@ without contaminating kernel policy.
 - [x] Add a read-only flash artifact adapter without changing the SD adapter.
 - [x] Connect the bounded flash artifact reader to the signed AMRN loader with
   SD fallback when the manifest-owned region is empty.
-- [ ] Attempt flash artifact loading before SD initialization so the board can
+- [x] Attempt flash artifact loading before SD initialization so the board can
   boot an installed AMRN without an attached SD card.
+- [ ] Write an AMRN through the installation transport and prove SD-free boot
+  on the target hardware.
 - [ ] Add a bounded USB installation protocol with staging and atomic commit.
 - [ ] Add power-loss and flash-endurance evidence before enabling flash writes
   in the default development workflow.
