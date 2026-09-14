@@ -8,6 +8,7 @@
 //! through the hardware-neutral `BoardBackend` contract.
 
 mod architecture;
+mod artifact;
 #[cfg(feature = "board-stm32f405-sd")]
 mod backend;
 #[cfg(feature = "abi-current")]
@@ -21,6 +22,7 @@ mod scheduling;
 mod watchdog;
 
 pub use architecture::CortexMArchitecture;
+pub use artifact::FlashArtifactReader;
 pub use watchdog::{F405Watchdog, F405WatchdogError};
 
 #[cfg(feature = "board-stm32f405-sd")]
