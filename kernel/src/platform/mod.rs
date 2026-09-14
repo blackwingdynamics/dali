@@ -1,41 +1,45 @@
 //! Hardware-neutral platform composition boundary.
 //!
-//! A firmware composition crate must provide the selected board services. The
-//! kernel core does not select, import, or name any board backend.
+//! A firmware composition crate provides the selected board services. This
+//! module owns only composition and the typed facade consumed by kernel policy.
 
-#[cfg(any(
-    feature = "abi-current",
-    feature = "abi-mpu",
-    feature = "abi-context-switch"
-))]
-use dali_kernel_api::BoardInfo;
-use dali_kernel_api::{ArchitectureBackend, BoardBackend, BoardError, ResetCause, WatchdogBackend};
-
-/// Architecture operations registered by the selected firmware composition.
-static ARCHITECTURE: critical_section::Mutex<
-    core::cell::RefCell<Option<dali_kernel_api::ArchitectureOperations>>,
-> = critical_section::Mutex::new(core::cell::RefCell::new(None));
-
-/// USB operations registered by the selected firmware composition.
-#[cfg(feature = "usb-cdc")]
-static USB_OPERATIONS: critical_section::Mutex<
-    core::cell::RefCell<Option<dali_kernel_api::UsbOperations>>,
-> = critical_section::Mutex::new(core::cell::RefCell::new(None));
-
-/// Memory-protection operations registered by the selected backend.
+mod architecture;
 #[cfg(feature = "abi-mpu")]
-static MEMORY_PROTECTION: critical_section::Mutex<
-    core::cell::RefCell<Option<dali_kernel_api::MemoryProtectionOperations>>,
-> = critical_section::Mutex::new(core::cell::RefCell::new(None));
+mod protection;
+mod registry;
+#[cfg(feature = "usb-cdc")]
+mod usb;
 
+#[cfg(any(feature = "abi-context-switch", feature = "abi-mpu"))]
+pub(crate) use architecture::request_context_switch;
+#[cfg(feature = "abi-test-fixtures")]
+pub(crate) use architecture::write_fault_register;
+#[cfg(feature = "abi-current")]
+pub(crate) use architecture::{
+    main_stack_pointer, process_stack_pointer, set_process_stack_pointer,
+    wait_for_registered_interrupt,
+};
+pub(crate) use architecture::{read_fault_register, recover_to_kernel};
+#[cfg(feature = "abi-mpu")]
+pub(crate) use protection::{
+    activate_application_regions, configure as configure_memory_protection,
+};
+#[cfg(any(feature = "abi-current", feature = "abi-mpu"))]
+pub(crate) use registry::memory_profile;
+#[cfg(feature = "abi-context-switch")]
+pub(crate) use registry::scheduler_profile;
 #[cfg(any(
-    feature = "abi-current",
-    feature = "abi-mpu",
+    feature = "abi-authentication",
+    feature = "repository-loader",
     feature = "abi-context-switch"
 ))]
-/// Backend metadata registered during kernel bootstrap.
-static BOARD_INFO: critical_section::Mutex<core::cell::RefCell<Option<BoardInfo>>> =
-    critical_section::Mutex::new(core::cell::RefCell::new(None));
+pub(crate) use registry::target_profile;
+#[cfg(feature = "abi-authentication")]
+pub(crate) use registry::trust_anchors;
+#[cfg(feature = "usb-cdc")]
+pub(crate) use usb::{pend_irq as pend_usb_irq, service_irq as service_usb_irq};
+
+use dali_kernel_api::{ArchitectureBackend, BoardBackend, BoardError, ResetCause, WatchdogBackend};
 
 #[cfg(feature = "abi-context-switch")]
 /// Kernel-owned watchdog callback used while an application context is active.
@@ -50,54 +54,6 @@ struct WatchdogService {
     platform: usize,
     /// Backend-independent callback used to feed the watchdog.
     feed: unsafe fn(usize) -> bool,
-}
-
-/// Returns metadata registered by the selected firmware composition.
-#[cfg(any(
-    feature = "abi-current",
-    feature = "abi-mpu",
-    feature = "abi-context-switch"
-))]
-pub(crate) fn board_info() -> Option<BoardInfo> {
-    critical_section::with(|cs| *BOARD_INFO.borrow(cs).borrow())
-}
-
-/// Returns the target profile registered by the selected firmware composition.
-#[cfg(any(
-    feature = "abi-authentication",
-    feature = "repository-loader",
-    feature = "abi-context-switch"
-))]
-pub(crate) fn target_profile() -> Option<&'static dali_targets::TargetProfile> {
-    board_info().map(|info| info.target)
-}
-
-/// Returns the memory profile registered by the selected firmware composition.
-#[cfg(any(feature = "abi-current", feature = "abi-mpu"))]
-pub(crate) fn memory_profile() -> Option<dali_targets::MemoryProfile> {
-    board_info().map(|info| info.memory)
-}
-
-/// Returns scheduler metadata registered by the selected firmware composition.
-#[cfg(feature = "abi-context-switch")]
-pub(crate) fn scheduler_profile() -> Option<dali_targets::SchedulerProfile> {
-    target_profile().and_then(|target| target.scheduler)
-}
-
-/// Returns trust anchors selected by the registered target and build policy.
-#[cfg(feature = "abi-authentication")]
-pub(crate) fn trust_anchors() -> &'static [dali_targets::TrustAnchorProfile] {
-    let Some(target) = target_profile() else {
-        return &[];
-    };
-    #[cfg(feature = "abi-test-fixtures")]
-    {
-        target.authentication.development_trust_anchors
-    }
-    #[cfg(not(feature = "abi-test-fixtures"))]
-    {
-        target.authentication.release_trust_anchors
-    }
 }
 
 /// Failure returned by the kernel-owned watchdog service boundary.
@@ -127,55 +83,16 @@ where
     B: BoardBackend,
     B::Watchdog: WatchdogBackend,
 {
-    /// Initializes the externally selected backend.
+    /// Initializes the externally selected backend and its registered ports.
     pub(crate) fn initialize() -> Result<Self, BoardError> {
-        #[cfg(any(
-            feature = "sdio",
-            feature = "usb-cdc",
-            feature = "abi-mpu",
-            feature = "abi-relocation"
-        ))]
-        let info = B::info();
-        #[cfg(any(
-            feature = "sdio",
-            feature = "usb-cdc",
-            feature = "abi-mpu",
-            feature = "abi-relocation"
-        ))]
-        validate_feature_capabilities(info.capabilities)?;
+        registry::register::<B>()?;
+        architecture::register::<B>();
+        #[cfg(feature = "abi-mpu")]
+        protection::register::<B>();
+        #[cfg(feature = "usb-cdc")]
+        usb::register::<B>();
         let _ = read_fault_register as fn(dali_kernel_api::FaultRegister) -> u32;
         let _ = recover_to_kernel as unsafe fn(u32) -> !;
-        critical_section::with(|cs| {
-            let mut architecture = ARCHITECTURE.borrow(cs).borrow_mut();
-            if architecture.is_none() {
-                *architecture = Some(B::Architecture::operations());
-            }
-        });
-        #[cfg(feature = "abi-mpu")]
-        critical_section::with(|cs| {
-            let mut protection = MEMORY_PROTECTION.borrow(cs).borrow_mut();
-            if protection.is_none() {
-                *protection = B::memory_protection_operations();
-            }
-        });
-        #[cfg(any(
-            feature = "abi-current",
-            feature = "abi-mpu",
-            feature = "abi-context-switch"
-        ))]
-        critical_section::with(|cs| {
-            let mut registered = BOARD_INFO.borrow(cs).borrow_mut();
-            if registered.is_none() {
-                *registered = Some(info);
-            }
-        });
-        #[cfg(feature = "usb-cdc")]
-        critical_section::with(|cs| {
-            let mut operations = USB_OPERATIONS.borrow(cs).borrow_mut();
-            if operations.is_none() {
-                *operations = B::usb_operations();
-            }
-        });
         Ok(Self {
             backend: B::initialize()?,
             watchdog: None,
@@ -218,143 +135,6 @@ where
     {
         B::Architecture::enable_interrupts();
     }
-}
-
-/// Rejects feature selections that the manifest does not declare.
-#[cfg(any(
-    feature = "sdio",
-    feature = "usb-cdc",
-    feature = "abi-mpu",
-    feature = "abi-relocation"
-))]
-fn validate_feature_capabilities(
-    capabilities: dali_targets::CapabilitiesProfile,
-) -> Result<(), BoardError> {
-    #[cfg(feature = "sdio")]
-    if !capabilities.storage {
-        return Err(BoardError::InvalidProfile);
-    }
-    #[cfg(feature = "usb-cdc")]
-    if !capabilities.usb_console {
-        return Err(BoardError::InvalidProfile);
-    }
-    #[cfg(feature = "abi-mpu")]
-    if !capabilities.mpu {
-        return Err(BoardError::InvalidProfile);
-    }
-    #[cfg(feature = "abi-relocation")]
-    if !capabilities.relocation {
-        return Err(BoardError::InvalidProfile);
-    }
-    Ok(())
-}
-
-/// Requests a deferred context switch through the installed architecture.
-#[cfg(any(feature = "abi-context-switch", feature = "abi-mpu"))]
-pub(crate) fn request_context_switch() {
-    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
-        (operations.request_context_switch)();
-    }
-}
-
-/// Waits through the installed architecture after bootstrap registration.
-#[cfg(feature = "abi-current")]
-pub(crate) fn wait_for_registered_interrupt() -> ! {
-    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
-        (operations.wait_for_interrupt)();
-    }
-    loop {
-        core::hint::spin_loop();
-    }
-}
-
-/// Reads the registered architecture process stack pointer.
-#[cfg(feature = "abi-current")]
-pub(crate) fn process_stack_pointer() -> Option<u32> {
-    critical_section::with(|cs| {
-        ARCHITECTURE
-            .borrow(cs)
-            .borrow()
-            .map(|operations| (operations.read_process_stack_pointer)())
-    })
-}
-
-/// Writes the registered architecture process stack pointer.
-#[cfg(feature = "abi-current")]
-pub(crate) unsafe fn set_process_stack_pointer(value: u32) -> bool {
-    let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) else {
-        return false;
-    };
-    // SAFETY: The caller validates the target stack invariant.
-    unsafe { (operations.write_process_stack_pointer)(value) };
-    true
-}
-
-/// Reads the registered architecture main stack pointer.
-#[cfg(feature = "abi-current")]
-pub(crate) fn main_stack_pointer() -> Option<u32> {
-    critical_section::with(|cs| {
-        ARCHITECTURE
-            .borrow(cs)
-            .borrow()
-            .map(|operations| (operations.read_main_stack_pointer)())
-    })
-}
-
-/// Reads a fault register through the selected architecture backend.
-#[inline]
-pub fn read_fault_register(register: dali_kernel_api::FaultRegister) -> u32 {
-    critical_section::with(|cs| {
-        ARCHITECTURE
-            .borrow(cs)
-            .borrow()
-            .map_or(0, |operations| (operations.read_fault_register)(register))
-    })
-}
-
-/// Writes a fault register through the selected architecture backend.
-#[cfg(feature = "abi-test-fixtures")]
-pub(crate) fn write_fault_register(register: dali_kernel_api::FaultRegister, value: u32) {
-    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
-        (operations.write_fault_register)(register, value);
-    }
-}
-
-/// Returns from a prepared fault-recovery frame through the backend.
-///
-/// # Safety
-///
-/// `frame_address` must point to a validated kernel-owned recovery frame.
-#[inline(never)]
-pub unsafe fn recover_to_kernel(frame_address: u32) -> ! {
-    if let Some(operations) = critical_section::with(|cs| *ARCHITECTURE.borrow(cs).borrow()) {
-        // SAFETY: The caller has built a validated kernel-owned recovery frame.
-        unsafe { (operations.recover_to_kernel)(frame_address) };
-    }
-    loop {
-        core::hint::spin_loop();
-    }
-}
-
-/// Configures the initial protection map through the selected backend.
-#[cfg(feature = "abi-mpu")]
-pub(crate) fn configure_memory_protection(memory: dali_targets::MemoryProfile) -> bool {
-    let Some(operations) = critical_section::with(|cs| *MEMORY_PROTECTION.borrow(cs).borrow())
-    else {
-        return false;
-    };
-    (operations.configure)(memory);
-    true
-}
-
-/// Activates application permissions through the selected backend.
-#[cfg(feature = "abi-mpu")]
-pub(crate) fn activate_application_regions(slot: dali_targets::IsolationSlot) -> bool {
-    let Some(operations) = critical_section::with(|cs| *MEMORY_PROTECTION.borrow(cs).borrow())
-    else {
-        return false;
-    };
-    (operations.activate_application_regions)(slot)
 }
 
 impl<B> Platform<B>
@@ -466,20 +246,4 @@ where
 {
     let platform = unsafe { &mut *(platform as *mut Platform<B>) };
     platform.service_watchdog().is_ok()
-}
-
-/// Services the registered board USB backend through a kernel-owned callback.
-#[cfg(feature = "usb-cdc")]
-pub(crate) fn service_usb_irq(drain: fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink)) {
-    if let Some(operations) = critical_section::with(|cs| *USB_OPERATIONS.borrow(cs).borrow()) {
-        (operations.service_irq)(drain);
-    }
-}
-
-/// Pends the registered board USB interrupt.
-#[cfg(feature = "usb-cdc")]
-pub(crate) fn pend_usb_irq() {
-    if let Some(operations) = critical_section::with(|cs| *USB_OPERATIONS.borrow(cs).borrow()) {
-        (operations.pend_irq)();
-    }
 }

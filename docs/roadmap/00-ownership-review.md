@@ -1,6 +1,6 @@
 # Kernel Foundation Ownership Review
 
-Status: **Recorded — implementation changes not started**.
+Status: **First composition split complete — architecture separation remains open**.
 
 This review maps the current implementation to the foundation layers before
 any code movement. The map is an ownership contract for the next refactoring
@@ -128,10 +128,11 @@ contracts remain protected until a later roadmap reopens them.
 
 The review found these concrete issues for Phase 1 implementation:
 
-1. `kernel/src/platform/mod.rs` is 485 lines and combines composition,
+1. `kernel/src/platform/mod.rs` was 485 lines and combined composition,
    architecture operations, board metadata, memory protection, USB, and
-   watchdog service state. It must be split by ownership before new platform
-   features are added.
+   watchdog service state. The first behavior-preserving split now leaves a
+   249-line facade plus focused `architecture`, `registry`, `protection`, and
+   `usb` modules. The remaining architecture policy split is still open.
 2. `crates/dali-kernel-api/src/architecture.rs` exposes ARMv7-M layout in a
    common contract. The generic contract must retain only portable operations
    and opaque/typed context requirements.
@@ -149,7 +150,7 @@ The review found these concrete issues for Phase 1 implementation:
 ## Next implementation sequence
 
 - [ ] Approve this ownership map as the Phase 1 implementation boundary.
-- [ ] Split `kernel/src/platform/mod.rs` into focused composition modules with
+- [x] Split `kernel/src/platform/mod.rs` into focused composition modules with
   no behavior change.
 - [ ] Separate portable context/scheduler records from ARM exception mechanics.
 - [ ] Move SCB and exception-frame operations behind the architecture port.
