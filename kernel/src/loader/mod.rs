@@ -60,6 +60,54 @@ pub enum LoaderError {
     UnsupportedServices(u32),
 }
 
+/// Sequential reader consumed by format-specific AMRN pipelines.
+#[cfg(feature = "abi-authentication")]
+pub(crate) trait CartridgeReader {
+    /// Returns the immutable cartridge length.
+    fn length(&self) -> u32;
+
+    /// Reads the next bounded portion of the cartridge.
+    fn read(&mut self, buffer: &mut [u8]) -> Result<usize, LoaderError>;
+
+    /// Rewinds the reader to the cartridge beginning.
+    fn rewind(&mut self) -> Result<(), LoaderError>;
+}
+
+#[cfg(feature = "abi-authentication")]
+impl<D> CartridgeReader for AmrnFile<'_, D>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    fn length(&self) -> u32 {
+        AmrnFile::length(self)
+    }
+
+    fn read(&mut self, buffer: &mut [u8]) -> Result<usize, LoaderError> {
+        AmrnFile::read(self, buffer).map_err(LoaderError::Filesystem)
+    }
+
+    fn rewind(&mut self) -> Result<(), LoaderError> {
+        AmrnFile::rewind(self).map_err(LoaderError::Filesystem)
+    }
+}
+
+/// Reads exactly one complete buffer from a sequential cartridge reader.
+#[cfg(feature = "abi-authentication")]
+pub(crate) fn read_cartridge_exact<R>(reader: &mut R, buffer: &mut [u8]) -> Result<(), LoaderError>
+where
+    R: CartridgeReader,
+{
+    let mut offset = 0;
+    while offset < buffer.len() {
+        let read = reader.read(&mut buffer[offset..])?;
+        if read == 0 {
+            return Err(LoaderError::Filesystem(embedded_sdmmc::Error::EndOfFile));
+        }
+        offset += read;
+    }
+    Ok(())
+}
+
 /// Performs the `read_exact` operation for this subsystem.
 pub(crate) fn read_exact<D>(
     file: &AmrnFile<'_, D>,

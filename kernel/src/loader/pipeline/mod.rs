@@ -2,10 +2,7 @@
 
 #[cfg(any(feature = "abi-current", feature = "abi-relocation"))]
 pub(super) use crate::loader::LoaderError;
-#[cfg(any(
-    feature = "abi-authentication",
-    all(feature = "abi-relocation", not(feature = "repository-loader")),
-))]
+#[cfg(all(feature = "abi-relocation", not(feature = "repository-loader")))]
 pub(super) use crate::loader::read_exact;
 
 #[cfg(all(feature = "abi-relocation", not(feature = "repository-loader")))]
