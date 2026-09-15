@@ -1,6 +1,9 @@
 //! Board-owned single-slot Flash artifact replacement.
 
-use dali_kernel_api::{installation::SingleSlotReplacement, storage::StorageError};
+use dali_kernel_api::{
+    installation::SingleSlotReplacement,
+    storage::{ArtifactReader, StorageError},
+};
 use stm32f4xx_hal::{
     flash::{FlashExt, LockedFlash},
     pac,
@@ -128,6 +131,19 @@ impl FlashArtifactWriter {
         flash
             .program(marker_offset, marker.iter())
             .map_err(FlashArtifactWriteError::Flash)?;
+        match FlashArtifactReader::new().artifact_present() {
+            Ok(true) => {}
+            Ok(false) => {
+                self.replacement.recover_empty();
+                return Err(FlashArtifactWriteError::Storage(
+                    StorageError::DataCorruption,
+                ));
+            }
+            Err(error) => {
+                self.replacement.recover_empty();
+                return Err(FlashArtifactWriteError::Storage(error));
+            }
+        }
         self.replacement
             .publish()
             .map_err(FlashArtifactWriteError::Replacement)
@@ -198,5 +214,19 @@ fn map_publish_error<E>(
         FlashArtifactWriteError::Replacement(error) => FlashArtifactWriteError::Replacement(error),
         FlashArtifactWriteError::Flash(error) => FlashArtifactWriteError::Flash(error),
         FlashArtifactWriteError::Validation(error) => match error {},
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PUBLICATION_MAGIC, PUBLICATION_MARKER_SIZE, publication_marker};
+
+    #[test]
+    fn publication_marker_contains_length_and_inverse() {
+        let marker = publication_marker(0x1234_5678);
+        assert_eq!(&marker[..PUBLICATION_MAGIC.len()], &PUBLICATION_MAGIC);
+        assert_eq!(&marker[8..12], &0x1234_5678_u32.to_le_bytes());
+        assert_eq!(&marker[12..16], &(!0x1234_5678_u32).to_le_bytes());
+        assert_eq!(marker.len(), PUBLICATION_MARKER_SIZE as usize);
     }
 }
