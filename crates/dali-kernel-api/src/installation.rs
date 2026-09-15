@@ -2,6 +2,9 @@
 
 use crate::storage::StorageError;
 
+#[path = "dispatcher.rs"]
+pub mod dispatcher;
+
 /// The lifecycle of a single physical artifact slot.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SingleSlotReplacementState {

@@ -172,6 +172,11 @@ impl Session {
         self.state
     }
 
+    /// Resets the session after a backend failure.
+    pub fn reset(&mut self) {
+        self.state = State::Idle;
+    }
+
     /// Applies one decoded frame and emits the corresponding bounded action.
     pub fn accept(&mut self, frame: Frame<'_>) -> Result<Event, SessionError> {
         match (self.state, frame.command) {
