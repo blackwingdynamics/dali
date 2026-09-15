@@ -89,3 +89,24 @@ fn backend_failure_aborts_and_resets_protocol() {
     );
     assert_eq!(dispatcher.state(), State::Idle);
 }
+
+#[test]
+fn commit_requires_kernel_validation_result() {
+    let mut dispatcher = InstallationDispatcher::new(MockBackend::default());
+    dispatcher.accept(frame(Command::Begin, 0, 4, &[])).unwrap();
+    dispatcher
+        .accept(frame(Command::Data, 0, 0, b"test"))
+        .unwrap();
+    dispatcher
+        .accept(frame(Command::Validate, 0, 0, &[]))
+        .unwrap();
+
+    assert!(matches!(
+        dispatcher.accept(frame(Command::Commit, 0, 0, &[])),
+        Err(DispatchError::Protocol(_))
+    ));
+    assert_eq!(
+        dispatcher.state(),
+        State::AwaitingValidation { total_length: 4 }
+    );
+}
