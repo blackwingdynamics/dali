@@ -106,6 +106,15 @@ impl ArtifactReader for FlashArtifactReader {
         Self::capacity()
     }
 
+    fn published_length(&mut self) -> Result<u32, StorageError> {
+        let marker = Self::read_marker()?;
+        let length = Self::marker_length(&marker).ok_or(StorageError::DataCorruption)?;
+        if length > Self::capacity()? {
+            return Err(StorageError::InvalidRange);
+        }
+        Ok(length)
+    }
+
     fn read_artifact(&mut self, offset: u32, buffer: &mut [u8]) -> Result<(), StorageError> {
         let (start, end) = Self::absolute_range(offset, buffer.len())?;
         // SAFETY: the target manifest bounds the region, and absolute_range
@@ -136,5 +145,16 @@ mod tests {
             FlashArtifactReader::new().read_artifact(length, &mut byte),
             Err(StorageError::InvalidRange)
         );
+    }
+
+    #[test]
+    fn validates_publication_marker_length() {
+        let mut marker = [0xFF; PUBLICATION_MARKER_SIZE as usize];
+        marker[..PUBLICATION_MAGIC.len()].copy_from_slice(&PUBLICATION_MAGIC);
+        marker[8..12].copy_from_slice(&128_u32.to_le_bytes());
+        marker[12..16].copy_from_slice(&(!128_u32).to_le_bytes());
+        assert_eq!(FlashArtifactReader::marker_length(&marker), Some(128));
+        marker[15] ^= 1;
+        assert_eq!(FlashArtifactReader::marker_length(&marker), None);
     }
 }

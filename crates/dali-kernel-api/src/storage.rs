@@ -84,6 +84,15 @@ pub trait ArtifactReader {
     /// Returns the addressable artifact capacity in bytes.
     fn artifact_length(&self) -> Result<u32, StorageError>;
 
+    /// Returns the length of the currently published artifact.
+    ///
+    /// Readers without a separate publication length may use their complete
+    /// artifact capacity. Marker-backed readers must return the validated
+    /// length recorded by the publication marker.
+    fn published_length(&mut self) -> Result<u32, StorageError> {
+        self.artifact_length()
+    }
+
     /// Reads one complete caller-owned byte range from the artifact.
     ///
     /// Implementations must reject an offset or range that exceeds the

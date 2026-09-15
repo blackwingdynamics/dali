@@ -24,7 +24,7 @@ where
         if !reader.artifact_present().map_err(storage_error_to_loader)? {
             return Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound));
         }
-        let length = reader.artifact_length().map_err(storage_error_to_loader)?;
+        let length = reader.published_length().map_err(storage_error_to_loader)?;
         Ok(Self {
             reader,
             length,
