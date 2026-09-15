@@ -72,6 +72,15 @@ pub trait BlockReader {
 
 /// Reads a bounded persistent artifact from a selected storage medium.
 pub trait ArtifactReader {
+    /// Reports whether the source has published a complete artifact.
+    ///
+    /// Readers without a separate publication marker may retain the default
+    /// `true` result; marker-backed readers must return `false` until the
+    /// complete candidate has been published.
+    fn artifact_present(&mut self) -> Result<bool, StorageError> {
+        Ok(true)
+    }
+
     /// Returns the addressable artifact capacity in bytes.
     fn artifact_length(&self) -> Result<u32, StorageError>;
 

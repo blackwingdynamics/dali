@@ -19,6 +19,9 @@ use super::UsbResources;
 
 /// Peripherals owned by the kernel after board initialization.
 pub struct Board {
+    #[cfg(feature = "storage-write")]
+    /// Flash peripheral reserved for the board-owned artifact writer.
+    pub(super) flash: Option<pac::FLASH>,
     /// Blocking delay driven by the initialized SysTick timer.
     pub(super) delay: Option<TimerMode>,
     /// WeAct board status LED on active-high PB2.
@@ -64,6 +67,12 @@ pub(crate) enum TimerMode {
 }
 
 impl Board {
+    /// Transfers the Flash peripheral to the board-owned artifact writer.
+    #[cfg(feature = "storage-write")]
+    pub fn take_artifact_writer(&mut self) -> Option<crate::FlashArtifactWriter> {
+        self.flash.take().map(crate::FlashArtifactWriter::new)
+    }
+
     /// Queues and renders a bounded diagnostic line on the optional OLED.
     #[cfg(feature = "display-oled")]
     pub(crate) fn write_display_log(&mut self, bytes: &[u8]) {

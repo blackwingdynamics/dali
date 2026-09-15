@@ -115,6 +115,8 @@ pub fn initialize() -> Board {
     });
 
     Board {
+        #[cfg(feature = "storage-write")]
+        flash: Some(device.FLASH),
         delay: Some(delay),
         status_led,
         user_key,

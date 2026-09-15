@@ -9,6 +9,8 @@
 
 mod architecture;
 mod artifact;
+#[cfg(feature = "storage-write")]
+mod artifact_writer;
 #[cfg(feature = "board-stm32f405-sd")]
 mod backend;
 #[cfg(feature = "abi-current")]
@@ -23,6 +25,8 @@ mod watchdog;
 
 pub use architecture::CortexMArchitecture;
 pub use artifact::FlashArtifactReader;
+#[cfg(feature = "storage-write")]
+pub use artifact_writer::{FlashArtifactWriteError, FlashArtifactWriter};
 pub use watchdog::{F405Watchdog, F405WatchdogError};
 
 #[cfg(feature = "board-stm32f405-sd")]

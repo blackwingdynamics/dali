@@ -20,6 +20,10 @@ where
 {
     /// Creates a cursor after reading the immutable artifact capacity.
     pub(crate) fn new(reader: R) -> Result<Self, LoaderError> {
+        let mut reader = reader;
+        if !reader.artifact_present().map_err(storage_error_to_loader)? {
+            return Err(LoaderError::Filesystem(embedded_sdmmc::Error::NotFound));
+        }
         let length = reader.artifact_length().map_err(storage_error_to_loader)?;
         Ok(Self {
             reader,
