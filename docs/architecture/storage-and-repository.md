@@ -111,6 +111,14 @@ must not become a second loader policy or be mixed with the logging stream. The
 accepted architecture and staged rollout are recorded in
 [ADR-0001](adr/0001-multi-source-artifact-storage.md).
 
+The current F405 milestone deliberately narrows that future architecture to one
+Flash cartridge. The manifest-owned Flash region is limited to one AMRN of at
+most 64 KiB. Boot attempts that cartridge first; if the region is empty or the
+Flash source is unavailable, boot falls back to the SD repository. One boot
+cycle selects one source only. Simultaneous Flash-and-SD discovery, multiple
+Flash cartridges, and multi-source scheduling remain deferred until the single
+cartridge write, validation, replacement, and recovery lifecycle is stable.
+
 The public backend API also defines a bounded `ArtifactReader` contract for
 read-only byte-range access. It describes the transport boundary only; AMRN
 validation and execution remain owned by the kernel loader.
