@@ -69,8 +69,14 @@ pub(crate) enum TimerMode {
 impl Board {
     /// Transfers the Flash peripheral to the board-owned artifact writer.
     #[cfg(feature = "storage-write")]
-    pub fn take_artifact_writer(&mut self) -> Option<crate::FlashArtifactWriter> {
-        self.flash.take().map(crate::FlashArtifactWriter::new)
+    pub fn take_artifact_writer(
+        &mut self,
+    ) -> Result<crate::FlashArtifactWriter, dali_kernel_api::storage::StorageError> {
+        let flash = self
+            .flash
+            .take()
+            .ok_or(dali_kernel_api::storage::StorageError::NotReady)?;
+        crate::FlashArtifactWriter::new(flash)
     }
 
     /// Queues and renders a bounded diagnostic line on the optional OLED.

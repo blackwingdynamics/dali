@@ -69,6 +69,15 @@ impl SingleSlotReplacement {
         self.state
     }
 
+    /// Returns the candidate length after complete validation.
+    pub const fn validated_length(&self) -> Option<u32> {
+        match self.state {
+            SingleSlotReplacementState::Validated { length }
+            | SingleSlotReplacementState::Published { length } => Some(length),
+            _ => None,
+        }
+    }
+
     /// Invalidates the current slot and starts a sequential replacement.
     pub fn begin(&mut self, length: u32) -> Result<(), SingleSlotReplacementError> {
         if length == 0 || length > self.capacity {
