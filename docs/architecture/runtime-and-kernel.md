@@ -97,6 +97,9 @@ Its CRC-protected frames and lifecycle state machine are transport-neutral and
 do not consume the logging queue. A future USB receive adapter must route only
 installation frames to that state machine and keep CDC logging ownership
 separate; protocol acceptance alone does not publish a Flash artifact.
+The receive-side assembler also synchronizes on the installation magic and
+retains only a small fixed number of complete frames, so malformed or
+backlogged input cannot require dynamic memory.
 
 The current frame contract is protocol version 1: a four-byte `DINS` magic,
 one version byte, one command byte, a little-endian `u16` payload length, a

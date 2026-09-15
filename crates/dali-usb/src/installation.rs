@@ -10,7 +10,8 @@ pub const HEADER_SIZE: usize = 16;
 pub const CRC_SIZE: usize = 4;
 /// Maximum encoded frame length.
 pub const MAX_FRAME_SIZE: usize = HEADER_SIZE + MAX_PAYLOAD + CRC_SIZE;
-const MAGIC: [u8; 4] = *b"DINS";
+/// Installation frame magic used to distinguish frames from log bytes.
+pub const FRAME_MAGIC: [u8; 4] = *b"DINS";
 const CRC_POLYNOMIAL: u32 = 0xEDB8_8320;
 
 /// Commands accepted by the installation state machine.
@@ -87,7 +88,7 @@ impl<'a> Frame<'a> {
         if bytes.len() < HEADER_SIZE + CRC_SIZE || bytes.len() > MAX_FRAME_SIZE {
             return Err(FrameError::InvalidLength);
         }
-        if bytes[..MAGIC.len()] != MAGIC || bytes[4] != PROTOCOL_VERSION {
+        if bytes[..FRAME_MAGIC.len()] != FRAME_MAGIC || bytes[4] != PROTOCOL_VERSION {
             return Err(FrameError::InvalidHeader);
         }
         let command = Command::decode(bytes[5]).ok_or(FrameError::InvalidCommand)?;
@@ -116,7 +117,7 @@ impl<'a> Frame<'a> {
         if destination.len() < length {
             return Err(FrameError::BufferTooSmall);
         }
-        destination[..4].copy_from_slice(&MAGIC);
+        destination[..FRAME_MAGIC.len()].copy_from_slice(&FRAME_MAGIC);
         destination[4] = PROTOCOL_VERSION;
         destination[5] = self.command.encode();
         destination[6..8].copy_from_slice(&(self.payload.len() as u16).to_le_bytes());

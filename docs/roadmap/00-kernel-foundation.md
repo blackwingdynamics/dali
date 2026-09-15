@@ -234,6 +234,8 @@ without contaminating kernel policy.
   contract without coupling it to USB or Flash geometry.
 - [x] Define a bounded transport-neutral installation frame and lifecycle
   state machine with CRC-protected chunks.
+- [x] Define a bounded receive-side frame assembler and FIFO independent of
+  the USB HAL and logging queue.
 - [ ] Keep the first F405 installation profile to one 64 KiB-or-smaller Flash
   AMRN with Flash-first and SD-fallback boot selection.
 - [x] Resolve an erase-aligned F405 Flash layout before enabling artifact
