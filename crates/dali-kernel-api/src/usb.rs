@@ -28,6 +28,9 @@ pub trait UsbResetDelay {
 pub struct UsbOperations {
     /// Services the board-owned USB device through the kernel sink callback.
     pub service_irq: fn(fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink)),
+    /// Copies one queued installation frame into caller-owned storage.
+    pub poll_installation_frame:
+        fn(&mut [u8; dali_usb::installation::MAX_FRAME_SIZE]) -> Option<usize>,
     /// Pends the board-owned USB interrupt.
     pub pend_irq: fn(),
 }

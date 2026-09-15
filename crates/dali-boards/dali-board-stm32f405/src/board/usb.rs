@@ -3,6 +3,7 @@
 use core::cell::RefCell;
 use critical_section::Mutex;
 use dali_kernel_api::{UsbResetDelay, UsbResources as UsbResourceContract};
+use dali_usb::installation_queue::{DEFAULT_QUEUE_CAPACITY, InstallationReceiveQueue};
 use stm32f4xx_hal::{gpio, pac, rcc::Clocks};
 use usb_device::{bus::UsbBusAllocator, class_prelude::*, prelude::*};
 use usbd_serial::SerialPort;
@@ -42,6 +43,7 @@ impl UsbResourceContract for UsbResources {
 const USB_VENDOR_ID: u16 = 0x1209;
 const USB_PRODUCT_ID: u16 = 0xDA11;
 const ENDPOINT_MEMORY_WORDS: usize = 1_024;
+const INSTALLATION_READ_BUFFER_LENGTH: usize = 64;
 
 #[unsafe(link_section = ".dma_buffer")]
 static mut ENDPOINT_MEMORY: [u32; ENDPOINT_MEMORY_WORDS] = [0; ENDPOINT_MEMORY_WORDS];
@@ -50,6 +52,8 @@ static USB_SERIAL: Mutex<RefCell<Option<SerialPort<'static, stm32f4xx_hal::otg_f
     Mutex::new(RefCell::new(None));
 static USB_DEVICE: Mutex<RefCell<Option<UsbDevice<'static, stm32f4xx_hal::otg_fs::UsbBusType>>>> =
     Mutex::new(RefCell::new(None));
+static INSTALLATION_QUEUE: Mutex<RefCell<InstallationReceiveQueue<DEFAULT_QUEUE_CAPACITY>>> =
+    Mutex::new(RefCell::new(InstallationReceiveQueue::new()));
 
 /// Initializes USB state owned entirely by the F405 backend.
 pub(crate) fn initialize(board: &mut super::Board, force_reenumeration: bool) -> bool {
@@ -124,7 +128,28 @@ pub(crate) fn service_irq(drain: fn(dali_usb::LinkState, &mut dyn dali_usb::Byte
             serial.dtr(),
         );
         drain(link, &mut Sink { serial });
+        let mut input = [0; INSTALLATION_READ_BUFFER_LENGTH];
+        if let Ok(length) = serial.read(&mut input) {
+            critical_section::with(|cs| {
+                let _ = INSTALLATION_QUEUE
+                    .borrow(cs)
+                    .borrow_mut()
+                    .push_bytes(&input[..length]);
+            });
+        }
     }
+}
+
+/// Copies one complete installation frame from the bounded receive queue.
+pub(crate) fn poll_installation_frame(
+    destination: &mut [u8; dali_usb::installation::MAX_FRAME_SIZE],
+) -> Option<usize> {
+    critical_section::with(|cs| {
+        INSTALLATION_QUEUE
+            .borrow(cs)
+            .borrow_mut()
+            .pop_frame(destination)
+    })
 }
 
 struct Sink<'a> {
