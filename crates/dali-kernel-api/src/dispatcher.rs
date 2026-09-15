@@ -95,6 +95,13 @@ where
         }
     }
 
+    /// Marks the candidate valid after the kernel AMRN validation succeeds.
+    pub fn mark_validated(&mut self) -> Result<(), DispatchError<B::Error>> {
+        self.session
+            .mark_validated()
+            .map_err(DispatchError::Protocol)
+    }
+
     fn fail(&mut self, error: B::Error) -> DispatchError<B::Error> {
         self.backend.abort();
         self.session.reset();

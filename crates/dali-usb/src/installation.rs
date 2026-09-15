@@ -138,6 +138,8 @@ pub enum State {
     Idle,
     /// Data chunks are expected at the declared sequential offset.
     Receiving { total_length: u32, next_offset: u32 },
+    /// The complete candidate awaits the kernel AMRN validation result.
+    AwaitingValidation { total_length: u32 },
     /// All bytes were received and validation was requested.
     Validated { total_length: u32 },
 }
@@ -220,7 +222,7 @@ impl Session {
                 },
                 Command::Validate,
             ) if next_offset == total_length => {
-                self.state = State::Validated { total_length };
+                self.state = State::AwaitingValidation { total_length };
                 Ok(Event::Validate)
             }
             (State::Validated { .. }, Command::Commit) => {
@@ -233,6 +235,15 @@ impl Session {
             }
             _ => Err(SessionError::InvalidTransition),
         }
+    }
+
+    /// Marks the candidate valid after the kernel validation pass succeeds.
+    pub fn mark_validated(&mut self) -> Result<(), SessionError> {
+        let State::AwaitingValidation { total_length } = self.state else {
+            return Err(SessionError::InvalidTransition);
+        };
+        self.state = State::Validated { total_length };
+        Ok(())
     }
 }
 

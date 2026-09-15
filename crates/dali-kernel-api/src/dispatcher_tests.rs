@@ -66,6 +66,7 @@ fn dispatcher_routes_lifecycle_to_backend() {
             .unwrap(),
         DispatchEvent::ValidationRequired
     );
+    dispatcher.mark_validated().unwrap();
     assert_eq!(
         dispatcher
             .accept(frame(Command::Commit, 0, 0, &[]))

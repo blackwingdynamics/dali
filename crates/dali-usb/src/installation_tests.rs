@@ -52,6 +52,7 @@ fn session_requires_contiguous_complete_candidate() {
         session.accept(frame(Command::Validate, 0, 0, &[])),
         Ok(Event::Validate)
     );
+    session.mark_validated().unwrap();
     assert_eq!(
         session.accept(frame(Command::Commit, 0, 0, &[])),
         Ok(Event::Commit)
