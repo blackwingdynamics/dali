@@ -14,6 +14,8 @@ pub mod loader_contract;
 pub use loader::repository as repository_loader;
 #[cfg(feature = "repository-loader")]
 pub use repository_loader::streaming as repository_streaming;
+#[cfg(feature = "usb-cdc")]
+mod installation;
 pub mod logging;
 pub(crate) mod platform;
 pub mod runtime;

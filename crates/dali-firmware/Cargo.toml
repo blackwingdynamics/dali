@@ -20,6 +20,11 @@ f405-development = [
     "repository-loader",
     "storage-write",
 ]
+usb-install = [
+    "f405-development",
+    "dali-kernel/usb-install",
+    "dali-board-stm32f405/usb-install",
+]
 usb-cdc = ["stm32f405", "dali-kernel/usb-cdc", "dali-board-stm32f405/usb-cdc"]
 abi-current = ["stm32f405", "dali-kernel/abi-current", "dali-board-stm32f405/abi-current"]
 abi-mpu = ["abi-current", "dali-kernel/abi-mpu", "dali-board-stm32f405/abi-mpu"]

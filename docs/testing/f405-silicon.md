@@ -337,6 +337,23 @@ status.
 - The SVC rejection matrix kept the application alive, while the bounded
   `Log` service accepted the final completion message.
 
+### Dedicated installer bulk-interface enumeration — 2026-09-15
+
+- [x] The `usb-install` F405 release profile built and flashed successfully
+  through the Pico CMSIS-DAP probe.
+- [x] The F405 boot trace showed normal software reset, 168 MHz clock setup,
+  Flash-empty fallback, bounded SD recovery attempts, and kernel heartbeat.
+- [x] The logging CDC re-enumerated at `/dev/ttyACM3` after adding the
+  installer interface.
+- [x] The installer uses one vendor-specific bulk OUT endpoint and one bulk IN
+  endpoint because two full CDC-ACM classes exceed the F405 OTG FS endpoint
+  budget. No installer payload or Flash write was tested in this milestone.
+- [ ] USB host discovery and end-to-end DINS transfer remain unverified.
+
+This evidence proves USB enumeration and logging-channel preservation only. It
+does not prove cartridge installation, AMRN validation, Flash publication, or
+power-loss recovery.
+
 The USB console may report `read zero bytes from port` while the target resets
 or the CDC device re-enumerates. That is a transport-session event and must be
 distinguished from the kernel's fault and recovery records.

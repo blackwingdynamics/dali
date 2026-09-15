@@ -20,4 +20,4 @@ pub use board::{
     WatchdogBackend,
 };
 #[cfg(feature = "usb-cdc")]
-pub use usb::{UsbOperations, UsbResetDelay, UsbResources};
+pub use usb::{UsbInstallationReceive, UsbOperations, UsbResetDelay, UsbResources};

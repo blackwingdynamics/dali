@@ -2,13 +2,14 @@
 
 ## Decision
 
-Cartridge installation uses a dedicated USB CDC interface. The existing CDC
+Cartridge installation uses a dedicated USB bulk interface. The existing CDC
 interface remains a log-only output channel and never interprets host input as
-installation data.
+installation data. The bulk interface is used because the F405 USB FS
+peripheral cannot expose two full CDC-ACM classes within its endpoint budget.
 
 The installation path has four owners:
 
-1. the board USB adapter owns the USB device, CDC interfaces, endpoints, and
+1. the board USB adapter owns the USB device, CDC/bulk interfaces, endpoints, and
    bounded byte transfer;
 2. the transport queue owns framing assembly and overflow accounting;
 3. kernel main context owns protocol dispatch, AMRN validation, and failure
@@ -43,9 +44,14 @@ This interface does not provide A/B atomicity.
 
 ## Implementation gates
 
+The current `usb-install` build feature represents only the bounded ingress
+slice: a dedicated CDC input is copied into the transport queue. It does not
+yet expose a cartridge installation command, dispatch frames to the Flash
+writer, or claim target installation support.
+
 - host tests must cover the installer response and timeout state machine;
 - the F405 adapter must prove that logging CDC remains functional while the
-  installer CDC receives bounded data;
+  installer bulk interface receives bounded data;
 - no Flash operation may execute from the USB interrupt;
 - a target test must install a real AMRN, reboot without SD, and observe its
   execution;

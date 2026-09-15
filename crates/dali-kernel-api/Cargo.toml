@@ -11,6 +11,7 @@ storage-write = []
 abi-context-switch = []
 driver-hardware-test = []
 usb-cdc = ["dep:usb-device"]
+usb-install = ["usb-cdc"]
 
 [dependencies]
 dali-driver-api = { path = "../dali-driver-api" }

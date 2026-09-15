@@ -18,9 +18,12 @@ pub(super) fn register<B: BoardBackend>() {
 }
 
 /// Services the registered board USB backend through a kernel-owned callback.
-pub(crate) fn service_irq(drain: fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink)) {
+pub(crate) fn service_irq(
+    drain: fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink),
+    receive: dali_kernel_api::UsbInstallationReceive,
+) {
     if let Some(operations) = critical_section::with(|cs| *USB_OPERATIONS.borrow(cs).borrow()) {
-        (operations.service_irq)(drain);
+        (operations.service_irq)(drain, receive);
     }
 }
 
