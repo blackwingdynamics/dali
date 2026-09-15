@@ -45,7 +45,7 @@ impl FlashArtifactWriter {
     where
         F: FnOnce(&mut FlashArtifactReader) -> Result<(), E>,
     {
-        let (region, capacity) = artifact_bounds::<E>(artifact.len())?;
+        let (region, capacity, artifact_length) = artifact_bounds::<E>(artifact.len())?;
         let flash_base = self.flash.address();
         let region_offset = region.origin as usize - flash_base;
         let sector = self
@@ -66,16 +66,17 @@ impl FlashArtifactWriter {
         drop(flash);
 
         validate(&mut FlashArtifactReader::new()).map_err(FlashArtifactWriteError::Validation)?;
-        self.publish::<E>(region, capacity)
+        self.publish::<E>(region, capacity, artifact_length)
     }
 
     fn publish<E>(
         &mut self,
         region: dali_targets::TargetMemoryRegion,
-        length: u32,
+        capacity: u32,
+        artifact_length: u32,
     ) -> Result<(), FlashArtifactWriteError<E>> {
-        let marker_offset = region.origin as usize - self.flash.address() + length as usize;
-        let marker = publication_marker(length);
+        let marker_offset = region.origin as usize - self.flash.address() + capacity as usize;
+        let marker = publication_marker(artifact_length);
         let mut flash = self.flash.unlocked();
         flash
             .program(marker_offset, marker.iter())
@@ -85,7 +86,7 @@ impl FlashArtifactWriter {
 
 fn artifact_bounds<E>(
     length: usize,
-) -> Result<(dali_targets::TargetMemoryRegion, u32), FlashArtifactWriteError<E>> {
+) -> Result<(dali_targets::TargetMemoryRegion, u32, u32), FlashArtifactWriteError<E>> {
     let region = dali_targets::TARGET_F405
         .memory
         .artifact
@@ -102,7 +103,7 @@ fn artifact_bounds<E>(
     if length == 0 || length > capacity || marker_end > region.length {
         return Err(FlashArtifactWriteError::Storage(StorageError::InvalidRange));
     }
-    Ok((region, length))
+    Ok((region, capacity, length))
 }
 
 fn publication_marker(length: u32) -> [u8; PUBLICATION_MARKER_SIZE as usize] {
