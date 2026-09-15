@@ -105,14 +105,8 @@ impl FlashArtifactWriter {
         Ok(())
     }
 
-    /// Validates the complete candidate and publishes its marker.
-    pub fn validate_and_publish<F, E>(
-        &mut self,
-        validate: F,
-    ) -> Result<(), FlashArtifactWriteError<E>>
-    where
-        F: FnOnce(&mut FlashArtifactReader) -> Result<(), E>,
-    {
+    /// Publishes the candidate after external AMRN validation succeeds.
+    pub fn publish(&mut self) -> Result<(), FlashArtifactWriteError<core::convert::Infallible>> {
         self.replacement
             .mark_validated()
             .map_err(FlashArtifactWriteError::Replacement)?;
@@ -120,10 +114,6 @@ impl FlashArtifactWriter {
             .replacement
             .validated_length()
             .ok_or(FlashArtifactWriteError::Storage(StorageError::InvalidRange))?;
-        validate(&mut FlashArtifactReader::new()).map_err(|error| {
-            self.replacement.recover_empty();
-            FlashArtifactWriteError::Validation(error)
-        })?;
         let marker_offset = self
             .region
             .origin
@@ -143,6 +133,21 @@ impl FlashArtifactWriter {
             .map_err(FlashArtifactWriteError::Replacement)
     }
 
+    /// Validates the complete candidate and publishes its marker.
+    pub fn validate_and_publish<F, E>(
+        &mut self,
+        validate: F,
+    ) -> Result<(), FlashArtifactWriteError<E>>
+    where
+        F: FnOnce(&mut FlashArtifactReader) -> Result<(), E>,
+    {
+        validate(&mut FlashArtifactReader::new()).map_err(|error| {
+            self.replacement.recover_empty();
+            FlashArtifactWriteError::Validation(error)
+        })?;
+        self.publish().map_err(map_publish_error)
+    }
+
     /// Invalidates the candidate without publishing a marker.
     pub fn abort(&mut self) {
         self.replacement.recover_empty();
@@ -157,10 +162,41 @@ impl FlashArtifactWriter {
     }
 }
 
+impl dali_kernel_api::installation::ArtifactInstallationBackend for FlashArtifactWriter {
+    type Error = FlashArtifactWriteError<core::convert::Infallible>;
+
+    fn begin(&mut self, length: u32) -> Result<(), Self::Error> {
+        Self::begin(self, length)
+    }
+
+    fn write(&mut self, offset: u32, bytes: &[u8]) -> Result<(), Self::Error> {
+        Self::write(self, offset, bytes)
+    }
+
+    fn publish(&mut self) -> Result<(), Self::Error> {
+        Self::publish(self)
+    }
+
+    fn abort(&mut self) {
+        Self::abort(self);
+    }
+}
+
 fn publication_marker(length: u32) -> [u8; PUBLICATION_MARKER_SIZE as usize] {
     let mut marker = [0xFF; PUBLICATION_MARKER_SIZE as usize];
     marker[..PUBLICATION_MAGIC.len()].copy_from_slice(&PUBLICATION_MAGIC);
     marker[8..12].copy_from_slice(&length.to_le_bytes());
     marker[12..16].copy_from_slice(&(!length).to_le_bytes());
     marker
+}
+
+fn map_publish_error<E>(
+    error: FlashArtifactWriteError<core::convert::Infallible>,
+) -> FlashArtifactWriteError<E> {
+    match error {
+        FlashArtifactWriteError::Storage(error) => FlashArtifactWriteError::Storage(error),
+        FlashArtifactWriteError::Replacement(error) => FlashArtifactWriteError::Replacement(error),
+        FlashArtifactWriteError::Flash(error) => FlashArtifactWriteError::Flash(error),
+        FlashArtifactWriteError::Validation(error) => match error {},
+    }
 }

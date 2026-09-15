@@ -50,6 +50,28 @@ pub struct SingleSlotReplacement {
     state: SingleSlotReplacementState,
 }
 
+/// A narrow backend capability for installing one validated artifact.
+///
+/// This capability is intentionally separate from [`crate::BoardBackend`].
+/// The caller must run the normal AMRN validation pass after `write` has
+/// completed and before calling `publish`.
+pub trait ArtifactInstallationBackend {
+    /// Backend-specific failure type.
+    type Error;
+
+    /// Erases the target slot and starts a bounded candidate transfer.
+    fn begin(&mut self, length: u32) -> Result<(), Self::Error>;
+
+    /// Writes one contiguous caller-owned candidate chunk.
+    fn write(&mut self, offset: u32, bytes: &[u8]) -> Result<(), Self::Error>;
+
+    /// Publishes the candidate after the caller's validation pass succeeds.
+    fn publish(&mut self) -> Result<(), Self::Error>;
+
+    /// Invalidates the candidate without publishing it.
+    fn abort(&mut self);
+}
+
 impl SingleSlotReplacement {
     /// Creates an empty policy state with a bounded artifact capacity.
     pub const fn new(capacity: u32) -> Self {
