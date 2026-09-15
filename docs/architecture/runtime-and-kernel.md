@@ -92,6 +92,12 @@ implementation. It must not depend on an MCU HAL or contain board-specific
 values. The kernel remains the owner of logging policy and USB resource
 ownership.
 
+Artifact installation uses a separate bounded protocol in `crates/dali-usb/`.
+Its CRC-protected frames and lifecycle state machine are transport-neutral and
+do not consume the logging queue. A future USB receive adapter must route only
+installation frames to that state machine and keep CDC logging ownership
+separate; protocol acceptance alone does not publish a Flash artifact.
+
 The hardware-neutral `dali-device` crate defines normalized host discovery
 records, transport/state/capability vocabulary, and deterministic
 deduplication. It does not enumerate devices or depend on a host USB, DFU, or

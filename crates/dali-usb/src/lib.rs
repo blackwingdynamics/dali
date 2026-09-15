@@ -2,6 +2,8 @@
 
 //! Fixed-capacity USB delivery primitives shared by the kernel and host tests.
 
+pub mod installation;
+
 use core::fmt::{self, Arguments, Write};
 
 /// Host-visible USB CDC link state.

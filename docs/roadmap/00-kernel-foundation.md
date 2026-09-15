@@ -232,6 +232,8 @@ without contaminating kernel policy.
   on the target hardware.
 - [x] Define a hardware-neutral bounded artifact staging and publication
   contract without coupling it to USB or Flash geometry.
+- [x] Define a bounded transport-neutral installation frame and lifecycle
+  state machine with CRC-protected chunks.
 - [ ] Keep the first F405 installation profile to one 64 KiB-or-smaller Flash
   AMRN with Flash-first and SD-fallback boot selection.
 - [x] Resolve an erase-aligned F405 Flash layout before enabling artifact
