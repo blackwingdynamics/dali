@@ -1,0 +1,53 @@
+# USB cartridge installation boundary
+
+## Decision
+
+Cartridge installation uses a dedicated USB CDC interface. The existing CDC
+interface remains a log-only output channel and never interprets host input as
+installation data.
+
+The installation path has four owners:
+
+1. the board USB adapter owns the USB device, CDC interfaces, endpoints, and
+   bounded byte transfer;
+2. the transport queue owns framing assembly and overflow accounting;
+3. kernel main context owns protocol dispatch, AMRN validation, and failure
+   transitions;
+4. the target artifact backend owns erase, writes, publication marker, and
+   read-back verification.
+
+The USB interrupt may poll the two CDC classes and copy bounded installer bytes
+into the transport queue. It must not parse AMRN data, erase or write Flash,
+run cryptographic validation, or publish an artifact. Logging remains an
+independent output drain and must not share installer input state.
+
+## Host protocol boundary
+
+The existing DINS v1 frame format remains the transport framing contract. The
+installer endpoint is selected by USB interface identity, not by a magic byte
+or a command sent through the logging terminal. The host tool must receive a
+bounded acknowledgement for each lifecycle command before continuing.
+
+The first hardware milestone supports one sequential candidate of at most the
+target's configured 64 KiB logical cartridge capacity. The sequence is:
+
+1. `Begin` invalidates the current Flash publication marker;
+2. bounded `Data` frames fill the candidate sequentially;
+3. `Validate` causes main-context AMRN validation and integrity checks;
+4. `Commit` writes and verifies the publication marker only after validation;
+5. any transport, validation, timeout, or write failure aborts the candidate.
+
+The F405 single-slot limitation remains explicit: an interrupted replacement
+may leave Flash empty and the documented SD fallback remains authoritative.
+This interface does not provide A/B atomicity.
+
+## Implementation gates
+
+- host tests must cover the installer response and timeout state machine;
+- the F405 adapter must prove that logging CDC remains functional while the
+  installer CDC receives bounded data;
+- no Flash operation may execute from the USB interrupt;
+- a target test must install a real AMRN, reboot without SD, and observe its
+  execution;
+- repeated installation and interrupted-transfer evidence must be recorded
+  before enabling the feature in the default development profile.
