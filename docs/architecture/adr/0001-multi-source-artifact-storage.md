@@ -30,6 +30,14 @@ flash-backed artifact store will be a second adapter. Future NVMe or other
 media must implement the same logical contract without changing loader or AMRN
 policy code.
 
+Installation must remain a separate capability boundary and must not become an
+associated type or responsibility of the composite `BoardBackend` contract.
+The board lifecycle backend is already being decomposed into focused
+capabilities; installation transport and persistent artifact writing must be
+registered through their own narrow interface so boards without installation
+support remain valid and the platform contract does not grow another composite
+owner.
+
 The first implementation milestone is read-only boot from a target-owned flash
 artifact region. USB installation is a subsequent milestone and must use a
 staging region, complete AMRN validation, integrity/authentication checks, and

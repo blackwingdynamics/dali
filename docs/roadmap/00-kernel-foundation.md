@@ -245,6 +245,8 @@ without contaminating kernel policy.
 - [ ] Implement and validate replacement of the single Flash AMRN without
   introducing simultaneous multi-source loading.
 - [ ] Add a bounded USB installation protocol with staging and atomic commit.
+- [ ] Keep installation transport and artifact writing outside the composite
+  `BoardBackend`; register them through a separate narrow capability boundary.
 - [ ] Add power-loss and flash-endurance evidence before enabling flash writes
   in the default development workflow.
 - [ ] Document which services are essential kernel services and which remain
