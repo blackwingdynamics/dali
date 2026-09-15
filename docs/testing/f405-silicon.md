@@ -108,6 +108,28 @@ during recovery-triggered loading.
 Result: passed for SD removal, heartbeat recovery, live SD reinsertion,
 repository reload, signed AMRN verification, and application relaunch.
 
+### USB recovery rollback and live SD relaunch — 2026-09-15
+
+The F405 release image from source revision `4bb6932` was flashed through the
+Raspberry Pi Pico 2 CMSIS-DAP/SWD probe after recovering a target that had
+entered a USB polling HardFault during the previous installation-receive
+experiment. The unstable F405 USB inbound receive adapter was removed; CDC
+logging remained enabled. With no SD card present, the board entered the
+heartbeat and continued bounded reinitialization probes. After inserting the
+SD card while the heartbeat was active, the board initialized SDIO, replayed
+the signed repository load, verified the AMRN signature, and emitted:
+
+```text
+[INFO][SECURITY] [SECURITY] AMRN signature verified
+[INFO][SECURITY] [SECURITY] Active application context: Running
+[INFO][APP] Hello World from AMRN
+```
+
+Result: passed for recovery firmware boot, no-card heartbeat, live SD
+reinsertion, repository reload, signed AMRN verification, and application
+relaunch. The USB installation receive path remains intentionally unenabled;
+this evidence does not prove Flash cartridge installation.
+
 ### ABI v3 isolation and fault recovery
 
 - [x] Kernel-RAM read and write rejection with `MemManage` recovery.
