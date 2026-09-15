@@ -51,6 +51,14 @@ the documented SD fallback remains authoritative. Preserving the previous
 Flash cartridge across power loss requires a second physical slot or an
 external staging medium and is deferred.
 
+The F405 replacement path must store a publication marker outside the logical
+AMRN payload and inside the same target-owned erase unit. Erase must leave the
+marker invalid, and the marker may be written only after the complete AMRN has
+been written and validated. Boot may select the Flash artifact only when the
+marker is structurally valid and its declared length is within the logical
+capacity; AMRN validation remains mandatory. A missing or invalid marker is
+treated as an empty Flash source and must select the documented SD fallback.
+
 ## Constraints
 
 - Generic kernel policy must not contain SD, flash, NVMe, USB, vendor, or board

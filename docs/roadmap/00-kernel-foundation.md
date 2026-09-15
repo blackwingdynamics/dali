@@ -238,6 +238,8 @@ without contaminating kernel policy.
   writes; the firmware image and physical artifact erase unit must be disjoint.
 - [x] Define the F405 single-slot replacement and interrupted-write contract;
   do not claim A/B atomicity without a second physical staging location.
+- [x] Define the F405 publication-marker rule: erased or invalid markers make
+  Flash unavailable until a complete AMRN has been validated.
 - [ ] Implement and validate replacement of the single Flash AMRN without
   introducing simultaneous multi-source loading.
 - [ ] Add a bounded USB installation protocol with staging and atomic commit.
