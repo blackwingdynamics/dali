@@ -247,7 +247,7 @@ without contaminating kernel policy.
 - [ ] Implement and validate replacement of the single Flash AMRN without
   introducing simultaneous multi-source loading.
 - [ ] Add a bounded USB installation protocol with staging and atomic commit.
-- [ ] Add a dedicated installer CDC interface; keep the existing CDC strictly
+- [x] Add a dedicated installer bulk interface; keep the existing CDC strictly
   log-only and keep Flash/validation out of the USB interrupt.
 - [ ] Add bounded installer acknowledgements, timeout handling, and host-side
   install sequencing for the DINS lifecycle.

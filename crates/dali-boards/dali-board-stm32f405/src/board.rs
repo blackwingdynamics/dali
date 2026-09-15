@@ -14,6 +14,9 @@ mod services;
 
 #[path = "board/input.rs"]
 mod input;
+#[cfg(feature = "usb-install")]
+#[path = "board/installer.rs"]
+mod installer;
 #[cfg(feature = "abi-context-switch")]
 #[path = "board/scheduler.rs"]
 mod scheduler;
