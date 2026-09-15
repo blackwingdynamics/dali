@@ -8,12 +8,27 @@ pub(crate) const PUBLICATION_MAGIC: [u8; 8] = *b"DALIART1";
 
 /// Read-only view of the manifest-owned F405 artifact flash region.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct FlashArtifactReader;
+pub struct FlashArtifactReader {
+    candidate_length: Option<u32>,
+}
 
 impl FlashArtifactReader {
     /// Creates a reader for the target's configured artifact region.
     pub const fn new() -> Self {
-        Self
+        Self {
+            candidate_length: None,
+        }
+    }
+
+    /// Creates a reader for an unpublished candidate being validated in place.
+    pub fn candidate(length: u32) -> Result<Self, StorageError> {
+        let capacity = Self::capacity()?;
+        if length == 0 || length > capacity {
+            return Err(StorageError::InvalidRange);
+        }
+        Ok(Self {
+            candidate_length: Some(length),
+        })
     }
 
     fn region() -> Result<dali_targets::TargetMemoryRegion, StorageError> {
@@ -97,6 +112,9 @@ impl FlashArtifactReader {
 
 impl ArtifactReader for FlashArtifactReader {
     fn artifact_present(&mut self) -> Result<bool, StorageError> {
+        if let Some(length) = self.candidate_length {
+            return Ok(length <= Self::capacity()?);
+        }
         let marker = Self::read_marker()?;
         Ok(Self::marker_length(&marker)
             .is_some_and(|length| Self::capacity().is_ok_and(|capacity| length <= capacity)))
@@ -107,6 +125,9 @@ impl ArtifactReader for FlashArtifactReader {
     }
 
     fn published_length(&mut self) -> Result<u32, StorageError> {
+        if let Some(length) = self.candidate_length {
+            return Ok(length);
+        }
         let marker = Self::read_marker()?;
         let length = Self::marker_length(&marker).ok_or(StorageError::DataCorruption)?;
         if length > Self::capacity()? {
@@ -156,5 +177,12 @@ mod tests {
         assert_eq!(FlashArtifactReader::marker_length(&marker), Some(128));
         marker[15] ^= 1;
         assert_eq!(FlashArtifactReader::marker_length(&marker), None);
+    }
+
+    #[test]
+    fn candidate_reader_uses_unpublished_length() {
+        let mut reader = FlashArtifactReader::candidate(128).unwrap();
+        assert!(reader.artifact_present().unwrap());
+        assert_eq!(reader.published_length(), Ok(128));
     }
 }

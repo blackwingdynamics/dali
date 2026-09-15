@@ -30,6 +30,7 @@ pub struct FlashArtifactWriter {
     replacement: SingleSlotReplacement,
     capacity: u32,
     region: dali_targets::TargetMemoryRegion,
+    candidate_length: Option<u32>,
 }
 
 impl FlashArtifactWriter {
@@ -51,6 +52,7 @@ impl FlashArtifactWriter {
             replacement: SingleSlotReplacement::new(capacity),
             capacity,
             region,
+            candidate_length: None,
         })
     }
 
@@ -59,6 +61,7 @@ impl FlashArtifactWriter {
         &mut self,
         length: u32,
     ) -> Result<(), FlashArtifactWriteError<core::convert::Infallible>> {
+        self.candidate_length = None;
         self.replacement
             .begin(length)
             .map_err(FlashArtifactWriteError::Replacement)?;
@@ -75,6 +78,7 @@ impl FlashArtifactWriter {
             self.replacement.recover_empty();
             return Err(FlashArtifactWriteError::Flash(error));
         }
+        self.candidate_length = Some(length);
         Ok(())
     }
 
@@ -103,6 +107,7 @@ impl FlashArtifactWriter {
         let mut flash = self.flash.unlocked();
         if let Err(error) = flash.program(offset, bytes.iter()) {
             self.replacement.recover_empty();
+            self.candidate_length = None;
             return Err(FlashArtifactWriteError::Flash(error));
         }
         Ok(())
@@ -135,12 +140,14 @@ impl FlashArtifactWriter {
             Ok(true) => {}
             Ok(false) => {
                 self.replacement.recover_empty();
+                self.candidate_length = None;
                 return Err(FlashArtifactWriteError::Storage(
                     StorageError::DataCorruption,
                 ));
             }
             Err(error) => {
                 self.replacement.recover_empty();
+                self.candidate_length = None;
                 return Err(FlashArtifactWriteError::Storage(error));
             }
         }
@@ -157,8 +164,14 @@ impl FlashArtifactWriter {
     where
         F: FnOnce(&mut FlashArtifactReader) -> Result<(), E>,
     {
-        validate(&mut FlashArtifactReader::new()).map_err(|error| {
+        let length = self
+            .candidate_length
+            .ok_or(FlashArtifactWriteError::Storage(StorageError::NotReady))?;
+        let mut reader =
+            FlashArtifactReader::candidate(length).map_err(FlashArtifactWriteError::Storage)?;
+        validate(&mut reader).map_err(|error| {
             self.replacement.recover_empty();
+            self.candidate_length = None;
             FlashArtifactWriteError::Validation(error)
         })?;
         self.publish().map_err(map_publish_error)
@@ -167,6 +180,7 @@ impl FlashArtifactWriter {
     /// Invalidates the candidate without publishing a marker.
     pub fn abort(&mut self) {
         self.replacement.recover_empty();
+        self.candidate_length = None;
     }
 
     fn region_offset(&self) -> Result<usize, FlashArtifactWriteError<core::convert::Infallible>> {
