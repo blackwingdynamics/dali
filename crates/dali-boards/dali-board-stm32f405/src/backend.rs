@@ -104,7 +104,6 @@ impl dali_kernel_api::BoardBackend for board::Board {
     fn usb_operations() -> Option<dali_kernel_api::UsbOperations> {
         Some(dali_kernel_api::UsbOperations {
             service_irq: board::usb::service_irq,
-            poll_installation_frame: board::usb::poll_installation_frame,
             pend_irq: board::pend_usb_irq,
         })
     }

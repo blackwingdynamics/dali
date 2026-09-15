@@ -236,8 +236,6 @@ without contaminating kernel policy.
   state machine with CRC-protected chunks.
 - [x] Define a bounded receive-side frame assembler and FIFO independent of
   the USB HAL and logging queue.
-- [x] Add the F405 CDC receive adapter that feeds the bounded installation FIFO
-  without performing Flash work in the USB interrupt.
 - [ ] Keep the first F405 installation profile to one 64 KiB-or-smaller Flash
   AMRN with Flash-first and SD-fallback boot selection.
 - [x] Resolve an erase-aligned F405 Flash layout before enabling artifact

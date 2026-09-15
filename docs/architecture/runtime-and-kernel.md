@@ -99,10 +99,7 @@ installation frames to that state machine and keep CDC logging ownership
 separate; protocol acceptance alone does not publish a Flash artifact.
 The receive-side assembler also synchronizes on the installation magic and
 retains only a small fixed number of complete frames, so malformed or
-backlogged input cannot require dynamic memory. The F405 CDC backend now owns
-the receive queue and exposes frame polling as a separate USB capability; the
-main-context installation dispatcher must consume it before any Flash write
-is attempted.
+backlogged input cannot require dynamic memory.
 
 The current frame contract is protocol version 1: a four-byte `DINS` magic,
 one version byte, one command byte, a little-endian `u16` payload length, a
