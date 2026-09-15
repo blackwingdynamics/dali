@@ -98,6 +98,14 @@ do not consume the logging queue. A future USB receive adapter must route only
 installation frames to that state machine and keep CDC logging ownership
 separate; protocol acceptance alone does not publish a Flash artifact.
 
+The current frame contract is protocol version 1: a four-byte `DINS` magic,
+one version byte, one command byte, a little-endian `u16` payload length, a
+little-endian `u32` offset, a little-endian `u32` total artifact length, a
+payload of at most 512 bytes, and an IEEE CRC32 trailer over the header and
+payload. `Begin`, `Data`, `Validate`, `Commit`, and `Abort` are the only
+commands. The state machine accepts only contiguous data offsets and requires
+complete receipt before validation; target capacity remains a backend policy.
+
 The hardware-neutral `dali-device` crate defines normalized host discovery
 records, transport/state/capability vocabulary, and deterministic
 deduplication. It does not enumerate devices or depend on a host USB, DFU, or
