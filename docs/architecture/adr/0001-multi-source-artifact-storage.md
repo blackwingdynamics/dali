@@ -48,6 +48,8 @@ board-specific commit-marker layout.
   identifiers.
 - Flash regions, erase units, write alignment, and capacity belong to target
   metadata and the selected backend.
+- A target's logical cartridge capacity may be smaller than its physical erase
+  unit, but the firmware and artifact regions must not share an erase unit.
 - The firmware image region and artifact region must be disjoint and validated
   by the backend/linker contract.
 - A partial USB transfer or power loss must never make an uncommitted artifact
