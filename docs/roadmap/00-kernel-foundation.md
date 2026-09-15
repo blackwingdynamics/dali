@@ -236,7 +236,7 @@ without contaminating kernel policy.
   AMRN with Flash-first and SD-fallback boot selection.
 - [x] Resolve an erase-aligned F405 Flash layout before enabling artifact
   writes; the firmware image and physical artifact erase unit must be disjoint.
-- [ ] Define the F405 single-slot replacement and interrupted-write contract;
+- [x] Define the F405 single-slot replacement and interrupted-write contract;
   do not claim A/B atomicity without a second physical staging location.
 - [ ] Implement and validate replacement of the single Flash AMRN without
   introducing simultaneous multi-source loading.
