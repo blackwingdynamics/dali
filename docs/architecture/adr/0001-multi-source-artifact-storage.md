@@ -42,6 +42,15 @@ publication: `begin_staging` invalidates the previous candidate, bounded
 may publish it. The contract does not choose USB framing, Flash geometry, or a
 board-specific commit-marker layout.
 
+The first F405 profile has only one physical artifact erase unit. It therefore
+cannot preserve the previous cartridge after erase begins and must not be
+presented as an atomic A/B installer. Its future single-slot replacement path
+must validate the complete candidate before publication; an interrupted or
+invalid replacement may leave Flash without a bootable cartridge, after which
+the documented SD fallback remains authoritative. Preserving the previous
+Flash cartridge across power loss requires a second physical slot or an
+external staging medium and is deferred.
+
 ## Constraints
 
 - Generic kernel policy must not contain SD, flash, NVMe, USB, vendor, or board
