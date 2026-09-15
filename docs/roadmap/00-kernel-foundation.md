@@ -257,6 +257,8 @@ without contaminating kernel policy.
   in the default development workflow.
 - [ ] Document which services are essential kernel services and which remain
   optional extensions.
+- [x] Add named firmware feature profiles so supported compositions do not
+  require repeating a long raw Cargo feature list.
 
 Exit gate: the F405 MVP path works through generic contracts, while replacing
 the transport does not require changing AMRN, loader, or kernel policy code.

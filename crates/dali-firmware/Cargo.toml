@@ -9,6 +9,17 @@ build = "build.rs"
 [features]
 default = []
 stm32f405 = ["dep:dali-board-stm32f405"]
+f405-minimal = ["stm32f405"]
+f405-development = [
+    "stm32f405",
+    "usb-cdc",
+    "artifact-flash",
+    "abi-context-switch",
+    "abi-relocation",
+    "abi-authentication",
+    "repository-loader",
+    "storage-write",
+]
 usb-cdc = ["stm32f405", "dali-kernel/usb-cdc", "dali-board-stm32f405/usb-cdc"]
 abi-current = ["stm32f405", "dali-kernel/abi-current", "dali-board-stm32f405/abi-current"]
 abi-mpu = ["abi-current", "dali-kernel/abi-mpu", "dali-board-stm32f405/abi-mpu"]
