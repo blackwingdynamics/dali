@@ -130,6 +130,23 @@ reinsertion, repository reload, signed AMRN verification, and application
 relaunch. The USB installation receive path remains intentionally unenabled;
 this evidence does not prove Flash cartridge installation.
 
+### Published-length loader regression — 2026-09-15
+
+The release image from source revision `5465211` was flashed through the same
+Pico 2 CMSIS-DAP/SWD setup with the SD card absent. The updated artifact
+reader used the publication contract while the Flash region remained empty;
+the board selected the documented SD fallback and entered the heartbeat:
+
+```text
+[STORAGE] Card unavailable; bounded reinitialization attempt 3/3
+[STORAGE] No SD card available; continuing without cartridge
+Entering kernel heartbeat
+```
+
+Result: passed for release build, empty Flash artifact detection, SD fallback,
+and no-card heartbeat after the published-length loader change. Flash AMRN
+boot remains unverified because no installation path has published a marker.
+
 ### ABI v3 isolation and fault recovery
 
 - [x] Kernel-RAM read and write rejection with `MemManage` recovery.
