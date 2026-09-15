@@ -94,13 +94,16 @@ pub(super) fn generate_clock(clock: &Clock) -> String {
 
 pub(super) fn generate_memory(memory: &Memory) -> String {
     format!(
-        "MemoryProfile {{ flash: {}, firmware: {}, artifact: {}, kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, dma: {}, ccm: {}, isolation: {} }}",
+        "MemoryProfile {{ flash: {}, firmware: {}, artifact: {}, artifact_capacity: {}, kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, dma: {}, ccm: {}, isolation: {} }}",
         generate_target_memory_region(&memory.flash),
         generate_target_memory_region(&memory.firmware),
         memory
             .artifact
             .as_ref()
             .map(generate_target_memory_region)
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
+        memory
+            .artifact_capacity
             .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
         memory.kernel_origin,
         memory.kernel_length,

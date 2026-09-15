@@ -19,13 +19,21 @@ impl FlashArtifactReader {
             .ok_or(StorageError::Unsupported)
     }
 
+    fn capacity() -> Result<u32, StorageError> {
+        dali_targets::TARGET_F405
+            .memory
+            .artifact_capacity
+            .ok_or(StorageError::Unsupported)
+    }
+
     fn absolute_range(offset: u32, length: usize) -> Result<(usize, usize), StorageError> {
         let region = Self::region()?;
+        let capacity = Self::capacity()?;
         let length = u32::try_from(length).map_err(|_| StorageError::InvalidRange)?;
         let end = offset
             .checked_add(length)
             .ok_or(StorageError::InvalidRange)?;
-        if end > region.length {
+        if end > capacity || capacity > region.length {
             return Err(StorageError::InvalidRange);
         }
         let address = region
@@ -42,7 +50,7 @@ impl FlashArtifactReader {
 
 impl ArtifactReader for FlashArtifactReader {
     fn artifact_length(&self) -> Result<u32, StorageError> {
-        Ok(Self::region()?.length)
+        Self::capacity()
     }
 
     fn read_artifact(&mut self, offset: u32, buffer: &mut [u8]) -> Result<(), StorageError> {
@@ -63,7 +71,7 @@ mod tests {
     fn exposes_manifest_artifact_capacity() {
         assert_eq!(
             FlashArtifactReader::new().artifact_length(),
-            Ok(dali_targets::TARGET_F405.memory.artifact.unwrap().length)
+            Ok(dali_targets::TARGET_F405.memory.artifact_capacity.unwrap())
         );
     }
 

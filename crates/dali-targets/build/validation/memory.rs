@@ -39,6 +39,21 @@ pub(super) fn validate_memory_regions(
             )
             .into());
         }
+        if let Some(capacity) = manifest.memory.artifact_capacity
+            && (capacity == 0 || capacity > artifact.length)
+        {
+            return Err(format!(
+                "target {} has artifact capacity outside the physical artifact region",
+                manifest.profile.name
+            )
+            .into());
+        }
+    } else if manifest.memory.artifact_capacity.is_some() {
+        return Err(format!(
+            "target {} declares artifact capacity without an artifact region",
+            manifest.profile.name
+        )
+        .into());
     }
     if let Some(region) = &manifest.memory.ccm
         && (region.length == 0 || region.origin.checked_add(region.length).is_none())

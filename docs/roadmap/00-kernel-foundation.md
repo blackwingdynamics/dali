@@ -234,7 +234,7 @@ without contaminating kernel policy.
   contract without coupling it to USB or Flash geometry.
 - [ ] Keep the first F405 installation profile to one 64 KiB-or-smaller Flash
   AMRN with Flash-first and SD-fallback boot selection.
-- [ ] Resolve an erase-aligned F405 Flash layout before enabling artifact
+- [x] Resolve an erase-aligned F405 Flash layout before enabling artifact
   writes; the firmware image and physical artifact erase unit must be disjoint.
 - [ ] Implement and validate replacement of the single Flash AMRN without
   introducing simultaneous multi-source loading.

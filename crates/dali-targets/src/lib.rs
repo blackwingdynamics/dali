@@ -226,6 +226,8 @@ pub struct MemoryProfile {
     pub firmware: TargetMemoryRegion,
     /// Optional flash region reserved for persistent application artifacts.
     pub artifact: Option<TargetMemoryRegion>,
+    /// Maximum logical artifact length within the physical artifact region.
+    pub artifact_capacity: Option<u32>,
     /// Start of the kernel-reserved region.
     pub kernel_origin: u32,
     /// Size of the kernel-reserved region in bytes.
