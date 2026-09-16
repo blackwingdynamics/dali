@@ -114,6 +114,9 @@ pub trait BoardBackend {
     type Watchdog;
     /// Board-owned read-only persistent artifact reader.
     type ArtifactReader: ArtifactReaderContract;
+    /// Optional board-owned backend for the separate Flash installation capability.
+    #[cfg(feature = "storage-write")]
+    type ArtifactInstaller: crate::installation::ArtifactInstallationBackend;
     /// Board-owned storage reader and lifecycle controller.
     type StorageReader: BlockReader
         + StorageLifecycleControl
@@ -152,6 +155,12 @@ pub trait BoardBackend {
 
     /// Transfers the board-owned artifact reader to the kernel owner.
     fn take_artifact_reader(&mut self) -> Result<Self::ArtifactReader, BoardError> {
+        Err(BoardError::UnsupportedCapability)
+    }
+
+    /// Transfers the optional artifact installation backend to kernel policy.
+    #[cfg(feature = "storage-write")]
+    fn take_artifact_installer(&mut self) -> Result<Self::ArtifactInstaller, BoardError> {
         Err(BoardError::UnsupportedCapability)
     }
 

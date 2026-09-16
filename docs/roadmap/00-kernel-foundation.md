@@ -256,8 +256,11 @@ without contaminating kernel policy.
   dedicated installer interface without claiming or writing the endpoint.
 - [x] Verify that the host can claim the installer interface and open one bulk
   IN and one bulk OUT endpoint without transferring a payload.
-- [ ] Keep installation transport and artifact writing outside the composite
-  `BoardBackend`; register them through a separate narrow capability boundary.
+- [x] Expose the optional board-owned artifact installer capability without
+  changing the default boot composition.
+- [ ] Keep installation transport outside the default `BoardBackend` lifecycle;
+  complete dispatch integration through the narrow optional artifact-installer
+  capability boundary.
 - [ ] Add power-loss and flash-endurance evidence before enabling flash writes
   in the default development workflow.
 - [ ] Document which services are essential kernel services and which remain

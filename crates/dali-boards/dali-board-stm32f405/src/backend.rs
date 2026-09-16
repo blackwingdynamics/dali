@@ -25,6 +25,8 @@ impl dali_kernel_api::BoardBackend for board::Board {
     type Watchdog = crate::F405Watchdog;
     type StorageReader = dali_kernel_api::storage::SdioBlockReader<sdio::Stm32f405SdioTransport>;
     type ArtifactReader = crate::FlashArtifactReader;
+    #[cfg(feature = "storage-write")]
+    type ArtifactInstaller = crate::FlashArtifactWriter;
 
     fn memory_protection_operations() -> Option<dali_kernel_api::MemoryProtectionOperations> {
         #[cfg(feature = "abi-mpu")]
@@ -89,6 +91,14 @@ impl dali_kernel_api::BoardBackend for board::Board {
         &mut self,
     ) -> Result<Self::ArtifactReader, dali_kernel_api::BoardError> {
         Ok(crate::FlashArtifactReader::new())
+    }
+
+    #[cfg(feature = "storage-write")]
+    fn take_artifact_installer(
+        &mut self,
+    ) -> Result<Self::ArtifactInstaller, dali_kernel_api::BoardError> {
+        self.take_artifact_writer()
+            .map_err(|_| dali_kernel_api::BoardError::ResourceUnavailable)
     }
 
     fn reset_cause(&self) -> dali_kernel_api::ResetCause {

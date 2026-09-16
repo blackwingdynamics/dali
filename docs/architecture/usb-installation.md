@@ -17,6 +17,11 @@ The installation path has four owners:
 4. the target artifact backend owns erase, writes, publication marker, and
    read-back verification.
 
+The artifact installer is an optional board capability separate from the
+ordinary board lifecycle. A selected backend exposes it only when the
+storage-write composition is enabled; firmware compositions without that
+capability retain the existing boot and SD fallback contracts.
+
 The USB interrupt may poll the two CDC classes and copy bounded installer bytes
 into the transport queue. It must not parse AMRN data, erase or write Flash,
 run cryptographic validation, or publish an artifact. Logging remains an
