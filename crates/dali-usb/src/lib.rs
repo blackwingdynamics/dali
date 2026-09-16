@@ -3,6 +3,7 @@
 //! Fixed-capacity USB delivery primitives shared by the kernel and host tests.
 
 pub mod installation;
+pub mod installation_ack;
 pub mod installation_queue;
 
 use core::fmt::{self, Arguments, Write};

@@ -251,6 +251,7 @@ without contaminating kernel policy.
   log-only and keep Flash/validation out of the USB interrupt.
 - [ ] Add bounded installer acknowledgements, timeout handling, and host-side
   install sequencing for the DINS lifecycle.
+- [x] Define the fixed-size DINS acknowledgement envelope and rejection rules.
 - [x] Add host-side discovery for the manifest-declared Dali USB identity and
   dedicated installer interface without claiming or writing the endpoint.
 - [ ] Keep installation transport and artifact writing outside the composite

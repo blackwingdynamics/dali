@@ -272,7 +272,7 @@ fn read_u32(bytes: &[u8]) -> u32 {
     u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
 }
 
-fn crc32(bytes: &[u8]) -> u32 {
+pub(crate) fn crc32(bytes: &[u8]) -> u32 {
     let mut checksum = u32::MAX;
     for byte in bytes {
         checksum ^= u32::from(*byte);

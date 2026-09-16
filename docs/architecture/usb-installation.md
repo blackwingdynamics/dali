@@ -36,6 +36,12 @@ device is not treated as a Dali installer. Discovery reports the endpoint as a
 separate bulk transport with an install capability; it does not claim the
 interface or transfer payloads.
 
+Each acknowledgement reuses the DINS frame envelope and contains exactly
+seven payload bytes: status, little-endian detail code, and little-endian next
+accepted offset. The response echoes the command. A host must reject a
+response with an unexpected command, status, payload length, CRC, or offset;
+timeouts and rejected responses abort the current candidate.
+
 The first hardware milestone supports one sequential candidate of at most the
 target's configured 64 KiB logical cartridge capacity. The sequence is:
 
