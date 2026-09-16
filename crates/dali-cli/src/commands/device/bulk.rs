@@ -27,7 +27,10 @@ pub(super) fn discover() -> Result<Vec<DeviceRecord>, String> {
                 transport: Transport::Bulk,
                 target: Some(profile.name.to_owned()),
                 vendor: Some(format!("{:04X}", device.vendor_id())),
-                product: device.product_string().map(str::to_owned),
+                product: interface
+                    .interface_string()
+                    .or_else(|| device.product_string())
+                    .map(str::to_owned),
                 serial,
                 path: Some(format!("interface:{}", interface.interface_number())),
                 state: State::Available,
