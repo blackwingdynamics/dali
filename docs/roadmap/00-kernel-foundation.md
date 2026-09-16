@@ -254,6 +254,8 @@ without contaminating kernel policy.
 - [x] Define the fixed-size DINS acknowledgement envelope and rejection rules.
 - [x] Add host-side discovery for the manifest-declared Dali USB identity and
   dedicated installer interface without claiming or writing the endpoint.
+- [x] Verify that the host can claim the installer interface and open one bulk
+  IN and one bulk OUT endpoint without transferring a payload.
 - [ ] Keep installation transport and artifact writing outside the composite
   `BoardBackend`; register them through a separate narrow capability boundary.
 - [ ] Add power-loss and flash-endurance evidence before enabling flash writes

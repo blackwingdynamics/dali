@@ -362,6 +362,17 @@ This proves host-side inventory classification only. It does not prove
 interface claiming, DINS transfer, acknowledgement handling, Flash writing,
 AMRN validation, or SD-free reboot.
 
+### Host installer interface claim — 2026-09-16
+
+After installing the documented Linux udev permission rule, the host command
+selected the F405 bulk record and reported installer interface: verified. The
+check opened the target USB device, claimed interface 2, and opened its bulk
+OUT and bulk IN endpoints without sending an installation payload.
+
+This proves host-side interface ownership and endpoint shape only. It does not
+prove DINS acknowledgement exchange, cartridge transfer, Flash writing, AMRN
+validation, or SD-free reboot.
+
 This evidence proves USB enumeration and logging-channel preservation only. It
 does not prove cartridge installation, AMRN validation, Flash publication, or
 power-loss recovery.
