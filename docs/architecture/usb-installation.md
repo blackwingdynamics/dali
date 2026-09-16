@@ -29,6 +29,13 @@ installer endpoint is selected by USB interface identity, not by a magic byte
 or a command sent through the logging terminal. The host tool must receive a
 bounded acknowledgement for each lifecycle command before continuing.
 
+The host discovery layer identifies the installer by the USB vendor/product
+identity declared in the target manifest and then requires the vendor-specific
+installer interface. A generic vendor-specific interface on an unrelated USB
+device is not treated as a Dali installer. Discovery reports the endpoint as a
+separate bulk transport with an install capability; it does not claim the
+interface or transfer payloads.
+
 The first hardware milestone supports one sequential candidate of at most the
 target's configured 64 KiB logical cartridge capacity. The sequence is:
 

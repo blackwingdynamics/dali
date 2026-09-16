@@ -130,6 +130,8 @@ active_high = true
 
 [usb]
 controller = "OTG_FS"
+vendor_id = 0x1209
+product_id = 0xDA11
 dm = { port = "PA", number = 11, alternate_function = 10, active_high = false }
 dp = { port = "PA", number = 12, alternate_function = 10, active_high = false }
 

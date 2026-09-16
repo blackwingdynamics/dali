@@ -350,6 +350,18 @@ status.
   budget. No installer payload or Flash write was tested in this milestone.
 - [ ] USB host discovery and end-to-end DINS transfer remain unverified.
 
+### Host installer discovery — 2026-09-16
+
+The host CLI was run with the usb-install firmware connected. It reported the
+F405 as a separate bulk device with target f405 and capability install.
+The same run did not classify the connected CMSIS-DAP probe or unrelated
+vendor-specific USB devices as installers. The existing DFU helper also
+reported its local libusb access error; that is independent of bulk discovery.
+
+This proves host-side inventory classification only. It does not prove
+interface claiming, DINS transfer, acknowledgement handling, Flash writing,
+AMRN validation, or SD-free reboot.
+
 This evidence proves USB enumeration and logging-channel preservation only. It
 does not prove cartridge installation, AMRN validation, Flash publication, or
 power-loss recovery.

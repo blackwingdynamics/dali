@@ -1,4 +1,5 @@
 mod attach;
+mod bulk;
 mod cdc;
 mod console;
 mod flash;
@@ -53,6 +54,10 @@ pub(super) fn discover_records() -> (Vec<DeviceRecord>, Vec<String>) {
         Ok(found) => records.extend(found),
         Err(error) => failures.push(error),
     }
+    match bulk::discover() {
+        Ok(found) => records.extend(found),
+        Err(error) => failures.push(error),
+    }
     (records, failures)
 }
 
@@ -97,6 +102,7 @@ fn discover_command(
         Transport::Probe => parse_probe_inventory(&stdout),
         Transport::Dfu => parse_dfu_inventory(&stdout),
         Transport::Cdc => Vec::new(),
+        Transport::Bulk => Vec::new(),
     })
 }
 
@@ -106,6 +112,7 @@ fn is_empty_inventory(transport: Transport, stdout: &str, stderr: &str) -> bool 
         Transport::Probe => text.contains("no debug probes") || text.contains("no probes"),
         Transport::Dfu => text.contains("no dfu capable") || text.contains("no devices"),
         Transport::Cdc => false,
+        Transport::Bulk => false,
     }
 }
 

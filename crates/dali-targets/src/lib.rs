@@ -320,6 +320,10 @@ pub struct PinProfile {
 pub struct UsbProfile {
     /// USB controller name.
     pub controller: &'static str,
+    /// USB vendor identifier declared by the board manifest.
+    pub vendor_id: u16,
+    /// USB product identifier declared by the board manifest.
+    pub product_id: u16,
     /// USB D- pin.
     pub dm: PinProfile,
     /// USB D+ pin.

@@ -179,6 +179,8 @@ pub(super) struct Pin {
 #[derive(Debug, Deserialize)]
 pub(super) struct Usb {
     pub(super) controller: String,
+    pub(super) vendor_id: u16,
+    pub(super) product_id: u16,
     pub(super) dm: Pin,
     pub(super) dp: Pin,
 }

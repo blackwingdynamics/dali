@@ -181,8 +181,10 @@ pub(super) fn generate_pin(pin: &Pin) -> String {
 
 pub(super) fn generate_usb(usb: &super::super::manifest::Usb) -> String {
     format!(
-        "UsbProfile {{ controller: {}, dm: {}, dp: {} }}",
+        "UsbProfile {{ controller: {}, vendor_id: 0x{:04X}, product_id: 0x{:04X}, dm: {}, dp: {} }}",
         string_literal(&usb.controller),
+        usb.vendor_id,
+        usb.product_id,
         generate_pin(&usb.dm),
         generate_pin(&usb.dp)
     )
