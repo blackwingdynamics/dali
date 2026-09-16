@@ -24,6 +24,7 @@ The initial transport set is:
 | `probe` | SWD debug-probe inventory | probe identity and optional chip information |
 | `dfu` | USB device inventory | bootloader identity and DFU availability |
 | `cdc` | USB serial inventory | runtime console identity and port path |
+| `bulk` | Dali USB installer interface | cartridge installation endpoint |
 
 The transport names are stable CLI vocabulary. A transport adapter may report
 that a device is present but partially identified; discovery must not infer a
@@ -95,12 +96,44 @@ occur after discovery and must not alter adapter behavior.
 ## Output contract
 
 The initial `dali device list` presentation is human-readable and stable in
-field names. It reports probe, DFU, and Linux CDC records. CDC records without
-a declared serial are marked `unidentified` and use a connection-scoped udev
-topology identity. The output must not include secrets or unrestricted
-kernel/USB dumps. A future structured output mode may expose the normalized
-record fields, but it
+field names. It reports probe, DFU, Linux CDC, and Dali bulk-installer records.
+The bulk record is identified by the target manifest's USB vendor/product pair
+and the vendor-specific installer interface. CDC records without a declared
+serial are marked `unidentified` and use a connection-scoped udev topology
+identity. The output must not include secrets or unrestricted kernel/USB dumps.
+A future structured output mode may expose the normalized record fields, but it
 must be explicitly versioned before scripts depend on it.
+
+## Linux USB permission setup
+
+The installer claim check opens the USB device node. On Linux, add a udev rule
+once so the active desktop user receives access to the Dali F405 USB identity:
+
+~~~bash
+sudo tee /etc/udev/rules.d/99-dali-usb.rules >/dev/null <<'EOF'
+SUBSYSTEM=="usb", ATTR{idVendor}=="1209", ATTR{idProduct}=="da11", TAG+="uaccess"
+EOF
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+~~~
+
+The closing EOF marker must start in column one with no preceding spaces.
+Disconnect and reconnect the board after reloading the rules. Verify discovery
+first:
+
+~~~text
+cargo run --quiet -p dali-cli --bin dali -- device list
+~~~
+
+Then verify that the installer interface can be claimed without sending
+payload data:
+
+~~~text
+cargo run --quiet -p dali-cli --bin dali -- device info usb:1209:DA11:no-serial
+~~~
+
+The command must print installer interface: verified. This check does not
+write Flash or transfer a cartridge.
 
 An empty result is successful and distinct from an adapter error. Hardware
 commands must not be invoked as a side effect of an empty result.
