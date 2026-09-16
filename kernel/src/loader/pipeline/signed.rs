@@ -41,7 +41,7 @@ where
     load_file_with_key(file, slot_manager, Some(public_key))
 }
 
-#[cfg(feature = "repository-loader")]
+#[cfg(all(feature = "artifact-flash", feature = "repository-loader"))]
 /// Loads a direct artifact using the platform-provisioned trust anchors.
 pub(crate) fn load_file_from_platform_key<R>(
     file: R,
