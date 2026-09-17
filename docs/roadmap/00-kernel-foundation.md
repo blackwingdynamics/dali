@@ -271,6 +271,39 @@ without contaminating kernel policy.
 Exit gate: the F405 MVP path works through generic contracts, while replacing
 the transport does not require changing AMRN, loader, or kernel policy code.
 
+## Phase 6A — Renode and CI validation
+
+Goal: add fast, repeatable software validation after the Flash installation
+path is stable, without treating emulation as a replacement for target
+hardware evidence.
+
+This phase is intentionally sequenced after the F405 installation transport,
+Flash replacement, and SD-free boot behavior are implemented and validated.
+It must not reopen the frozen SDIO or USB CDC paths merely to make emulation
+possible.
+
+- [ ] Select the supported Renode machine and document modeled peripherals and
+  known model limitations.
+- [ ] Boot the Dali firmware in Renode through the hardware-neutral test
+  boundary.
+- [ ] Add repeatable tests for kernel boot, no-cartridge heartbeat, Flash
+  artifact selection, and SD fallback where the model is representative.
+- [ ] Add installation tests for valid frames, rejected frames, interrupted
+  writes, invalid publication markers, and replacement of one Flash AMRN.
+- [ ] Add rollback and recovery fault-injection scenarios with deterministic
+  results.
+- [ ] Run a short Renode smoke test on every commit in CI.
+- [ ] Run the complete emulation and fault-injection suite on pull requests
+  and before release candidates.
+- [ ] Keep real F405 hardware checks as a separate evidence lane and label
+  emulator results as software validation only.
+- [ ] Record model gaps that still require physical F405 testing, including
+  electrical USB/SDIO behavior, clock accuracy, DMA faults, power loss, and
+  physical bus faults.
+
+Exit gate: the emulator suite catches software regressions quickly and its
+claims are explicitly separated from target and physical hardware evidence.
+
 ## Phase 7 — Software and target validation gate
 
 Goal: close every software checkpoint before claiming a stable foundation.
