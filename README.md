@@ -10,8 +10,10 @@ The project is named after Dali, the Georgian goddess of the hunt. Its applicati
 
 ## Status
 
-Dali OS `0.1.0-alpha.1` is the first accepted F405 MVP release. The project
-also contains a feature-gated ABI v3 processor-isolation and multi-context
+Dali OS `0.1.0-alpha.3` is the accepted F405
+MVP foundation is recorded in the current mainline history; its next release
+release baseline. The project also contains a feature-gated ABI v3
+processor-isolation and multi-context
 execution path, plus AMRN format v4 identity/relocation and format v5 signed
 cartridge paths; these remain post-MVP platform features.
 
