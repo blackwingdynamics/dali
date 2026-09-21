@@ -260,9 +260,10 @@ fn encodes_targets_fields_in_canonical_order() {
             .expect("field should be present")
     });
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+    let cartridge_id_field = br#""cartridge_id":"#;
     assert!(
-        body.windows(13)
-            .any(|window| window == br#""cartridge_id":"#)
+        body.windows(cartridge_id_field.len())
+            .any(|window| { window == cartridge_id_field })
     );
 }
 
