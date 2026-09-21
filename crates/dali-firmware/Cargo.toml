@@ -1,0 +1,65 @@
+[package]
+name = "dali-firmware"
+version = "0.1.0-alpha.2"
+edition = "2024"
+publish = false
+autobins = false
+build = "build.rs"
+
+[features]
+default = []
+stm32f405 = ["dep:dali-board-stm32f405"]
+f405-minimal = ["stm32f405"]
+f405-mvp = [
+    "stm32f405",
+    "usb-cdc",
+    "abi-context-switch",
+    "abi-relocation",
+    "abi-authentication",
+    "repository-loader",
+    "storage-write",
+]
+f405-development = ["f405-mvp", "artifact-flash"]
+usb-install = [
+    "f405-development",
+    "dali-kernel/usb-install",
+    "dali-board-stm32f405/usb-install",
+]
+usb-cdc = ["stm32f405", "dali-kernel/usb-cdc", "dali-board-stm32f405/usb-cdc"]
+abi-current = ["stm32f405", "dali-kernel/abi-current", "dali-board-stm32f405/abi-current"]
+abi-mpu = ["abi-current", "dali-kernel/abi-mpu", "dali-board-stm32f405/abi-mpu"]
+abi-context-switch = [
+    "abi-mpu",
+    "dali-kernel/abi-context-switch",
+    "dali-board-stm32f405/abi-context-switch",
+]
+abi-relocation = ["abi-mpu", "dali-kernel/abi-relocation"]
+abi-authentication = [
+    "abi-relocation",
+    "dali-kernel/abi-authentication",
+]
+artifact-flash = ["abi-authentication", "dali-kernel/artifact-flash"]
+repository-loader = ["abi-authentication", "dali-kernel/repository-loader"]
+storage-write = ["dali-kernel/storage-write", "dali-board-stm32f405/storage-write"]
+driver-hardware-test = ["stm32f405", "dali-kernel/driver-hardware-test", "dali-board-stm32f405/driver-hardware-test"]
+watchdog-feed-failure-test = ["dali-kernel/watchdog-feed-failure-test", "dali-board-stm32f405/watchdog-feed-failure-test"]
+dma-test-fixture = ["abi-relocation", "dali-kernel/dma-test-fixture", "dali-board-stm32f405/dma-test-fixture"]
+display-oled = ["stm32f405", "dali-kernel/display-oled", "dali-board-stm32f405/display-oled"]
+
+[dependencies]
+dali-kernel = { path = "../../kernel", default-features = false, features = ["sdio"] }
+dali-board-stm32f405 = { path = "../dali-boards/dali-board-stm32f405", optional = true, features = ["board-stm32f405-sd"] }
+cortex-m-rt = "0.7"
+panic-halt = "1.0"
+
+[build-dependencies]
+dali-targets = { path = "../dali-targets" }
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "dali-f405"
+path = "src/bin/dali-f405.rs"
+harness = false
+required-features = ["stm32f405"]

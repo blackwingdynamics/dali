@@ -21,7 +21,7 @@ target-native ELF linked for the application region
         v
 raw native payload binary
         |
-        | dali package
+        | dali cartridge
         v
 AMRN cartridge (.amrn)
         |

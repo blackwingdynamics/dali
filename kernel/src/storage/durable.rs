@@ -9,7 +9,7 @@ pub use journal::{JournalError, RecoveryDecision, recover as recover_commit_jour
 
 /// Hardware-neutral fixed-block boundary below filesystem adapters.
 ///
-/// Board support packages implement this boundary. The trait deliberately
+/// Board support cartridges implement this boundary. The trait deliberately
 /// carries no SDIO, FAT, MCU, pin, or controller-specific types.
 pub trait BlockDevice {
     /// Transport-specific failure type owned by the adapter.

@@ -6,7 +6,7 @@ use super::{
 };
 
 #[cfg(target_arch = "arm")]
-use super::saved_state::SavedContext;
+use super::saved_state::ContextRecord;
 
 /// Errors returned by the bounded scheduler facade.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -193,13 +193,13 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
 
     /// Returns a pointer to one selected CPU record for exception restore.
     #[cfg(target_arch = "arm")]
-    pub fn context_cpu_ptr(&self, id: ContextId) -> Result<*const SavedContext, SchedulerError> {
+    pub fn context_cpu_ptr(&self, id: ContextId) -> Result<*const ContextRecord, SchedulerError> {
         self.contexts.cpu_ptr(id).map_err(SchedulerError::Context)
     }
 
     /// Returns a pointer to the active CPU record for a spurious PendSV.
     #[cfg(target_arch = "arm")]
-    pub fn active_cpu_ptr(&self) -> Result<*const SavedContext, SchedulerError> {
+    pub fn active_cpu_ptr(&self) -> Result<*const ContextRecord, SchedulerError> {
         let id = self
             .contexts
             .active()
@@ -211,8 +211,7 @@ impl<const CAPACITY: usize> Scheduler<CAPACITY> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::scheduling::context_table::CALLEE_SAVED_REGISTER_COUNT;
-    use crate::runtime::scheduling::saved_state::SavedContext;
+    use crate::runtime::scheduling::context_table::{CONTEXT_RECORD_WORDS, ContextRecord};
     use dali_targets::IsolationSlot;
 
     const SLOT: IsolationSlot = IsolationSlot {
@@ -225,15 +224,8 @@ mod tests {
         stack_length: 0x1000,
     };
 
-    const CONTEXT: ScheduledContext = ScheduledContext::new(
-        SavedContext {
-            psp: 0x2000_C000,
-            callee_saved: [0; CALLEE_SAVED_REGISTER_COUNT],
-            control: 0x03,
-            exception_return: 0xFFFF_FFFD,
-        },
-        SLOT,
-    );
+    const CONTEXT: ScheduledContext =
+        ScheduledContext::new(ContextRecord::new([0; CONTEXT_RECORD_WORDS]), SLOT);
 
     #[test]
     fn rejects_an_empty_tick_quantum() {
@@ -267,12 +259,7 @@ mod tests {
         let _second = scheduler.insert(CONTEXT).unwrap();
         assert_eq!(scheduler.activate_first(), Ok(first));
         let saved = ScheduledContext::new(
-            SavedContext {
-                psp: 0x2000_D000,
-                callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
-                control: 0x03,
-                exception_return: 0xFFFF_FFFD,
-            },
+            ContextRecord::new([4, 5, 6, 7, 8, 9, 10, 11, 0, 0, 0]),
             SLOT,
         );
         assert_eq!(scheduler.save_active(saved), Ok(first));
@@ -315,12 +302,7 @@ mod tests {
         assert_eq!(scheduler.activate_first(), Ok(first));
         scheduler.on_tick();
         let saved = ScheduledContext::new(
-            SavedContext {
-                psp: 0x2000_D000,
-                callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
-                control: 0x03,
-                exception_return: 0xFFFF_FFFD,
-            },
+            ContextRecord::new([4, 5, 6, 7, 8, 9, 10, 11, 0, 0, 0]),
             SLOT,
         );
         assert_eq!(

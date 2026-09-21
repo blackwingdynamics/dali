@@ -13,23 +13,23 @@ only in the diagnostic build.
 
 ## Build
 
-Build the real application package from its fixture directory:
+Build the real application cartridge from its fixture directory:
 
 ```text
 cd apps/dali-app-dma-denial
 cargo run --manifest-path ../../crates/dali-cli/Cargo.toml -- app build
 ```
 
-Register the package in the existing Binary v2 repository and keep it under
-the repository `packages/` directory with its matching metadata. This kernel
+Register the cartridge in the existing Binary v2 repository and keep it under
+the repository `amrns/` directory with its matching metadata. This kernel
 path does not scan the FAT root for arbitrary AMRN files. Safely unmount the
 card before inserting it into the F405 board.
 
 Build the diagnostic kernel:
 
 ```text
-cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,dma-test-fixture \
+cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,dma-test-fixture \
   --target thumbv7em-none-eabihf
 ```
 

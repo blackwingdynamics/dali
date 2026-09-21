@@ -68,6 +68,8 @@ pending.
   documentation with the implemented repository.
 - [ ] Inventory large files, mixed responsibilities, misplaced modules, and
   obsolete or duplicated code without changing runtime behavior.
+- [ ] Execute the per-file refactoring and hardware-evidence gates in
+  [07 — Codebase Refactoring and Hardware Evidence Gates](07-codebase-refactoring-and-hardware-gates.md).
 - [ ] Split oversized implementation files only along explicit ownership and
   responsibility boundaries.
 - [ ] Preserve public APIs, generated output, boot order, frozen subsystem
@@ -76,6 +78,22 @@ pending.
   workspace checks, and `git diff --check`.
 - [ ] Keep the I2C physical acceptance item open until laboratory equipment is
   available and a real F405 trace confirms device ACK and OLED rendering.
+
+### Current work — universal platform architecture
+
+The next architecture track is defined in
+[08 — Universal Platform Architecture](08-universal-platform-architecture.md).
+Its purpose is to make the kernel core hardware-neutral so a new board can be
+added in its own backend directory and target profile without modifying the
+OS core or existing backends.
+
+- [ ] Define and approve the hardware-neutral platform boundary.
+- [ ] Isolate the F405 backend behind that boundary without changing its boot
+  behavior or evidence claims.
+- [ ] Make backend discovery and capability selection manifest-driven.
+- [ ] Add Pico and FPGA/SoC backends only in their own directories after the
+  boundary is accepted.
+- [ ] Record target evidence independently for every backend checkpoint.
 
 ### Current work — documentation quality and enterprise readiness
 

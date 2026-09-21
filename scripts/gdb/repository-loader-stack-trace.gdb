@@ -10,9 +10,9 @@ set mem inaccessible-by-default off
 
 delete
 
-rbreak package::load
+rbreak cartridge::load
 rbreak load_binary_repository_with_contract
-rbreak load_repository_package
+rbreak load_repository_cartridge
 
 define print_loader_stack
   printf "\n[STACK] loader breakpoint\n"

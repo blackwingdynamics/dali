@@ -12,11 +12,11 @@ After installation, the user-facing executable is `dali`:
 dali inspect --input target/thumbv7em-none-eabihf/debug/hello.amrn
 ```
 
-The Cargo package remains `dali-cli`; `dali` is the installed executable name.
+The Cargo cartridge remains `dali-cli`; `dali` is the installed executable name.
 
-## Install a package on the SD card
+## Install a cartridge on the SD card
 
-1. Build the package with `just package-hello`.
+1. Build the cartridge with `just cartridge-hello`.
 2. Insert the SD card into the host card reader.
 3. Identify the card device with a size-aware command such as:
 
@@ -41,7 +41,7 @@ The Cargo package remains `dali-cli`; `dali` is the installed executable name.
 
 The kernel scans the root directory for `.amrn` files and does not require the
 basename `hello`. The current MVP policy requires exactly one root AMRN file;
-zero files and multiple files are reported as package-selection failures.
+zero files and multiple files are reported as cartridge-selection failures.
 
 ## Flash and observe loader validation
 
@@ -58,7 +58,7 @@ Open the USB CDC console after the runtime device appears:
 just console
 ```
 
-Successful package discovery and validation currently produce log records
+Successful cartridge discovery and validation currently produce log records
 equivalent to:
 
 ```text

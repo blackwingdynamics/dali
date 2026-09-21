@@ -17,7 +17,7 @@ silently changing ABI v2. The implemented boundary is:
 The SVC frame, service identifier encoding, PSP layout, fault recovery state,
 and application memory regions are specified in this document and covered by
 host tests plus the recorded F405 hardware evidence below. AMRN format v4 and
-v5 are package-format revisions, not ABI revisions. No separate ABI v4 or
+v5 are cartridge-format revisions, not ABI revisions. No separate ABI v4 or
 production multi-application contract is enabled.
 
 ## Feature-gated ABI v3 boundary
@@ -38,10 +38,10 @@ code; ordinary kernel modules do not need a version-name replacement.
 The `dali-amrn::compatibility` module is the shared ABI-family and
 AMRN-format compatibility table used by the kernel-facing build contracts and
 the CLI. It rejects unknown ABI versions and incompatible explicit format
-requests before package construction.
+requests before cartridge construction.
 The selector is enabled by `kernel/Cargo.toml`, while
 `kernel/src/abi.rs` is the single source that maps the selected implementation
-to its numeric package ABI version.
+to its numeric cartridge ABI version.
 
 The repository contains a feature-gated SDK SVC call, kernel SVC frame
 validator, bounded log dispatcher, MPU map, PSP transition, and kernel-owned

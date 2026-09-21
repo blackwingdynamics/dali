@@ -7,22 +7,22 @@ pub fn validate_targets_metadata(metadata: &TargetsMetadata) -> Result<(), Metad
     if metadata.header.role != MetadataRole::Targets
         || metadata.header.version == 0
         || usize::from(metadata.delegation_count) > MAX_DELEGATION_SCOPES
-        || usize::from(metadata.package_count) > MAX_TARGET_RECORDS
+        || usize::from(metadata.cartridge_count) > MAX_TARGET_RECORDS
     {
-        return Err(MetadataError::InvalidPackageRecord);
+        return Err(MetadataError::InvalidCartridgeRecord);
     }
     validate_target_records(
         &metadata.delegations[..usize::from(metadata.delegation_count)],
-        &metadata.packages[..usize::from(metadata.package_count)],
+        &metadata.cartridges[..usize::from(metadata.cartridge_count)],
     )
 }
 
 pub fn validate_target_records(
     delegations: &[crate::BoundedText<{ crate::MAX_DELEGATION_ID_BYTES }>],
-    packages: &[crate::TargetPackage],
+    cartridges: &[crate::TargetCartridge],
 ) -> Result<(), MetadataError> {
-    if delegations.len() > MAX_DELEGATION_SCOPES || packages.len() > MAX_TARGET_RECORDS {
-        return Err(MetadataError::InvalidPackageRecord);
+    if delegations.len() > MAX_DELEGATION_SCOPES || cartridges.len() > MAX_TARGET_RECORDS {
+        return Err(MetadataError::InvalidCartridgeRecord);
     }
     for (index, delegation) in delegations.iter().enumerate() {
         if delegation.as_str().is_none()
@@ -30,48 +30,48 @@ pub fn validate_target_records(
                 .iter()
                 .any(|candidate| candidate == delegation)
         {
-            return Err(MetadataError::InvalidPackageRecord);
+            return Err(MetadataError::InvalidCartridgeRecord);
         }
     }
-    for (index, package) in packages.iter().enumerate() {
-        if package.package_id.0 == [0; KEY_ID_LENGTH]
-            || package.developer_key_id.0 == [0; KEY_ID_LENGTH]
-            || package.sha256.0 == [0; crate::SHA256_LENGTH]
-            || package.length == 0
-            || package.amrn_format == 0
-            || package.abi_version == 0
-            || package.namespace.as_str().is_none()
-            || package.developer_id.as_str().is_none()
-            || package.delegation_id.as_str().is_none()
-            || package.target_profile.as_str().is_none()
-            || package.package_version.as_str().is_none()
-            || package.minimum_kernel_version.as_str().is_none()
+    for (index, cartridge) in cartridges.iter().enumerate() {
+        if cartridge.cartridge_id.0 == [0; KEY_ID_LENGTH]
+            || cartridge.developer_key_id.0 == [0; KEY_ID_LENGTH]
+            || cartridge.sha256.0 == [0; crate::SHA256_LENGTH]
+            || cartridge.length == 0
+            || cartridge.amrn_format == 0
+            || cartridge.abi_version == 0
+            || cartridge.namespace.as_str().is_none()
+            || cartridge.developer_id.as_str().is_none()
+            || cartridge.delegation_id.as_str().is_none()
+            || cartridge.target_profile.as_str().is_none()
+            || cartridge.cartridge_version.as_str().is_none()
+            || cartridge.minimum_kernel_version.as_str().is_none()
         {
-            return Err(MetadataError::InvalidPackageRecord);
+            return Err(MetadataError::InvalidCartridgeRecord);
         }
         validate_namespace(
-            package
+            cartridge
                 .namespace
                 .as_str()
-                .ok_or(MetadataError::InvalidPackageRecord)?,
+                .ok_or(MetadataError::InvalidCartridgeRecord)?,
         )?;
         validate_developer_id(
-            package
+            cartridge
                 .developer_id
                 .as_str()
-                .ok_or(MetadataError::InvalidPackageRecord)?,
+                .ok_or(MetadataError::InvalidCartridgeRecord)?,
         )?;
         if !delegations
             .iter()
-            .any(|delegation| delegation == &package.delegation_id)
+            .any(|delegation| delegation == &cartridge.delegation_id)
         {
             return Err(MetadataError::UnknownDelegation);
         }
-        if packages[..index]
+        if cartridges[..index]
             .iter()
-            .any(|candidate| candidate.package_id == package.package_id)
+            .any(|candidate| candidate.cartridge_id == cartridge.cartridge_id)
         {
-            return Err(MetadataError::DuplicatePackage);
+            return Err(MetadataError::DuplicateCartridge);
         }
     }
     Ok(())

@@ -23,11 +23,11 @@ just setup-arch
 
 The script installs the pinned Rust target and components, Cargo tools, DFU and
 USB utilities including `picocom`, `probe-rs`, Renode, the .NET runtime
-required by the packaged Renode build, and probe-rs udev rules. It is safe to
+required by the cartridged Renode build, and probe-rs udev rules. It is safe to
 run again. A logout/login
 may be required after the script adds the current user to `plugdev`.
 
-The script performs system package installation and requires `sudo`. It adds
+The script performs system cartridge installation and requires `sudo`. It adds
 the current user to `uucp` for USB CDC serial access and to `plugdev` for debug
 probe access. Log out and back in after the first setup so both group changes
 become active. It does not flash hardware, delete project files, or modify Git
@@ -44,7 +44,7 @@ just setup-debian
 
 This script uses `apt-get` for system dependencies, installs `probe-rs` through
 Cargo, installs `picocom`, and installs Renode's portable Linux release so a
-distro-specific .NET runtime package is not required. It is safe to run again.
+distro-specific .NET runtime cartridge is not required. It is safe to run again.
 A logout/login may be required after the script adds the current user to
 `plugdev`.
 
@@ -105,7 +105,7 @@ cargo install lefthook --locked
 cargo install git-cliff --version 2.13.0 --locked
 ```
 
-Install `probe-rs` and `dfu-util` using the package-manager or installation method appropriate for the host operating system. The exact hardware flashing tools are host dependencies, not Cargo workspace members.
+Install `probe-rs` and `dfu-util` using the cartridge-manager or installation method appropriate for the host operating system. The exact hardware flashing tools are host dependencies, not Cargo workspace members.
 
 The kernel uses `embedded-sdmmc` `0.10.0` with default features disabled. The
 filesystem layer is read-only, uses fixed-size buffers, and scans the first FAT

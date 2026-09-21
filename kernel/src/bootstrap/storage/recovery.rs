@@ -11,22 +11,19 @@ const REINITIALIZATION_ATTEMPTS: u32 = crate::drivers::lifecycle::policy::REINIT
 const REINITIALIZATION_DELAY_MS: u32 = crate::drivers::lifecycle::policy::REINITIALIZATION_DELAY_MS;
 /// Defines the `BOOT_RETRY_LOG_INTERVAL` bound used by this subsystem.
 pub(super) const BOOT_RETRY_LOG_INTERVAL: u32 = 1;
-#[cfg(feature = "driver-hardware-test")]
-const RUNTIME_RETRY_LOG_INTERVAL: u32 = 50;
-#[cfg(not(feature = "driver-hardware-test"))]
-/// Defines the `RUNTIME_RETRY_LOG_INTERVAL` bound used by this subsystem.
-const RUNTIME_RETRY_LOG_INTERVAL: u32 = 1;
 /// Defines the `RUNTIME_PROBE_LOG_INTERVAL` bound used by this subsystem.
 const RUNTIME_PROBE_LOG_INTERVAL: u32 = 10;
 
-const _: () = assert!(
-    BOOT_RETRY_LOG_INTERVAL > 0 && RUNTIME_RETRY_LOG_INTERVAL > 0 && RUNTIME_PROBE_LOG_INTERVAL > 0
-);
+const _: () = assert!(BOOT_RETRY_LOG_INTERVAL > 0 && RUNTIME_PROBE_LOG_INTERVAL > 0);
 
 /// Performs the `delay_before_reinitialization` operation for this subsystem.
-fn delay_before_reinitialization(board: &mut platform::Platform) {
-    board.delay_ms(REINITIALIZATION_DELAY_MS);
-    if let Err(error) = platform::service_watchdog() {
+fn delay_before_reinitialization<B>(board: &mut platform::Platform<B>)
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
+    let _ = board.delay_ms(REINITIALIZATION_DELAY_MS);
+    if let Err(error) = board.service_watchdog() {
         logging::error(
             logging::BOOT_SUBSYSTEM,
             format_args!(
@@ -38,14 +35,16 @@ fn delay_before_reinitialization(board: &mut platform::Platform) {
 }
 
 /// Attempts initialization again for a bounded card-reinsert window.
-pub(super) fn initialize_with_recovery<R>(
+pub(super) fn initialize_with_recovery<R, B>(
     reader: &mut R,
-    board: &mut platform::Platform,
+    board: &mut platform::Platform<B>,
     retry_log_interval: u32,
     retry_log_count: &mut u32,
 ) -> Result<(), StorageError>
 where
     R: StorageLifecycleControl,
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
     let mut attempt = 0;
     loop {
@@ -79,14 +78,16 @@ where
 }
 
 /// Retries the first block read once after a bounded card reinitialization.
-pub(super) fn read_block_with_recovery<R>(
+pub(super) fn read_block_with_recovery<R, B>(
     reader: &mut R,
-    board: &mut platform::Platform,
+    board: &mut platform::Platform<B>,
     block: &mut Block,
     retry_log_count: &mut u32,
 ) -> Result<(), StorageError>
 where
     R: BlockReader + StorageLifecycleControl,
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
 {
     match reader.read_block(crate::drivers::BlockAddress::new(0), block) {
         Ok(()) => Ok(()),
@@ -103,15 +104,21 @@ where
 }
 
 /// Performs the `poll_runtime` operation for this subsystem.
-pub(super) fn poll_runtime(
-    runtime: &mut super::super::StorageRuntime,
-    board: &mut platform::Platform,
-) {
-    let Some(reader) = runtime.recovery_reader.as_mut() else {
+pub(super) fn poll_runtime<B>(
+    runtime: &mut super::super::StorageRuntime<B>,
+    board: &mut platform::Platform<B>,
+) where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
+    let Some(mut reader) = runtime.recovery_reader.take() else {
         return;
     };
     runtime.recovery_probe_count = runtime.recovery_probe_count.saturating_add(1);
-    if runtime
+    if matches!(
+        runtime.status,
+        super::super::lifecycle::status::StorageStatus::Removed
+    ) && runtime
         .recovery_probe_count
         .is_multiple_of(RUNTIME_PROBE_LOG_INTERVAL)
     {
@@ -120,28 +127,20 @@ pub(super) fn poll_runtime(
             format_args!("[STORAGE] Reinitialization probe started"),
         );
     }
-    match initialize_with_recovery(
-        reader,
-        board,
-        RUNTIME_RETRY_LOG_INTERVAL,
-        &mut runtime.recovery_retry_log_count,
-    ) {
+    match reader.reinitialize() {
         Ok(()) => {
-            runtime.status = super::super::lifecycle::status::StorageStatus::Ready;
-            logging::info(
-                logging::BOOT_SUBSYSTEM,
-                format_args!("[STORAGE] Card reinitialized; state Ready"),
-            );
+            *runtime = super::initialization::load_initialized_reader(reader, board);
         }
-        Err(
-            StorageError::CardRemoved
-            | StorageError::NotReady
-            | StorageError::Timeout
-            | StorageError::Transport,
-        ) => {
+        Err(StorageError::CardRemoved | StorageError::NotReady) => {
+            runtime.recovery_reader = Some(reader);
             runtime.status = super::super::lifecycle::status::StorageStatus::Removed;
         }
+        Err(StorageError::Timeout | StorageError::Transport) => {
+            runtime.recovery_reader = Some(reader);
+            runtime.status = super::super::lifecycle::status::StorageStatus::Idle;
+        }
         Err(error) => {
+            runtime.recovery_reader = Some(reader);
             runtime.status = super::super::lifecycle::status::StorageStatus::Failure;
             logging::error(
                 logging::BOOT_SUBSYSTEM,

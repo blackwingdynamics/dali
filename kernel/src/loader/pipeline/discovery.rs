@@ -1,25 +1,25 @@
-//! Real filesystem discovery for AMRN format 4 packages.
+//! Real filesystem discovery for AMRN format 4 cartridges.
 
 use dali_amrn::v4;
 
 use crate::{
     drivers::{BlockDeviceRef, StorageError},
-    loader_contract::PackageCatalog,
+    loader_contract::CartridgeCatalog,
     storage::filesystem,
 };
 
 use super::execution::LoadedApplications;
 
-/// Discovers and loads all packages selected by the target catalog.
+/// Discovers and loads all cartridges selected by the target catalog.
 pub(crate) fn load_files<D>(
     device: &D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedApplications<{ filesystem::MAX_ROOT_AMRN_FILES }>, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    let mut catalog = PackageCatalog::<{ filesystem::MAX_ROOT_AMRN_FILES }>::new();
-    let target = crate::platform::TARGET_PROFILE;
+    let mut catalog = CartridgeCatalog::<{ filesystem::MAX_ROOT_AMRN_FILES }>::new();
     let isolation = target
         .memory
         .isolation
@@ -35,7 +35,7 @@ where
         .map_err(|_| super::identity::v4_error(v4::Error::InvalidHeader))?;
         catalog
             .register(header, slot, slot_manager.is_reserved(slot))
-            .map_err(super::LoaderError::PackageCatalog)
+            .map_err(super::LoaderError::CartridgeCatalog)
     })
     .map_err(super::LoaderError::Filesystem)?;
     result?;
@@ -46,19 +46,20 @@ where
         let selected = catalog
             .select_after(previous_slot)
             .ok_or(super::identity::v4_error(v4::Error::InvalidHeader))?;
-        let selected_identity = selected.header.metadata.package_id;
-        load_selected_file(device, selected_identity, slot_manager, &mut loaded)?;
+        let selected_identity = selected.header.metadata.cartridge_id;
+        load_selected_file(device, selected_identity, slot_manager, &mut loaded, target)?;
         previous_slot = Some(selected.slot.id);
     }
     Ok(loaded)
 }
 
-/// Reopens and loads the package identified by a catalog entry.
+/// Reopens and loads the cartridge identified by a catalog entry.
 fn load_selected_file<D>(
     device: D,
     selected_identity: [u8; 16],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     loaded: &mut LoadedApplications<{ filesystem::MAX_ROOT_AMRN_FILES }>,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<(), super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
@@ -66,15 +67,15 @@ where
     let mut found = false;
     let result = filesystem::with_amrn_files(device, |file| {
         let header = super::identity::read_header(&file)?;
-        let identity_end = v4::PACKAGE_ID_OFFSET + selected_identity.len();
-        if header[v4::PACKAGE_ID_OFFSET..identity_end] != selected_identity {
+        let identity_end = v4::CARTRIDGE_ID_OFFSET + selected_identity.len();
+        if header[v4::CARTRIDGE_ID_OFFSET..identity_end] != selected_identity {
             return Ok(());
         }
         file.rewind().map_err(super::LoaderError::Filesystem)?;
-        let application = super::identity::load_file(file, slot_manager)?;
+        let application = super::identity::load_file(file, slot_manager, target)?;
         found = true;
         if !loaded.push(application) {
-            return Err(super::LoaderError::PackageCatalog(
+            return Err(super::LoaderError::CartridgeCatalog(
                 crate::loader_contract::CatalogError::CapacityExceeded,
             ));
         }

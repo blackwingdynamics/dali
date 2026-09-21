@@ -2,9 +2,9 @@
 
 use super::{DecodeError, cursor::Cursor};
 use crate::{
-    BoundedText, MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_TARGET_RECORDS,
-    MetadataHeader, MetadataRole, PackageId, SCHEMA_ID, Sha256Digest, TargetPackage,
-    TargetsMetadata, validate_target_records,
+    BoundedText, CartridgeId, MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_TARGET_RECORDS,
+    MetadataHeader, MetadataRole, SCHEMA_ID, Sha256Digest, TargetCartridge, TargetsMetadata,
+    validate_target_records,
 };
 
 /// Parses one canonical targets signed body into fixed-capacity storage.
@@ -17,8 +17,8 @@ pub fn parse_targets_signed(bytes: &[u8]) -> Result<TargetsMetadata, DecodeError
     cursor.field("expires")?;
     let expires = cursor.number()?;
     cursor.byte(b',')?;
-    cursor.field("packages")?;
-    let (packages, package_count) = parse_packages(&mut cursor)?;
+    cursor.field("cartridges")?;
+    let (cartridges, cartridge_count) = parse_cartridges(&mut cursor)?;
     cursor.byte(b',')?;
     cursor.field("role")?;
     if cursor.string()? != MetadataRole::Targets.as_str() {
@@ -42,7 +42,7 @@ pub fn parse_targets_signed(bytes: &[u8]) -> Result<TargetsMetadata, DecodeError
     }
     validate_target_records(
         &delegations[..usize::from(delegation_count)],
-        &packages[..usize::from(package_count)],
+        &cartridges[..usize::from(cartridge_count)],
     )
     .map_err(|_| DecodeError::InvalidValue)?;
     Ok(TargetsMetadata {
@@ -53,8 +53,8 @@ pub fn parse_targets_signed(bytes: &[u8]) -> Result<TargetsMetadata, DecodeError
         },
         delegations,
         delegation_count,
-        packages,
-        package_count,
+        cartridges,
+        cartridge_count,
     })
 }
 
@@ -90,21 +90,21 @@ fn parse_delegations(
     Ok((delegations, count as u8))
 }
 
-fn parse_packages(
+fn parse_cartridges(
     cursor: &mut Cursor<'_>,
-) -> Result<([TargetPackage; MAX_TARGET_RECORDS], u16), DecodeError> {
+) -> Result<([TargetCartridge; MAX_TARGET_RECORDS], u16), DecodeError> {
     cursor.byte(b'[')?;
-    let mut packages = [TargetPackage::default(); MAX_TARGET_RECORDS];
+    let mut cartridges = [TargetCartridge::default(); MAX_TARGET_RECORDS];
     let mut count = 0_usize;
     if cursor.peek(b']') {
         cursor.byte(b']')?;
-        return Ok((packages, 0));
+        return Ok((cartridges, 0));
     }
     loop {
         if count == MAX_TARGET_RECORDS {
             return Err(DecodeError::TooManyRecords);
         }
-        packages[count] = parse_package(cursor)?;
+        cartridges[count] = parse_cartridge(cursor)?;
         count += 1;
         if cursor.peek(b',') {
             cursor.byte(b',')?;
@@ -113,10 +113,10 @@ fn parse_packages(
         }
     }
     cursor.byte(b']')?;
-    Ok((packages, count as u16))
+    Ok((cartridges, count as u16))
 }
 
-fn parse_package(cursor: &mut Cursor<'_>) -> Result<TargetPackage, DecodeError> {
+fn parse_cartridge(cursor: &mut Cursor<'_>) -> Result<TargetCartridge, DecodeError> {
     cursor.byte(b'{')?;
     cursor.field("abi_version")?;
     let abi_version = u16::try_from(cursor.number()?).map_err(|_| DecodeError::InvalidValue)?;
@@ -142,11 +142,11 @@ fn parse_package(cursor: &mut Cursor<'_>) -> Result<TargetPackage, DecodeError> 
     cursor.field("namespace")?;
     let namespace = bounded(cursor.string()?)?;
     cursor.byte(b',')?;
-    cursor.field("package_id")?;
-    let package_id = PackageId(cursor.hex::<{ crate::KEY_ID_LENGTH }>()?);
+    cursor.field("cartridge_id")?;
+    let cartridge_id = CartridgeId(cursor.hex::<{ crate::KEY_ID_LENGTH }>()?);
     cursor.byte(b',')?;
-    cursor.field("package_version")?;
-    let package_version = bounded(cursor.string()?)?;
+    cursor.field("cartridge_version")?;
+    let cartridge_version = bounded(cursor.string()?)?;
     cursor.byte(b',')?;
     cursor.field("required_services")?;
     let required_services =
@@ -161,8 +161,8 @@ fn parse_package(cursor: &mut Cursor<'_>) -> Result<TargetPackage, DecodeError> 
     cursor.field("target_profile")?;
     let target_profile = bounded(cursor.string()?)?;
     cursor.byte(b'}')?;
-    Ok(TargetPackage {
-        package_id,
+    Ok(TargetCartridge {
+        cartridge_id,
         namespace,
         developer_id,
         delegation_id,
@@ -170,7 +170,7 @@ fn parse_package(cursor: &mut Cursor<'_>) -> Result<TargetPackage, DecodeError> 
         target_profile,
         amrn_format,
         abi_version,
-        package_version,
+        cartridge_version,
         minimum_kernel_version,
         length,
         sha256,

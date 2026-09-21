@@ -9,6 +9,6 @@ protocol documentation. The files below contain its topic-oriented sections.
 - [Frames and messages](frames-and-messages.md)
 - [Streaming and transport](streaming-and-transport.md)
 - [Security and authorization](security-and-authorization.md)
-- [Package and safety](package-and-safety.md)
+- [Cartridge and safety](cartridge-and-safety.md)
 - [Implementation phases](implementation-phases.md)
 - [Acceptance and compatibility](acceptance-and-compatibility.md)

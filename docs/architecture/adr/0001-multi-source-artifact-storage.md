@@ -1,0 +1,95 @@
+# ADR-0001: Multi-source artifact storage
+
+Status: **Accepted for implementation on `kernel-foundation`**
+
+## Context
+
+Dali currently boots cartridges through the F405 SDIO and FAT/repository
+adapter. Reflashing the complete firmware or physically moving an SD card for
+every AMRN test slows development and increases hardware handling. Future
+targets may provide internal or external flash, USB mass storage, NVMe, or
+another durable medium.
+
+The kernel must not make SDIO the permanent definition of storage. USB is an
+installation transport, not the persistent artifact medium and not a loader
+policy.
+
+## Decision
+
+Define three independent boundaries:
+
+1. `ArtifactSource` — supplies validated logical AMRN/repository streams to the
+   loader;
+2. `PersistentStorage` — exposes bounded medium operations and capabilities
+   such as read, write, erase, flush, and atomic commit;
+3. `InstallTransport` — receives a bounded artifact from USB, SWD, or another
+   host transport and commits it through the persistent-storage contract.
+
+The existing SD/FAT/repository chain remains one adapter implementation. A
+flash-backed artifact store will be a second adapter. Future NVMe or other
+media must implement the same logical contract without changing loader or AMRN
+policy code.
+
+Installation must remain a separate capability boundary and must not become an
+associated type or responsibility of the composite `BoardBackend` contract.
+The board lifecycle backend is already being decomposed into focused
+capabilities; installation transport and persistent artifact writing must be
+registered through their own narrow interface so boards without installation
+support remain valid and the platform contract does not grow another composite
+owner.
+
+The first implementation milestone is read-only boot from a target-owned flash
+artifact region. USB installation is a subsequent milestone and must use a
+staging region, complete AMRN validation, integrity/authentication checks, and
+an atomic metadata commit before an artifact becomes bootable.
+
+The hardware-neutral `dali-kernel-api::installation::ArtifactStager` contract
+defines that later installer boundary. It separates candidate transfer from
+publication: `begin_staging` invalidates the previous candidate, bounded
+`write_staging` calls fill it, and `commit_staging` is the only operation that
+may publish it. The contract does not choose USB framing, Flash geometry, or a
+board-specific commit-marker layout.
+
+The first F405 profile has only one physical artifact erase unit. It therefore
+cannot preserve the previous cartridge after erase begins and must not be
+presented as an atomic A/B installer. Its future single-slot replacement path
+must validate the complete candidate before publication; an interrupted or
+invalid replacement may leave Flash without a bootable cartridge, after which
+the documented SD fallback remains authoritative. Preserving the previous
+Flash cartridge across power loss requires a second physical slot or an
+external staging medium and is deferred.
+
+The F405 replacement path must store a publication marker outside the logical
+AMRN payload and inside the same target-owned erase unit. Erase must leave the
+marker invalid, and the marker may be written only after the complete AMRN has
+been written and validated. Boot may select the Flash artifact only when the
+marker is structurally valid and its declared length is within the logical
+capacity; AMRN validation remains mandatory. A missing or invalid marker is
+treated as an empty Flash source and must select the documented SD fallback.
+
+## Constraints
+
+- Generic kernel policy must not contain SD, flash, NVMe, USB, vendor, or board
+  identifiers.
+- Flash regions, erase units, write alignment, and capacity belong to target
+  metadata and the selected backend.
+- A target's logical cartridge capacity may be smaller than its physical erase
+  unit, but the firmware and artifact regions must not share an erase unit.
+- The firmware image region and artifact region must be disjoint and validated
+  by the backend/linker contract.
+- A partial USB transfer or power loss must never make an uncommitted artifact
+  bootable.
+- Repeated test installation must not silently claim unlimited flash endurance;
+  wear and erase policy must be explicit.
+- USB CDC logging and artifact installation must have separate bounded state and
+  ownership. Logging traffic must not be interpreted as installer input.
+- Host tests may cover codecs, metadata, and state machines, but target flash
+  persistence and power-loss behavior require hardware evidence.
+
+## Consequences
+
+The loader and AMRN validation code become reusable across SD, flash, and
+future storage adapters. The board backend owns unsafe flash operations and
+the target memory map. Development gains a USB-to-flash workflow without
+changing the production SD path. The additional metadata, staging, and
+recovery work is required before declaring flash installation reliable.

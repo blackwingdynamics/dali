@@ -10,7 +10,7 @@ DFU device, or runtime console.
 
 ```text
 dali target info <profile>
-dali target info <profile> --field probe-chip
+dali target info <profile> --field probe-chip|backend|kernel-binary|kernel-elf
 ```
 
 `<profile>` is the stable profile name declared by a repository target
@@ -25,11 +25,12 @@ controller and pins, and storage controller and pins when declared.
 The output is intended for diagnosis and review. Its labels are stable enough
 for humans but are not a machine-readable interchange format.
 
-## Machine-readable field
+## Machine-readable fields
 
-The `--field probe-chip` form prints only the debug-probe chip identifier. It
-is used by repository build recipes so the chip name remains owned by the
-target manifest rather than duplicated in command logic.
+The `--field` form prints one manifest-owned value for scripting. Supported
+fields are `probe-chip`, `backend`, `kernel-binary`, and `kernel-elf`. Repository
+build recipes use these fields so backend and artifact names remain owned by
+the target manifest rather than duplicated in command logic.
 
 Profiles without a declared probe chip return an error. Unknown profiles and
 unsupported fields also return an error.

@@ -53,7 +53,7 @@ pub struct BinarySnapshotBodyStreamParser<
 
 impl<const CAPACITY: usize> BinarySnapshotBodyStreamParser<CAPACITY> {
     /// Creates an empty snapshot body parser.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             queue: ByteQueue::new(),
             phase: Phase::HeaderVersion,
@@ -69,12 +69,34 @@ impl<const CAPACITY: usize> BinarySnapshotBodyStreamParser<CAPACITY> {
                 length: 0,
                 sha256: Sha256Digest([0; crate::SHA256_LENGTH]),
             },
-            delegations: [DelegationReference::default(); CAPACITY],
+            delegations: [DelegationReference::empty(); CAPACITY],
             delegation_count: 0,
             delegation_index: 0,
             text_length: 0,
             text: [0; TEXT_BYTES],
         }
+    }
+
+    /// Resets parser state in place without creating a stack-sized temporary.
+    pub fn reset(&mut self) {
+        self.queue.reset();
+        self.phase = Phase::HeaderVersion;
+        self.version = 0;
+        self.expires = 0;
+        self.targets = TargetsReference {
+            version: 0,
+            length: 0,
+            sha256: Sha256Digest([0; crate::SHA256_LENGTH]),
+        };
+        self.revocations = RevocationReference {
+            version: 0,
+            length: 0,
+            sha256: Sha256Digest([0; crate::SHA256_LENGTH]),
+        };
+        self.delegation_count = 0;
+        self.delegation_index = 0;
+        self.text_length = 0;
+        self.text = [0; TEXT_BYTES];
     }
 
     /// Feeds transport fragments into the bounded state machine.
@@ -103,23 +125,28 @@ impl<const CAPACITY: usize> BinarySnapshotBodyStreamParser<CAPACITY> {
         if self.phase != Phase::Complete || !self.queue.is_empty() {
             return Err(crate::StreamingBodyError::UnexpectedEnd);
         }
-        let mut delegations = [DelegationReference::default(); crate::MAX_SNAPSHOT_REFERENCES];
-        delegations[..usize::from(self.delegation_count)]
-            .copy_from_slice(&self.delegations[..usize::from(self.delegation_count)]);
-        let metadata = SnapshotMetadata {
-            header: MetadataHeader {
+        let output_ptr = output.as_mut_ptr();
+        // SAFETY: every field of the output is initialized before validation,
+        // and the parser owns the source references for the duration of copy.
+        unsafe {
+            (*output_ptr).header = MetadataHeader {
                 role: MetadataRole::Snapshot,
                 version: self.version,
                 expires: self.expires,
-            },
-            targets: self.targets,
-            revocations: self.revocations,
-            delegations,
-            delegation_count: self.delegation_count,
-        };
-        validate_snapshot_metadata(&metadata)
-            .map_err(|_| crate::StreamingBodyError::InvalidBody)?;
-        output.write(metadata);
+            };
+            (*output_ptr).targets = self.targets;
+            (*output_ptr).revocations = self.revocations;
+            for index in 0..crate::MAX_SNAPSHOT_REFERENCES {
+                (*output_ptr).delegations[index] = if index < usize::from(self.delegation_count) {
+                    self.delegations[index]
+                } else {
+                    DelegationReference::empty()
+                };
+            }
+            (*output_ptr).delegation_count = self.delegation_count;
+            validate_snapshot_metadata(&*output_ptr)
+                .map_err(|_| crate::StreamingBodyError::InvalidBody)?;
+        }
         Ok(())
     }
 
@@ -281,6 +308,10 @@ impl ByteQueue {
             bytes: [0; QUEUE_BYTES],
             length: 0,
         }
+    }
+
+    fn reset(&mut self) {
+        self.length = 0;
     }
 
     fn push(&mut self, byte: u8) -> Result<(), Error> {

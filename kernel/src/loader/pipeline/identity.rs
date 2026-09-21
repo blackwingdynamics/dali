@@ -1,4 +1,4 @@
-//! Bounded streaming loader for AMRN format 4 identity packages.
+//! Bounded streaming loader for AMRN format 4 identity cartridges.
 
 use dali_amrn::{v3, v4};
 
@@ -20,20 +20,21 @@ use super::execution::LoadedApplication;
 /// Encoded size of one format-4 relocation entry.
 const RELOCATION_BYTES: usize = v4::RELOCATION_ENTRY_SIZE;
 #[cfg(not(feature = "repository-loader"))]
-/// Capacity used when loading a single legacy package.
-const SINGLE_PACKAGE_CATALOG_CAPACITY: usize = 1;
+/// Capacity used when loading a single legacy cartridge.
+const SINGLE_CARTRIDGE_CATALOG_CAPACITY: usize = 1;
 
 #[cfg(not(feature = "repository-loader"))]
-/// Loads, validates, relocates, and prepares one format-4 package.
+/// Loads, validates, relocates, and prepares one format-4 cartridge.
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract, allocation) = parse_target_header(&header, slot_manager)?;
+    let (header, contract, allocation) = parse_target_header(&header, slot_manager, target)?;
     if !super::supports_required_services(header.metadata.required_services) {
         return Err(super::LoaderError::UnsupportedServices(
             header.metadata.required_services,
@@ -48,7 +49,7 @@ where
         return Err(v4_error(v4::Error::InvalidPayload));
     }
     let expected_length =
-        package_length(header.image).ok_or(v4_error(v4::Error::InvalidPayload))?;
+        cartridge_length(header.image).ok_or(v4_error(v4::Error::InvalidPayload))?;
     if u64::from(file.length()) != u64::from(expected_length) {
         return Err(v4_error(v4::Error::InvalidPayload));
     }
@@ -70,7 +71,7 @@ where
     let launch_frame = prepare_launch(entry_address, stack_origin, header.image.stack_size)?;
     launch::materialize(launch_frame);
     let mut lifecycle = ApplicationLifecycle::discovered(
-        ApplicationIdentity::new(header.metadata.package_id),
+        ApplicationIdentity::new(header.metadata.cartridge_id),
         allocation.slot().id,
     );
     lifecycle
@@ -93,8 +94,8 @@ where
 pub(super) fn parse_target_header(
     bytes: &[u8; v4::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<(v4::Header, v3::Contract, SlotAllocation), super::LoaderError> {
-    let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
         .isolation
@@ -103,13 +104,16 @@ pub(super) fn parse_target_header(
         crate::loader_contract::select_slot(bytes, target.amrn_target_id, isolation.slots)
             .map_err(|_| v4_error(v4::Error::InvalidHeader))?;
     let mut catalog =
-        crate::loader_contract::PackageCatalog::<SINGLE_PACKAGE_CATALOG_CAPACITY>::new();
+        crate::loader_contract::CartridgeCatalog::<SINGLE_CARTRIDGE_CATALOG_CAPACITY>::new();
     catalog
         .register(header, slot, slot_manager.is_reserved(slot))
-        .map_err(super::LoaderError::PackageCatalog)?;
-    let selected: crate::loader_contract::DiscoveredPackage = catalog.select().ok_or(
-        super::LoaderError::PackageCatalog(crate::loader_contract::CatalogError::CapacityExceeded),
-    )?;
+        .map_err(super::LoaderError::CartridgeCatalog)?;
+    let selected: crate::loader_contract::DiscoveredCartridge =
+        catalog
+            .select()
+            .ok_or(super::LoaderError::CartridgeCatalog(
+                crate::loader_contract::CatalogError::CapacityExceeded,
+            ))?;
     let allocation = slot_manager
         .reserve(selected.slot)
         .map_err(super::LoaderError::SlotManager)?;
@@ -143,8 +147,8 @@ where
 }
 
 #[cfg(not(feature = "repository-loader"))]
-/// Computes the encoded format-4 package length.
-fn package_length(header: v3::Header) -> Option<u32> {
+/// Computes the encoded format-4 cartridge length.
+fn cartridge_length(header: v3::Header) -> Option<u32> {
     u32::try_from(v4::HEADER_SIZE)
         .ok()?
         .checked_add(header.code_size)?
@@ -170,7 +174,7 @@ where
     crate::loader_contract::validate_stream(&reader, header, contract).map_err(map_stream_error)
 }
 
-/// Copies package segments and applies validated relocations.
+/// Copies cartridge segments and applies validated relocations.
 pub(super) fn copy_segments_and_relocate<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -261,17 +265,17 @@ pub(super) fn zero_segment(destination: u32, size: u32) -> Result<(), super::Loa
 }
 
 #[cfg(not(feature = "repository-loader"))]
-/// Reader adapter exposing package-file reads to the streaming validator.
+/// Reader adapter exposing cartridge-file reads to the streaming validator.
 pub(super) struct FileReader<'a, 'file, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    /// Borrowed package file used by the reader adapter.
+    /// Borrowed cartridge file used by the reader adapter.
     file: &'a AmrnFile<'file, D>,
 }
 
 #[cfg(not(feature = "repository-loader"))]
-impl<'a, 'file, D> crate::loader_contract::PackageReader for FileReader<'a, 'file, D>
+impl<'a, 'file, D> crate::loader_contract::CartridgeReader for FileReader<'a, 'file, D>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
@@ -302,7 +306,7 @@ fn map_stream_error(
 
 /// Wraps a format-4 parser error in the loader error type.
 pub(crate) fn v4_error(error: v4::Error) -> super::LoaderError {
-    super::LoaderError::V4IdentityPackage(error)
+    super::LoaderError::V4IdentityCartridge(error)
 }
 
 /// Maps a relocation parser error to the format-4 loader error.

@@ -94,8 +94,17 @@ pub(super) fn generate_clock(clock: &Clock) -> String {
 
 pub(super) fn generate_memory(memory: &Memory) -> String {
     format!(
-        "MemoryProfile {{ flash: {}, kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, dma: {}, ccm: {}, isolation: {} }}",
+        "MemoryProfile {{ flash: {}, firmware: {}, artifact: {}, artifact_capacity: {}, kernel_origin: 0x{:08X}, kernel_length: {}, application_origin: 0x{:08X}, application_length: {}, runtime_origin: 0x{:08X}, runtime_length: {}, dma: {}, ccm: {}, isolation: {} }}",
         generate_target_memory_region(&memory.flash),
+        generate_target_memory_region(&memory.firmware),
+        memory
+            .artifact
+            .as_ref()
+            .map(generate_target_memory_region)
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
+        memory
+            .artifact_capacity
+            .map_or_else(|| "None".to_owned(), |value| format!("Some({value})")),
         memory.kernel_origin,
         memory.kernel_length,
         memory.application_origin,
@@ -172,8 +181,10 @@ pub(super) fn generate_pin(pin: &Pin) -> String {
 
 pub(super) fn generate_usb(usb: &super::super::manifest::Usb) -> String {
     format!(
-        "UsbProfile {{ controller: {}, dm: {}, dp: {} }}",
+        "UsbProfile {{ controller: {}, vendor_id: 0x{:04X}, product_id: 0x{:04X}, dm: {}, dp: {} }}",
         string_literal(&usb.controller),
+        usb.vendor_id,
+        usb.product_id,
         generate_pin(&usb.dm),
         generate_pin(&usb.dp)
     )
@@ -187,9 +198,14 @@ pub(super) fn generate_storage(storage: &Storage) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     format!(
-        "StorageProfile {{ controller: {}, bus_width: {}, clock: {}, command: {}, data: [{}] }}",
+        "StorageProfile {{ controller: {}, bus_width: {}, data_timeout_cycles: {}, command_poll_limit: {}, ocr_poll_limit: {}, data_poll_limit: {}, dma_stop_poll_limit: {}, clock: {}, command: {}, data: [{}] }}",
         string_literal(&storage.controller),
         storage.bus_width,
+        storage.data_timeout_cycles,
+        storage.command_poll_limit,
+        storage.ocr_poll_limit,
+        storage.data_poll_limit,
+        storage.dma_stop_poll_limit,
         generate_pin(&storage.clock),
         generate_pin(&storage.command),
         data

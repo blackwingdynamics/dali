@@ -20,7 +20,7 @@ Generating a key does not authorize it. The trust chain is:
 Root policy
   -> Bundle role / bundle key
   -> Delegation metadata / developer key
-  -> Targets package record
+  -> Targets cartridge record
   -> AMRN signature
 ```
 
@@ -35,7 +35,7 @@ They create and update signed Binary v2 metadata; they do not move private keys
 to the SD card and they do not replace the trust owner's key-custody policy.
 
 `repository init` creates a new repository with a root policy, role metadata,
-an empty Targets document, an empty Revocation document, and the packages and
+an empty Targets document, an empty Revocation document, and the cartridges and
 delegations directories. The root signing seed is used for the initial role
 documents. The bundle seed is separately authorized by the generated `bundle`
 role.
@@ -60,7 +60,7 @@ The repository then contains:
 <repository>/metadata/targets.dmb
 <repository>/metadata/revocations.dmb
 <repository>/metadata/delegat/
-<repository>/packages/
+<repository>/amrns/
 ```
 
 `repository add-developer` adds a signed delegation file, adds its delegation
@@ -86,7 +86,7 @@ the private developer seed remains local and is used only to sign the AMRN.
 
 `repository publish` re-signs the current role documents and creates the
 signed `bundle.manifest`. The repository must contain at least one `.amrn`
-package and one delegation before publication can produce a valid bundle:
+cartridge and one delegation before publication can produce a valid bundle:
 
 ```bash
 "$DALI_CLI" metadata repository publish \
@@ -98,11 +98,11 @@ package and one delegation before publication can produce a valid bundle:
   --version 1
 ```
 
-The package must be copied to `packages/<sha256>.amrn` before `publish`.
-Package authorization records in `targets.dmb` are a separate required
-operation for kernel execution and are created by `register-package` below.
+The cartridge must be copied to `amrns/<sha256>.amrn` before `publish`.
+Cartridge authorization records in `targets.dmb` are a separate required
+operation for kernel execution and are created by `register-cartridge` below.
 Do not claim a hardware-ready repository until that record references the
-developer, delegation, target profile, ABI, slot, digest, and package ID.
+developer, delegation, target profile, ABI, slot, digest, and cartridge ID.
 
 For a repository supplied by an external trust owner, the same required files
 must already exist. If `metadata/root.dmb` is absent, do not run inspection or
@@ -263,7 +263,7 @@ echo "$DALI_DEVELOPER_KEY_ID"
 ```
 
 The same ID must be authorized by delegation and referenced by the Targets
-metadata for this package.
+metadata for this cartridge.
 
 ## 8. Build and inspect the AMRN cartridge
 
@@ -276,15 +276,15 @@ export DALI_SIGNING_KEY_HEX="$(
 
 "$DALI_CLI" app build
 
-export APP_PACKAGE="$DALI_ROOT/apps/dali-app-relocation-fixture/target/thumbv7em-none-eabihf/release/dali-app-relocation-fixture.amrn"
+export APP_CARTRIDGE="$DALI_ROOT/apps/dali-app-relocation-fixture/target/thumbv7em-none-eabihf/release/dali-app-relocation-fixture.amrn"
 
-test -f "$APP_PACKAGE"
-"$DALI_CLI" inspect --input "$APP_PACKAGE"
+test -f "$APP_CARTRIDGE"
+"$DALI_CLI" inspect --input "$APP_CARTRIDGE"
 ```
 
 The reported AMRN `signing_key_id` must equal `DALI_DEVELOPER_KEY_ID`.
 
-## 9. Prepare the content-addressed package repository
+## 9. Prepare the content-addressed cartridge repository
 
 Do not delete an existing repository without reviewing it first:
 
@@ -293,32 +293,32 @@ if [ -e "$DALI_REPO" ]; then
   echo "Repository already exists: $DALI_REPO"
   echo "Review it before continuing; do not delete it automatically."
 else
-  mkdir -p "$DALI_REPO/packages"
+  mkdir -p "$DALI_REPO/amrns"
 fi
 
-export PACKAGE_DIGEST="$(
-  sha256sum "$APP_PACKAGE" | awk '{print tolower($1)}'
+export CARTRIDGE_DIGEST="$(
+  sha256sum "$APP_CARTRIDGE" | awk '{print tolower($1)}'
 )"
 
-cp "$APP_PACKAGE" "$DALI_REPO/packages/${PACKAGE_DIGEST}.amrn"
-test -f "$DALI_REPO/packages/${PACKAGE_DIGEST}.amrn"
-echo "$PACKAGE_DIGEST"
+cp "$APP_CARTRIDGE" "$DALI_REPO/amrns/${CARTRIDGE_DIGEST}.amrn"
+test -f "$DALI_REPO/amrns/${CARTRIDGE_DIGEST}.amrn"
+echo "$CARTRIDGE_DIGEST"
 ```
 
-The signed Targets record is created by `repository register-package` and must
-contain this exact digest, package ID, target profile, slot, and developer
+The signed Targets record is created by `repository register-cartridge` and must
+contain this exact digest, cartridge ID, target profile, slot, and developer
 delegation reference. Run the registration command below after this copy step.
 
-Register the package. The command reads the package identity, target profile,
+Register the cartridge. The command reads the cartridge identity, target profile,
 ABI, slot, and developer key ID from the manifest, validates them against the
-AMRN, and derives the package digest from the actual file. The delegation ID
+AMRN, and derives the cartridge digest from the actual file. The delegation ID
 and namespace are explicit because they are repository policy choices, not AMRN
 fields:
 
 ```bash
-"$DALI_CLI" metadata repository register-package \
+"$DALI_CLI" metadata repository register-cartridge \
   --input "$DALI_REPO" \
-  --package "$APP_PACKAGE" \
+  --cartridge "$APP_CARTRIDGE" \
   --manifest "$DALI_ROOT/apps/dali-app-relocation-fixture/dali.toml" \
   --delegation-id "developer-one-delegation" \
   --namespace "developer-one" \
@@ -369,7 +369,7 @@ Copy only after confirming that the target is the Dali SD card:
 
 ```bash
 sudo cp -a "$DALI_REPO/metadata" "$DALI_MOUNT/"
-sudo cp -a "$DALI_REPO/packages" "$DALI_MOUNT/"
+sudo cp -a "$DALI_REPO/amrns" "$DALI_MOUNT/"
 sudo cp "$DALI_REPO/bundle.manifest" "$DALI_MOUNT/"
 sync
 
@@ -383,10 +383,10 @@ find "$DALI_MOUNT" -maxdepth 3 -type f \
 ```bash
 cd "$DALI_ROOT"
 
-cargo build -p dali-kernel \
+cargo build -p dali-firmware --bin dali-f405 \
   --release \
   --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-relocation,repository-loader,storage-write \
+  --features stm32f405,usb-cdc,abi-relocation,repository-loader,storage-write \
   --target thumbv7em-none-eabihf
 ```
 
@@ -408,29 +408,29 @@ pkill -TERM -f '^probe-rs ' || true
 
 sudo "$DALI_CLI" device flash f405 \
   --transport probe \
-  --input "$DALI_ROOT/target/thumbv7em-none-eabihf/release/dali-kernel"
+  --input "$DALI_ROOT/target/thumbv7em-none-eabihf/release/dali-f405"
 ```
 
 ## 13. Expected hardware evidence
 
-For one valid package, the console should include:
+For one valid cartridge, the console should include:
 
 ```text
 [INFO][BOOT] [STORAGE] SDIO card initialized
 [INFO][BOOT] [STORAGE] Read block 0 successfully
 [INFO][BOOT] [LOADER] AMRN header and payload validated
 [INFO][SECURITY] [SECURITY] AMRN signature verified
-[INFO][BOOT] [LOADER] Loaded 1 application package(s) into declared slots
+[INFO][BOOT] [LOADER] Loaded 1 application cartridge(s) into declared slots
 [INFO][SECURITY] [SECURITY] Application lifecycle: Ready
 [INFO][SECURITY] [SECURITY] Active application context: Running
 ```
 
-Multi-package acceptance requires two real signed AMRN cartridges, two matching
-Targets records, and distinct valid slots. Copying one package twice is not a
-multi-package test. With two valid records, the expected loader line is:
+Multi-cartridge acceptance requires two real signed AMRN cartridges, two matching
+Targets records, and distinct valid slots. Copying one cartridge twice is not a
+multi-cartridge test. With two valid records, the expected loader line is:
 
 ```text
-[INFO][BOOT] [LOADER] Loaded 2 application package(s) into declared slots
+[INFO][BOOT] [LOADER] Loaded 2 application cartridge(s) into declared slots
 ```
 
 ## 14. Error interpretation
@@ -439,9 +439,9 @@ multi-package test. With two valid records, the expected loader line is:
 - `unauthorized`: the key exists but lacks permission for the role or target;
 - `revoked key`: the key is listed in revocation metadata;
 - `invalid signature`: the seed, key ID, or signed bytes do not match;
-- `invalid hash`: the package differs from the Targets digest;
-- `UnsupportedFormatVersion`: the SD card contains an incompatible package;
-- `Loaded 1 application package(s)`: one matching executable was discovered;
+- `invalid hash`: the cartridge differs from the Targets digest;
+- `UnsupportedFormatVersion`: the SD card contains an incompatible cartridge;
+- `Loaded 1 application cartridge(s)`: one matching executable was discovered;
   this is not an error.
 
 Compilation and host verification do not prove hardware acceptance. Record the

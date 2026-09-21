@@ -1,4 +1,4 @@
-//! Bounded streaming loader for AMRN format 3 relocation packages.
+//! Bounded streaming loader for AMRN format 3 relocation cartridges.
 
 use dali_amrn::{Crc32, v3};
 
@@ -14,33 +14,34 @@ use super::execution::LoadedApplication;
 /// Encoded size of one format-3 relocation entry.
 const RELOCATION_BYTES: usize = v3::RELOCATION_ENTRY_SIZE;
 
-/// Loads, validates, relocates, and prepares one format-3 package.
+/// Loads, validates, relocates, and prepares one format-3 cartridge.
 pub(crate) fn load_file<D>(
     file: AmrnFile<'_, D>,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<LoadedApplication, super::LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let header = read_header(&file)?;
-    let (header, contract, allocation) = parse_target_header(&header, slot_manager)?;
+    let (header, contract, allocation) = parse_target_header(&header, slot_manager, target)?;
     let relocation_offset = u32::try_from(v3::HEADER_SIZE)
         .ok()
         .and_then(|offset| offset.checked_add(header.code_size))
         .and_then(|offset| offset.checked_add(header.data_init_size))
-        .ok_or(super::LoaderError::V3RelocationPackage(
+        .ok_or(super::LoaderError::V3RelocationCartridge(
             v3::Error::InvalidPayload,
         ))?;
     if header.relocation_offset != relocation_offset {
-        return Err(super::LoaderError::V3RelocationPackage(
+        return Err(super::LoaderError::V3RelocationCartridge(
             v3::Error::InvalidPayload,
         ));
     }
-    let expected_length = package_length(header).ok_or(super::LoaderError::V3RelocationPackage(
-        v3::Error::InvalidPayload,
-    ))?;
+    let expected_length = cartridge_length(header).ok_or(
+        super::LoaderError::V3RelocationCartridge(v3::Error::InvalidPayload),
+    )?;
     if u64::from(file.length()) != u64::from(expected_length) {
-        return Err(super::LoaderError::V3RelocationPackage(
+        return Err(super::LoaderError::V3RelocationCartridge(
             v3::Error::InvalidPayload,
         ));
     }
@@ -49,14 +50,14 @@ where
     let entry_address = header
         .code_load_address
         .checked_add(header.execution_offset)
-        .ok_or(super::LoaderError::V3RelocationPackage(
+        .ok_or(super::LoaderError::V3RelocationCartridge(
             v3::Error::AddressOverflow,
         ))?;
     let stack_origin = header
         .data_load_address
         .checked_add(header.data_init_size)
         .and_then(|address| address.checked_add(header.data_zero_size))
-        .ok_or(super::LoaderError::V3RelocationPackage(
+        .ok_or(super::LoaderError::V3RelocationCartridge(
             v3::Error::AddressOverflow,
         ))?;
     let launch_frame = prepare_launch(entry_address, stack_origin, header.stack_size)?;
@@ -64,7 +65,7 @@ where
     Ok(LoadedApplication {
         entry_address,
         psp_top: stack_origin.checked_add(header.stack_size).ok_or(
-            super::LoaderError::V3RelocationPackage(v3::Error::AddressOverflow),
+            super::LoaderError::V3RelocationCartridge(v3::Error::AddressOverflow),
         )?,
         launch_frame,
         slot: allocation.slot(),
@@ -77,8 +78,8 @@ where
 fn parse_target_header(
     bytes: &[u8; v3::HEADER_SIZE],
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
+    target: &'static dali_targets::TargetProfile,
 ) -> Result<(v3::Header, v3::Contract, SlotAllocation), super::LoaderError> {
-    let target = crate::platform::TARGET_PROFILE;
     let isolation = target
         .memory
         .isolation
@@ -102,7 +103,7 @@ fn parse_target_header(
             Err(error) => last_error = error,
         }
     }
-    Err(super::LoaderError::V3RelocationPackage(last_error))
+    Err(super::LoaderError::V3RelocationCartridge(last_error))
 }
 
 /// Converts launch validation failures into format-3 loader errors.
@@ -113,10 +114,10 @@ fn prepare_launch(
 ) -> Result<LaunchFrame, super::LoaderError> {
     launch::prepare(entry_address, stack_origin, stack_size).map_err(|error| match error {
         launch::LaunchError::InvalidEntry => {
-            super::LoaderError::V3RelocationPackage(v3::Error::InvalidExecutionOffset)
+            super::LoaderError::V3RelocationCartridge(v3::Error::InvalidExecutionOffset)
         }
         launch::LaunchError::InvalidStack => {
-            super::LoaderError::V3RelocationPackage(v3::Error::RegionOverflow)
+            super::LoaderError::V3RelocationCartridge(v3::Error::RegionOverflow)
         }
     })
 }
@@ -131,8 +132,8 @@ where
     Ok(header)
 }
 
-/// Computes the encoded format-3 package length.
-fn package_length(header: v3::Header) -> Option<u32> {
+/// Computes the encoded format-3 cartridge length.
+fn cartridge_length(header: v3::Header) -> Option<u32> {
     u32::try_from(v3::HEADER_SIZE)
         .ok()?
         .checked_add(header.code_size)?
@@ -164,12 +165,12 @@ where
         super::read_exact(file, &mut entry).map_err(super::LoaderError::Filesystem)?;
         checksum.update(&entry);
         let relocation =
-            v3::decode_relocation(&entry).map_err(super::LoaderError::V3RelocationPackage)?;
+            v3::decode_relocation(&entry).map_err(super::LoaderError::V3RelocationCartridge)?;
         v3::validate_relocation(header, contract, relocation)
-            .map_err(super::LoaderError::V3RelocationPackage)?;
+            .map_err(super::LoaderError::V3RelocationCartridge)?;
     }
     if checksum.finish() != header.crc32 {
-        return Err(super::LoaderError::V3RelocationPackage(
+        return Err(super::LoaderError::V3RelocationCartridge(
             v3::Error::CrcMismatch,
         ));
     }
@@ -187,7 +188,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let mut remaining = usize::try_from(size)
-        .map_err(|_| super::LoaderError::V3RelocationPackage(v3::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::V3RelocationCartridge(v3::Error::InvalidPayload))?;
     while remaining > 0 {
         let chunk_size = remaining.min(chunk.len());
         super::read_exact(file, &mut chunk[..chunk_size])
@@ -198,7 +199,7 @@ where
     Ok(())
 }
 
-/// Copies package segments and applies validated relocations.
+/// Copies cartridge segments and applies validated relocations.
 fn copy_segments_and_relocate<D>(
     file: &AmrnFile<'_, D>,
     header: v3::Header,
@@ -214,7 +215,7 @@ where
     let zero_start = header
         .data_load_address
         .checked_add(header.data_init_size)
-        .ok_or(super::LoaderError::V3RelocationPackage(
+        .ok_or(super::LoaderError::V3RelocationCartridge(
             v3::Error::AddressOverflow,
         ))?;
     zero_segment(zero_start, header.data_zero_size)?;
@@ -236,9 +237,9 @@ where
     for _ in 0..header.relocation_count {
         super::read_exact(file, &mut entry).map_err(super::LoaderError::Filesystem)?;
         let relocation =
-            v3::decode_relocation(&entry).map_err(super::LoaderError::V3RelocationPackage)?;
+            v3::decode_relocation(&entry).map_err(super::LoaderError::V3RelocationCartridge)?;
         v3::apply(code, data, header, contract, &[relocation])
-            .map_err(super::LoaderError::V3RelocationPackage)?;
+            .map_err(super::LoaderError::V3RelocationCartridge)?;
     }
     Ok(())
 }
@@ -253,7 +254,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
     let mut remaining = usize::try_from(size)
-        .map_err(|_| super::LoaderError::V3RelocationPackage(v3::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::V3RelocationCartridge(v3::Error::InvalidPayload))?;
     let mut offset = 0usize;
     let mut chunk: Block = [0; BLOCK_SIZE];
     while remaining > 0 {
@@ -263,7 +264,7 @@ where
         let address = usize::try_from(destination)
             .ok()
             .and_then(|value| value.checked_add(offset))
-            .ok_or(super::LoaderError::V3RelocationPackage(
+            .ok_or(super::LoaderError::V3RelocationCartridge(
                 v3::Error::AddressOverflow,
             ))?;
         let target = unsafe {
@@ -280,7 +281,7 @@ where
 /// Returns a mutable view of one validated target segment.
 fn mutable_segment(address: u32, size: u32) -> Result<&'static mut [u8], super::LoaderError> {
     let length = usize::try_from(size)
-        .map_err(|_| super::LoaderError::V3RelocationPackage(v3::Error::InvalidPayload))?;
+        .map_err(|_| super::LoaderError::V3RelocationCartridge(v3::Error::InvalidPayload))?;
     let target = unsafe {
         // SAFETY: format validation proved the complete segment fits the selected SRAM region.
         core::slice::from_raw_parts_mut(address as *mut u8, length)

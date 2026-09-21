@@ -3,7 +3,7 @@
 ## Unit tests
 
 Command modules should test validation and formatting without hardware or
-external devices. Current inspection tests cover valid packages and trailing
+external devices. Current inspection tests cover valid cartridges and trailing
 data rejection.
 
 The `dali-device` crate tests discovery-record ordering, same-transport
@@ -27,7 +27,7 @@ cargo fmt --all -- --check
 
 ## Artifact checks
 
-The package workflow should build an application, create an AMRN artifact, and
+The cartridge workflow should build an application, create an AMRN artifact, and
 inspect that artifact with the installed dali executable.
 
 ## Hardware boundary

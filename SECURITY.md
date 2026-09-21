@@ -2,7 +2,7 @@
 
 Dali OS is an early-stage embedded platform. Security-sensitive reports are
 welcome. The baseline ABI v2 MVP is trusted native execution and does not
-provide sandboxing, memory isolation, secure boot, package authenticity,
+provide sandboxing, memory isolation, secure boot, cartridge authenticity,
 encryption, anti-rollback, or application fault isolation. A feature-gated ABI
 v3 single-application processor-side isolation path exists, but it is not a
 complete sandbox and does not cover DMA or multi-application isolation.
@@ -29,11 +29,11 @@ If private reporting is not available, contact the maintainer privately before m
 Reports are especially important for:
 
 - AMRN header parsing and bounds validation;
-- CRC32 and package loading;
+- CRC32 and cartridge loading;
 - raw pointer or MMIO operations;
 - memory layout and entry-point transfer;
 - SD-card and filesystem handling;
-- CI, release, and package-generation workflows;
+- CI, release, and cartridge-generation workflows;
 - any behavior that could compromise a connected device or actuator.
 
 The project security model and current non-guarantees are documented in [docs/security/README.md](docs/security/README.md).

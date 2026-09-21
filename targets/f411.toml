@@ -58,6 +58,7 @@ pin = 13
 
 [memory]
 flash = { origin = 0x0800_0000, length = 524_288 }
+firmware = { origin = 0x0800_0000, length = 524_288 }
 kernel_origin = 0x2000_0000
 kernel_length = 32_768
 application_origin = 0x2000_8000
@@ -74,5 +75,7 @@ active_high = false
 
 [usb]
 controller = "OTG_FS"
+vendor_id = 0x1209
+product_id = 0xDA11
 dm = { port = "PA", number = 11, alternate_function = 10, active_high = false }
 dp = { port = "PA", number = 12, alternate_function = 10, active_high = false }

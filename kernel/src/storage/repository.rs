@@ -1,4 +1,4 @@
-//! Board-agnostic repository metadata and package read contract.
+//! Board-agnostic repository metadata and cartridge read contract.
 
 /// Logical metadata document requested by the kernel loader.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -11,7 +11,7 @@ pub enum RepositoryDocument<'a> {
     Timestamp,
     /// Consistent metadata references.
     Snapshot,
-    /// Package target records.
+    /// Cartridge target records.
     Targets,
     /// Explicit revocation records.
     Revocations,
@@ -19,19 +19,19 @@ pub enum RepositoryDocument<'a> {
     Delegation(&'a str),
 }
 
-/// Width of a SHA-256 package digest in the repository contract.
+/// Width of a SHA-256 cartridge digest in the repository contract.
 pub const REPOSITORY_DIGEST_BYTES: usize = 32;
 
-/// Fixed-size package digest used for content-addressed repository reads.
+/// Fixed-size cartridge digest used for content-addressed repository reads.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct RepositoryPackageDigest(pub [u8; REPOSITORY_DIGEST_BYTES]);
+pub struct RepositoryCartridgeDigest(pub [u8; REPOSITORY_DIGEST_BYTES]);
 
-/// Chunk-streaming repository source consumed by the board-agnostic loader.
+/// Chunk-streaming logical artifact source consumed by the board-agnostic loader.
 ///
 /// The contract deliberately exposes no whole-document read operation. A
 /// storage adapter must deliver bytes through the caller-owned chunk, so the
 /// loader can choose its RAM budget independently from the filesystem backend.
-pub trait RepositoryStreamStorage {
+pub trait ArtifactSource {
     /// Adapter-specific storage failure type.
     type Error;
 
@@ -45,13 +45,16 @@ pub trait RepositoryStreamStorage {
     where
         F: FnMut(&[u8]) -> Result<(), Self::Error>;
 
-    /// Reads one package in caller-selected bounded chunks.
-    fn stream_package<F>(
+    /// Reads one cartridge in caller-selected bounded chunks.
+    fn stream_cartridge<F>(
         &mut self,
-        digest: RepositoryPackageDigest,
+        digest: RepositoryCartridgeDigest,
         chunk: &mut [u8],
         consumer: F,
     ) -> Result<u32, Self::Error>
     where
         F: FnMut(&[u8]) -> Result<(), Self::Error>;
 }
+
+/// Compatibility name for existing repository-loader integrations.
+pub use ArtifactSource as RepositoryStreamStorage;

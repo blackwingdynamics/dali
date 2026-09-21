@@ -16,7 +16,7 @@ dali-kernel/
 │   ├── f405.toml                 # Supported STM32F405 target metadata
 │   └── f411.toml                 # Generator-only board metadata
 ├── kernel/
-│   ├── Cargo.toml, build.rs
+│   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs                 # Hardware-independent core test surface
 │       ├── main.rs                # Kernel entry and bootstrap call
@@ -34,64 +34,43 @@ dali-kernel/
 │       │   │   └── svc.rs         # SVC dispatch and frame validation
 │       │   └── scheduling/        # Kernel-owned scheduler initialization boundary
 │       │       └── mod.rs         # Target-profile scheduler storage initialization
-│       ├── platform/mod.rs        # Platform facade and target entry points
-│       ├── platform/f405/          # F405-specific platform backend
-│       │   ├── mod.rs              # F405 target profile and IRQ bindings
-│       │   ├── board.rs            # Small F405 board backend facade
-│       │   ├── board/              # Board configuration and resource ownership
-│       │   │   ├── config.rs       # Target metadata and typed board aliases
-│       │   │   ├── resources.rs    # Board resources and ownership methods
-│       │   │   ├── initialization.rs # Singleton acquisition and setup
-│       │   │   ├── acceptance.rs   # Hardware acceptance probe logging
-│       │   │   ├── services.rs     # LED and delay services
-│       │   │   ├── input.rs        # Board-local input polling
-│       │   │   ├── scheduler.rs    # Board-local SysTick scheduler
-│       │   │   └── usb.rs          # USB FS resource ownership
-│       │   ├── drivers/            # F405 hardware driver adapters
-│       │   │   ├── mod.rs          # Platform driver exports
-│       │   │   ├── gpio.rs         # F405 GPIO adapter
-│       │   │   ├── interrupt.rs    # F405 EXTI adapter
-│       │   │   ├── uart.rs         # Bounded F405 UART adapter
-│       │   │   ├── spi.rs          # Bounded F405 SPI adapter
-│       │   │   ├── i2c.rs          # Bounded F405 I2C adapter
-│       │   │   ├── timeout.rs      # F405 polling timeout policy
-│       │   │   └── probe.rs        # F405 driver acceptance probe
-│       │   ├── sdio.rs             # F405 SDIO transport implementation
-│       │   ├── sdio_raw/           # F405 SDIO register transport
-│       │       ├── mod.rs          # DMA-backed raw block reader
-│       │       ├── init.rs         # Bounded SDIO card initialization
-│       │       ├── status.rs       # SDIO status and interrupt helpers
-│       │       └── write.rs        # Bounded CPU/FIFO block writes
-│       │   └── watchdog/            # F405 watchdog register adapter
-│       │       └── mod.rs          # IWDG and reset-cause implementation
+│       ├── platform/mod.rs         # Hardware-neutral platform facade
 │       ├── bootstrap/             # Categorized kernel startup orchestration
 │       │   ├── startup/           # Logging, boot banner, and watchdog setup
 │       │   ├── lifecycle/         # Storage status and heartbeat behavior
 │       │   ├── storage/           # Storage initialization and durable-artifact acceptance
-│       │   └── loading/           # Package validation and application launch handoff
+│       │   └── loading/           # Cartridge validation and application launch handoff
 │       ├── drivers/               # Hardware-neutral driver contracts/adapters
 │       ├── loader/mod.rs          # AMRN dispatch and ABI services
 │       ├── loader/repository/      # Repository chain, streaming selection, and tests
 │       │   ├── mod.rs              # Bounded chain and durable install
 │       │   ├── amrn.rs             # Streamed AMRN v5 validation
-│       │   ├── chain.rs            # Generic role capture and replay
-│       │   ├── discovery.rs        # Target package selection
-│       │   ├── io.rs               # Repository stream I/O helpers
-│       │   ├── streaming.rs        # Binary v2 selective target scan
-│       │   ├── trust.rs            # Root trust-anchor membership
-│       │   └── tests.rs            # Repository loader contract tests
+│       │   ├── chain/               # Repository chain capture, validation, and loading
+│       │   │   ├── mod.rs           # Chain module boundary
+│       │   │   ├── bundle.rs        # Bundle role handling
+│       │   │   ├── loading.rs       # Repository loading orchestration
+│       │   │   ├── roles.rs         # Role capture and replay
+│       │   │   ├── streaming.rs     # Selective target scan and streaming
+│       │   │   ├── types.rs         # Bounded parser workspace types
+│       │   │   └── validation.rs    # Chain validation
+│       │   ├── discovery.rs         # Target cartridge selection
+│       │   ├── installation.rs      # Durable installation coordination
+│       │   ├── io.rs                # Repository stream I/O helpers
+│       │   ├── streaming.rs         # Repository streaming primitives
+│       │   ├── trust.rs             # Root trust-anchor membership
+│       │   └── tests.rs             # Repository loader contract tests
 │       ├── loader/contract/       # Hardware-neutral streaming loader contract
 │       │   ├── mod.rs              # Streaming validation API
-│       │   ├── catalog.rs          # Package catalog policy
+│       │   ├── catalog.rs          # Cartridge catalog policy
 │       │   └── tests.rs            # Hardware-neutral contract tests
 │       ├── loader/pipeline/       # Responsibility-specific loading paths
 │       │   ├── mod.rs             # Pipeline ownership and shared loader imports
 │       │   ├── execution.rs       # Fixed-origin ABI execution path
 │       │   ├── relocation.rs      # Relocation application path
-│       │   ├── identity.rs        # Identity-aware package loading
-│       │   ├── discovery.rs       # Real root-package catalog and selection
+│       │   ├── identity.rs        # Identity-aware cartridge loading
+│       │   ├── discovery.rs       # Real root-cartridge catalog and selection
 │       │   ├── services.rs        # Required-service validation
-│       │   └── signed.rs          # Signed-package loading path
+│       │   └── signed.rs          # Signed-cartridge loading path
 │       ├── logging/              # Facade, RTT, USB CDC backend
 │       ├── runtime/              # Hardware-neutral runtime contracts
 │       │   ├── application/     # Lifecycle, active ownership, recovery policy
@@ -100,9 +79,10 @@ dali-kernel/
 │       └── storage/              # Filesystem and durable storage policy
 │           └── filesystem/       # FAT files, repository adapter, and streaming
 │               ├── repository.rs # FAT32/LFN RepositoryStreamStorage adapter
-│               └── multi.rs      # Bounded multi-package enumeration
+│               └── multi.rs      # Bounded multi-cartridge enumeration
 ├── apps/
 │   ├── dali-app-hello/
+│   ├── dali-app-dma-denial/          # Kernel-owned DMA denial fixture
 │   ├── dali-app-slot0-fixture/       # AMRN v4 relocation fixture for slot 0
 │   ├── dali-app-relocation-fixture/
 │   ├── dali-app-svc-rejections/
@@ -119,12 +99,20 @@ dali-kernel/
 │   ├── dali-app-fault-psp/
 │   └── dali-app-fault-usage/
 ├── crates/
+│   ├── dali-boards/              # Hardware backend crates and board implementations
+│   │   ├── src/lib.rs            # Hardware-neutral board-crate facade
+│   │   └── dali-board-stm32f405/ # Current extracted F405 backend
+│   │       ├── build.rs           # F405 linker artifact generation
+│   │       └── src/              # F405 board, drivers, SDIO, MPU, and watchdog
 │   ├── dali-amrn/                 # AMRN format contracts and validation
 │   ├── dali-crypto/               # no_std Ed25519 signing/verification primitives
 │   ├── dali-cli/                  # Installed `dali` CLI
 │   │   ├── src/main.rs
 │   │   ├── src/commands/           # Top-level dispatch and command domains
 │   │   └── templates/app/          # Generated application project files
+│   ├── dali-firmware/              # Private firmware composition and binaries
+│   │   ├── Cargo.toml, build.rs
+│   │   └── src/bin/dali-f405.rs
 │   ├── dali-device/               # Hardware-neutral device records
 │   ├── dali-driver-api/           # Hardware-neutral driver contracts and mocks
 │   ├── dali-metadata/             # Binary v2 metadata and trust-store contracts
@@ -135,6 +123,14 @@ dali-kernel/
 │   │   └── build/                 # Manifest loader, validation, and generators
 │   └── dali-usb/                  # Bounded USB delivery primitives
 ├── docs/
+│   ├── boards/                    # Board-local physical specifications and evidence
+│   │   ├── README.md
+│   │   └── stm32f405/
+│   │       ├── README.md
+│   │       ├── pinout-and-clocks.md
+│   │       ├── memory-map.md
+│   │       ├── hardware-evidence.md
+│   │       └── schematics.md
 │   ├── hardware/                   # Boards, memory, electrical, and acceptance docs
 │   │   ├── README.md
 │   │   ├── boards-and-memory.md
@@ -144,7 +140,7 @@ dali-kernel/
 │   ├── abi/                        # Categorized kernel-application ABI docs
 │   │   ├── README.md
 │   │   ├── fault-boundary.md, isolation-overview.md
-│   │   ├── memory-and-package-contract.md, mvp-and-safety.md
+│   │   ├── memory-and-cartridge-contract.md, mvp-and-safety.md
 │   │   └── runtime-foundations.md
 │   ├── amrn-format/                # Categorized AMRN format documentation
 │   │   ├── README.md
@@ -154,7 +150,7 @@ dali-kernel/
 │   ├── architecture/               # Categorized architecture and protocol docs
 │   │   ├── README.md
 │   │   ├── application-model.md, future-architecture.md
-│   │   ├── mvp-and-platform.md, packages-and-execution.md
+│   │   ├── mvp-and-platform.md, cartridges-and-execution.md
 │   │   ├── rfc-ustari-amrn-ipc.md, runtime-and-kernel.md
 │   │   ├── storage-and-repository.md, ustari_application_protocol.md
 │   │   └── vision-and-scope.md
@@ -174,7 +170,11 @@ dali-kernel/
 │   │   ├── 03-system-gui-and-launcher.md
 │   │   ├── 04-first-stage-bootloader.md
 │   │   ├── 05-interactive-shell-telemetry-and-control.md
-│   │   └── 06-documentation-quality-and-enterprise-readiness.md
+│   │   ├── 06-documentation-quality-and-enterprise-readiness.md
+│   │   ├── 07-codebase-refactoring-and-hardware-gates.md
+│   │   └── 08-universal-platform-architecture.md
+│   ├── assets/                      # Tracked documentation assets
+│   │   └── dali-logo.svg
 │   ├── security/
 │   │   ├── README.md
 │   │   ├── baseline-and-current-boundary.md
@@ -225,7 +225,7 @@ dali-kernel/
 │   ├── application-workflow/
 │   │   ├── README.md
 │   │   ├── overview-and-layout.md
-│   │   ├── build-package-and-inspect.md
+│   │   ├── build-cartridge-and-inspect.md
 │   │   ├── cli-install-and-deploy.md
 │   │   └── boundaries-and-troubleshooting.md
 │   ├── README.md                    # Documentation navigation index
@@ -242,7 +242,7 @@ dali-kernel/
 │   │   ├── decision-and-envelope.md
 │   │   ├── f405-streaming-profile.md
 │   │   └── migration-and-compatibility.md
-│   ├── package-distribution/      # Categorized package, trust, and acceptance docs
+│   ├── cartridge-distribution/      # Categorized cartridge, trust, and acceptance docs
 │   │   ├── README.md
 │   │   ├── acceptance-and-trust-updates.md, frozen-profile-decisions.md
 │   │   ├── goals-and-threat-model.md, keys-and-repository.md
@@ -252,12 +252,12 @@ dali-kernel/
 │   │   ├── README.md
 │   │   ├── evidence-boundary.md, f405-silicon.md, host.md
 │   │   ├── mvp-acceptance.md, requirements-and-evidence.md
-│   │   ├── signed-packages.md
+│   │   ├── signed-cartridges.md
 │   │   └── target.md
 │   ├── ustari-protocol/            # Categorized Ustari protocol documentation
 │   │   ├── README.md
 │   │   ├── acceptance-and-compatibility.md, frames-and-messages.md
-│   │   ├── implementation-phases.md, package-and-safety.md
+│   │   ├── implementation-phases.md, cartridge-and-safety.md
 │   │   ├── security-and-authorization.md, status-and-contract.md
 │   │   └── streaming-and-transport.md
 │   ├── file-structure/             # Categorized repository structure documentation

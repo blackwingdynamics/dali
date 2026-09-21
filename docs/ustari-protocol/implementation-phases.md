@@ -18,7 +18,7 @@ crates/dali-ustari/
 It remains `#![no_std]` and must not depend on a board, filesystem, kernel,
 USB, or host UI. Host transport and CLI integration remain outside the core.
 Crypto stays behind a narrow facade. Kernel integration connects transport,
-package, lifecycle, logging, and authorization services without moving board
+cartridge, lifecycle, logging, and authorization services without moving board
 MMIO or private-key custody into the protocol crate.
 
 ## 16. Implementation phases and evidence
@@ -49,7 +49,7 @@ Integrate USB CDC only after U1/U2. Add authenticated `PING`, `PONG`, `ACK`,
 `NACK`, and read-only telemetry. Record real F405 evidence separately from
 host codec tests.
 
-### U4 — Package delivery
+### U4 — Cartridge delivery
 
 Connect bounded transfer to AMRN, signatures, Trust Store policy,
 candidate/commit-marker activation, read-back, and rollback. Require real

@@ -80,7 +80,7 @@ servicing, SDIO, and Storage remain frozen.
    policy code.
 4. **Implement the F405 backend.** Add the SSD1306/SH1106 adapter behind the
    existing hardware-neutral I2C boundary. Keep all PAC/HAL ownership in
-   `kernel/src/platform/f405/` and use the already accepted bounded I2C
+   `crates/dali-boards/dali-board-stm32f405/` and use the already accepted bounded I2C
    timeout and recovery path. A missing or failed OLED must return a bounded
    error and must not stall boot or storage recovery.
 5. **Build the diagnostics console engine.** Define a bounded text-mode sink
@@ -128,7 +128,7 @@ quality work:
 ## Frozen boundaries
 
 - SDIO and Storage are frozen at the Known-Good baseline. Do not modify
-  `kernel/src/platform/f405/sdio_raw/`, `kernel/src/storage/`, or SDIO manifest
+  `crates/dali-boards/dali-board-stm32f405/`, `kernel/src/storage/`, or SDIO manifest
   limits while this roadmap is active.
 - USB CDC core servicing and polling loops are frozen.
 - ILI9341 and SPI display experiments are frozen.
@@ -220,7 +220,7 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 - [x] Record F405 GPIO output-toggle evidence with the F405 acceptance firmware.
 - [x] Record F405 GPIO input and interrupt evidence: grounding the PC13 input
   produced repeated `[DRIVER][EXTI] PC13 interrupt triggered` traces both with
-  the SD card absent and during a successful SDIO/package boot.
+  the SD card absent and during a successful SDIO/cartridge boot.
 
 ### Timers
 
@@ -248,7 +248,7 @@ atomic and mark an item `[x]` only when its stated evidence exists.
 - [x] Bind an F405 EXTI input resource to board-owned EXTI and SYSCFG state.
 - [x] Record F405 EXTI edge and pending-bit evidence: grounding the PC13 input
   produced repeated `[DRIVER][EXTI] PC13 interrupt triggered` traces both with
-  the SD card absent and during a successful SDIO/package boot.
+  the SD card absent and during a successful SDIO/cartridge boot.
 - [x] Run Slice 3 host tests, strict Clippy, and the production F405 build.
 
 ### UART

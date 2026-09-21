@@ -13,10 +13,12 @@ This file is the stable entry point and navigation index for these documents.
   responsibilities.
 - [Application model](application-model.md) — native application boundary and
   execution model.
-- [Packages and execution](packages-and-execution.md) — AMRN format, loading,
+- [Cartridges and execution](cartridges-and-execution.md) — AMRN format, loading,
   and execution.
 - [Storage and repository](storage-and-repository.md) — storage subsystem,
   repository boundaries, and multi-application policy.
+- [USB cartridge installation](usb-installation.md) — dedicated installer
+  channel, ownership, sequencing, and hardware evidence gates.
 - [Future architecture](future-architecture.md) — post-MVP architecture,
   isolation constraints, and principles.
 - [Ustari application protocol](ustari_application_protocol.md) — protocol

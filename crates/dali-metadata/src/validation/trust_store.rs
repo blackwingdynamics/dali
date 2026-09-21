@@ -1,8 +1,8 @@
-//! Validation for the package-free durable trust-store payload.
+//! Validation for the cartridge-free durable trust-store payload.
 
 use super::{MetadataError, validate_target_profile};
 
-/// Validates the package-free payload stored in a durable trust-store slot.
+/// Validates the cartridge-free payload stored in a durable trust-store slot.
 pub fn validate_trust_store_payload(
     metadata: &crate::TrustStorePayload,
 ) -> Result<(), MetadataError> {
@@ -23,7 +23,7 @@ pub fn validate_trust_store_payload(
     }
     for (index, file) in files.iter().enumerate() {
         let id = file.id.as_str().ok_or(MetadataError::InvalidBundle)?;
-        if file.kind == crate::BundleFileKind::Package
+        if file.kind == crate::BundleFileKind::Cartridge
             || file.length == 0
             || file.sha256.0 == [0; crate::SHA256_LENGTH]
             || files[..index]
@@ -76,6 +76,6 @@ fn kind_order(kind: crate::BundleFileKind) -> u8 {
         crate::BundleFileKind::Targets => 3,
         crate::BundleFileKind::Revocation => 4,
         crate::BundleFileKind::Delegation => 5,
-        crate::BundleFileKind::Package => 6,
+        crate::BundleFileKind::Cartridge => 6,
     }
 }

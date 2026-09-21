@@ -28,15 +28,15 @@ fn image() -> Image<'static> {
 }
 
 #[test]
-fn encodes_and_parses_legacy_isolation_package() {
+fn encodes_and_parses_legacy_isolation_cartridge() {
     let mut output = [0; HEADER_SIZE + CODE.len() + DATA.len()];
     let size = encode(image(), contract(), &mut output).unwrap();
-    let package = parse(&output[..size], contract()).unwrap();
-    assert_eq!(package.code, CODE);
-    assert_eq!(package.initialized_data, DATA);
-    assert_eq!(package.entry_address, CODE_ADDRESS);
-    assert_eq!(package.psp_stack_bottom, DATA_ADDRESS + 12);
-    assert_eq!(package.psp_stack_top, DATA_ADDRESS + 28);
+    let cartridge = parse(&output[..size], contract()).unwrap();
+    assert_eq!(cartridge.code, CODE);
+    assert_eq!(cartridge.initialized_data, DATA);
+    assert_eq!(cartridge.entry_address, CODE_ADDRESS);
+    assert_eq!(cartridge.psp_stack_bottom, DATA_ADDRESS + 12);
+    assert_eq!(cartridge.psp_stack_top, DATA_ADDRESS + 28);
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn rejects_data_region_overflow() {
 }
 
 #[test]
-fn rejects_trailing_package_bytes() {
+fn rejects_trailing_cartridge_bytes() {
     let mut output = [0; HEADER_SIZE + CODE.len() + DATA.len() + 1];
     let size = encode(image(), contract(), &mut output).unwrap();
     assert_eq!(

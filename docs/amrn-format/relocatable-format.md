@@ -1,4 +1,4 @@
-# Relocatable package contract (format version 3, feature-gated loader)
+# Relocatable cartridge contract (format version 3, feature-gated loader)
 
 Format version `3` is reserved for movable ABI v3 applications. The default
 kernel path does not accept it. The feature-gated kernel loader
@@ -24,7 +24,7 @@ relocation table:
 | `0x20` | code_load_address | 4 bytes | Selected slot code origin |
 | `0x24` | data_load_address | 4 bytes | Selected slot data origin |
 | `0x28` | execution_offset | 4 bytes | Word-aligned offset from code origin |
-| `0x2C` | relocation_offset | 4 bytes | Absolute package offset of the table |
+| `0x2C` | relocation_offset | 4 bytes | Absolute cartridge offset of the table |
 | `0x30` | relocation_count | 4 bytes | Number of 16-byte entries |
 | `0x34` | relocation_entry_size | 2 bytes | Value is `16` |
 | `0x36` | reserved | 2 bytes | Must be zero |
@@ -55,14 +55,14 @@ any table that is truncated or not at the canonical payload end.
 
 On 2026-08-17, an STM32F405RGT6 was flashed through a Pico CMSIS-DAP probe
 with the kernel's explicit `abi-relocation` feature. The SD card contained
-the standalone relocation fixture package. The USB CDC console reported:
+the standalone relocation fixture cartridge. The USB CDC console reported:
 
 ```text
 [INFO][LOADER] AMRN header and payload validated
 [INFO][APP] Relocation fixture
 ```
 
-This verifies the feature-gated format 3 stream, package validation, and
+This verifies the feature-gated format 3 stream, cartridge validation, and
 application entry path on the reference hardware. The fixture later executed
 with a non-zero relocation delta in the manifest-declared second slot. Runtime
 slot reservation exists for the single loaded application. The feature-gated

@@ -1,22 +1,33 @@
 //! Storage initialization and AMRN loading policy.
 
+#[cfg(feature = "sdio")]
 use super::super::StorageRuntime;
 use super::super::lifecycle::status;
+use crate::platform;
+#[cfg(feature = "sdio")]
 use crate::{
     drivers::{BLOCK_SIZE, Block, StorageError},
-    logging, platform,
+    logging,
 };
 
+#[cfg(feature = "sdio")]
 use super::recovery::{
     BOOT_RETRY_LOG_INTERVAL, initialize_with_recovery, read_block_with_recovery,
 };
 
-#[cfg(not(feature = "storage-write"))]
+#[cfg(all(feature = "sdio", not(feature = "storage-write")))]
 use crate::drivers::BlockDeviceAdapter;
 
 #[cfg(feature = "sdio")]
 /// Performs the `initialize` operation for this subsystem.
-pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -> StorageRuntime {
+pub fn initialize<B>(
+    board: &mut platform::Platform<B>,
+    boot_mode: status::BootMode,
+) -> StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     // Keep the watchdog service available in Safe Mode so recovery remains
     // stable after a watchdog reset instead of entering another reset loop.
     super::super::startup::install_watchdog(board);
@@ -26,6 +37,15 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
             format_args!("[RECOVERY] Safe Mode active; application loading skipped"),
         );
         return StorageRuntime::from_status(status::StorageStatus::SafeMode);
+    }
+
+    #[cfg(all(feature = "artifact-flash", feature = "abi-current"))]
+    if let Some(status) = super::super::loading::try_load_flash(board) {
+        logging::info(
+            logging::BOOT_SUBSYSTEM,
+            format_args!("[STORAGE] Artifact Flash boot attempt completed"),
+        );
+        return StorageRuntime::from_status(status);
     }
 
     let Some(mut reader) = board.take_sdio_reader() else {
@@ -48,18 +68,16 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
             StorageError::NotReady | StorageError::Timeout | StorageError::Transport => {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
-                    format_args!(
-                        "[STORAGE] Storage transport unavailable; entering safe recovery loop"
-                    ),
+                    format_args!("[STORAGE] No SD card available; continuing without cartridge"),
                 );
-                StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
+                StorageRuntime::with_recovery_reader(status::StorageStatus::Idle, reader)
             }
             StorageError::CardRemoved => {
                 logging::info(
                     logging::BOOT_SUBSYSTEM,
-                    format_args!("[STORAGE] Card removed; entering safe recovery loop"),
+                    format_args!("[STORAGE] No SD card available; continuing without cartridge"),
                 );
-                StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
+                StorageRuntime::with_recovery_reader(status::StorageStatus::Idle, reader)
             }
             error => {
                 logging::error(
@@ -71,6 +89,19 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
         };
     }
 
+    load_initialized_reader(reader, board)
+}
+
+#[cfg(feature = "sdio")]
+/// Loads a cartridge from a reader that has completed SDIO initialization.
+pub(super) fn load_initialized_reader<B>(
+    mut reader: B::StorageReader,
+    board: &mut platform::Platform<B>,
+) -> StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     logging::info(
         logging::BOOT_SUBSYSTEM,
         format_args!("[STORAGE] SDIO card initialized"),
@@ -78,8 +109,8 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
 
     #[cfg(feature = "abi-current")]
     let mut slot_manager = match crate::runtime::memory::slots::SlotManager::new(
-        platform::MEMORY_PROFILE
-            .isolation
+        platform::memory_profile()
+            .and_then(|memory| memory.isolation)
             .map(|isolation| isolation.slots)
             .unwrap_or(&[]),
     ) {
@@ -145,6 +176,17 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
                             crate::storage::durable::RecoveryDecision::DiscardPrepared,
                         )
                     }
+                    Err(super::acceptance::ArtifactTestError::CommitJournal(
+                        crate::storage::durable::JournalError::InvalidLength,
+                    )) => {
+                        logging::warn(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[RECOVERY] Invalid commit journal length; rebuilding provisioned test state"
+                            ),
+                        );
+                        super::acceptance::JournalRecovery::Missing
+                    }
                     Err(error) => {
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
@@ -203,7 +245,7 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
                         "[STORAGE] Trust-store artifact write/flush/read-back test passed"
                     ),
                 );
-                StorageRuntime::from_status(super::super::loading::load(
+                let status = super::super::loading::load(
                     &device,
                     board,
                     committed_generation,
@@ -211,25 +253,37 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
                     &mut slot_manager,
                     #[cfg(feature = "abi-mpu")]
                     &mut context_owner,
-                ))
+                );
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[LOADER] Cartridge loading returned: {:?}", status),
+                );
+                StorageRuntime::from_status(status)
             }
             #[cfg(not(feature = "storage-write"))]
-            StorageRuntime::from_status(super::super::loading::load(
-                BlockDeviceAdapter::new(reader),
-                board,
-                None,
-                #[cfg(feature = "abi-current")]
-                &mut slot_manager,
-                #[cfg(feature = "abi-mpu")]
-                &mut context_owner,
-            ))
+            {
+                let status = super::super::loading::load(
+                    BlockDeviceAdapter::new(reader),
+                    board,
+                    None,
+                    #[cfg(feature = "abi-current")]
+                    &mut slot_manager,
+                    #[cfg(feature = "abi-mpu")]
+                    &mut context_owner,
+                );
+                logging::info(
+                    logging::BOOT_SUBSYSTEM,
+                    format_args!("[LOADER] Cartridge loading returned: {:?}", status),
+                );
+                StorageRuntime::from_status(status)
+            }
         }
         Err(StorageError::CardRemoved | StorageError::NotReady | StorageError::Transport) => {
             logging::info(
                 logging::BOOT_SUBSYSTEM,
-                format_args!("[STORAGE] Storage read unavailable; entering safe recovery loop"),
+                format_args!("[STORAGE] No SD card available; continuing without cartridge"),
             );
-            StorageRuntime::with_recovery_reader(status::StorageStatus::Removed, reader)
+            StorageRuntime::with_recovery_reader(status::StorageStatus::Idle, reader)
         }
         Err(error) => {
             logging::error(
@@ -242,9 +296,13 @@ pub fn initialize(board: &mut platform::Platform, boot_mode: status::BootMode) -
 }
 
 #[cfg(not(feature = "sdio"))]
-pub fn initialize(
-    _board: &mut platform::Platform,
+pub fn initialize<B>(
+    _board: &mut platform::Platform<B>,
     _boot_mode: status::BootMode,
-) -> super::StorageRuntime {
+) -> super::StorageRuntime<B>
+where
+    B: dali_kernel_api::BoardBackend,
+    B::Watchdog: dali_kernel_api::WatchdogBackend,
+{
     super::StorageRuntime::from_status(status::StorageStatus::NotDetected)
 }

@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-    BoundedText, DelegationMetadata, KeyId, MetadataHeader, MetadataRole, PackageId, PublicKey,
-    RoleDefinition, RoleKey, Sha256Digest, TargetPackage, TargetsMetadata,
+    BoundedText, CartridgeId, DelegationMetadata, KeyId, MetadataHeader, MetadataRole, PublicKey,
+    RoleDefinition, RoleKey, Sha256Digest, TargetCartridge, TargetsMetadata,
 };
 
 fn header(role: MetadataRole) -> MetadataHeader {
@@ -14,9 +14,9 @@ fn header(role: MetadataRole) -> MetadataHeader {
 fn text<const N: usize>(value: &str) -> BoundedText<N> {
     BoundedText::new(value).expect("test text fits")
 }
-fn target_package(delegation_id: &str) -> TargetPackage {
-    TargetPackage {
-        package_id: PackageId([1; crate::KEY_ID_LENGTH]),
+fn target_cartridge(delegation_id: &str) -> TargetCartridge {
+    TargetCartridge {
+        cartridge_id: CartridgeId([1; crate::KEY_ID_LENGTH]),
         namespace: text("developer/app"),
         developer_id: text("developer"),
         delegation_id: text(delegation_id),
@@ -24,7 +24,7 @@ fn target_package(delegation_id: &str) -> TargetPackage {
         target_profile: text("f405"),
         amrn_format: 5,
         abi_version: 3,
-        package_version: text("0.1.0"),
+        cartridge_version: text("0.1.0"),
         minimum_kernel_version: text("0.1.0"),
         length: 128,
         sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
@@ -130,25 +130,25 @@ fn rejects_a_role_reference_to_an_unknown_key() {
 }
 
 #[test]
-fn validates_a_target_package_against_its_delegation() {
+fn validates_a_target_cartridge_against_its_delegation() {
     let metadata = TargetsMetadata {
         header: header(MetadataRole::Targets),
         delegations: [text("developer"); crate::MAX_DELEGATION_SCOPES],
         delegation_count: 1,
-        packages: [target_package("developer"); crate::MAX_TARGET_RECORDS],
-        package_count: 1,
+        cartridges: [target_cartridge("developer"); crate::MAX_TARGET_RECORDS],
+        cartridge_count: 1,
     };
     assert_eq!(validate_targets_metadata(&metadata), Ok(()));
 }
 
 #[test]
-fn rejects_a_target_package_with_an_unknown_delegation() {
+fn rejects_a_target_cartridge_with_an_unknown_delegation() {
     let metadata = TargetsMetadata {
         header: header(MetadataRole::Targets),
         delegations: [text("other"); crate::MAX_DELEGATION_SCOPES],
         delegation_count: 1,
-        packages: [target_package("developer"); crate::MAX_TARGET_RECORDS],
-        package_count: 1,
+        cartridges: [target_cartridge("developer"); crate::MAX_TARGET_RECORDS],
+        cartridge_count: 1,
     };
     assert_eq!(
         validate_targets_metadata(&metadata),

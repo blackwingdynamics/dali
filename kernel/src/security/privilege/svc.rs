@@ -8,30 +8,9 @@ use crate::logging;
 use crate::security::fault::{self, FaultKind, FaultRecord};
 use dali_sdk::svc::{ExceptionFrame, ServiceId, ServiceStatus};
 
-#[unsafe(export_name = "SVCall")]
-#[unsafe(naked)]
-/// Naked SVC entry wrapper for the application service gateway.
-unsafe extern "C" fn svcall_handler() {
-    // SAFETY: The wrapper preserves the application register used as scratch,
-    // selects the hardware-stacked frame before changing MSP, and restores the
-    // original EXC_RETURN before returning to the processor.
-    core::arch::naked_asm!(
-        "tst lr, #4",
-        "ite eq",
-        "mrseq r0, msp",
-        "mrsne r0, psp",
-        "push {{r4, lr}}",
-        "mov r4, lr",
-        "mov r1, r4",
-        "bl {handler}",
-        "pop {{r4, lr}}",
-        "bx lr",
-        handler = sym handle_svc,
-    );
-}
-
 /// Validates an SVC frame and dispatches the requested service.
-fn handle_svc(frame_address: u32, exception_return: u32) {
+#[unsafe(export_name = "dali_kernel_handle_svc")]
+pub(crate) extern "C" fn handle_svc(frame_address: u32, exception_return: u32) {
     if !valid_exception_return(exception_return) {
         fault::report(FaultRecord::without_frame(
             FaultKind::InvalidExceptionReturn,
@@ -41,7 +20,7 @@ fn handle_svc(frame_address: u32, exception_return: u32) {
     }
     let frame_address = frame_address as usize;
     let frame_size = core::mem::size_of::<ExceptionFrame>();
-    let memory = match crate::platform::MEMORY_PROFILE.isolation {
+    let memory = match crate::platform::memory_profile().and_then(|profile| profile.isolation) {
         Some(memory) => memory,
         None => return,
     };
@@ -121,7 +100,7 @@ fn dispatch_invalid_psp(slot: dali_targets::IsolationSlot) -> ServiceStatus {
         // SAFETY: This path is compiled only for the non-production fixture
         // kernel. The deliberately invalid value tests exception-entry fault
         // handling; production builds do not expose this service.
-        cortex_m::register::psp::write(invalid_psp);
+        let _ = crate::platform::set_process_stack_pointer(invalid_psp);
     }
     ServiceStatus::accepted()
 }

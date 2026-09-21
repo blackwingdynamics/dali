@@ -47,8 +47,8 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
         header: header(MetadataRole::Targets),
         delegations: [BoundedText::default(); dali_metadata::MAX_DELEGATION_SCOPES],
         delegation_count: 0,
-        packages: [dali_metadata::TargetPackage::default(); dali_metadata::MAX_TARGET_RECORDS],
-        package_count: 0,
+        cartridges: [dali_metadata::TargetCartridge::default(); dali_metadata::MAX_TARGET_RECORDS],
+        cartridge_count: 0,
     };
     let revocations = RevocationMetadata {
         header: header(MetadataRole::Revocation),
@@ -111,8 +111,8 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     let delegations = metadata.join(common::DELEGATIONS_DIRECTORY);
     fs::create_dir_all(&delegations)
         .map_err(|error| format!("cannot create repository: {error}"))?;
-    fs::create_dir_all(output.join("packages"))
-        .map_err(|error| format!("cannot create packages directory: {error}"))?;
+    fs::create_dir_all(output.join(common::CARTRIDGES_DIRECTORY))
+        .map_err(|error| format!("cannot create cartridges directory: {error}"))?;
     common::write_new(
         &common::root_path(&output),
         &common::sign_binary(MetadataRole::Root, &root_body, &root_seed, role_ids[0])?,

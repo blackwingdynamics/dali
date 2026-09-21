@@ -1,5 +1,7 @@
 //! Bounded FAT read operations for kernel-owned artifacts.
 
+use core::ops::ControlFlow;
+
 use crate::drivers::StorageError;
 use embedded_sdmmc::{Error, Mode, RawFile, VolumeIdx, VolumeManager};
 
@@ -53,12 +55,12 @@ where
     let manager = VolumeManager::new(device, KernelTimeSource);
     let volume = manager.open_volume(VolumeIdx(0))?;
     let root = manager.open_root_dir(volume.to_raw_volume())?;
-    let first = match manager.open_dir(root, first_directory) {
+    let first = match open_existing_directory(&manager, root, first_directory) {
         Ok(directory) => directory,
         Err(error) => return close_directories(&manager, [root, root, root], 1, Err(error)),
     };
     let (directory, directory_count) = match second_directory {
-        Some(name) => match manager.open_dir(first, name) {
+        Some(name) => match open_existing_directory(&manager, first, name) {
             Ok(directory) => (directory, 3),
             Err(error) => return close_directories(&manager, [root, first, first], 2, Err(error)),
         },
@@ -85,6 +87,13 @@ where
     if chunk.is_empty() {
         return Err(Error::InvalidOffset);
     }
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!(
+            "[STORAGE] Opening repository file; requested name length={}",
+            file_name.len()
+        ),
+    );
     let manager = VolumeManager::new(device, KernelTimeSource);
     let volume = manager.open_volume(VolumeIdx(0))?;
     let root = manager.open_root_dir(volume.to_raw_volume())?;
@@ -113,7 +122,7 @@ fn read_named_file<D>(
 where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
 {
-    let file = manager.open_long_name_file_in_dir(directory, file_name, Mode::ReadOnly)?;
+    let file = open_existing_file(manager, directory, file_name)?;
     let length = match manager.file_length(file) {
         Ok(length) => length,
         Err(error) => return close_file_with_error(manager, file, Err(error)),
@@ -129,6 +138,72 @@ where
     close_file_with_error(manager, file, result)
 }
 
+/// Opens a directory by its long FAT name or its directory-entry alias.
+pub(crate) fn open_existing_directory<D>(
+    manager: &FilesystemManager<D>,
+    parent: embedded_sdmmc::RawDirectory,
+    directory_name: &str,
+) -> Result<embedded_sdmmc::RawDirectory, Error<StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    let mut short_name = None;
+    super::with_repository_lfn_buffer(|lfn_buffer| {
+        manager.iterate_dir_lfn(parent, lfn_buffer, |entry, long_name| {
+            if long_name == Some(directory_name) {
+                short_name = Some(entry.name);
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        })
+    })?;
+    if let Some(short_name) = short_name {
+        return manager.open_dir(parent, short_name);
+    }
+    manager.open_dir(parent, directory_name)
+}
+
+/// Opens a repository file without placing the large FAT LFN buffer on the boot stack.
+pub(crate) fn open_existing_file<D>(
+    manager: &FilesystemManager<D>,
+    directory: embedded_sdmmc::RawDirectory,
+    file_name: &str,
+) -> Result<RawFile, Error<StorageError>>
+where
+    D: embedded_sdmmc::BlockDevice<Error = StorageError>,
+{
+    if file_name.len() <= super::FAT_SHORT_NAME_MAX_BYTES {
+        return manager.open_file_in_dir(directory, file_name, Mode::ReadOnly);
+    }
+    match manager.open_long_name_file_in_dir(directory, file_name, Mode::ReadOnly) {
+        Ok(file) => return Ok(file),
+        Err(Error::FilenameError(embedded_sdmmc::FilenameError::NameTooLong)) => {}
+        Err(error) => return Err(error),
+    }
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[STORAGE] Resolving long FAT name through directory LFN"),
+    );
+    let mut short_name = None;
+    super::with_repository_lfn_buffer(|lfn_buffer| {
+        manager.iterate_dir_lfn(directory, lfn_buffer, |entry, long_name| {
+            if long_name == Some(file_name) {
+                short_name = Some(entry.name);
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
+        })
+    })?;
+    let short_name = short_name.ok_or(Error::NotFound)?;
+    crate::logging::info(
+        crate::logging::BOOT_SUBSYSTEM,
+        format_args!("[STORAGE] FAT LFN alias found; opening short entry"),
+    );
+    manager.open_file_in_dir(directory, short_name, Mode::ReadOnly)
+}
+
 /// Performs the `stream_named_file` operation for this subsystem.
 fn stream_named_file<D, F>(
     manager: &FilesystemManager<D>,
@@ -142,7 +217,7 @@ where
     D: embedded_sdmmc::BlockDevice<Error = StorageError>,
     F: FnMut(&[u8]) -> Result<(), Error<StorageError>>,
 {
-    let file = manager.open_long_name_file_in_dir(directory, file_name, Mode::ReadOnly)?;
+    let file = open_existing_file(manager, directory, file_name)?;
     let length = match manager.file_length(file) {
         Ok(length) => length,
         Err(error) => return close_file_with_error(manager, file, Err(error)),

@@ -12,7 +12,7 @@ boundary without a separately approved architecture decision.
 - Specify display, input, power, and recovery capabilities before selecting a
   hardware backend.
 - Design a Dali BIOS presentation layer for boot status, storage status,
-  package selection, diagnostics, and Safe Mode.
+  cartridge selection, diagnostics, and Safe Mode.
 - Keep launcher code out of privileged kernel policy and application memory.
 - Add a bounded event queue and failure behavior before any UI implementation.
 - Define accessibility, headless operation, and serial-console fallback.

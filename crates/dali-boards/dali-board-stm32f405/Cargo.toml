@@ -1,0 +1,49 @@
+[package]
+name = "dali-board-stm32f405"
+version = "0.1.0-alpha.2"
+edition = "2024"
+publish = true
+links = "dali_board_stm32f405"
+description = "Dali OS backend for STM32F405 boards"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+dali-kernel-api = { path = "../../dali-kernel-api" }
+dali-amrn = { path = "../../dali-amrn" }
+dali-driver-api = { path = "../../dali-driver-api" }
+dali-usb = { path = "../../dali-usb" }
+dali-targets = { path = "../../dali-targets" }
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+critical-section = "1.2"
+rtt-target = "0.6"
+usb-device = { version = "=0.3.2", optional = true }
+usbd-serial = { version = "=0.2.2", optional = true }
+fugit = "=0.3.9"
+stm32f4xx-hal = { version = "0.20", default-features = false, features = ["stm32f405", "sdio", "sdio-host"] }
+
+[build-dependencies]
+dali-targets = { path = "../../dali-targets" }
+
+[features]
+watchdog-feed-failure-test = []
+storage-write = ["dali-kernel-api/storage-write"]
+board-stm32f405-sd = ["sdio"]
+sdio = ["stm32f4xx-hal/sdio", "stm32f4xx-hal/sdio-host"]
+abi-current = []
+abi-mpu = []
+abi-context-switch = ["dali-kernel-api/abi-context-switch"]
+driver-hardware-test = ["dali-kernel-api/driver-hardware-test"]
+usb-cdc = [
+    "dali-kernel-api/usb-cdc",
+    "dep:usb-device",
+    "dep:usbd-serial",
+    "stm32f4xx-hal/otg-fs",
+    "stm32f4xx-hal/usb_fs",
+]
+usb-install = ["usb-cdc", "dali-kernel-api/usb-install"]
+f405-serial-spi = []
+display-oled = []
+dma-test-fixture = []
+
+[lints]
+workspace = true

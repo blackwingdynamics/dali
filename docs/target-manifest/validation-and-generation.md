@@ -13,3 +13,17 @@ The scaffold command creates a `.rs.template` and a board review document. It
 renders the manifest values as named constants, but it does not register or
 compile a backend automatically. Review the generated mapping before adding a
 module to the platform facade.
+
+The selected board backend linker-generation step reads
+`DALI_TARGET_PROFILE` when it is set. If exactly one application-supported
+profile belongs to that backend, it may be omitted; if multiple profiles
+belong to the backend, the build fails until the profile is set explicitly.
+The backend build script owns the generated `memory.x`; the kernel does not
+generate or select linker memory regions. The firmware composition validates
+that the selected profile's backend feature is enabled and that its backend
+crate exports the linker artifact before compiling the binary.
+
+The generated target module also exposes `SUPPORTED_BACKENDS`, a deduplicated
+list of backend identifiers from the repository manifests. Build and isolation
+checks must consume this registry or the selected profile's `backend` field;
+they must not maintain a second board list in build scripts.

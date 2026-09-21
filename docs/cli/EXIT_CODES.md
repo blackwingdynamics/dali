@@ -5,7 +5,7 @@
 | Code | Meaning |
 | ---: | --- |
 | 0 | The command completed successfully. |
-| 1 | The command failed because of invalid arguments, input, package data, or host I/O. |
+| 1 | The command failed because of invalid arguments, input, cartridge data, or host I/O. |
 
 The current CLI uses a single non-zero failure code. More granular codes
 require a documented compatibility decision before implementation.

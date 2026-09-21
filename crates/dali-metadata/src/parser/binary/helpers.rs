@@ -12,7 +12,7 @@ pub(crate) const fn bundle_kind_number(value: BundleFileKind) -> u8 {
         BundleFileKind::Targets => 4,
         BundleFileKind::Delegation => 5,
         BundleFileKind::Revocation => 6,
-        BundleFileKind::Package => 7,
+        BundleFileKind::Cartridge => 7,
     }
 }
 
@@ -24,7 +24,7 @@ pub(crate) const fn bundle_kind_from_number(value: u8) -> Option<BundleFileKind>
         4 => Some(BundleFileKind::Targets),
         5 => Some(BundleFileKind::Delegation),
         6 => Some(BundleFileKind::Revocation),
-        7 => Some(BundleFileKind::Package),
+        7 => Some(BundleFileKind::Cartridge),
         _ => None,
     }
 }

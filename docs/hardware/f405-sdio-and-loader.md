@@ -1,5 +1,10 @@
 # Current MVP SDIO board
 
+The canonical F405 board identity, pinout, wiring, clocks, and memory summary
+is maintained in [the board documentation](../boards/stm32f405/README.md).
+This page retains the SDIO and repository-loader implementation contract and
+its evidence.
+
 - Board: WeAct Studio STM32F405RGT6 Core Board, 64-pin
 - MCU: STM32F405RGT6
 - HSE: 8 MHz
@@ -18,7 +23,8 @@
 | SDIO data 2 | PC10 |
 | SDIO data 3 | PC11 |
 
-The F405 board is selected with the `board-stm32f405-sd` Cargo feature. Its
+The F405 board is selected with the private firmware composition's
+`stm32f405` Cargo feature. Its
 SDIO pin tuple is owned by the board backend and is consumed by the storage
 subsystem. The current F405 backend uses HAL card initialization and a
 board-local DMA2 Stream 3, Channel 4 receive path with an aligned word buffer
@@ -45,7 +51,7 @@ On 2026-08-21, the feature-gated `repository-loader` F405 release profile was
 flashed with a signed Binary v2 bundle prepared by
 `scripts/prepare-f405-binary-v2-sd.sh`. The board initialized SDIO, read the
 repository, verified the AMRN header, payload, and signature, loaded one
-manifest-declared package into slot 1, and executed the relocation fixture.
+manifest-declared cartridge into slot 1, and executed the relocation fixture.
 This is development-profile hardware evidence for the configured release
 anchor. It does not establish production key custody, Secure Boot, DMA
 isolation, revocation rejection on target, or interrupted-write recovery.

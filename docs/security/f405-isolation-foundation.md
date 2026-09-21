@@ -22,12 +22,12 @@ complete fault isolation, arbitrary DMA-controller isolation, confidentiality,
 or pre-reset kernel-image authenticity.
 The no-frame result is a handler/recovery-boundary trace rather than a complete
 automatic restart or rollback. The current policy requires a manual reset
-after application termination, keeps the read-only package boundary
+after application termination, keeps the read-only cartridge boundary
 rollback-free, and arms a watchdog before opaque SDIO initialization. After
 transport initialization returns, the watchdog is serviced only by the kernel
 heartbeat, scheduler tick, or a bounded valid-progress hook. A watchdog reset
 now selects Safe Mode before
-storage/package loading, and F405 hardware evidence confirms the watchdog
+storage/cartridge loading, and F405 hardware evidence confirms the watchdog
 reset log, recovery transition, skipped application loading, and return to the
 kernel heartbeat. The F405 test-only no-feed path has also been hardware-tested;
 cross-target feed-failure semantics remain tracked separately. The

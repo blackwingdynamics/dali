@@ -1,5 +1,10 @@
 # Recorded F405 hardware evidence
 
+Board identity, pinout, wiring, clocks, and memory facts are canonical in
+[the STM32F405 board documentation](../boards/stm32f405/README.md). This file
+retains the historical execution records, expected markers, observed traces,
+and evidence status for those facts.
+
 The following tests have been executed on the STM32F405RGT6 board with a
 Raspberry Pi Pico 2 CMSIS-DAP probe and USB CDC console. These records are
 evidence of the listed behavior only; they do not claim arbitrary
@@ -25,18 +30,158 @@ Limitations: Aggregate entries must not be generalized beyond their quoted behav
 
 The procedure-specific records in [`host.md`](host.md),
 [`../mvp-acceptance/recorded-evidence.md`](../mvp-acceptance/recorded-evidence.md),
-and [`signed-packages.md`](signed-packages.md) remain the source for
+and [`signed-cartridges.md`](signed-cartridges.md) remain the source for
 run-specific metadata and status.
 
 ## Boot, storage, and application path
 
+### Repeated MVP reboot stability — 2026-09-21
+
+The already-installed F405 MVP image from source revision `ef39ddb` was
+restarted five times without reflashing. The board was reset through an
+ST-LINK/V3SET SWD probe, and the target output was captured through the
+probe-rs RTT attachment. The SD card remained inserted and contained the
+known Binary v2 repository and AMRN cartridge.
+
+Each reset completed the same boot path: system initialization, SDIO
+initialization, repository loading, AMRN validation and signature
+verification, application slot loading, and transition to the Running state.
+Each run produced exactly one application marker:
+
+```text
+[INFO][SECURITY] [SECURITY] Active application context: Running
+[INFO][APP] Hello World from AMRN
+```
+
+Result: **PASS — 5/5 repeated reset cycles**. No `HardFault`, `BusFault`,
+`Watchdog`, panic, exception, or storage recovery fault was observed in the
+firmware output. This is physical F405 evidence for repeatable reboot and
+AMRN relaunch of the current MVP image.
+
+```text
+Date: 2026-09-21
+Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Probe: ST-LINK/V3SET over SWD
+Firmware revision: ef39ddb
+Flash operation: None during the five-cycle run; existing image was reused
+Storage: Inserted FAT32 SD card with the known Binary v2 repository and AMRN
+Verification method: Five reset and RTT-capture cycles
+Observed result: 5/5 Running states and 5/5 `Hello World from AMRN` markers
+Limitations: This does not prove power-loss recovery, USB CDC enumeration, or
+  AMRN installation into the Flash artifact region.
+```
+
+### Latest F405 signed-cartridge regression — 2026-08-29
+
+The release F405 image built from source revision `0cfa1dd` was flashed with
+the Raspberry Pi Pico 2 CMSIS-DAP/SWD probe at 1000 kHz. The board's USB CDC
+console was opened using the path reported by `dali device list`. The SD card
+contained Binary v2 generation `version=1`, `sequence=2`, `slot=B`, with the
+current 329-byte AMRN cartridge.
+
+The target reported `Reset cause: Software`, initialized SDIO, loaded the
+Root, Bundle, Timestamp, Snapshot, and Revocations roles, reconstructed trust
+state, verified the AMRN signature, and loaded slot 0 with code at
+`0x20008000` and data at `0x2000C000`. The observed application output was
+exactly one:
+
+```text
+[INFO][APP] Hello World from AMRN
+```
+
+Result: passed for this F405 boot, Binary v2 repository, signed-cartridge,
+and USB CDC path. This is not evidence for I2C/OLED rendering, Secure Boot,
+arbitrary DMA isolation, or multi-application isolation.
+
 - [x] F405 boot, 168 MHz clock, PB2 LED, PC13 key, SDIO initialization, and block-zero
   read.
-- [x] FAT32 root scan and `.amrn` package discovery.
+- [x] FAT32 root scan and `.amrn` cartridge discovery.
 - [x] AMRN validation, bounded application load, entry transfer, and the
   three-flash/long-pause application LED pattern.
 - [x] ABI v2 application logging through USB CDC.
-- [x] Empty SD/package states remain informational and enter the heartbeat.
+- [x] Empty SD/cartridge states remain informational and enter the heartbeat.
+
+### Flash artifact fallback without SD — 2026-09-14
+
+The release image from source revision `7640e0c` was built with the
+`artifact-flash` feature and flashed to the WeAct Studio STM32F405RGT6 board
+through the Raspberry Pi Pico 2 CMSIS-DAP/SWD probe. The SD card was removed
+before reset. The manifest-owned Flash artifact region was empty, so the
+kernel reported the source fallback, performed bounded SD reinitialization,
+and entered the kernel heartbeat without a reset loop.
+
+```text
+[STORAGE] Artifact Flash region empty; falling back to SD
+[STORAGE] Card unavailable; bounded reinitialization attempt 2/3
+[STORAGE] Card unavailable; bounded reinitialization attempt 3/3
+[STORAGE] No SD card available; continuing without cartridge
+Entering kernel heartbeat
+```
+
+Result: passed for no-AMRN boot continuity, empty Flash artifact detection,
+SD fallback, bounded no-card recovery, and kernel heartbeat entry. This does
+not yet prove writing an AMRN to Flash or executing one without SD.
+
+### Hot SD reinsertion and AMRN relaunch — 2026-09-14
+
+After the SDIO card-ready polling bound was corrected in source revision
+`d631b63`, the same release firmware was booted without an SD card. The card
+was inserted while the kernel recovery heartbeat was active. The recovery
+probe initialized SDIO, replayed the repository verification path, and
+executed the signed AMRN without a reset.
+
+The previously observed stall after the second Root open was not reproduced;
+the bounded repository progress hook kept the installed watchdog serviced
+during recovery-triggered loading.
+
+```text
+[STORAGE] SDIO card initialized
+[SECURITY] AMRN signature verified
+[SECURITY] Active application context: Running
+[INFO][APP] Hello World from AMRN
+```
+
+Result: passed for SD removal, heartbeat recovery, live SD reinsertion,
+repository reload, signed AMRN verification, and application relaunch.
+
+### USB recovery rollback and live SD relaunch — 2026-09-15
+
+The F405 release image from source revision `4bb6932` was flashed through the
+Raspberry Pi Pico 2 CMSIS-DAP/SWD probe after recovering a target that had
+entered a USB polling HardFault during the previous installation-receive
+experiment. The unstable F405 USB inbound receive adapter was removed; CDC
+logging remained enabled. With no SD card present, the board entered the
+heartbeat and continued bounded reinitialization probes. After inserting the
+SD card while the heartbeat was active, the board initialized SDIO, replayed
+the signed repository load, verified the AMRN signature, and emitted:
+
+```text
+[INFO][SECURITY] [SECURITY] AMRN signature verified
+[INFO][SECURITY] [SECURITY] Active application context: Running
+[INFO][APP] Hello World from AMRN
+```
+
+Result: passed for recovery firmware boot, no-card heartbeat, live SD
+reinsertion, repository reload, signed AMRN verification, and application
+relaunch. The USB installation receive path remains intentionally unenabled;
+this evidence does not prove Flash cartridge installation.
+
+### Published-length loader regression — 2026-09-15
+
+The release image from source revision `5465211` was flashed through the same
+Pico 2 CMSIS-DAP/SWD setup with the SD card absent. The updated artifact
+reader used the publication contract while the Flash region remained empty;
+the board selected the documented SD fallback and entered the heartbeat:
+
+```text
+[STORAGE] Card unavailable; bounded reinitialization attempt 3/3
+[STORAGE] No SD card available; continuing without cartridge
+Entering kernel heartbeat
+```
+
+Result: passed for release build, empty Flash artifact detection, SD fallback,
+and no-card heartbeat after the published-length loader change. Flash AMRN
+boot remains unverified because no installation path has published a marker.
 
 ### ABI v3 isolation and fault recovery
 
@@ -58,42 +203,42 @@ run-specific metadata and status.
 
 ### Host relocation and non-zero slot evidence
 
-- [x] The relocation fixture was packaged with AMRN format 3 using the
+- [x] The relocation fixture was cartridged with AMRN format 3 using the
   manifest-owned `slot = "slot1"` selection. Its linked bases remained code
-  `0x20008000` and data `0x2000C000`, while the package load addresses were
+  `0x20008000` and data `0x2000C000`, while the cartridge load addresses were
   code `0x20010000` and data `0x20014000`.
-- [x] Host inspection accepted the slot1 package with 49 retained relocation
+- [x] Host inspection accepted the slot1 cartridge with 49 retained relocation
   records, 8 bytes of initialized data, and 4 bytes of zero-initialized data.
-- [x] F405 hardware executed the same relocated slot1 package after the MPU
+- [x] F405 hardware executed the same relocated slot1 cartridge after the MPU
   and SVC slot-selection fix. The console reported AMRN validation followed by
   `[INFO][APP] Relocation fixture`; the same result was observed after CDC
   reconnect. The first reset produced a USB transport disconnect when the
   board cable moved, not a kernel fault.
 - [x] F405 hardware regression after kernel-owned slot reservation was
-  integrated: the slot1 package again passed AMRN validation and emitted
+  integrated: the slot1 cartridge again passed AMRN validation and emitted
   `[INFO][APP] Relocation fixture`. This verifies that reservation state does
   not change the established single-application relocation path.
 
 ### AMRN v4 hardware evidence
 
 - [x] F405 hardware accepted the manifest-backed AMRN format 4 relocation
-  package: the console reported AMRN validation followed by
+  cartridge: the console reported AMRN validation followed by
   `[INFO][APP] Relocation fixture`.
-- [x] The observed package contained identity metadata, `slot_id = 1`, and 49
+- [x] The observed cartridge contained identity metadata, `slot_id = 1`, and 49
   relocation records; the application executed from the selected non-zero slot.
 - [x] The probe shutdown warning after flashing was classified as a transport
   teardown event after the target continued running, not as a loader failure.
-- [x] F405 hardware loaded two distinct AMRN v4 packages in one boot: the
-  loader reported `Loaded 2 application package(s) into declared slots`, and
+- [x] F405 hardware loaded two distinct AMRN v4 cartridges in one boot: the
+  loader reported `Loaded 2 application cartridge(s) into declared slots`, and
   deterministic slot selection entered the slot0 fixture. A later CDC console
   attach showed no replay because prior records had already drained.
-- [x] F405 hardware rejected two real packages carrying the same identity with
-  `PackageCatalog(DuplicateIdentity)` and entered the kernel heartbeat without
+- [x] F405 hardware rejected two real cartridges carrying the same identity with
+  `CartridgeCatalog(DuplicateIdentity)` and entered the kernel heartbeat without
   executing either application.
-- [x] F405 hardware rejected two real packages with different identities that
-  claimed the same slot with `PackageCatalog(SlotOccupied)` and entered the
+- [x] F405 hardware rejected two real cartridges with different identities that
+  claimed the same slot with `CartridgeCatalog(SlotOccupied)` and entered the
   kernel heartbeat without executing either application.
-- [x] F405 hardware reported both loaded packages in their manifest-owned
+- [x] F405 hardware reported both loaded cartridges in their manifest-owned
   regions: slot0 code `0x20008000+16384`, data `0x2000C000+16384`, PSP top
   `0x2000D00C`; slot1 code `0x20010000+16384`, data `0x20014000+16384`, PSP
   top `0x2001500C`. This verifies loader placement and reservations, not
@@ -119,7 +264,7 @@ run-specific metadata and status.
   programming DMA2 and retains exclusive mutable ownership for the transfer.
 - [x] F405 hardware evidence that the guarded SDIO path remains operational
   after the ownership check: firmware reported `SDIO card initialized` and
-  `Read block 0 successfully` before loading two AMRN v4 packages.
+  `Read block 0 successfully` before loading two AMRN v4 cartridges.
 - [x] F405 SWD evidence for kernel-owned DMA configuration and application-owned
   DMA denial. At the active diagnostic marker, DMA2 Stream 3 reported
   `CR=0x08025401`, `NDTR=128`, `PAR=0x40012C80`, and `M0AR=0x20000024`, while
@@ -178,8 +323,8 @@ The F405 feed-failure acceptance profile is opt-in and must never be used for
 production firmware:
 
 ```text
-cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,watchdog-feed-failure-test \
+cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,watchdog-feed-failure-test \
   --target thumbv7em-none-eabihf
 ```
 
@@ -227,6 +372,46 @@ status.
   post-fault unwind message is not acceptance evidence.
 - The SVC rejection matrix kept the application alive, while the bounded
   `Log` service accepted the final completion message.
+
+### Dedicated installer bulk-interface enumeration — 2026-09-15
+
+- [x] The `usb-install` F405 release profile built and flashed successfully
+  through the Pico CMSIS-DAP probe.
+- [x] The F405 boot trace showed normal software reset, 168 MHz clock setup,
+  Flash-empty fallback, bounded SD recovery attempts, and kernel heartbeat.
+- [x] The logging CDC re-enumerated at `/dev/ttyACM3` after adding the
+  installer interface.
+- [x] The installer uses one vendor-specific bulk OUT endpoint and one bulk IN
+  endpoint because two full CDC-ACM classes exceed the F405 OTG FS endpoint
+  budget. No installer payload or Flash write was tested in this milestone.
+- [ ] USB host discovery and end-to-end DINS transfer remain unverified.
+
+### Host installer discovery — 2026-09-16
+
+The host CLI was run with the usb-install firmware connected. It reported the
+F405 as a separate bulk device with target f405 and capability install.
+The same run did not classify the connected CMSIS-DAP probe or unrelated
+vendor-specific USB devices as installers. The existing DFU helper also
+reported its local libusb access error; that is independent of bulk discovery.
+
+This proves host-side inventory classification only. It does not prove
+interface claiming, DINS transfer, acknowledgement handling, Flash writing,
+AMRN validation, or SD-free reboot.
+
+### Host installer interface claim — 2026-09-16
+
+After installing the documented Linux udev permission rule, the host command
+selected the F405 bulk record and reported installer interface: verified. The
+check opened the target USB device, claimed interface 2, and opened its bulk
+OUT and bulk IN endpoints without sending an installation payload.
+
+This proves host-side interface ownership and endpoint shape only. It does not
+prove DINS acknowledgement exchange, cartridge transfer, Flash writing, AMRN
+validation, or SD-free reboot.
+
+This evidence proves USB enumeration and logging-channel preservation only. It
+does not prove cartridge installation, AMRN validation, Flash publication, or
+power-loss recovery.
 
 The USB console may report `read zero bytes from port` while the target resets
 or the CDC device re-enumerates. That is a transport-session event and must be

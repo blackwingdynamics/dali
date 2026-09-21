@@ -36,8 +36,7 @@ Storage lifecycle host coverage includes initialization, ready operations,
 card-removal classification, fault transitions, and bounded reinitialization:
 
 ```text
-cargo test -p dali-kernel --lib --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write
+cargo test -p dali-kernel --lib
 ```
 
 The Phase 1 bounded-timeout host coverage is hardware-neutral contract
@@ -269,7 +268,7 @@ build is not hardware evidence; the console must report:
 ```
 
 The F405 hardware acceptance record for this path is dated
-`2026-08-22 13:16:45`, uses kernel revision `baa9a47`, and records package
+`2026-08-22 13:16:45`, uses kernel revision `baa9a47`, and records cartridge
 digest `53bf7b2bd3af6b230802fc71f5ca006b67a980e3e4587c0973be140386af3d04`.
 This proves the bounded flush/read-back ordering on the real SDIO card. It is
 not power-loss or interrupted-write recovery evidence.
@@ -300,7 +299,7 @@ flushes them, verifies the read-back, logs the staged fixture, and stops before
 application loading. Reset or power-cycle the board, then run the normal
 acceptance console capture. The second boot must log `Prepared commit
 discarded; previous active state retained`, after which the normal artifact and
-package acceptance may proceed.
+cartridge acceptance may proceed.
 This proves durable Prepared-state discard; it does not by itself prove that a
 power cut occurred during a physical sector write.
 
@@ -314,40 +313,40 @@ sector write remains unverified.
 The feature-gated `storage-rollback-test` profile writes a valid committed
 generation `version=2` to `DALI-CMT.BIN` on a disposable F405 card. A subsequent
 production boot must stream and authenticate the existing signed bundle
-manifest, observe its older `version=1`, and reject it before package loading.
+manifest, observe its older `version=1`, and reject it before cartridge loading.
 The F405 run at `2026-08-22 23:31:09` observed:
 
 ```text
 [RECOVERY] Committed generation selected: version=2 sequence=2 slot=B
 [LOADER] Binary v2 repository verification failed: bundle-rollback
-[SECURITY] Rejection: package generation older than committed generation
+[SECURITY] Rejection: cartridge generation older than committed generation
 ```
 
 The follow-up production boot restored the card to the committed `version=1`
-state and completed signed package verification, slot loading, and
+state and completed signed cartridge verification, slot loading, and
 `Ready -> Running`.
 
 Build the rollback fixture explicitly:
 
 ```text
-cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-rollback-test \
+cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-rollback-test \
   --target thumbv7em-none-eabihf
 ```
 
 Build the interruption profile explicitly:
 
 ```text
-cargo build -p dali-kernel --release --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-interruption-test \
+cargo build -p dali-firmware --bin dali-f405 --release --no-default-features \
+  --features stm32f405,usb-cdc,abi-context-switch,abi-relocation,abi-authentication,repository-loader,storage-write,storage-interruption-test \
   --target thumbv7em-none-eabihf
 ```
 
 Build this mode explicitly; it is not part of the default kernel profile:
 
 ```text
-cargo build -p dali-kernel --no-default-features \
-  --features board-stm32f405-sd,usb-cdc,abi-relocation,storage-write \
+cargo build -p dali-firmware --bin dali-f405 --no-default-features \
+  --features stm32f405,usb-cdc,abi-relocation,storage-write \
   --target thumbv7em-none-eabihf
 ```
 

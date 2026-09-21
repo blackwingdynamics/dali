@@ -7,6 +7,7 @@ pub(super) fn validate_memory_regions(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let regions = [
         ("flash", &manifest.memory.flash),
+        ("firmware", &manifest.memory.firmware),
         ("dma", &manifest.memory.dma),
     ];
     for (name, region) in regions {
@@ -18,6 +19,42 @@ pub(super) fn validate_memory_regions(
             .into());
         }
     }
+    validate_region_within(
+        manifest,
+        "firmware",
+        &manifest.memory.firmware,
+        &manifest.memory.flash,
+    )?;
+    if let Some(artifact) = &manifest.memory.artifact {
+        if artifact.length == 0 {
+            return Err(
+                format!("target {} has empty artifact memory", manifest.profile.name).into(),
+            );
+        }
+        validate_region_within(manifest, "artifact", artifact, &manifest.memory.flash)?;
+        if regions_overlap(&manifest.memory.firmware, artifact) {
+            return Err(format!(
+                "target {} firmware and artifact flash regions overlap",
+                manifest.profile.name
+            )
+            .into());
+        }
+        if let Some(capacity) = manifest.memory.artifact_capacity
+            && (capacity == 0 || capacity > artifact.length)
+        {
+            return Err(format!(
+                "target {} has artifact capacity outside the physical artifact region",
+                manifest.profile.name
+            )
+            .into());
+        }
+    } else if manifest.memory.artifact_capacity.is_some() {
+        return Err(format!(
+            "target {} declares artifact capacity without an artifact region",
+            manifest.profile.name
+        )
+        .into());
+    }
     if let Some(region) = &manifest.memory.ccm
         && (region.length == 0 || region.origin.checked_add(region.length).is_none())
     {
@@ -27,7 +64,96 @@ pub(super) fn validate_memory_regions(
         )
         .into());
     }
+    let kernel_end = validate_named_region(
+        manifest,
+        "kernel",
+        manifest.memory.kernel_origin,
+        manifest.memory.kernel_length,
+    )?;
+    let application_end = validate_named_region(
+        manifest,
+        "application",
+        manifest.memory.application_origin,
+        manifest.memory.application_length,
+    )?;
+    validate_named_region(
+        manifest,
+        "runtime",
+        manifest.memory.runtime_origin,
+        manifest.memory.runtime_length,
+    )?;
+    if kernel_end != manifest.memory.application_origin
+        || application_end != manifest.memory.runtime_origin
+    {
+        return Err(format!(
+            "target {} kernel, application, and runtime regions must be contiguous",
+            manifest.profile.name
+        )
+        .into());
+    }
     Ok(())
+}
+
+fn validate_region_within(
+    manifest: &Manifest,
+    name: &str,
+    region: &super::super::manifest::TargetMemoryRegion,
+    container: &super::super::manifest::TargetMemoryRegion,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let region_end = region.origin.checked_add(region.length).ok_or_else(|| {
+        format!(
+            "target {} has overflowing {name} memory",
+            manifest.profile.name
+        )
+    })?;
+    let container_end = container
+        .origin
+        .checked_add(container.length)
+        .ok_or_else(|| {
+            format!(
+                "target {} has overflowing flash memory",
+                manifest.profile.name
+            )
+        })?;
+    if region.origin < container.origin || region_end > container_end {
+        return Err(format!(
+            "target {} {name} memory must fit inside flash",
+            manifest.profile.name
+        )
+        .into());
+    }
+    Ok(())
+}
+
+fn regions_overlap(
+    first: &super::super::manifest::TargetMemoryRegion,
+    second: &super::super::manifest::TargetMemoryRegion,
+) -> bool {
+    let Some(first_end) = first.origin.checked_add(first.length) else {
+        return true;
+    };
+    let Some(second_end) = second.origin.checked_add(second.length) else {
+        return true;
+    };
+    first.origin < second_end && second.origin < first_end
+}
+
+fn validate_named_region(
+    manifest: &Manifest,
+    name: &str,
+    origin: u32,
+    length: u32,
+) -> Result<u32, Box<dyn std::error::Error>> {
+    if length == 0 {
+        return Err(format!("target {} has empty {name} memory", manifest.profile.name).into());
+    }
+    origin.checked_add(length).ok_or_else(|| {
+        format!(
+            "target {} has overflowing {name} memory",
+            manifest.profile.name
+        )
+        .into()
+    })
 }
 
 pub(super) fn validate_isolation_memory(
@@ -114,7 +240,10 @@ fn validate_slots(
                 .data_origin
                 .checked_add(previous.data_length)
                 .ok_or_else(|| format!("target {} slot bounds overflow", manifest.profile.name))?;
-            if slot.name == previous.name || slot.code_origin != previous_end {
+            if slot.id == previous.id
+                || slot.name == previous.name
+                || slot.code_origin != previous_end
+            {
                 return Err(format!(
                     "target {} has duplicate or overlapping isolation slots",
                     manifest.profile.name

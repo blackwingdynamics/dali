@@ -25,7 +25,7 @@ selected platform backend.
 `dali-driver-api` contains only hardware-neutral traits, durations, and error
 categories. It must not import a PAC, HAL, register address, pin type, clock
 value, or board identifier. The F405 backend adapts those concrete resources
-to the contracts inside `kernel/src/platform/f405/`.
+to the contracts inside `crates/dali-boards/dali-board-stm32f405/`.
 
 Host mocks exercise contract behavior with fixed-size storage only. They are
 not substitutes for target validation. Hardware acceptance requires the

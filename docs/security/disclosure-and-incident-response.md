@@ -37,7 +37,7 @@ The triage record should state:
 
 - affected versions and target profiles;
 - whether the issue is baseline, feature-gated, or documentation-only;
-- whether the issue crosses a privilege, memory, storage, package, or
+- whether the issue crosses a privilege, memory, storage, cartridge, or
   hardware boundary;
 - reproducibility and required physical setup;
 - temporary containment and release impact.

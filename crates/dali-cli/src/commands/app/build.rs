@@ -13,8 +13,8 @@ pub(super) const RELEASE_PROFILE: &str = "release";
 
 pub(super) struct ApplicationManifest {
     pub(super) name: String,
-    pub(super) package_version: Option<String>,
-    pub(super) package_id: Option<String>,
+    pub(super) cartridge_version: Option<String>,
+    pub(super) cartridge_id: Option<String>,
     pub(super) signing_key_id: Option<String>,
     pub(super) minimum_kernel_version: Option<String>,
     pub(super) required_services: Option<u32>,
@@ -38,7 +38,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let abi_version = manifest.abi_version.unwrap_or(target_profile.abi_version);
     validate_target_capabilities(target_profile, abi_version, manifest.format_version)?;
     let release = cargo_profile_is_release(&manifest.profile)?;
-    validate_package_authentication(target_profile, release, manifest.format_version)?;
+    validate_cartridge_authentication(target_profile, release, manifest.format_version)?;
     let cargo_manifest = project_directory.join(CARGO_MANIFEST_FILE);
     run_cargo_build(
         &project_directory,
@@ -83,7 +83,7 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     } else {
         return Err(format!("unsupported application ABI version {abi_version}"));
     }
-    super::package::run(&["app".to_owned(), "package".to_owned()])?;
+    super::cartridge::run(&["app".to_owned(), "cartridge".to_owned()])?;
     Ok(())
 }
 
@@ -96,8 +96,8 @@ pub(super) fn read_manifest(project_directory: &Path) -> Result<ApplicationManif
 
 fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
     let name = required_value(contents, "name")?;
-    let package_version = optional_value(contents, "version");
-    let package_id = optional_value(contents, "package_id");
+    let cartridge_version = optional_value(contents, "version");
+    let cartridge_id = optional_value(contents, "cartridge_id");
     let signing_key_id = optional_value(contents, "signing_key_id");
     let minimum_kernel_version = optional_value(contents, "minimum_kernel_version");
     let required_services = optional_value(contents, "required_services")
@@ -129,8 +129,8 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
     let slot_name = optional_value(contents, "slot");
     Ok(ApplicationManifest {
         name,
-        package_version,
-        package_id,
+        cartridge_version,
+        cartridge_id,
         signing_key_id,
         minimum_kernel_version,
         required_services,
@@ -143,19 +143,21 @@ fn parse_manifest(contents: &str) -> Result<ApplicationManifest, String> {
     })
 }
 
-pub(super) fn parse_package_id(value: &str) -> Result<[u8; 16], String> {
+pub(super) fn parse_cartridge_id(value: &str) -> Result<[u8; 16], String> {
     let value = value.strip_prefix("0x").unwrap_or(value);
     if value.len() != 32 {
-        return Err("dali.toml `package_id` must contain exactly 32 hexadecimal digits".to_owned());
+        return Err(
+            "dali.toml `cartridge_id` must contain exactly 32 hexadecimal digits".to_owned(),
+        );
     }
     let mut result = [0; 16];
     for (index, byte) in result.iter_mut().enumerate() {
         let start = index * 2;
         *byte = u8::from_str_radix(&value[start..start + 2], 16)
-            .map_err(|_| "dali.toml contains an invalid `package_id`".to_owned())?;
+            .map_err(|_| "dali.toml contains an invalid `cartridge_id`".to_owned())?;
     }
     if result.iter().all(|byte| *byte == 0) {
-        return Err("dali.toml `package_id` must not be all zero".to_owned());
+        return Err("dali.toml `cartridge_id` must not be all zero".to_owned());
     }
     Ok(result)
 }
@@ -239,7 +241,7 @@ pub(super) fn cargo_profile_is_release(profile: &str) -> Result<bool, String> {
 }
 
 /// Rejects unsigned release packaging until a configured signer exists.
-pub(super) fn validate_package_authentication(
+pub(super) fn validate_cartridge_authentication(
     target: &dali_targets::TargetProfile,
     release: bool,
     format_version: Option<u8>,
@@ -249,11 +251,11 @@ pub(super) fn validate_package_authentication(
     } else {
         target.authentication.development
     };
-    if policy == dali_targets::PackageAuthentication::Ed25519Required
+    if policy == dali_targets::CartridgeAuthentication::Ed25519Required
         && format_version != Some(dali_amrn::v5::FORMAT_VERSION)
     {
         return Err(format!(
-            "target `{}` release packages must use AMRN format version {} with an Ed25519 signature",
+            "target `{}` release cartridges must use AMRN format version {} with an Ed25519 signature",
             target.name,
             dali_amrn::v5::FORMAT_VERSION
         ));
@@ -422,18 +424,18 @@ mod tests {
     }
 
     #[test]
-    fn requires_signatures_for_f405_release_packages() {
+    fn requires_signatures_for_f405_release_cartridges() {
         let target = super::target_profile("f405").expect("F405 target is declared");
-        assert!(super::validate_package_authentication(target, true, Some(4)).is_err());
+        assert!(super::validate_cartridge_authentication(target, true, Some(4)).is_err());
         assert!(
-            super::validate_package_authentication(
+            super::validate_cartridge_authentication(
                 target,
                 true,
                 Some(dali_amrn::v5::FORMAT_VERSION)
             )
             .is_ok()
         );
-        assert!(super::validate_package_authentication(target, false, Some(4)).is_ok());
+        assert!(super::validate_cartridge_authentication(target, false, Some(4)).is_ok());
     }
 
     #[test]
@@ -457,12 +459,12 @@ mod tests {
     #[test]
     fn parses_identity_metadata() {
         let manifest = parse_manifest(
-            "name = \"telemetry\"\nversion = \"1.2.3\"\ntarget_profile = \"f405\"\nentry_offset = 0\nformat_version = 4\npackage_id = \"00112233445566778899AABBCCDDEEFF\"\nminimum_kernel_version = \"0.1.0\"\nrequired_services = \"0x1\"\nslot = \"slot1\"",
+            "name = \"telemetry\"\nversion = \"1.2.3\"\ntarget_profile = \"f405\"\nentry_offset = 0\nformat_version = 4\ncartridge_id = \"00112233445566778899AABBCCDDEEFF\"\nminimum_kernel_version = \"0.1.0\"\nrequired_services = \"0x1\"\nslot = \"slot1\"",
         )
         .expect("v4 metadata should parse");
-        assert_eq!(manifest.package_version.as_deref(), Some("1.2.3"));
+        assert_eq!(manifest.cartridge_version.as_deref(), Some("1.2.3"));
         assert_eq!(
-            manifest.package_id.as_deref(),
+            manifest.cartridge_id.as_deref(),
             Some("00112233445566778899AABBCCDDEEFF")
         );
         assert_eq!(manifest.minimum_kernel_version.as_deref(), Some("0.1.0"));
@@ -477,13 +479,13 @@ mod tests {
     }
 
     #[test]
-    fn validates_package_id_and_version_values() {
+    fn validates_cartridge_id_and_version_values() {
         assert_eq!(
-            super::parse_package_id("00112233445566778899AABBCCDDEEFF")
-                .expect("package id should parse")[0],
+            super::parse_cartridge_id("00112233445566778899AABBCCDDEEFF")
+                .expect("cartridge id should parse")[0],
             0
         );
-        assert!(super::parse_package_id("00").is_err());
+        assert!(super::parse_cartridge_id("00").is_err());
         assert_eq!(
             super::parse_version("1.2.3", "version")
                 .expect("version should parse")

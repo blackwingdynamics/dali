@@ -6,15 +6,8 @@ use dali_sdk::svc::ExceptionFrame;
 const THUMB_STATE_BIT: u32 = 1 << 24;
 /// Exception return selector for an unprivileged PSP basic frame.
 const EXC_RETURN_THREAD_PSP_BASIC: u32 = 0xFFFF_FFFD;
-/// Exception return selector for a privileged MSP basic frame.
-const EXC_RETURN_THREAD_MSP_BASIC: u32 = 0xFFFF_FFF9;
 /// Link value used by non-returning synthetic frames.
 const NON_RETURNING_LINK: u32 = 0;
-#[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
-/// CONTROL value selecting unprivileged Thread mode with PSP.
-const CONTROL_UNPRIVILEGED_PSP: u32 = 0b11;
-/// CONTROL value selecting privileged Thread mode with MSP.
-const CONTROL_PRIVILEGED_MSP: u32 = 0;
 
 /// A validated basic exception frame and its architectural return selector.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -80,12 +73,12 @@ pub(crate) fn enter(frame: LaunchFrame) -> ! {
     unsafe {
         // SAFETY: `prepare` validated the PSP frame address and the kernel is
         // still using MSP, so writing PSP cannot corrupt the active kernel stack.
-        cortex_m::register::psp::write(frame.psp);
+        if !crate::platform::set_process_stack_pointer(frame.psp) {
+            crate::platform::wait_for_registered_interrupt();
+        }
     }
-    cortex_m::peripheral::SCB::set_pendsv();
-    loop {
-        cortex_m::asm::wfi();
-    }
+    crate::platform::request_context_switch();
+    crate::platform::wait_for_registered_interrupt()
 }
 
 /// Returns from an application fault to a kernel-owned recovery loop.
@@ -98,21 +91,9 @@ pub(crate) fn recover() -> ! {
     };
     let frame_address = (&frame as *const ExceptionFrame) as usize as u32;
     unsafe {
-        // SAFETY: `frame` is a live kernel-stack object. This non-returning
-        // sequence changes MSP to that object, restores privileged Thread mode,
-        // and immediately exception-returns before the object can be dropped.
-        core::arch::asm!(
-            "msr MSP, {frame_address}",
-            "mov r0, {control}",
-            "msr CONTROL, r0",
-            "isb",
-            "mov lr, {exception_return}",
-            "bx lr",
-            frame_address = in(reg) frame_address,
-            control = const CONTROL_PRIVILEGED_MSP,
-            exception_return = const EXC_RETURN_THREAD_MSP_BASIC,
-            options(noreturn),
-        );
+        // SAFETY: `frame` is a live kernel-stack object and the backend
+        // performs the architecture-specific exception return.
+        crate::platform::recover_to_kernel(frame_address);
     }
 }
 
@@ -138,36 +119,16 @@ extern "C" fn fault_recovery() -> ! {
     crate::security::scheduling::recover_faulted_context();
     #[cfg(not(all(feature = "abi-context-switch", target_arch = "arm")))]
     match crate::runtime::application::policy::CURRENT.fault_recovery() {
-        crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => loop {
-            cortex_m::asm::wfi();
-        },
-    }
-}
-
-/// Returns from the privileged PendSV handler into the prepared PSP frame.
-#[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
-#[unsafe(export_name = "PendSV")]
-unsafe extern "C" fn pendsv_handler() -> ! {
-    unsafe {
-        // SAFETY: PendSV runs in privileged Handler mode. The kernel selected
-        // the validated PSP before setting PENDSVSET and owns this transition.
-        core::arch::asm!(
-            "mov r0, {control}",
-            "msr CONTROL, r0",
-            "isb",
-            "mov lr, {exception_return}",
-            "bx lr",
-            control = const CONTROL_UNPRIVILEGED_PSP,
-            exception_return = const EXC_RETURN_THREAD_PSP_BASIC,
-            options(noreturn),
-        );
+        crate::runtime::application::policy::FaultRecoveryAction::EnterKernelHeartbeat => {
+            crate::platform::wait_for_registered_interrupt();
+        }
     }
 }
 
 /// Errors found while constructing the kernel-owned launch context.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum LaunchError {
-    /// The package entry was not a word-aligned address.
+    /// The cartridge entry was not a word-aligned address.
     InvalidEntry,
     /// The declared stack cannot contain a basic exception frame.
     InvalidStack,

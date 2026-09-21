@@ -4,5 +4,5 @@ rustflags = [
 ]
 
 [alias]
-check-kernel = "check -p dali-kernel --target thumbv7em-none-eabihf"
-build-kernel = "build -p dali-kernel --target thumbv7em-none-eabihf"
+check-kernel = "check -p dali-firmware --bin dali-f405 --no-default-features --features stm32f405 --target thumbv7em-none-eabihf"
+build-kernel = "build -p dali-firmware --bin dali-f405 --no-default-features --features stm32f405 --target thumbv7em-none-eabihf"

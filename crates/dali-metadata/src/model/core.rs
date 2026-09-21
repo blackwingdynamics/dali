@@ -30,7 +30,7 @@ impl MetadataRole {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct KeyId(pub [u8; KEY_ID_LENGTH]);
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub struct PackageId(pub [u8; KEY_ID_LENGTH]);
+pub struct CartridgeId(pub [u8; KEY_ID_LENGTH]);
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct Sha256Digest(pub [u8; SHA256_LENGTH]);
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -53,6 +53,13 @@ impl<const CAPACITY: usize> Default for BoundedText<CAPACITY> {
     }
 }
 impl<const CAPACITY: usize> BoundedText<CAPACITY> {
+    pub const fn empty() -> Self {
+        Self {
+            bytes: [0; CAPACITY],
+            length: 0,
+        }
+    }
+
     pub fn new(value: &str) -> Result<Self, TextError> {
         if value.is_empty() {
             return Err(TextError::Empty);

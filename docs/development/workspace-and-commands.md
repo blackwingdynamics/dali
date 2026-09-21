@@ -2,7 +2,7 @@
 
 The repository is a Cargo workspace containing the kernel, the hardware-neutral
 `dali-usb` delivery primitives, the hardware-neutral `dali-amrn` format layer,
-the future `dali` package, the `dali` command package tool, and the initial
+the future `dali` cartridge, the `dali` command cartridge tool, and the initial
 demo-application scaffold. Run workspace commands from the repository root.
 
 `dali-usb` is `no_std` and has no MCU or HAL dependency. It owns only bounded
@@ -16,21 +16,21 @@ verification so the kernel and CLI can share the format contract.
 The host CLI can wrap a raw payload in a contract-valid AMRN cartridge:
 
 ```text
-cargo run -p dali-cli --bin dali -- package \
+cargo run -p dali-cli --bin dali -- cartridge \
   --input <payload.bin> \
-  --output <package.amrn> \
+  --output <cartridge.amrn> \
   --entry-offset <byte-offset>
 ```
 
-The entry offset is explicit because the package command does not infer symbol
+The entry offset is explicit because the cartridge command does not infer symbol
 locations from an ELF file. The input must already be linked native payload
 for the documented target and load address.
 
-Inspect an existing package without changing it:
+Inspect an existing cartridge without changing it:
 
 ```text
 cargo run -p dali-cli --bin dali -- inspect \
-  --input <package.amrn>
+  --input <cartridge.amrn>
 ```
 
 The inspection command reports the decoded header fields and rejects invalid
@@ -40,7 +40,7 @@ To install the CLI locally and use it without `cargo run`:
 
 ```text
 cargo install --path crates/dali-cli --locked
-dali inspect --input <package.amrn>
+dali inspect --input <cartridge.amrn>
 ```
 
 Cargo installs the executable under its configured binary directory, normally
@@ -84,7 +84,9 @@ Hardware recipes accept one optional positional board argument. The default is
 | --- | --- | --- | --- |
 | `f405` | WeAct Studio STM32F405RGT6 Core Board | PB2 | On-board SDIO 4-bit socket; PC13 user key |
 
-Use the same recipe names for either board:
+The currently implemented firmware board is `f405`; `f411` is manifest-only
+metadata and has no firmware backend. Use the recipe names for the implemented
+board:
 
 ```text
 just build
@@ -98,8 +100,8 @@ just flash-probe f405
 ### Storage status LED
 
 The kernel reports the initial storage state through the board-specific status
-LED. The board backend hides LED polarity, so the logical behavior is identical
-on both supported boards:
+LED. The board backend hides LED polarity, so the logical behavior is defined
+through the selected target profile. The currently supported board is F405:
 
 | Storage state | LED behavior | Meaning |
 | --- | --- | --- |
@@ -112,9 +114,10 @@ key. Applications must not depend on
 the physical polarity; the board backend owns that mapping.
 
 Do not pass Cargo feature names to these recipes. The recipe converts the board
-argument into the correct compile-time backend automatically. `just ci` checks
-the default F405 backend; use `just kernel-check f405` and
-`just kernel-clippy f405` for the F405 target checks.
+argument into the correct compile-time backend and sets `DALI_TARGET_PROFILE`
+for kernel linker generation. `just ci` checks the default F405 backend; use
+`just kernel-check f405` and `just kernel-clippy f405` for the F405 target
+checks.
 
 Verify the tools before using hardware commands:
 

@@ -104,7 +104,7 @@ impl SlotManager {
         None
     }
 
-    /// Reserves the exact manifest slot selected by a validated package.
+    /// Reserves the exact manifest slot selected by a validated cartridge.
     pub fn reserve(&mut self, slot: IsolationSlot) -> Result<SlotAllocation, SlotManagerError> {
         let Some((index, _)) = self
             .slots

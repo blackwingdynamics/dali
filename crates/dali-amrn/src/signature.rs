@@ -4,7 +4,7 @@
 pub const MAGIC: [u8; 4] = *b"DSIG";
 /// Current signature-envelope encoding revision.
 pub const ENVELOPE_VERSION: u8 = 1;
-/// Ed25519 algorithm identifier reserved by the package contract.
+/// Ed25519 algorithm identifier reserved by the cartridge contract.
 pub const ED25519_ALGORITHM: u8 = 1;
 /// Length of the opaque trust-anchor key identifier.
 pub const KEY_ID_LENGTH: usize = 16;

@@ -84,8 +84,8 @@ mod tests {
 
     fn request(admission: RepositoryGenerationAdmission) -> RepositoryLoadRequest {
         RepositoryLoadRequest {
-            package_id: None,
-            target_profile: dali_metadata::BoundedText::new("f405").expect("profile fits"),
+            cartridge_id: None,
+            target_profile: dali_metadata::BoundedText::new("test-target").expect("profile fits"),
             contract: None,
             now: None,
             committed_generation: dali_metadata::TrustStoreRecord::new(
@@ -103,7 +103,7 @@ mod tests {
                 version,
                 expires: 0,
             },
-            target_profile: dali_metadata::BoundedText::new("f405").expect("profile fits"),
+            target_profile: dali_metadata::BoundedText::new("test-target").expect("profile fits"),
             file_count: 7,
         }
     }

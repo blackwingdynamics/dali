@@ -3,7 +3,7 @@
 - keep the boot log deterministic;
 - log validation failures with a reason;
 - never hide SD or loader errors behind a generic panic during bring-up;
-- record the exact package bytes used for an acceptance test;
+- record the exact cartridge bytes used for an acceptance test;
 - keep application and kernel linker layouts under version control.
 
 ## Troubleshooting
@@ -28,8 +28,8 @@ just bin
 Run `just build` first and confirm that the ELF exists. Then run `just bin` and inspect:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel
-target/thumbv7em-none-eabihf/debug/dali-kernel.bin
+target/thumbv7em-none-eabihf/debug/dali-f405
+target/thumbv7em-none-eabihf/debug/dali-f405-f405.bin
 ```
 
 The `.bin` file is created only after the ELF-to-binary conversion succeeds.

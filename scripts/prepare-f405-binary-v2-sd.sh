@@ -6,7 +6,7 @@ readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly DALI_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 readonly APP_DIR="${DALI_ROOT}/apps/dali-app-relocation-fixture"
 readonly APP_MANIFEST="${APP_DIR}/dali.toml"
-readonly APP_PACKAGE="${APP_DIR}/target/thumbv7em-none-eabihf/release/dali-app-relocation-fixture.amrn"
+readonly APP_CARTRIDGE="${APP_DIR}/target/thumbv7em-none-eabihf/release/dali-app-relocation-fixture.amrn"
 readonly TARGET_MANIFEST="${DALI_ROOT}/targets/f405.toml"
 
 readonly RUN_ID="${DALI_RUN_ID:-$(date +%Y%m%d-%H%M%S)}"
@@ -126,11 +126,11 @@ grep -q '^signing_key_id = ' "${APP_MANIFEST}" \
     || die "${APP_MANIFEST} has no signing_key_id field"
 sed -i -E "s/^signing_key_id = .*/signing_key_id = \"${DALI_DEVELOPER_KEY_ID}\"/" "${APP_MANIFEST}"
 
-printf '[4/9] Building and inspecting the signed AMRN package\n'
+printf '[4/9] Building and inspecting the signed AMRN cartridge\n'
 export DALI_SIGNING_KEY_HEX="$(tr -d '[:space:]' < "${DALI_KEYS}/developer.seed")"
 (cd -- "${APP_DIR}" && "${DALI_CLI}" app build)
-require_file "${APP_PACKAGE}"
-"${DALI_CLI}" inspect --input "${APP_PACKAGE}"
+require_file "${APP_CARTRIDGE}"
+"${DALI_CLI}" inspect --input "${APP_CARTRIDGE}"
 
 printf '[5/9] Initializing the Binary v2 repository\n'
 "${DALI_CLI}" metadata repository init \
@@ -140,7 +140,7 @@ printf '[5/9] Initializing the Binary v2 repository\n'
     --bundle-signing-key "${DALI_KEYS}/bundle.seed" \
     --bundle-key-id "${DALI_BUNDLE_KEY_ID}"
 
-printf '[6/9] Authorizing the developer and registering the package\n'
+printf '[6/9] Authorizing the developer and registering the cartridge\n'
 "${DALI_CLI}" metadata repository add-developer \
     --input "${DALI_REPO}" \
     --signing-key "${DALI_ROOT_SEED}" \
@@ -152,13 +152,13 @@ printf '[6/9] Authorizing the developer and registering the package\n'
     --target f405 \
     --abi 3
 
-readonly PACKAGE_DIGEST="$(sha256sum "${APP_PACKAGE}" | awk '{print tolower($1)}')"
-cp -- "${APP_PACKAGE}" "${DALI_REPO}/packages/${PACKAGE_DIGEST}.amrn"
-require_file "${DALI_REPO}/packages/${PACKAGE_DIGEST}.amrn"
+readonly CARTRIDGE_DIGEST="$(sha256sum "${APP_CARTRIDGE}" | awk '{print tolower($1)}')"
+    cp -- "${APP_CARTRIDGE}" "${DALI_REPO}/amrns/${CARTRIDGE_DIGEST}.amrn"
+    require_file "${DALI_REPO}/amrns/${CARTRIDGE_DIGEST}.amrn"
 
-"${DALI_CLI}" metadata repository register-package \
+"${DALI_CLI}" metadata repository register-cartridge \
     --input "${DALI_REPO}" \
-    --package "${APP_PACKAGE}" \
+    --cartridge "${APP_CARTRIDGE}" \
     --manifest "${APP_MANIFEST}" \
     --delegation-id developer-one-delegation \
     --namespace developer-one \
@@ -185,16 +185,16 @@ printf 'Target mount:      %s\n' "${DALI_MOUNT}"
 read -r -p 'Type WRITE to copy the verified repository to this SD card: ' confirmation
 [[ "${confirmation}" == WRITE ]] || die 'SD copy cancelled'
 
-printf '[9/9] Copying verified metadata and packages to the SD card\n'
+printf '[9/9] Copying verified metadata and cartridges to the SD card\n'
 sudo -v
-sudo mkdir -p -- "${DALI_MOUNT}/metadata" "${DALI_MOUNT}/packages"
-sudo find "${DALI_MOUNT}/packages" -maxdepth 1 -type f -name '*.amrn' -delete
+sudo mkdir -p -- "${DALI_MOUNT}/metadata" "${DALI_MOUNT}/amrns"
+sudo find "${DALI_MOUNT}/amrns" -maxdepth 1 -type f -name '*.amrn' -delete
 sudo cp -a -- "${DALI_REPO}/metadata/." "${DALI_MOUNT}/metadata/"
-sudo cp -a -- "${DALI_REPO}/packages/." "${DALI_MOUNT}/packages/"
+sudo cp -a -- "${DALI_REPO}/amrns/." "${DALI_MOUNT}/amrns/"
 sudo cp -- "${DALI_REPO}/bundle.manifest" "${DALI_MOUNT}/bundle.manifest"
 sync
 
 printf '\nSD copy complete. Repository: %s\n' "${DALI_REPO}"
-printf 'Package digest: %s\n' "${PACKAGE_DIGEST}"
+printf 'Cartridge digest: %s\n' "${CARTRIDGE_DIGEST}"
 printf 'Before removing the card, unmount it cleanly from the desktop or with udisksctl.\n'
 printf 'The generated seeds remain outside the repository at: %s\n' "${DALI_KEYS}"

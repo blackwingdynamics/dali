@@ -2,14 +2,14 @@
 
 - `kernel/src/security/mpu/` owns MPU descriptors, memory-layout validation,
   and privileged activation of application regions.
-- `kernel/src/platform/mod.rs` and `kernel/src/platform/` own the platform facade
-  and target-specific entry points; backend ownership and contributor workflow are defined in
-  `docs/platform-backends/README.md`.
-- `kernel/src/platform/f405/sdio.rs` and `kernel/src/platform/f405/sdio_raw/`
-  own the F405 PAC/HAL SDIO transport;
-  bootstrap consumes it only through the platform facade.
-- `kernel/src/platform/f405/watchdog/` owns the F405 IWDG and RCC reset-cause
-  register adapter; watchdog policy remains in `kernel/src/runtime/watchdog/`.
+- `kernel/src/platform/mod.rs` owns the hardware-neutral platform facade and
+  backend registration. Board PAC/HAL integration, clocks, pins, interrupts,
+  linker/memory definitions, and peripheral resources belong under
+  `crates/dali-boards/<board-crate>/`. Backend ownership and contributor
+  workflow are defined in `docs/platform-backends/README.md`.
+- `crates/dali-boards/dali-board-stm32f405/` owns the F405 PAC/HAL SDIO and
+  watchdog adapters; bootstrap consumes them only through the platform
+  contracts. Other boards provide their own backend-local adapters.
 - `kernel/src/drivers/` owns hardware-neutral driver contracts and adapters;
   it must not import a board PAC or HAL.
 - `kernel/src/drivers/sdio.rs` owns the generic SDIO transport contract and
@@ -24,7 +24,7 @@
   coordination. `storage/durable.rs` defines the board-agnostic block and
   durable-adapter contracts; `storage/durable/journal.rs` owns the 104-byte
   DALI-CMT codec; and `storage/durable/coordinator.rs` owns the bounded
-  persistence state machine. Package parsing remains in
+  persistence state machine. Cartridge parsing remains in
   `crates/dali-amrn/` and bootstrap loading policy remains in
   `kernel/src/bootstrap/loading/` while AMRN execution contracts remain in
   `kernel/src/loader/`.
@@ -32,7 +32,7 @@
   `kernel/src/bootstrap/lifecycle/` owns heartbeat/status behavior;
   `kernel/src/bootstrap/storage/` owns storage initialization and the
   feature-gated durable-artifact acceptance path; and
-  `kernel/src/bootstrap/loading/` owns package-to-runtime handoff.
+  `kernel/src/bootstrap/loading/` owns cartridge-to-runtime handoff.
 - `kernel/src/security/` owns privileged SVC dispatch, launch frames, fault
   recovery, and MPU protection. The hardware-neutral MPU descriptors and
   layout builder are separated from privileged register programming.
@@ -45,11 +45,14 @@
   adapter separately.
 - `kernel/src/runtime/scheduling/` owns hardware-neutral saved CPU state,
   manifest-slot-bound scheduler records, and bounded context selection;
-  PendSV/SysTick handlers and MPU switching are implemented by the F405
-  backend; equivalent implementations for other MCU families remain future
-  platform work.
+  processor-specific exception handlers and MPU switching belong to the
+  selected backend and must not be implemented as F405 branches in shared
+  runtime policy.
 - `crates/dali-targets/` generates target metadata from `targets/*.toml`; no
   board profile should be duplicated in CLI or kernel policy code.
+- `targets/<profile>.toml` and its generated typed profile select one backend;
+  adding a target must add a backend directory and profile without changing
+  existing core policy modules or backend directories.
 - `crates/dali-cli/src/commands/` owns top-level dispatch and groups related
   commands by domain. `app/`, `device/`, `metadata/`, and `target/` each expose
   a `mod.rs` dispatcher; complex commands may contain focused helper modules.

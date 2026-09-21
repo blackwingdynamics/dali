@@ -13,6 +13,11 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
     let records = normalize(records);
     let record = select_record(&records, selector)?;
     println!("{}", crate::commands::device::render_record(record));
+    if record.transport == dali_device::Transport::Bulk {
+        super::bulk::verify(record)?;
+        println!();
+        println!("installer interface: verified");
+    }
     println!();
     println!("{TARGET_METADATA_HEADER}");
     match record.target.as_deref() {

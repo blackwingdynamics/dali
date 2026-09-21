@@ -5,7 +5,7 @@ The baseline can provide:
 - fixed target validation;
 - payload size and address bounds checks;
 - CRC32-based corruption detection;
-- deterministic rejection of malformed packages.
+- deterministic rejection of malformed cartridges.
 
 ## MVP non-guarantees
 
@@ -14,7 +14,7 @@ The baseline ABI v2 MVP does not provide:
 - sandboxing;
 - memory isolation;
 - privilege separation;
-- package authenticity;
+- cartridge authenticity;
 - secure boot;
 - encryption;
 - anti-rollback;
@@ -50,8 +50,8 @@ The following remain outside the current guarantee boundary:
 - confidentiality for native application images.
 
 The configured feature-gated F405 repository path provides AMRN v5
-signed-package/repository verification and durable generation anti-rollback
+signed-cartridge/repository verification and durable generation anti-rollback
 checks. Trust-store revocation policy is implemented and host-tested; target-
 side revoked-developer-key acceptance remains a separate hardware test. The
 F405 evidence is limited to that configured path and must not be generalized
-to every target or package mode.
+to every target or cartridge mode.

@@ -1,6 +1,6 @@
 //! Binary repository boot loading and error mapping.
 
-use super::package::LoadedPackages;
+use super::cartridge::LoadedCartridges;
 use super::{LoaderError, pipeline, repository};
 use crate::storage;
 
@@ -21,18 +21,21 @@ fn with_binary_repository_buffers<R>(
 }
 
 #[cfg(feature = "repository-loader")]
-/// Loads and verifies the repository-selected cartridge package.
-pub(crate) fn load_repository_package<D>(
+/// Loads and verifies the repository-selected cartridge cartridge.
+pub(crate) fn load_repository_cartridge<D>(
     device: D,
     slot_manager: &mut crate::runtime::memory::slots::SlotManager,
     committed_generation: Option<crate::storage::durable::coordinator::DurableGeneration>,
-) -> Result<LoadedPackages, LoaderError>
+) -> Result<LoadedCartridges, LoaderError>
 where
     D: embedded_sdmmc::BlockDevice<Error = crate::drivers::StorageError>,
 {
     let device = crate::drivers::BlockDeviceRef::new(&device);
-    let target_profile = dali_metadata::BoundedText::new(crate::platform::TARGET_PROFILE.name)
-        .map_err(|_| LoaderError::CurrentAbiPackage(dali_amrn::v2::Error::InvalidHeader))?;
+    let target_profile = crate::platform::target_profile().ok_or(
+        LoaderError::CurrentAbiCartridge(dali_amrn::v2::Error::InvalidHeader),
+    )?;
+    let target_profile_name = dali_metadata::BoundedText::new(target_profile.name)
+        .map_err(|_| LoaderError::CurrentAbiCartridge(dali_amrn::v2::Error::InvalidHeader))?;
     let committed_generation = committed_generation
         .map(|generation| {
             dali_metadata::TrustStoreRecord::new(
@@ -44,8 +47,8 @@ where
         .transpose()
         .map_err(map_repository_error)?;
     let request = repository::RepositoryLoadRequest {
-        package_id: None,
-        target_profile,
+        cartridge_id: None,
+        target_profile: target_profile_name,
         contract: None,
         now: None,
         committed_generation,
@@ -54,30 +57,30 @@ where
     let mut storage = crate::storage::filesystem::FatRepositoryStorage::new_with_format_and_pet(
         device,
         crate::storage::filesystem::RepositoryMetadataFormat::BinaryV2,
-        crate::platform::pet_repository_chunk,
+        repository_chunk_pet,
     );
     let authorizations = with_binary_repository_buffers(|buffers| {
         repository::load_binary_repository_with_contract(
             &mut storage,
             request,
-            crate::platform::TRUST_ANCHORS,
+            crate::platform::trust_anchors(),
             buffers,
             |target| {
-                let isolation = crate::platform::TARGET_PROFILE.memory.isolation?;
+                let isolation = target_profile.memory.isolation?;
                 let slot = isolation
                     .slots
                     .iter()
                     .copied()
                     .find(|slot| slot.id == target.slot_id)?;
                 Some(dali_amrn::v3::Contract {
-                    target_id: crate::platform::TARGET_PROFILE.amrn_target_id,
+                    target_id: target_profile.amrn_target_id,
                     code_load_address: slot.code_origin,
                     code_capacity: slot.code_length,
                     data_load_address: slot.data_origin,
                     data_capacity: slot.data_length,
                 })
             },
-            crate::platform::repository_verification_progress,
+            repository_verification_progress,
         )
     })
     .map_err(map_repository_error)?;
@@ -93,30 +96,55 @@ where
             format_args!("[SECURITY] Reconstructed trust-store state bound to repository load"),
         );
     }
-    let mut loaded = LoadedPackages::new();
+    let mut loaded = LoadedCartridges::new();
     for authorization in authorizations.iter() {
-        let applications = storage::filesystem::with_content_addressed_package(
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[LOADER] Loading verified cartridge into its declared slot"),
+        );
+        let applications = storage::filesystem::with_content_addressed_cartridge(
             device,
-            crate::storage::repository::RepositoryPackageDigest(authorization.target.sha256.0),
+            crate::storage::repository::RepositoryCartridgeDigest(authorization.target.sha256.0),
             |file| {
                 pipeline::signed::load_file_with_public_key(
                     file,
                     slot_manager,
                     &authorization.developer_public_key,
                 )
-                .map(LoadedPackages::single)
+                .map(LoadedCartridges::single)
             },
         )
         .map_err(LoaderError::Filesystem)??;
+        crate::logging::info(
+            crate::logging::BOOT_SUBSYSTEM,
+            format_args!("[LOADER] Verified cartridge execution image loaded"),
+        );
         for application in applications.iter().copied() {
             if !loaded.push(application) {
-                return Err(LoaderError::CurrentAbiPackage(
+                return Err(LoaderError::CurrentAbiCartridge(
                     dali_amrn::v2::Error::InvalidHeader,
                 ));
             }
         }
     }
     Ok(loaded)
+}
+
+/// Provides the bounded repository storage progress hook.
+#[cfg(feature = "repository-loader")]
+fn repository_chunk_pet() -> Result<(), crate::drivers::StorageError> {
+    if crate::platform::service_watchdog_from_progress() {
+        Ok(())
+    } else {
+        Err(crate::drivers::StorageError::Transport)
+    }
+}
+
+/// Keeps repository verification progressing when no interrupt-owned service
+/// is available during the bounded boot pass.
+#[cfg(feature = "repository-loader")]
+fn repository_verification_progress() -> bool {
+    true
 }
 
 #[cfg(feature = "repository-loader")]
@@ -127,8 +155,9 @@ fn map_repository_error(
     crate::logging::error(
         crate::logging::BOOT_SUBSYSTEM,
         format_args!(
-            "[LOADER] Binary v2 repository verification failed: {}\r\n",
-            repository_error_label(&error)
+            "[LOADER] Binary v2 repository verification failed: {} ({:?})\r\n",
+            repository_error_label(&error),
+            error
         ),
     );
     if matches!(
@@ -138,7 +167,7 @@ fn map_repository_error(
         crate::logging::error(
             crate::logging::SECURITY_SUBSYSTEM,
             format_args!(
-                "[SECURITY] Rejection: package generation older than committed generation\r\n"
+                "[SECURITY] Rejection: cartridge generation older than committed generation\r\n"
             ),
         );
     }
@@ -146,27 +175,27 @@ fn map_repository_error(
         repository::BinaryRepositoryError::Storage(error)
         | repository::BinaryRepositoryError::RoleStorage(error)
         | repository::BinaryRepositoryError::BundleRoleStorage(error)
-        | repository::BinaryRepositoryError::PackageStorage(error) => {
+        | repository::BinaryRepositoryError::CartridgeStorage(error) => {
             LoaderError::Filesystem(error)
         }
         repository::BinaryRepositoryError::Revoked
-        | repository::BinaryRepositoryError::PackageSignature => {
-            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidSignature)
+        | repository::BinaryRepositoryError::CartridgeSignature => {
+            LoaderError::V5SignedCartridge(dali_amrn::v5::Error::InvalidSignature)
         }
-        repository::BinaryRepositoryError::PackageCrc => {
-            LoaderError::V5SignedPackage(dali_amrn::v5::Error::CrcMismatch)
+        repository::BinaryRepositoryError::CartridgeCrc => {
+            LoaderError::V5SignedCartridge(dali_amrn::v5::Error::CrcMismatch)
         }
         repository::BinaryRepositoryError::BundleGenerationRollback
         | repository::BinaryRepositoryError::BundleGenerationAhead => {
-            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidHeader)
+            LoaderError::V5SignedCartridge(dali_amrn::v5::Error::InvalidHeader)
         }
-        repository::BinaryRepositoryError::PackageLengthMismatch
-        | repository::BinaryRepositoryError::PackageContract
-        | repository::BinaryRepositoryError::PackageDigestMismatch => {
-            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidHeader)
+        repository::BinaryRepositoryError::CartridgeLengthMismatch
+        | repository::BinaryRepositoryError::CartridgeContract
+        | repository::BinaryRepositoryError::CartridgeDigestMismatch => {
+            LoaderError::V5SignedCartridge(dali_amrn::v5::Error::InvalidHeader)
         }
-        repository::BinaryRepositoryError::PackageInvalidHeader(error) => {
-            LoaderError::V5SignedPackage(error)
+        repository::BinaryRepositoryError::CartridgeInvalidHeader(error) => {
+            LoaderError::V5SignedCartridge(error)
         }
         repository::BinaryRepositoryError::MissingRecord
         | repository::BinaryRepositoryError::SecurityState
@@ -182,7 +211,7 @@ fn map_repository_error(
         | repository::BinaryRepositoryError::UnknownTrustAnchor
         | repository::BinaryRepositoryError::RoleDecode
         | repository::BinaryRepositoryError::RoleSignature => {
-            LoaderError::V5SignedPackage(dali_amrn::v5::Error::InvalidHeader)
+            LoaderError::V5SignedCartridge(dali_amrn::v5::Error::InvalidHeader)
         }
     }
 }
@@ -231,25 +260,25 @@ fn repository_error_label<E>(error: &repository::BinaryRepositoryError<E>) -> &'
         repository::BinaryRepositoryError::BundleGenerationAhead => "bundle-ahead",
         repository::BinaryRepositoryError::Revoked => "revoked",
         repository::BinaryRepositoryError::SecurityState => "security-state",
-        repository::BinaryRepositoryError::PackageStorage(_) => "package-storage",
-        repository::BinaryRepositoryError::PackageLengthMismatch => "package-length-mismatch",
-        repository::BinaryRepositoryError::PackageContract => "package-contract",
-        repository::BinaryRepositoryError::PackageInvalidHeader(error) => match error {
-            dali_amrn::v5::Error::InvalidSignature => "package-signature-envelope",
-            dali_amrn::v5::Error::InvalidContract => "package-contract",
-            dali_amrn::v5::Error::InvalidHeader => "package-static-header",
-            dali_amrn::v5::Error::InvalidHeaderPrefix => "package-header-prefix",
-            dali_amrn::v5::Error::InvalidHeaderReserved => "package-header-reserved",
-            dali_amrn::v5::Error::InvalidHeaderEncoding => "package-header-encoding",
-            dali_amrn::v5::Error::InvalidPayload => "package-payload-layout",
-            dali_amrn::v5::Error::InvalidRelocation => "package-relocation",
-            dali_amrn::v5::Error::InvalidIdentity => "package-identity",
-            dali_amrn::v5::Error::CrcMismatch => "package-crc",
-            dali_amrn::v5::Error::TruncatedHeader => "package-truncated-header",
-            dali_amrn::v5::Error::OutputTooSmall => "package-output-size",
+        repository::BinaryRepositoryError::CartridgeStorage(_) => "cartridge-storage",
+        repository::BinaryRepositoryError::CartridgeLengthMismatch => "cartridge-length-mismatch",
+        repository::BinaryRepositoryError::CartridgeContract => "cartridge-contract",
+        repository::BinaryRepositoryError::CartridgeInvalidHeader(error) => match error {
+            dali_amrn::v5::Error::InvalidSignature => "cartridge-signature-envelope",
+            dali_amrn::v5::Error::InvalidContract => "cartridge-contract",
+            dali_amrn::v5::Error::InvalidHeader => "cartridge-static-header",
+            dali_amrn::v5::Error::InvalidHeaderPrefix => "cartridge-header-prefix",
+            dali_amrn::v5::Error::InvalidHeaderReserved => "cartridge-header-reserved",
+            dali_amrn::v5::Error::InvalidHeaderEncoding => "cartridge-header-encoding",
+            dali_amrn::v5::Error::InvalidPayload => "cartridge-payload-layout",
+            dali_amrn::v5::Error::InvalidRelocation => "cartridge-relocation",
+            dali_amrn::v5::Error::InvalidIdentity => "cartridge-identity",
+            dali_amrn::v5::Error::CrcMismatch => "cartridge-crc",
+            dali_amrn::v5::Error::TruncatedHeader => "cartridge-truncated-header",
+            dali_amrn::v5::Error::OutputTooSmall => "cartridge-output-size",
         },
-        repository::BinaryRepositoryError::PackageDigestMismatch => "package-digest-mismatch",
-        repository::BinaryRepositoryError::PackageSignature => "package-signature",
-        repository::BinaryRepositoryError::PackageCrc => "package-crc",
+        repository::BinaryRepositoryError::CartridgeDigestMismatch => "cartridge-digest-mismatch",
+        repository::BinaryRepositoryError::CartridgeSignature => "cartridge-signature",
+        repository::BinaryRepositoryError::CartridgeCrc => "cartridge-crc",
     }
 }

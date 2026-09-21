@@ -40,7 +40,7 @@ storage access, scheduling, and recovery policy outside the SDK boundary.
 
 The [application workflow](../application-workflow/README.md) and [CLI
 project contract](../cli/APPLICATION_PROJECT.md) define how this pattern is
-scaffolded and packaged.
+scaffolded and cartridged.
 
 ## Compatibility
 
@@ -69,5 +69,5 @@ documentation](../testing/README.md).
 - [`crates/dali-sdk/src/lib.rs`](../../crates/dali-sdk/src/lib.rs) — public SDK facade and default service table.
 - [`crates/dali-sdk/src/svc.rs`](../../crates/dali-sdk/src/svc.rs) — versioned service gateway types.
 - [`crates/dali-sdk/src/svc_log.rs`](../../crates/dali-sdk/src/svc_log.rs) — feature-gated SVC logging wrapper.
-- [Application Workflow](../application-workflow/README.md) — build and package lifecycle.
+- [Application Workflow](../application-workflow/README.md) — build and cartridge lifecycle.
 - [CLI documentation](../cli/README.md) — project generation and cartridge tooling.

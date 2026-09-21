@@ -52,7 +52,7 @@ fn required_kinds_present(files: &[crate::BundleFile]) -> bool {
         crate::BundleFileKind::Targets,
         crate::BundleFileKind::Revocation,
         crate::BundleFileKind::Delegation,
-        crate::BundleFileKind::Package,
+        crate::BundleFileKind::Cartridge,
     ]
     .iter()
     .all(|kind| files.iter().any(|file| file.kind == *kind))
@@ -75,6 +75,6 @@ fn kind_order(kind: crate::BundleFileKind) -> u8 {
         crate::BundleFileKind::Targets => 3,
         crate::BundleFileKind::Revocation => 4,
         crate::BundleFileKind::Delegation => 5,
-        crate::BundleFileKind::Package => 6,
+        crate::BundleFileKind::Cartridge => 6,
     }
 }

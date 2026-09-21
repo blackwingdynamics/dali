@@ -2,10 +2,10 @@
 
 use super::{BoundedText, BundleFile, MetadataHeader};
 
-/// Signed, package-free trust-store state persisted in one durable slot.
+/// Signed, cartridge-free trust-store state persisted in one durable slot.
 ///
 /// The references identify the complete Root -> Timestamp -> Snapshot ->
-/// Targets -> Revocation -> Delegation state. Application packages are not
+/// Targets -> Revocation -> Delegation state. Application cartridges are not
 /// part of this payload and cannot be activated through this record.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TrustStorePayload {

@@ -29,7 +29,7 @@ just build
 The embedded ELF is created at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel
+target/thumbv7em-none-eabihf/debug/dali-f405
 ```
 
 The ELF contains symbols and debug information and is the preferred artifact for probe-based debugging.
@@ -43,7 +43,7 @@ just bin
 This runs `cargo objcopy` and creates:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel.bin
+target/thumbv7em-none-eabihf/debug/dali-f405-f405.bin
 ```
 
 The `.bin` file is a raw firmware image suitable for flashing tools. It is generated output, is ignored by Git, and is not written to the repository root.
@@ -67,23 +67,24 @@ Put the board into its STM32 DFU boot mode, connect USB, verify that the host de
 just flash-dfu
 ```
 
-This builds the raw binary and writes it to the documented internal Flash address. Use `DALI_DFU_DEVICE` to override the USB device identifier:
-
-```text
-DALI_DFU_DEVICE=0483:df11 just flash-dfu
-```
-
-The command does not invoke `sudo`. Configure the host's USB permissions separately.
+This builds the raw binary and uses the DFU identity, alternate interface,
+Flash address, and runtime transition declared by the selected target
+manifest. The command does not invoke `sudo`; configure the host's USB
+permissions separately.
 
 ### 5a. Select a board backend
 
 The default board is the F405 reference board. Select it explicitly as a
-recipe argument without writing Cargo features or environment variables:
+recipe argument:
 
 ```text
 just build
 just build f405
 ```
+
+For direct Cargo builds with more than one application-supported target, set
+`DALI_TARGET_PROFILE` explicitly. The kernel build script accepts an omitted
+value only when the supported-target registry contains exactly one target.
 
 The F405 backend can be checked with:
 
@@ -94,7 +95,7 @@ just kernel-check f405
 The generated ELF is located at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel
+target/thumbv7em-none-eabihf/debug/dali-f405
 ```
 
 For F405 SWD flashing, run:
@@ -112,7 +113,7 @@ just flash-dfu f405
 The raw F405 binary is generated at:
 
 ```text
-target/thumbv7em-none-eabihf/debug/dali-kernel-f405.bin
+target/thumbv7em-none-eabihf/debug/dali-f405-f405.bin
 ```
 
 ### 6. Observe RTT output
@@ -125,7 +126,7 @@ After flashing, reset the board and connect an RTT viewer through the debug prob
 just clean
 ```
 
-This runs `cargo clean` and removes Cargo build artifacts. It does not remove source files, packages, SD-card contents, or Git history.
+This runs `cargo clean` and removes Cargo build artifacts. It does not remove source files, cartridges, SD-card contents, or Git history.
 
 Build success alone is not hardware evidence. Record the board, probe, wiring, firmware revision, power source, tool versions, expected output, observed output, and result.
 

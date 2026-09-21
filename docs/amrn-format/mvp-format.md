@@ -1,6 +1,6 @@
 # MVP format
 
-The MVP package is a fixed 32-byte binary header followed by one native ARM payload:
+The MVP cartridge is a fixed 32-byte binary header followed by one native ARM payload:
 
 ```text
 ┌──────────────────────┐
@@ -31,7 +31,7 @@ The exact header size is 32 bytes. The parser must read fields explicitly from b
 
 ## Validation rules
 
-The loader rejects a package when:
+The loader rejects a cartridge when:
 
 - the file is shorter than 32 bytes;
 - `magic` is not `DALI`;

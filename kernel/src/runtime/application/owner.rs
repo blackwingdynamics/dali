@@ -265,7 +265,7 @@ mod tests {
         let mut manager = SlotManager::new(SLOTS).expect("test slot table is valid");
         let allocation = manager.reserve(SLOT).expect("test slot is declared");
         let mut lifecycle = ApplicationLifecycle::discovered(
-            ApplicationIdentity::new([1; dali_amrn::v4::PACKAGE_ID_LENGTH]),
+            ApplicationIdentity::new([1; dali_amrn::v4::CARTRIDGE_ID_LENGTH]),
             SLOT.id,
         );
         let _ = lifecycle.record_allocation(allocation);
@@ -291,7 +291,7 @@ mod tests {
         let state = RuntimeState::new();
         let mut owner = ActiveContextOwner::new(&state);
         let mut lifecycle = ApplicationLifecycle::discovered(
-            ApplicationIdentity::new([1; dali_amrn::v4::PACKAGE_ID_LENGTH]),
+            ApplicationIdentity::new([1; dali_amrn::v4::CARTRIDGE_ID_LENGTH]),
             SLOT.id,
         );
         assert_eq!(

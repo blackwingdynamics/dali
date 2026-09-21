@@ -3,7 +3,7 @@
 mod builder;
 pub(crate) mod stream;
 
-pub use builder::{BuildError, encode_package};
+pub use builder::{BuildError, encode_cartridge};
 #[cfg(test)]
 pub(crate) use stream::checksum as crc32;
 pub use stream::{Crc32, PayloadValidator, ValidatedPayload};
@@ -46,9 +46,9 @@ const WORD_ALIGNMENT: u32 = 4;
 const CRC32_POLYNOMIAL: u32 = 0xEDB8_8320;
 const CRC32_INITIAL: u32 = u32::MAX;
 
-/// A validated AMRN package view into caller-owned bytes.
+/// A validated AMRN cartridge view into caller-owned bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct Package<'a> {
+pub struct Cartridge<'a> {
     /// The validated fixed header fields.
     pub header: Header,
     /// The validated native payload bytes.
@@ -60,9 +60,9 @@ pub struct Package<'a> {
 /// The explicitly decoded AMRN v1 fixed header.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Header {
-    /// The package magic bytes.
+    /// The cartridge magic bytes.
     pub magic: [u8; 4],
-    /// The package format revision.
+    /// The cartridge format revision.
     pub format_version: u8,
     /// The target identifier.
     pub target_id: u8,
@@ -86,12 +86,12 @@ pub struct Header {
     pub reserved_u32: u32,
 }
 
-/// Reasons an AMRN package failed validation.
+/// Reasons an AMRN cartridge failed validation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ParseError {
     /// The input does not contain the fixed header.
     TruncatedHeader,
-    /// The four-byte package magic is invalid.
+    /// The four-byte cartridge magic is invalid.
     InvalidMagic,
     /// The format revision is not supported.
     UnsupportedFormatVersion,
@@ -107,8 +107,8 @@ pub enum ParseError {
     EmptyPayload,
     /// The payload exceeds the v1 limit.
     PayloadTooLarge,
-    /// The payload extends beyond the supplied package bytes.
-    PayloadOutsidePackage,
+    /// The payload extends beyond the supplied cartridge bytes.
+    PayloadOutsideCartridge,
     /// The load address does not match the v1 contract.
     InvalidLoadAddress,
     /// The execution offset is outside the payload.
@@ -121,20 +121,20 @@ pub enum ParseError {
     CrcMismatch,
 }
 
-/// Parses and validates an AMRN v1 package without copying its payload.
-pub fn parse(package: &[u8]) -> Result<Package<'_>, ParseError> {
-    if package.len() < HEADER_SIZE {
+/// Parses and validates an AMRN v1 cartridge without copying its payload.
+pub fn parse(cartridge: &[u8]) -> Result<Cartridge<'_>, ParseError> {
+    if cartridge.len() < HEADER_SIZE {
         return Err(ParseError::TruncatedHeader);
     }
-    let header = parse_header(&package[..HEADER_SIZE])?;
+    let header = parse_header(&cartridge[..HEADER_SIZE])?;
 
     let payload_size = header.payload_size as usize;
     let payload_end = PAYLOAD_OFFSET
         .checked_add(payload_size)
-        .ok_or(ParseError::PayloadOutsidePackage)?;
-    let payload = package
+        .ok_or(ParseError::PayloadOutsideCartridge)?;
+    let payload = cartridge
         .get(PAYLOAD_OFFSET..payload_end)
-        .ok_or(ParseError::PayloadOutsidePackage)?;
+        .ok_or(ParseError::PayloadOutsideCartridge)?;
 
     validate_payload(header, payload)
 }
@@ -162,15 +162,18 @@ pub fn parse_header(header_bytes: &[u8]) -> Result<Header, ParseError> {
 }
 
 /// Validates payload bytes against a previously decoded AMRN header.
-pub fn validate_payload<'a>(header: Header, payload: &'a [u8]) -> Result<Package<'a>, ParseError> {
+pub fn validate_payload<'a>(
+    header: Header,
+    payload: &'a [u8],
+) -> Result<Cartridge<'a>, ParseError> {
     if payload.len() != header.payload_size as usize {
-        return Err(ParseError::PayloadOutsidePackage);
+        return Err(ParseError::PayloadOutsideCartridge);
     }
     validate_execution_offset(header.execution_offset, payload.len())?;
     let mut validator = PayloadValidator::new(header)?;
     validator.update(payload)?;
     let validated = validator.finish()?;
-    Ok(Package {
+    Ok(Cartridge {
         header: validated.header,
         payload,
         entry_address: validated.entry_address,

@@ -1,15 +1,15 @@
 use super::*;
 use crate::{
-    BoundedText, DelegationMetadata, KEY_ID_LENGTH, KeyId, MAX_DELEGATION_ABIS,
-    MAX_DELEGATION_ID_BYTES, MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES,
-    MAX_PACKAGE_VERSION_BYTES, MAX_ROLE_KEYS, MAX_ROOT_BYTES, MAX_SIGNATURES,
-    MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader, MetadataRole, PUBLIC_KEY_LENGTH,
-    PackageId, PublicKey, RevocationMetadata, RevocationRecord, RoleDefinition, RoleKey,
-    Sha256Digest, Signature, SignatureRecord, SignatureSet, TargetPackage,
-    encode_delegation_signed, encode_revocation_signed, encode_root_signed, encode_signature_list,
-    encode_signed_envelope, encode_targets_signed, parse_bundle_signed, parse_delegation_signed,
-    parse_revocation_signed, parse_signature_list, parse_signed_envelope, parse_targets_signed,
-    parse_timestamp_signed,
+    BoundedText, CartridgeId, DelegationMetadata, KEY_ID_LENGTH, KeyId,
+    MAX_CARTRIDGE_VERSION_BYTES, MAX_DELEGATION_ABIS, MAX_DELEGATION_ID_BYTES,
+    MAX_DELEGATION_SCOPES, MAX_DELEGATION_TARGETS, MAX_NAMESPACE_BYTES, MAX_ROLE_KEYS,
+    MAX_ROOT_BYTES, MAX_SIGNATURES, MAX_TARGET_PROFILE_BYTES, MAX_TARGETS_BYTES, MetadataHeader,
+    MetadataRole, PUBLIC_KEY_LENGTH, PublicKey, RevocationMetadata, RevocationRecord,
+    RoleDefinition, RoleKey, Sha256Digest, Signature, SignatureRecord, SignatureSet,
+    TargetCartridge, encode_delegation_signed, encode_revocation_signed, encode_root_signed,
+    encode_signature_list, encode_signed_envelope, encode_targets_signed, parse_bundle_signed,
+    parse_delegation_signed, parse_revocation_signed, parse_signature_list, parse_signed_envelope,
+    parse_targets_signed, parse_timestamp_signed,
 };
 
 fn delegation_metadata() -> DelegationMetadata {
@@ -117,9 +117,9 @@ fn rejects_uppercase_hex() {
     );
 }
 
-fn target_package() -> TargetPackage {
-    TargetPackage {
-        package_id: PackageId([1; KEY_ID_LENGTH]),
+fn target_cartridge() -> TargetCartridge {
+    TargetCartridge {
+        cartridge_id: CartridgeId([1; KEY_ID_LENGTH]),
         namespace: BoundedText::<MAX_NAMESPACE_BYTES>::new("developer/app")
             .expect("test namespace fits"),
         developer_id: BoundedText::<{ crate::MAX_DEVELOPER_ID_BYTES }>::new("developer")
@@ -131,9 +131,9 @@ fn target_package() -> TargetPackage {
             .expect("test target fits"),
         amrn_format: 5,
         abi_version: 3,
-        package_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+        cartridge_version: BoundedText::<MAX_CARTRIDGE_VERSION_BYTES>::new("0.1.0")
             .expect("test version fits"),
-        minimum_kernel_version: BoundedText::<MAX_PACKAGE_VERSION_BYTES>::new("0.1.0")
+        minimum_kernel_version: BoundedText::<MAX_CARTRIDGE_VERSION_BYTES>::new("0.1.0")
             .expect("test minimum version fits"),
         length: 128,
         sha256: Sha256Digest([3; crate::SHA256_LENGTH]),
@@ -155,19 +155,19 @@ fn parses_a_canonical_targets_body() {
             expires: 0,
         },
         &[delegation],
-        &[target_package()],
+        &[target_cartridge()],
     )
     .expect("targets body should encode");
     let parsed = parse_targets_signed(&bytes[..length]).expect("targets body should parse");
     assert_eq!(parsed.header.role, MetadataRole::Targets);
-    assert_eq!(parsed.package_count, 1);
-    assert_eq!(parsed.packages[0].slot_id, 0);
-    assert_eq!(parsed.packages[0].length, 128);
+    assert_eq!(parsed.cartridge_count, 1);
+    assert_eq!(parsed.cartridges[0].slot_id, 0);
+    assert_eq!(parsed.cartridges[0].length, 128);
 }
 
 #[test]
 fn rejects_non_canonical_targets_field_order() {
-    let input = br#"{"expires":0,"delegations":[],"packages":[],"role":"targets","schema":"dali.metadata.v1","version":1}"#;
+    let input = br#"{"expires":0,"delegations":[],"cartridges":[],"role":"targets","schema":"dali.metadata.v1","version":1}"#;
     assert_eq!(
         parse_targets_signed(input),
         Err(DecodeError::InvalidFieldOrder)
@@ -227,7 +227,7 @@ fn parses_a_canonical_revocation_body() {
 
 #[test]
 fn parses_a_canonical_bundle_manifest() {
-    let input = br#"{"files":[{"id":"root","kind":"root","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"timestamp","kind":"timestamp","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"snapshot","kind":"snapshot","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"targets","kind":"targets","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"revocation","kind":"revocation","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"delegation-1","kind":"delegation","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"aaaaaaaa","kind":"package","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"}],"role":"bundle","schema":"dali.metadata.v1","target_profile":"f405","version":1}"#;
+    let input = br#"{"files":[{"id":"root","kind":"root","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"timestamp","kind":"timestamp","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"snapshot","kind":"snapshot","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"targets","kind":"targets","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"revocation","kind":"revocation","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"delegation-1","kind":"delegation","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"},{"id":"aaaaaaaa","kind":"cartridge","length":128,"sha256":"0303030303030303030303030303030303030303030303030303030303030303"}],"role":"bundle","schema":"dali.metadata.v1","target_profile":"f405","version":1}"#;
     let parsed = parse_bundle_signed(input).expect("bundle manifest should parse");
     assert_eq!(parsed.header.role, MetadataRole::Bundle);
     assert_eq!(parsed.file_count, 7);

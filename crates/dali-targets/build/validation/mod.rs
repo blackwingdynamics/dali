@@ -138,7 +138,13 @@ fn validate_optional_sections(manifest: &Manifest) -> Result<(), Box<dyn std::er
         .into());
     }
     if let Some(storage) = &manifest.storage
-        && (storage.bus_width == 0 || storage.bus_width > 4)
+        && (storage.bus_width == 0
+            || storage.bus_width > 4
+            || storage.data_timeout_cycles == 0
+            || storage.command_poll_limit == 0
+            || storage.ocr_poll_limit == 0
+            || storage.data_poll_limit == 0
+            || storage.dma_stop_poll_limit == 0)
     {
         return Err(format!(
             "target manifest {} has an invalid storage width",
@@ -178,6 +184,9 @@ fn validate_unique_profile(
     for other in &manifests[..index] {
         if other.profile.name == manifest.profile.name {
             return Err(format!("duplicate target profile `{}`", manifest.profile.name).into());
+        }
+        if other.profile.backend == manifest.profile.backend {
+            return Err(format!("duplicate backend id `{}`", manifest.profile.backend).into());
         }
         if manifest.profile.amrn_target_id != 0
             && other.profile.amrn_target_id == manifest.profile.amrn_target_id

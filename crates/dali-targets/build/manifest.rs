@@ -127,6 +127,9 @@ pub(super) struct TrustAnchor {
 #[derive(Debug, Deserialize)]
 pub(super) struct Memory {
     pub(super) flash: TargetMemoryRegion,
+    pub(super) firmware: TargetMemoryRegion,
+    pub(super) artifact: Option<TargetMemoryRegion>,
+    pub(super) artifact_capacity: Option<u32>,
     pub(super) kernel_origin: u32,
     pub(super) kernel_length: u32,
     pub(super) application_origin: u32,
@@ -176,6 +179,8 @@ pub(super) struct Pin {
 #[derive(Debug, Deserialize)]
 pub(super) struct Usb {
     pub(super) controller: String,
+    pub(super) vendor_id: u16,
+    pub(super) product_id: u16,
     pub(super) dm: Pin,
     pub(super) dp: Pin,
 }
@@ -184,6 +189,11 @@ pub(super) struct Usb {
 pub(super) struct Storage {
     pub(super) controller: String,
     pub(super) bus_width: u8,
+    pub(super) data_timeout_cycles: u32,
+    pub(super) command_poll_limit: u32,
+    pub(super) ocr_poll_limit: u32,
+    pub(super) data_poll_limit: u32,
+    pub(super) dma_stop_poll_limit: u32,
     pub(super) clock: Pin,
     pub(super) command: Pin,
     pub(super) data: [Pin; 4],

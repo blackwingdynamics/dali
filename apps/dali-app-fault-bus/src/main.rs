@@ -23,7 +23,7 @@ const _: () = assert!(BUS_FAULT_PROBE_ADDRESS != 0);
 ///
 /// # Safety
 ///
-/// The kernel invokes this symbol only after validating the ABI v3 package and
+/// The kernel invokes this symbol only after validating the ABI v3 cartridge and
 /// preparing the application PSP frame.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]

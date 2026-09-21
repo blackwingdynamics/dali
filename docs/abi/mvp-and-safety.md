@@ -14,7 +14,7 @@ pub struct ServiceTable {
 The exact ABI must be identical in the kernel and demo application. The application is linked for `0x20008000` and its complete image is copied to the reserved SRAM region before the jump.
 
 The MVP ABI version is `2`. AMRN cartridges must declare this version in the
-header, and the kernel must reject packages requiring another ABI version.
+header, and the kernel must reject cartridges requiring another ABI version.
 
 ## Rules
 
@@ -46,7 +46,7 @@ accesses USB CDC or RTT directly.
 
 ## Safety boundary
 
-Calling the entry point is `unsafe` because the kernel cannot prove that the loaded native code obeys the ABI. A malformed or incompatible application may corrupt kernel state or stop execution. The MVP therefore provides package validation and integrity checking, but not sandboxing or fault isolation.
+Calling the entry point is `unsafe` because the kernel cannot prove that the loaded native code obeys the ABI. A malformed or incompatible application may corrupt kernel state or stop execution. The MVP therefore provides cartridge validation and integrity checking, but not sandboxing or fault isolation.
 
 ## Future ABI work
 

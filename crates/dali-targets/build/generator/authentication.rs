@@ -45,8 +45,8 @@ fn parse_hex_array<const N: usize>(value: &str, field: &str) -> [u8; N] {
 
 fn generate_authentication_policy(policy: &str) -> &'static str {
     match policy {
-        "unsigned" => "PackageAuthentication::UnsignedAllowed",
-        "ed25519" => "PackageAuthentication::Ed25519Required",
+        "unsigned" => "CartridgeAuthentication::UnsignedAllowed",
+        "ed25519" => "CartridgeAuthentication::Ed25519Required",
         _ => panic!("authentication policy was not validated"),
     }
 }

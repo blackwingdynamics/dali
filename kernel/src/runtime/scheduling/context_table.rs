@@ -1,7 +1,7 @@
 //! Hardware-neutral context-switch records and bounded selection policy.
 
 pub use super::record::ScheduledContext;
-pub use super::saved_state::{CALLEE_SAVED_REGISTER_COUNT, SavedContext};
+pub use super::saved_state::{CONTEXT_RECORD_WORDS, ContextRecord};
 
 /// Identifies one entry in a fixed-capacity context table.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -147,7 +147,7 @@ impl<const CAPACITY: usize> ContextTable<CAPACITY> {
 
     /// Returns a pointer to the saved CPU state for one valid context.
     #[cfg(target_arch = "arm")]
-    pub fn cpu_ptr(&self, id: ContextId) -> Result<*const SavedContext, ContextTableError> {
+    pub fn cpu_ptr(&self, id: ContextId) -> Result<*const ContextRecord, ContextTableError> {
         Ok(self.slot(id)?.context.cpu_ptr())
     }
 
@@ -214,12 +214,7 @@ mod tests {
         stack_length: 0x1000,
     };
 
-    const CPU: SavedContext = SavedContext {
-        psp: 0x2000_C000,
-        callee_saved: [0; CALLEE_SAVED_REGISTER_COUNT],
-        control: 0x03,
-        exception_return: 0xFFFF_FFFD,
-    };
+    const CPU: ContextRecord = ContextRecord::new([0; CONTEXT_RECORD_WORDS]);
     const CONTEXT: ScheduledContext = ScheduledContext::new(CPU, SLOT);
 
     #[test]
@@ -258,12 +253,7 @@ mod tests {
     fn preserves_saved_register_state() {
         let mut table = ContextTable::<1>::new();
         let context = ScheduledContext::new(
-            SavedContext {
-                psp: 0x2001_4000,
-                callee_saved: [4, 5, 6, 7, 8, 9, 10, 11],
-                control: 0x03,
-                exception_return: 0xFFFF_FFFD,
-            },
+            ContextRecord::new([4, 5, 6, 7, 8, 9, 10, 11, 0, 0, 0]),
             SLOT,
         );
         let id = table.insert(context).unwrap();

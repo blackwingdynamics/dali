@@ -12,12 +12,12 @@ path and host permissions.
 A required flag is missing or an entry offset is not a valid unsigned integer.
 Run the command with the required options from its command documentation.
 
-### Package construction errors
+### Cartridge construction errors
 
-Dali package rejects empty or oversized payloads, invalid entry offsets, and
+Dali cartridge rejects empty or oversized payloads, invalid entry offsets, and
 output-size overflow.
 
-### Package validation errors
+### Cartridge validation errors
 
 Dali inspect rejects invalid magic, unsupported format or target versions,
 invalid ABI, invalid reserved fields, invalid payload bounds, invalid load
@@ -25,10 +25,10 @@ address, invalid entry metadata, CRC mismatches, and trailing bytes.
 
 ### Output errors
 
-The destination package cannot be written. Check the destination directory,
+The destination cartridge cannot be written. Check the destination directory,
 permissions, and available storage.
 
 ## Recovery rule
 
-Do not copy a package to hardware after a CLI error. Correct the input or
+Do not copy a cartridge to hardware after a CLI error. Correct the input or
 command, rerun dali inspect, and use only the successfully validated artifact.

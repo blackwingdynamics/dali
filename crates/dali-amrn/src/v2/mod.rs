@@ -24,7 +24,7 @@ const RESERVED_U16_OFFSET: usize = 42;
 const RESERVED_U32_OFFSET: usize = 44;
 const RESERVED_BYTES_OFFSET: usize = 48;
 
-/// Target-owned addresses and capacities required by an ABI v3 package.
+/// Target-owned addresses and capacities required by an ABI v3 cartridge.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Contract {
     /// AMRN target identifier.
@@ -62,9 +62,9 @@ pub struct Header {
     pub crc32: u32,
 }
 
-/// A validated AMRN v2 package view into caller-owned bytes.
+/// A validated AMRN v2 cartridge view into caller-owned bytes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct Package<'a> {
+pub struct Cartridge<'a> {
     /// The validated header.
     pub header: Header,
     /// The file code segment.
@@ -79,7 +79,7 @@ pub struct Package<'a> {
     pub psp_stack_top: u32,
 }
 
-/// Input segments and runtime reservations for v2 package construction.
+/// Input segments and runtime reservations for v2 cartridge construction.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Image<'a> {
     /// Native code and read-only data bytes.
@@ -103,37 +103,37 @@ pub enum Error {
     InvalidHeader,
     /// A segment or runtime reservation exceeds its target region.
     RegionOverflow,
-    /// The package does not contain exactly the declared file segments.
+    /// The cartridge does not contain exactly the declared file segments.
     InvalidPayload,
     /// The entry offset is invalid.
     InvalidExecutionOffset,
     /// A checked address calculation overflowed.
     AddressOverflow,
-    /// The package checksum is invalid.
+    /// The cartridge checksum is invalid.
     CrcMismatch,
-    /// The output buffer cannot contain the package.
+    /// The output buffer cannot contain the cartridge.
     OutputTooSmall,
 }
 
-/// Parses and validates an AMRN v2 package against a target contract.
-pub fn parse<'a>(package: &'a [u8], contract: Contract) -> Result<Package<'a>, Error> {
-    let header = parse_header(package, contract)?;
+/// Parses and validates an AMRN v2 cartridge against a target contract.
+pub fn parse<'a>(cartridge: &'a [u8], contract: Contract) -> Result<Cartridge<'a>, Error> {
+    let header = parse_header(cartridge, contract)?;
     let code_size = usize::try_from(header.code_size).map_err(|_| Error::InvalidPayload)?;
     let data_size = usize::try_from(header.data_init_size).map_err(|_| Error::InvalidPayload)?;
     let payload_size = code_size
         .checked_add(data_size)
         .ok_or(Error::InvalidPayload)?;
-    let package_size = HEADER_SIZE
+    let cartridge_size = HEADER_SIZE
         .checked_add(payload_size)
         .ok_or(Error::InvalidPayload)?;
-    if package.len() != package_size {
+    if cartridge.len() != cartridge_size {
         return Err(Error::InvalidPayload);
     }
     let code_end = HEADER_SIZE
         .checked_add(code_size)
         .ok_or(Error::InvalidPayload)?;
-    let code = &package[HEADER_SIZE..code_end];
-    let initialized_data = &package[code_end..package_size];
+    let code = &cartridge[HEADER_SIZE..code_end];
+    let initialized_data = &cartridge[code_end..cartridge_size];
     if checksum_parts(code, initialized_data) != header.crc32 {
         return Err(Error::CrcMismatch);
     }
@@ -151,7 +151,7 @@ pub fn parse<'a>(package: &'a [u8], contract: Contract) -> Result<Package<'a>, E
     let psp_stack_top = psp_stack_bottom
         .checked_add(header.stack_size)
         .ok_or(Error::AddressOverflow)?;
-    Ok(Package {
+    Ok(Cartridge {
         header,
         code,
         initialized_data,
@@ -195,7 +195,7 @@ pub fn parse_header(bytes: &[u8], contract: Contract) -> Result<Header, Error> {
     Ok(header)
 }
 
-/// Encodes an AMRN v2 package into caller-provided storage.
+/// Encodes an AMRN v2 cartridge into caller-provided storage.
 pub fn encode(image: Image<'_>, contract: Contract, output: &mut [u8]) -> Result<usize, Error> {
     let code_size = u32::try_from(image.code.len()).map_err(|_| Error::RegionOverflow)?;
     let data_init_size =
@@ -217,17 +217,17 @@ pub fn encode(image: Image<'_>, contract: Contract, output: &mut [u8]) -> Result
         .len()
         .checked_add(image.initialized_data.len())
         .ok_or(Error::OutputTooSmall)?;
-    let package_size = HEADER_SIZE
+    let cartridge_size = HEADER_SIZE
         .checked_add(payload_size)
         .ok_or(Error::OutputTooSmall)?;
-    if output.len() < package_size {
+    if output.len() < cartridge_size {
         return Err(Error::OutputTooSmall);
     }
     write_header(output, header);
     let code_end = HEADER_SIZE + image.code.len();
     output[HEADER_SIZE..code_end].copy_from_slice(image.code);
-    output[code_end..package_size].copy_from_slice(image.initialized_data);
-    Ok(package_size)
+    output[code_end..cartridge_size].copy_from_slice(image.initialized_data);
+    Ok(cartridge_size)
 }
 
 fn validate_header(header: Header, contract: Contract) -> Result<(), Error> {

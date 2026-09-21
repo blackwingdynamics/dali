@@ -1,284 +1,265 @@
-//! Platform selection boundary for hardware-specific kernel entry points.
+//! Hardware-neutral platform composition boundary.
+//!
+//! A firmware composition crate provides the selected board services. This
+//! module owns only composition and the typed facade consumed by kernel policy.
 
-use core::cell::UnsafeCell;
-
-#[cfg(feature = "board-stm32f405-sd")]
-pub(crate) mod f405;
-
-/// Stable operations supplied by a selected platform backend.
-pub(crate) trait Backend: Sized {
-    /// Human-readable system clock value exposed by the boot status path.
-    const SYSTEM_CLOCK_MHZ: u32;
-
-    #[cfg(feature = "sdio")]
-    /// Generic block reader supplied by the platform SDIO transport.
-    type SdioReader: crate::drivers::BlockReader + crate::drivers::StorageLifecycleControl;
-
-    #[cfg(feature = "usb-cdc")]
-    /// Board-owned resources used to construct the USB bus.
-    type UsbResources: crate::logging::usb_cdc::UsbResources;
-
-    /// Takes the platform singletons and initializes the backend.
-    fn initialize() -> Self;
-
-    /// Sets the board status indicator.
-    fn set_status_led(&mut self, on: bool);
-
-    /// Delays for a bounded number of milliseconds.
-    fn delay_ms(&mut self, milliseconds: u32);
-
-    /// Enables the target scheduler tick after application activation.
-    #[cfg(feature = "abi-context-switch")]
-    fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool;
-
-    #[cfg(feature = "sdio")]
-    /// Transfers the SDIO reader to the storage policy.
-    fn take_sdio_reader(&mut self) -> Option<Self::SdioReader>;
-
-    #[cfg(feature = "usb-cdc")]
-    /// Transfers USB resources to the logging backend.
-    fn take_usb_resources(&mut self) -> Option<Self::UsbResources>;
-
-    /// Enables the backend's USB interrupt after initialization.
-    #[cfg(feature = "usb-cdc")]
-    fn unmask_usb_irq();
-
-    /// Pends the backend's USB interrupt after a log enqueue.
-    #[cfg(feature = "usb-cdc")]
-    fn pend_usb_irq();
-}
-
-/// Stable kernel-facing facade over the selected platform backend.
-pub(crate) struct Platform(f405::Board);
-
+mod architecture;
+#[cfg(feature = "abi-mpu")]
+mod protection;
+mod registry;
 #[cfg(feature = "usb-cdc")]
-impl crate::logging::usb_cdc::UsbResetDelay for Platform {
-    fn delay_ms(&mut self, milliseconds: u32) {
-        Platform::delay_ms(self, milliseconds);
-    }
-}
+mod usb;
 
-/// Watchdog runtime selected by the active platform backend.
-pub(crate) type WatchdogRuntime = crate::runtime::watchdog::WatchdogRuntime<f405::F405Watchdog>;
+#[cfg(any(feature = "abi-context-switch", feature = "abi-mpu"))]
+pub(crate) use architecture::request_context_switch;
+#[cfg(feature = "abi-test-fixtures")]
+pub(crate) use architecture::write_fault_register;
+#[cfg(feature = "abi-context-switch")]
+pub(crate) use architecture::{capture_context, initial_context};
+#[cfg(feature = "abi-current")]
+pub(crate) use architecture::{
+    main_stack_pointer, process_stack_pointer, set_process_stack_pointer,
+    wait_for_registered_interrupt,
+};
+pub(crate) use architecture::{read_fault_register, recover_to_kernel};
+#[cfg(feature = "abi-mpu")]
+pub(crate) use protection::{
+    activate_application_regions, configure as configure_memory_protection,
+};
+#[cfg(any(feature = "abi-current", feature = "abi-mpu"))]
+pub(crate) use registry::memory_profile;
+#[cfg(feature = "abi-context-switch")]
+pub(crate) use registry::scheduler_profile;
+#[cfg(any(feature = "abi-authentication", feature = "repository-loader"))]
+pub(crate) use registry::target_profile;
+#[cfg(feature = "abi-authentication")]
+pub(crate) use registry::trust_anchors;
+#[cfg(feature = "usb-cdc")]
+pub(crate) use usb::pend_irq as pend_usb_irq;
+#[cfg(feature = "usb-install")]
+pub(crate) use usb::service_installation_irq;
+#[cfg(all(feature = "usb-cdc", not(feature = "usb-install")))]
+pub(crate) use usb::service_irq as service_usb_irq;
+
+use dali_kernel_api::{ArchitectureBackend, BoardBackend, BoardError, ResetCause, WatchdogBackend};
+
+#[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
+/// Kernel-owned watchdog callback used while an application context is active.
+static SCHEDULER_WATCHDOG: critical_section::Mutex<core::cell::RefCell<Option<WatchdogService>>> =
+    critical_section::Mutex::new(core::cell::RefCell::new(None));
+
+#[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
+/// Kernel-owned watchdog callback registered for application context switches.
+#[derive(Clone, Copy)]
+struct WatchdogService {
+    /// Opaque address of the platform facade that owns the watchdog.
+    platform: usize,
+    /// Backend-independent callback used to feed the watchdog.
+    feed: unsafe fn(usize) -> bool,
+}
 
 /// Failure returned by the kernel-owned watchdog service boundary.
 #[derive(Debug)]
 pub(crate) enum WatchdogServiceError {
-    /// The watchdog could not be armed before runtime ownership was installed.
-    Arm,
     /// The watchdog runtime was already installed.
+    #[cfg(feature = "sdio")]
     AlreadyInstalled,
-    /// Feeding the watchdog failed and feeding was disabled.
+    /// Feeding the watchdog failed.
     Feed,
 }
 
-/// Internal WatchdogStorage record used by the bounded kernel path.
-struct WatchdogStorage(UnsafeCell<Option<WatchdogRuntime>>);
-
-// SAFETY: The storage is accessed only inside a critical section. The
-// watchdog service is called from bootstrap, heartbeat, or SysTick, so no two
-// callers can create mutable access concurrently.
-unsafe impl Sync for WatchdogStorage {}
-
-/// Kernel-owned static storage for WATCHDOG STORAGE.
-static WATCHDOG_STORAGE: WatchdogStorage = WatchdogStorage(UnsafeCell::new(None));
-
-/// Watchdog profile supplied by the selected target manifest.
-pub(crate) const WATCHDOG_PROFILE: Option<dali_targets::WatchdogProfile> =
-    dali_targets::TARGET_F405.watchdog;
-
-#[cfg(all(feature = "abi-authentication", feature = "abi-test-fixtures"))]
-/// Trust anchors selected by the active target profile.
-pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targets::TARGET_F405
-    .authentication
-    .development_trust_anchors;
-
-#[cfg(all(feature = "abi-authentication", not(feature = "abi-test-fixtures")))]
-/// Trust anchors selected by the active target profile.
-pub(crate) const TRUST_ANCHORS: &[dali_targets::TrustAnchorProfile] = dali_targets::TARGET_F405
-    .authentication
-    .release_trust_anchors;
-
-#[cfg(feature = "board-stm32f405-sd")]
-/// Defines the SYSTEM CLOCK MHZ used by this module.
-pub(crate) const SYSTEM_CLOCK_MHZ: u32 = <f405::Board as Backend>::SYSTEM_CLOCK_MHZ;
-
-#[cfg(feature = "sdio")]
-/// Performs the `helper` operation for this subsystem.
-///
-/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-pub(crate) type PlatformSdioReader = <f405::Board as Backend>::SdioReader;
-
-#[cfg(feature = "board-stm32f405-sd")]
-/// Initializes the `initialize` operation for this subsystem.
-///
-/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-pub(crate) fn initialize() -> Platform {
-    Platform(<f405::Board as Backend>::initialize())
+/// Kernel facade over one externally selected board backend.
+pub(crate) struct Platform<B>
+where
+    B: BoardBackend,
+    B::Watchdog: WatchdogBackend,
+{
+    /// Selected board implementation, kept behind the kernel facade.
+    backend: B,
+    /// Optional watchdog runtime owned by the kernel heartbeat.
+    watchdog: Option<crate::runtime::watchdog::WatchdogRuntime<B::Watchdog>>,
 }
 
-/// Runs the target-only bounded UART/SPI acceptance probe.
-#[cfg(feature = "driver-hardware-test")]
-pub(crate) fn run_driver_timeout_probe(platform: &mut Platform) {
-    platform.0.run_driver_timeout_probe();
+impl<B> Platform<B>
+where
+    B: BoardBackend,
+    B::Watchdog: WatchdogBackend,
+{
+    /// Initializes the externally selected backend and its registered ports.
+    pub(crate) fn initialize() -> Result<Self, BoardError> {
+        registry::register::<B>()?;
+        architecture::register::<B>();
+        #[cfg(feature = "abi-mpu")]
+        protection::register::<B>();
+        #[cfg(feature = "usb-cdc")]
+        usb::register::<B>();
+        let _ = read_fault_register as fn(dali_kernel_api::FaultRegister) -> u32;
+        let _ = recover_to_kernel as unsafe fn(u32) -> !;
+        Ok(Self {
+            backend: B::initialize()?,
+            watchdog: None,
+        })
+    }
+
+    /// Returns the selected backend metadata.
+    pub(crate) fn info() -> dali_kernel_api::BoardInfo {
+        B::info()
+    }
+
+    /// Returns the manifest-owned application execution policy.
+    #[cfg(all(feature = "sdio", not(feature = "abi-current")))]
+    pub(crate) fn supports_application_execution() -> bool {
+        B::info().target.application_supported
+    }
+
+    /// Returns the reset cause captured by the backend.
+    pub(crate) fn reset_cause(&self) -> ResetCause {
+        self.backend.reset_cause()
+    }
+
+    /// Waits through the selected architecture backend.
+    pub(crate) fn wait_for_interrupt()
+    where
+        B::Architecture: ArchitectureBackend,
+    {
+        B::Architecture::wait_for_interrupt()
+    }
+
+    /// Enables interrupts through the selected architecture backend.
+    #[cfg(any(feature = "driver-hardware-test", feature = "abi-context-switch"))]
+    pub(crate) fn enable_interrupts()
+    where
+        B::Architecture: ArchitectureBackend,
+    {
+        B::Architecture::enable_interrupts();
+    }
 }
 
-/// Arms and installs the single kernel-owned watchdog before storage loading.
-pub(crate) fn install_watchdog(mut runtime: WatchdogRuntime) -> Result<(), WatchdogServiceError> {
-    runtime
-        .arm(crate::runtime::watchdog::FeedOwner::KernelHeartbeat)
-        .map_err(|_| WatchdogServiceError::Arm)?;
-    cortex_m::interrupt::free(|_| unsafe {
-        let storage = &mut *WATCHDOG_STORAGE.0.get();
-        if storage.is_some() {
+impl<B> Platform<B>
+where
+    B: BoardBackend,
+    B::Watchdog: WatchdogBackend,
+{
+    /// Sets the backend-owned status indicator.
+    pub(crate) fn set_status_led(&mut self, on: bool) -> Result<(), BoardError> {
+        self.backend.set_status_led(on)
+    }
+
+    /// Delays through the backend-owned timer.
+    pub(crate) fn delay_ms(&mut self, milliseconds: u32) -> Result<(), BoardError> {
+        self.backend.delay_ms(milliseconds)
+    }
+
+    /// Polls backend-owned user input.
+    pub(crate) fn poll_user_key(&mut self) {
+        self.backend.poll_user_key();
+    }
+
+    /// Initializes board-owned USB state without exposing its concrete types.
+    #[cfg(feature = "usb-cdc")]
+    pub(crate) fn initialize_usb(&mut self, force_reenumeration: bool) -> bool {
+        self.backend.initialize_usb(force_reenumeration)
+    }
+
+    /// Takes the initialized storage reader.
+    #[cfg(feature = "sdio")]
+    pub(crate) fn take_sdio_reader(&mut self) -> Option<B::StorageReader> {
+        self.backend.take_storage_reader().ok()
+    }
+
+    /// Transfers the board-owned artifact reader to the kernel loader.
+    #[cfg(feature = "artifact-flash")]
+    pub(crate) fn take_artifact_reader(&mut self) -> Option<B::ArtifactReader> {
+        self.backend.take_artifact_reader().ok()
+    }
+
+    /// Transfers the backend-owned watchdog into the kernel runtime.
+    #[cfg(feature = "sdio")]
+    pub(crate) fn take_watchdog(&mut self) -> Result<B::Watchdog, BoardError> {
+        self.backend.take_watchdog()
+    }
+
+    /// Installs a watchdog runtime after its ownership contract is armed.
+    #[cfg(feature = "sdio")]
+    pub(crate) fn install_watchdog(
+        &mut self,
+        runtime: crate::runtime::watchdog::WatchdogRuntime<B::Watchdog>,
+    ) -> Result<(), WatchdogServiceError> {
+        if self.watchdog.is_some() {
             return Err(WatchdogServiceError::AlreadyInstalled);
         }
-        *storage = Some(runtime);
+        self.watchdog = Some(runtime);
+        #[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
+        critical_section::with(|cs| {
+            let mut service = SCHEDULER_WATCHDOG.borrow(cs).borrow_mut();
+            if service.is_none() {
+                *service = Some(WatchdogService {
+                    platform: self as *mut Self as usize,
+                    feed: feed_watchdog::<B>,
+                });
+            }
+        });
         Ok(())
-    })
-}
+    }
 
-/// Feeds the installed watchdog from a kernel-owned execution boundary.
-pub(crate) fn service_watchdog() -> Result<(), WatchdogServiceError> {
-    cortex_m::interrupt::free(|_| unsafe {
-        let storage = &mut *WATCHDOG_STORAGE.0.get();
-        let Some(runtime) = storage.as_mut() else {
+    /// Feeds the installed watchdog from the kernel heartbeat.
+    pub(crate) fn service_watchdog(&mut self) -> Result<(), WatchdogServiceError> {
+        let Some(runtime) = self.watchdog.as_mut() else {
             return Ok(());
         };
-        match runtime.feed(crate::runtime::watchdog::FeedOwner::KernelHeartbeat) {
-            Ok(()) => Ok(()),
-            Err(_) => {
-                *storage = None;
-                Err(WatchdogServiceError::Feed)
-            }
+        runtime
+            .feed(crate::runtime::watchdog::FeedOwner::KernelHeartbeat)
+            .map_err(|_| WatchdogServiceError::Feed)
+    }
+
+    /// Enables the selected backend scheduler tick.
+    #[cfg(feature = "abi-context-switch")]
+    pub(crate) fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
+        self.backend.enable_scheduler_tick(tick_hz)
+    }
+
+    /// Runs the selected backend hardware acceptance probe.
+    #[cfg(feature = "driver-hardware-test")]
+    pub(crate) fn run_driver_timeout_probe(&mut self) {
+        self.backend.run_driver_timeout_probe();
+    }
+}
+
+#[cfg(feature = "repository-loader")]
+/// Services the installed watchdog from bounded non-interrupt boot work.
+pub(crate) fn service_watchdog_from_progress() -> bool {
+    critical_section::with(|cs| {
+        let service = SCHEDULER_WATCHDOG.borrow(cs).borrow();
+        match *service {
+            Some(service) => unsafe { (service.feed)(service.platform) },
+            None => true,
         }
     })
 }
 
-/// Adapts the kernel watchdog boundary to repository chunk progress.
-#[cfg(feature = "repository-loader")]
-pub(crate) fn pet_repository_chunk() -> Result<(), crate::drivers::StorageError> {
-    service_watchdog().map_err(|_| crate::drivers::StorageError::Transport)
+#[cfg(feature = "abi-context-switch")]
+/// Feeds the installed watchdog from the kernel-owned scheduler exception.
+pub(crate) fn service_watchdog_from_scheduler() {
+    critical_section::with(|cs| {
+        let service = SCHEDULER_WATCHDOG.borrow(cs).borrow();
+        if let Some(service) = *service {
+            let _ = unsafe { (service.feed)(service.platform) };
+        }
+    });
 }
 
-/// Reports whether a repository verification progress feed succeeded.
-#[cfg(feature = "repository-loader")]
-pub(crate) fn repository_verification_progress() -> bool {
-    pet_repository_chunk().is_ok()
-}
-
-#[cfg(feature = "board-stm32f405-sd")]
-impl Platform {
-    /// Writes a bounded diagnostic line to the optional board display.
-    #[cfg(feature = "display-oled")]
-    pub(crate) fn write_display_log(&mut self, bytes: &[u8]) {
-        self.0.write_display_log(bytes);
-    }
-
-    /// Sets the `set status led` operation for this subsystem.
-    ///
-    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(crate) fn set_status_led(&mut self, on: bool) {
-        self.0.set_status_led(on);
-    }
-
-    /// Polls the `poll user key` operation for this subsystem.
-    ///
-    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(crate) fn poll_user_key(&mut self) {
-        self.0.poll_user_key();
-    }
-
-    /// Performs the `delay ms` operation for this subsystem.
-    ///
-    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(crate) fn delay_ms(&mut self, milliseconds: u32) {
-        self.0.delay_ms(milliseconds);
-    }
-
-    /// Performs the `reset cause` operation for this subsystem.
-    ///
-    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(crate) fn reset_cause(&self) -> crate::runtime::watchdog::ResetCause {
-        self.0.reset_cause()
-    }
-
-    /// Takes the `take watchdog` operation for this subsystem.
-    ///
-    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(crate) fn take_watchdog(&mut self) -> Option<f405::F405Watchdog> {
-        self.0.take_watchdog()
-    }
-
-    #[cfg(feature = "abi-context-switch")]
-    /// Enables the board scheduler tick at the requested bounded frequency.
-    pub(crate) fn enable_scheduler_tick(&mut self, tick_hz: u32) -> bool {
-        self.0.enable_scheduler_tick(tick_hz)
-    }
-
-    #[cfg(feature = "sdio")]
-    /// Takes the `take sdio reader` operation for this subsystem.
-    ///
-    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(crate) fn take_sdio_reader(&mut self) -> Option<<f405::Board as Backend>::SdioReader> {
-        self.0.take_sdio_reader()
-    }
-
-    #[cfg(feature = "usb-cdc")]
-    /// Takes the `take usb resources` operation for this subsystem.
-    ///
-    /// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-    pub(crate) fn take_usb_resources(&mut self) -> Option<UsbResources> {
-        <f405::Board as Backend>::take_usb_resources(&mut self.0)
-    }
-}
-
-#[cfg(feature = "usb-cdc")]
-/// Performs the `helper` operation for this subsystem.
+#[cfg(any(feature = "abi-context-switch", feature = "repository-loader"))]
+/// Feeds the watchdog through the platform facade stored in `platform`.
 ///
-/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-pub(crate) type UsbResources = <f405::Board as Backend>::UsbResources;
-
-#[cfg(feature = "usb-cdc")]
-/// Performs the `unmask usb irq` operation for this subsystem.
+/// # Safety
 ///
-/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-pub(crate) fn unmask_usb_irq() {
-    <f405::Board as Backend>::unmask_usb_irq();
+/// `platform` must be the address of a live `Platform<B>` value whose watchdog
+/// runtime is installed.
+unsafe fn feed_watchdog<B>(platform: usize) -> bool
+where
+    B: BoardBackend,
+    B::Watchdog: WatchdogBackend,
+{
+    let platform = unsafe { &mut *(platform as *mut Platform<B>) };
+    platform.service_watchdog().is_ok()
 }
-
-#[cfg(feature = "usb-cdc")]
-/// Performs the `pend usb irq` operation for this subsystem.
-///
-/// Arguments select the bounded state, buffer, or hardware operation described by the signature.
-pub(crate) fn pend_usb_irq() {
-    <f405::Board as Backend>::pend_usb_irq();
-}
-
-#[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
-pub(crate) use f405::MEMORY_PROFILE;
-
-#[cfg(all(feature = "board-stm32f405-sd", feature = "abi-mpu"))]
-pub(crate) use f405::{ISOLATION_LAYOUT, activate_application_regions};
-
-#[cfg(all(feature = "board-stm32f405-sd", feature = "abi-mpu"))]
-pub(crate) use crate::security::mpu;
-
-#[cfg(all(feature = "board-stm32f405-sd", not(feature = "abi-current")))]
-pub(crate) use f405::APPLICATION_EXECUTION_SUPPORTED;
-
-#[cfg(all(feature = "board-stm32f405-sd", feature = "abi-current"))]
-pub(crate) use f405::TARGET_PROFILE;
-
-#[cfg(feature = "board-stm32f405-sd")]
-pub(crate) use f405::DMA_REGION;
-
-#[cfg(all(
-    feature = "board-stm32f405-sd",
-    feature = "abi-context-switch",
-    feature = "abi-current"
-))]
-pub(crate) use f405::{CONTEXT_CAPACITY, SCHEDULER_PROFILE};
-
-#[cfg(not(feature = "board-stm32f405-sd"))]
-compile_error!("Select a supported Dali OS platform feature");

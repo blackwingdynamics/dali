@@ -12,26 +12,43 @@ kernel/src/
 │   fault/{mod.rs,persistent.rs,scb.rs},launch/{mod.rs},
 │   mpu/{mod.rs,descriptor.rs,layout.rs,hardware.rs,tests.rs},
 │   privilege/{mod.rs,svc.rs},scheduling/{mod.rs}}
-├── platform/{mod.rs,f405/{mod.rs,board.rs,board/{acceptance.rs,config.rs,initialization.rs,input.rs,resources.rs,scheduler.rs,services.rs,usb.rs},drivers/{mod.rs,gpio.rs,i2c.rs,i2c/operations.rs,interrupt.rs,probe.rs,spi.rs,timeout.rs,timer.rs,uart.rs},sdio.rs,sdio_raw/{mod.rs,dma.rs,init.rs,status.rs,write.rs},watchdog/mod.rs}}
+├── platform/{mod.rs}
 ├── bootstrap/{mod.rs,
 │   startup/{mod.rs,logging.rs,watchdog.rs},
 │   lifecycle/{mod.rs,heartbeat.rs,status.rs},
 │   storage/{mod.rs,initialization.rs,acceptance.rs},
-│   loading/{mod.rs,package.rs}}
+│   loading/{mod.rs,cartridge.rs}}
 ├── drivers/{mod.rs,block.rs,sdio.rs}
-├── loader/{mod.rs,repository/{mod.rs,amrn.rs,chain.rs,discovery.rs,io.rs,streaming.rs,trust.rs,tests.rs},contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
+├── loader/{mod.rs,repository/{mod.rs,amrn.rs,chain/{mod.rs,bundle.rs,loading.rs,roles.rs,streaming.rs,types.rs,validation.rs},discovery.rs,installation.rs,io.rs,streaming.rs,trust.rs,tests.rs},contract/{mod.rs,catalog.rs,tests.rs},pipeline/{mod.rs,execution.rs,relocation.rs,identity.rs,discovery.rs,services.rs,signed.rs}}
 ├── logging/{mod.rs,rtt.rs,usb_cdc.rs}
 ├── runtime/{mod.rs,application/{mod.rs,lifecycle.rs,owner.rs,policy.rs},memory/{mod.rs,dma.rs,slots.rs},scheduling/{mod.rs,context_switch.rs,saved_state.rs,record.rs,context_table.rs,scheduler.rs,storage.rs,tick.rs},watchdog/mod.rs}
 └── storage/{mod.rs,durable.rs,durable/{journal.rs,coordinator.rs},filesystem/{mod.rs,artifacts.rs,multi.rs,read.rs,tests.rs,write.rs},repository.rs}
 
+crates/dali-boards/
+├── src/lib.rs
+└── dali-board-stm32f405/
+    ├── Cargo.toml, build.rs
+    └── src/{lib.rs,architecture.rs,backend.rs,board.rs,exceptions.rs,logging.rs,
+        mpu.rs,scheduling.rs,sdio.rs,watchdog.rs,
+        board/{acceptance.rs,config.rs,initialization.rs,input.rs,resources.rs,
+        scheduler.rs,services.rs,usb.rs},
+        drivers/{mod.rs,gpio.rs,i2c.rs,interrupt.rs,probe.rs,spi.rs,ssd1306.rs,
+        timeout.rs,timer.rs,uart.rs},
+        sdio_raw/{mod.rs,dma.rs,init.rs,status.rs,write.rs},
+        mpu/{descriptor.rs,hardware.rs,layout.rs}}
+
+crates/dali-firmware/
+├── Cargo.toml, build.rs
+└── src/bin/dali-f405.rs
+
 crates/dali-amrn/src/
 ├── lib.rs                         # Stable crate facade and legacy re-exports
 ├── compatibility/mod.rs           # ABI-to-format compatibility rules
-├── legacy/                        # Original fixed-origin package contract
+├── legacy/                        # Original fixed-origin cartridge contract
 │   ├── mod.rs, builder.rs, stream.rs, tests.rs
-├── v2/                            # Segmented ABI v3 package contract
+├── v2/                            # Segmented ABI v3 cartridge contract
 │   ├── mod.rs, tests.rs
-├── v3/                            # Relocatable ABI v3 package contract
+├── v3/                            # Relocatable ABI v3 cartridge contract
 │   ├── mod.rs, apply.rs, codec.rs, wire.rs, tests.rs
 ├── v4/                            # Identity and selection metadata extension
 │   ├── mod.rs, tests.rs
@@ -41,10 +58,10 @@ crates/dali-amrn/src/
 crates/dali-cli/src/
 ├── main.rs
 └── commands/
-    ├── mod.rs, doctor.rs, inspect.rs, key.rs, package.rs
+    ├── mod.rs, doctor.rs, inspect.rs, key.rs, cartridge.rs
     ├── app/
     │   ├── mod.rs, artifacts.rs, build.rs, init.rs, linker.rs
-    │   ├── new.rs, new_tests.rs, package.rs, relocations.rs
+    │   ├── new.rs, new_tests.rs, cartridge.rs, relocations.rs
     ├── device/
     │   ├── mod.rs, attach.rs, cdc.rs, console.rs, flash.rs
     │   ├── flash_transport.rs, info.rs
@@ -52,7 +69,7 @@ crates/dali-cli/src/
     │   ├── mod.rs
     │   ├── delegation/mod.rs
     │   ├── repository/{mod.rs,common.rs,init.rs,add_developer.rs,
-    │   │   manifest.rs,publish.rs,register_package.rs}
+    │   │   manifest.rs,publish.rs,register_cartridge.rs}
     │   └── bundle/{mod.rs,common.rs,generate.rs,verify.rs}
     └── target/{mod.rs,info.rs}
 
@@ -106,14 +123,18 @@ Each application fixture has its own `Cargo.toml`, `build.rs`, `src/lib.rs`,
 and `src/main.rs`. The fault and SVC fixtures additionally have a local
 `.cargo/config.toml`, `Cargo.lock`, and `dali.toml`. The relocation fixture has
 its own `Cargo.lock` but uses the root build configuration. `dali-app-hello`
-The kernel build script generates its linker `memory.x` from the selected
-target manifest; the generated script is not tracked.
+contains the tracked application source and manifest files listed by its
+package, while generated application targets and linker output remain
+ignored.
+The selected board backend build script generates its linker `memory.x` from
+the target manifest, and the firmware composition forwards that generated
+artifact to the final linker; the generated script is not tracked.
 
 The CLI documentation files currently tracked under `docs/cli/commands/` are:
 
 ```text
-app-build.md, app-init.md, app-new.md, app-package.md,
+app-build.md, app-init.md, app-new.md, app-cartridge.md,
 device-attach.md, device-console.md, device-flash.md, device-info.md,
-doctor.md, inspect.md, package.md, target-info.md, target-list.md,
+doctor.md, inspect.md, cartridge.md, target-info.md, target-list.md,
 target-scaffold.md
 ```

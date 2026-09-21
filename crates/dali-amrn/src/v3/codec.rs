@@ -1,9 +1,9 @@
 use super::wire;
 use super::*;
 
-/// Parses and validates an AMRN v3 package against a target contract.
-pub fn parse<'a>(package: &'a [u8], contract: Contract) -> Result<Package<'a>, Error> {
-    let header = wire::parse_header(package, contract)?;
+/// Parses and validates an AMRN v3 cartridge against a target contract.
+pub fn parse<'a>(cartridge: &'a [u8], contract: Contract) -> Result<Cartridge<'a>, Error> {
+    let header = wire::parse_header(cartridge, contract)?;
     let code_size = usize::try_from(header.code_size).map_err(|_| Error::InvalidPayload)?;
     let data_size = usize::try_from(header.data_init_size).map_err(|_| Error::InvalidPayload)?;
     let table_size = relocation_table_size(header.relocation_count)?;
@@ -13,20 +13,20 @@ pub fn parse<'a>(package: &'a [u8], contract: Contract) -> Result<Package<'a>, E
     let data_end = code_end
         .checked_add(data_size)
         .ok_or(Error::InvalidPayload)?;
-    let package_size = data_end
+    let cartridge_size = data_end
         .checked_add(table_size)
         .ok_or(Error::InvalidPayload)?;
-    if header.relocation_offset as usize != data_end || package.len() != package_size {
+    if header.relocation_offset as usize != data_end || cartridge.len() != cartridge_size {
         return Err(Error::InvalidPayload);
     }
-    let code = &package[HEADER_SIZE..code_end];
-    let initialized_data = &package[code_end..data_end];
-    let relocation_bytes = &package[data_end..package_size];
+    let code = &cartridge[HEADER_SIZE..code_end];
+    let initialized_data = &cartridge[code_end..data_end];
+    let relocation_bytes = &cartridge[data_end..cartridge_size];
     if wire::checksum(code, initialized_data, relocation_bytes) != header.crc32 {
         return Err(Error::CrcMismatch);
     }
     validate_relocations(header, contract, relocation_bytes)?;
-    Ok(Package {
+    Ok(Cartridge {
         header,
         code,
         initialized_data,
@@ -34,7 +34,7 @@ pub fn parse<'a>(package: &'a [u8], contract: Contract) -> Result<Package<'a>, E
     })
 }
 
-/// Encodes an AMRN v3 package into caller-provided storage.
+/// Encodes an AMRN v3 cartridge into caller-provided storage.
 pub fn encode(image: Image<'_>, contract: Contract, output: &mut [u8]) -> Result<usize, Error> {
     let header = header_from_image(image, contract)?;
     let table_size = relocation_table_size(header.relocation_count)?;
@@ -44,20 +44,20 @@ pub fn encode(image: Image<'_>, contract: Contract, output: &mut [u8]) -> Result
     let data_end = code_end
         .checked_add(image.initialized_data.len())
         .ok_or(Error::OutputTooSmall)?;
-    let package_size = data_end
+    let cartridge_size = data_end
         .checked_add(table_size)
         .ok_or(Error::OutputTooSmall)?;
-    if output.len() < package_size {
+    if output.len() < cartridge_size {
         return Err(Error::OutputTooSmall);
     }
     output[HEADER_SIZE..code_end].copy_from_slice(image.code);
     output[code_end..data_end].copy_from_slice(image.initialized_data);
-    let relocation_bytes = &mut output[data_end..package_size];
+    let relocation_bytes = &mut output[data_end..cartridge_size];
     encode_relocations(image.relocations, relocation_bytes)?;
     let mut header = header;
     header.crc32 = wire::checksum(image.code, image.initialized_data, relocation_bytes);
     wire::write_header(output, header);
-    Ok(package_size)
+    Ok(cartridge_size)
 }
 
 fn header_from_image(image: Image<'_>, contract: Contract) -> Result<Header, Error> {

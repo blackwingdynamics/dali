@@ -11,7 +11,7 @@ const ACCEPTANCE_MESSAGE: &str = "DMA application request rejected";
 ///
 /// # Safety
 ///
-/// The kernel invokes this symbol only after validating the ABI v4 package and
+/// The kernel invokes this symbol only after validating the ABI v4 cartridge and
 /// preparing the application PSP frame.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]

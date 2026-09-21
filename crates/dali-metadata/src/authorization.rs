@@ -1,87 +1,88 @@
-//! Hardware-neutral package authorization against a developer delegation.
+//! Hardware-neutral cartridge authorization against a developer delegation.
 
 use crate::{
-    DelegationMetadata, KeyId, RevocationMetadata, TargetPackage, validate_delegation,
+    DelegationMetadata, KeyId, RevocationMetadata, TargetCartridge, validate_delegation,
     validate_revocation_metadata, validate_target_profile,
 };
 
-/// Errors returned when a target package is outside its delegation scope.
+/// Errors returned when a target cartridge is outside its delegation scope.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum PackageAuthorizationError {
-    /// The package or delegation violates its bounded contract.
+pub enum CartridgeAuthorizationError {
+    /// The cartridge or delegation violates its bounded contract.
     InvalidMetadata,
-    /// The package refers to a different delegation record.
+    /// The cartridge refers to a different delegation record.
     DelegationMismatch,
-    /// The package developer identity differs from the delegation.
+    /// The cartridge developer identity differs from the delegation.
     DeveloperMismatch,
-    /// The package signing key differs from the delegated key.
+    /// The cartridge signing key differs from the delegated key.
     KeyMismatch,
-    /// The package namespace is not authorized.
+    /// The cartridge namespace is not authorized.
     NamespaceDenied,
-    /// The package target profile is not authorized.
+    /// The cartridge target profile is not authorized.
     TargetDenied,
-    /// The package ABI is not authorized.
+    /// The cartridge ABI is not authorized.
     AbiDenied,
-    /// The package is outside the delegation validity interval.
+    /// The cartridge is outside the delegation validity interval.
     NotYetValid,
-    /// The package delegation has expired.
+    /// The cartridge delegation has expired.
     Expired,
     /// The developer signing key is revoked for this repository generation.
     RevokedKey,
 }
 
-/// Checks that a target package is authorized by one signed delegation.
-pub fn authorize_target_package(
-    package: &TargetPackage,
+/// Checks that a target cartridge is authorized by one signed delegation.
+pub fn authorize_target_cartridge(
+    cartridge: &TargetCartridge,
     delegation_id: &crate::BoundedText<{ crate::MAX_DELEGATION_ID_BYTES }>,
     delegation: &DelegationMetadata,
     now: Option<u64>,
-) -> Result<(), PackageAuthorizationError> {
-    validate_package(package)?;
-    validate_delegation(delegation).map_err(|_| PackageAuthorizationError::InvalidMetadata)?;
-    if package.delegation_id != *delegation_id {
-        return Err(PackageAuthorizationError::DelegationMismatch);
+) -> Result<(), CartridgeAuthorizationError> {
+    validate_cartridge(cartridge)?;
+    validate_delegation(delegation).map_err(|_| CartridgeAuthorizationError::InvalidMetadata)?;
+    if cartridge.delegation_id != *delegation_id {
+        return Err(CartridgeAuthorizationError::DelegationMismatch);
     }
-    if package.developer_id != delegation.developer_id {
-        return Err(PackageAuthorizationError::DeveloperMismatch);
+    if cartridge.developer_id != delegation.developer_id {
+        return Err(CartridgeAuthorizationError::DeveloperMismatch);
     }
-    if package.developer_key_id != delegation.key_id {
-        return Err(PackageAuthorizationError::KeyMismatch);
+    if cartridge.developer_key_id != delegation.key_id {
+        return Err(CartridgeAuthorizationError::KeyMismatch);
     }
     if !delegation.allowed_namespaces[..usize::from(delegation.namespace_count)]
-        .contains(&package.namespace)
+        .contains(&cartridge.namespace)
     {
-        return Err(PackageAuthorizationError::NamespaceDenied);
+        return Err(CartridgeAuthorizationError::NamespaceDenied);
     }
     if !delegation.allowed_targets[..usize::from(delegation.target_count)]
-        .contains(&package.target_profile)
+        .contains(&cartridge.target_profile)
     {
-        return Err(PackageAuthorizationError::TargetDenied);
+        return Err(CartridgeAuthorizationError::TargetDenied);
     }
-    if !delegation.allowed_abis[..usize::from(delegation.abi_count)].contains(&package.abi_version)
+    if !delegation.allowed_abis[..usize::from(delegation.abi_count)]
+        .contains(&cartridge.abi_version)
     {
-        return Err(PackageAuthorizationError::AbiDenied);
+        return Err(CartridgeAuthorizationError::AbiDenied);
     }
     validate_validity(delegation, now)
 }
 
-/// Authorizes a package while applying the signed revocation document.
-pub fn authorize_target_package_with_revocations(
-    package: &TargetPackage,
+/// Authorizes a cartridge while applying the signed revocation document.
+pub fn authorize_target_cartridge_with_revocations(
+    cartridge: &TargetCartridge,
     delegation_id: &crate::BoundedText<{ crate::MAX_DELEGATION_ID_BYTES }>,
     delegation: &DelegationMetadata,
     revocations: &RevocationMetadata,
     repository_version: u64,
     now: Option<u64>,
-) -> Result<(), PackageAuthorizationError> {
-    authorize_target_package(package, delegation_id, delegation, now)?;
+) -> Result<(), CartridgeAuthorizationError> {
+    authorize_target_cartridge(cartridge, delegation_id, delegation, now)?;
     if is_developer_key_revoked(
         revocations,
-        &package.developer_id,
-        package.developer_key_id,
+        &cartridge.developer_id,
+        cartridge.developer_key_id,
         repository_version,
     )? {
-        return Err(PackageAuthorizationError::RevokedKey);
+        return Err(CartridgeAuthorizationError::RevokedKey);
     }
     Ok(())
 }
@@ -92,9 +93,9 @@ pub fn is_developer_key_revoked(
     developer_id: &crate::BoundedText<{ crate::MAX_DEVELOPER_ID_BYTES }>,
     key_id: KeyId,
     repository_version: u64,
-) -> Result<bool, PackageAuthorizationError> {
+) -> Result<bool, CartridgeAuthorizationError> {
     validate_revocation_metadata(metadata)
-        .map_err(|_| PackageAuthorizationError::InvalidMetadata)?;
+        .map_err(|_| CartridgeAuthorizationError::InvalidMetadata)?;
     Ok(metadata.records[..usize::from(metadata.record_count)]
         .iter()
         .any(|record| {
@@ -104,34 +105,35 @@ pub fn is_developer_key_revoked(
         }))
 }
 
-fn validate_package(package: &TargetPackage) -> Result<(), PackageAuthorizationError> {
-    if package.package_id.0 == [0; crate::KEY_ID_LENGTH]
-        || package.developer_key_id.0 == [0; crate::KEY_ID_LENGTH]
-        || package.sha256.0 == [0; crate::SHA256_LENGTH]
-        || package.length == 0
-        || package.amrn_format == 0
-        || package.abi_version == 0
+fn validate_cartridge(cartridge: &TargetCartridge) -> Result<(), CartridgeAuthorizationError> {
+    if cartridge.cartridge_id.0 == [0; crate::KEY_ID_LENGTH]
+        || cartridge.developer_key_id.0 == [0; crate::KEY_ID_LENGTH]
+        || cartridge.sha256.0 == [0; crate::SHA256_LENGTH]
+        || cartridge.length == 0
+        || cartridge.amrn_format == 0
+        || cartridge.abi_version == 0
     {
-        return Err(PackageAuthorizationError::InvalidMetadata);
+        return Err(CartridgeAuthorizationError::InvalidMetadata);
     }
-    let namespace = package
+    let namespace = cartridge
         .namespace
         .as_str()
-        .ok_or(PackageAuthorizationError::InvalidMetadata)?;
-    crate::validate_namespace(namespace).map_err(|_| PackageAuthorizationError::InvalidMetadata)?;
+        .ok_or(CartridgeAuthorizationError::InvalidMetadata)?;
+    crate::validate_namespace(namespace)
+        .map_err(|_| CartridgeAuthorizationError::InvalidMetadata)?;
     validate_target_profile(
-        package
+        cartridge
             .target_profile
             .as_str()
-            .ok_or(PackageAuthorizationError::InvalidMetadata)?,
+            .ok_or(CartridgeAuthorizationError::InvalidMetadata)?,
     )
-    .map_err(|_| PackageAuthorizationError::InvalidMetadata)?;
-    if package.developer_id.as_str().is_none()
-        || package.delegation_id.as_str().is_none()
-        || package.package_version.as_str().is_none()
-        || package.minimum_kernel_version.as_str().is_none()
+    .map_err(|_| CartridgeAuthorizationError::InvalidMetadata)?;
+    if cartridge.developer_id.as_str().is_none()
+        || cartridge.delegation_id.as_str().is_none()
+        || cartridge.cartridge_version.as_str().is_none()
+        || cartridge.minimum_kernel_version.as_str().is_none()
     {
-        return Err(PackageAuthorizationError::InvalidMetadata);
+        return Err(CartridgeAuthorizationError::InvalidMetadata);
     }
     Ok(())
 }
@@ -139,15 +141,15 @@ fn validate_package(package: &TargetPackage) -> Result<(), PackageAuthorizationE
 fn validate_validity(
     delegation: &DelegationMetadata,
     now: Option<u64>,
-) -> Result<(), PackageAuthorizationError> {
+) -> Result<(), CartridgeAuthorizationError> {
     let Some(now) = now else {
         return Ok(());
     };
     if delegation.not_before != 0 && now < delegation.not_before {
-        return Err(PackageAuthorizationError::NotYetValid);
+        return Err(CartridgeAuthorizationError::NotYetValid);
     }
     if delegation.not_after != 0 && now > delegation.not_after {
-        return Err(PackageAuthorizationError::Expired);
+        return Err(CartridgeAuthorizationError::Expired);
     }
     Ok(())
 }
@@ -191,9 +193,9 @@ mod tests {
         }
     }
 
-    fn package() -> TargetPackage {
-        TargetPackage {
-            package_id: crate::PackageId([1; crate::KEY_ID_LENGTH]),
+    fn cartridge() -> TargetCartridge {
+        TargetCartridge {
+            cartridge_id: crate::CartridgeId([1; crate::KEY_ID_LENGTH]),
             namespace: text("developer/app"),
             developer_id: text("developer"),
             delegation_id: text("delegation-1"),
@@ -201,7 +203,7 @@ mod tests {
             target_profile: text("f405"),
             amrn_format: 5,
             abi_version: 3,
-            package_version: text("1.0.0"),
+            cartridge_version: text("1.0.0"),
             minimum_kernel_version: text("0.1.0"),
             length: 256,
             sha256: Sha256Digest([2; crate::SHA256_LENGTH]),
@@ -211,47 +213,62 @@ mod tests {
     }
 
     #[test]
-    fn accepts_a_package_inside_the_delegation_scope() {
+    fn accepts_a_cartridge_inside_the_delegation_scope() {
         assert_eq!(
-            authorize_target_package(&package(), &text("delegation-1"), &delegation(), Some(150)),
+            authorize_target_cartridge(
+                &cartridge(),
+                &text("delegation-1"),
+                &delegation(),
+                Some(150)
+            ),
             Ok(())
         );
     }
 
     #[test]
-    fn rejects_a_package_outside_the_namespace_scope() {
-        let mut package = package();
-        package.namespace = text("other/app");
+    fn rejects_a_cartridge_outside_the_namespace_scope() {
+        let mut cartridge = cartridge();
+        cartridge.namespace = text("other/app");
         assert_eq!(
-            authorize_target_package(&package, &text("delegation-1"), &delegation(), Some(150)),
-            Err(PackageAuthorizationError::NamespaceDenied)
+            authorize_target_cartridge(&cartridge, &text("delegation-1"), &delegation(), Some(150)),
+            Err(CartridgeAuthorizationError::NamespaceDenied)
         );
     }
 
     #[test]
-    fn rejects_packages_before_and_after_delegation_validity() {
+    fn rejects_cartridges_before_and_after_delegation_validity() {
         assert_eq!(
-            authorize_target_package(&package(), &text("delegation-1"), &delegation(), Some(99)),
-            Err(PackageAuthorizationError::NotYetValid)
+            authorize_target_cartridge(
+                &cartridge(),
+                &text("delegation-1"),
+                &delegation(),
+                Some(99)
+            ),
+            Err(CartridgeAuthorizationError::NotYetValid)
         );
         assert_eq!(
-            authorize_target_package(&package(), &text("delegation-1"), &delegation(), Some(201)),
-            Err(PackageAuthorizationError::Expired)
+            authorize_target_cartridge(
+                &cartridge(),
+                &text("delegation-1"),
+                &delegation(),
+                Some(201)
+            ),
+            Err(CartridgeAuthorizationError::Expired)
         );
     }
 
     #[test]
     fn rejects_a_different_developer_key() {
-        let mut package = package();
-        package.developer_key_id = KeyId([7; crate::KEY_ID_LENGTH]);
+        let mut cartridge = cartridge();
+        cartridge.developer_key_id = KeyId([7; crate::KEY_ID_LENGTH]);
         assert_eq!(
-            authorize_target_package(&package, &text("delegation-1"), &delegation(), Some(150)),
-            Err(PackageAuthorizationError::KeyMismatch)
+            authorize_target_cartridge(&cartridge, &text("delegation-1"), &delegation(), Some(150)),
+            Err(CartridgeAuthorizationError::KeyMismatch)
         );
     }
 
     #[test]
-    fn rejects_a_package_after_its_developer_key_is_revoked() {
+    fn rejects_a_cartridge_after_its_developer_key_is_revoked() {
         let mut records = [RevocationRecord::default(); crate::MAX_REVOCATIONS];
         records[0] = RevocationRecord {
             developer_id: text("developer"),
@@ -270,15 +287,15 @@ mod tests {
             record_count: 1,
         };
         assert_eq!(
-            authorize_target_package_with_revocations(
-                &package(),
+            authorize_target_cartridge_with_revocations(
+                &cartridge(),
                 &text("delegation-1"),
                 &delegation(),
                 &revocations,
                 2,
                 Some(150),
             ),
-            Err(PackageAuthorizationError::RevokedKey)
+            Err(CartridgeAuthorizationError::RevokedKey)
         );
     }
 }

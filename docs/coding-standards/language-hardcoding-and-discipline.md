@@ -29,7 +29,7 @@ The following must be represented by named constants, typed values, configuratio
 - GPIO pins and peripheral identifiers;
 - clock frequencies, baud rates, timeouts, and delays;
 - buffer sizes, payload limits, stack sizes, and queue capacities;
-- filesystem paths and package names;
+- filesystem paths and cartridge names;
 - protocol versions, target IDs, ABI versions, and feature flags;
 - device identifiers, retry counts, and safety thresholds.
 
@@ -44,3 +44,21 @@ Always generate minimal, surgically precise Git diffs or patches. Do not rewrite
 Large implementation files are forbidden. Rust code must be divided into small, focused modules and submodules with one clear responsibility. A Rust implementation file must not exceed 300 lines without an explicit architectural exception documented in the review.
 
 When a file approaches the limit, split it before adding more behavior. Do not hide unrelated formatting, renaming, or refactoring inside a functional change. Preserve user changes and modify only the lines required for the task.
+
+## 4. Platform portability and backend isolation
+
+The kernel core must remain hardware-neutral. Vendor PAC/HAL types, register
+access, linker and memory definitions, interrupt vectors, clock trees, pin
+mappings, and peripheral ownership belong only to the selected platform
+backend directory.
+
+A new board must be implemented in a new backend directory with its own typed
+target profile. It must not require board-specific branches, copied hardware
+constants, or policy changes in the shared kernel. Backend selection and
+capability validation must be driven by target metadata and must reject an
+ambiguous or unsupported configuration at build time.
+
+Every backend change must preserve the existing boot order, ABI, loader and
+security policy, public driver contracts, and frozen subsystem boundaries.
+Keep each backend change separate from policy changes and validate it as an
+independent checkpoint with both software checks and real target evidence.

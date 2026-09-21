@@ -1,4 +1,4 @@
-# Format 3 package contract
+# Format 3 cartridge contract
 
 The current AMRN v1 and v2 formats remain unchanged. Format 3 adds a
 relocation-table descriptor containing:
@@ -8,9 +8,9 @@ relocation-table descriptor containing:
 - the linked code base and linked data base;
 - the preferred image base or segment-relative bases;
 - the number of relocation entries;
-- the relocation table checksum, covered by the package CRC.
+- the relocation table checksum, covered by the cartridge CRC.
 
-The table is part of the authenticated-by-integrity package payload. The
+The table is part of the authenticated-by-integrity cartridge payload. The
 loader must reject truncated tables, arithmetic overflow, unknown table
 versions, unknown relocation kinds, entries outside declared segments, and
 patches outside the declared patch width or alignment.
@@ -33,7 +33,7 @@ must never manufacture a pointer to kernel RAM, peripheral space, an interrupt
 vector, or an arbitrary external address.
 
 The loader calculates each final address from the manifest slot whose declared
-code and data load addresses match the package header. It does not infer a
-slot from a package filename or use a fixed application address as a fallback.
+code and data load addresses match the cartridge header. It does not infer a
+slot from a cartridge filename or use a fixed application address as a fallback.
 The selected code and data regions must satisfy the target manifest's
 alignment, capacity, MPU, and non-overlap constraints.

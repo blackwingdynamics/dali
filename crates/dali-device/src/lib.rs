@@ -11,6 +11,8 @@ pub enum Transport {
     Dfu,
     /// USB CDC runtime-console inventory.
     Cdc,
+    /// USB bulk installer inventory.
+    Bulk,
 }
 
 impl Transport {
@@ -20,6 +22,7 @@ impl Transport {
             Self::Probe => "probe",
             Self::Dfu => "dfu",
             Self::Cdc => "cdc",
+            Self::Bulk => "bulk",
         }
     }
 }
@@ -61,6 +64,8 @@ pub enum Capability {
     Flash,
     /// The endpoint can provide a runtime console.
     Console,
+    /// The endpoint can receive an installer stream.
+    Install,
 }
 
 impl Capability {
@@ -70,6 +75,7 @@ impl Capability {
             Self::Attach => "attach",
             Self::Flash => "flash",
             Self::Console => "console",
+            Self::Install => "install",
         }
     }
 }
@@ -138,6 +144,7 @@ mod tests {
             record(Transport::Probe, "b"),
             record(Transport::Probe, "a"),
             record(Transport::Dfu, "a"),
+            record(Transport::Bulk, "a"),
         ]);
         let keys: Vec<_> = records
             .iter()
@@ -150,6 +157,7 @@ mod tests {
                 (Transport::Probe, "b"),
                 (Transport::Dfu, "a"),
                 (Transport::Cdc, "z"),
+                (Transport::Bulk, "a"),
             ]
         );
     }
@@ -167,7 +175,9 @@ mod tests {
     #[test]
     fn exposes_stable_contract_spellings() {
         assert_eq!(Transport::Probe.as_str(), "probe");
+        assert_eq!(Transport::Bulk.as_str(), "bulk");
         assert_eq!(State::Unidentified.as_str(), "unidentified");
         assert_eq!(Capability::Flash.as_str(), "flash");
+        assert_eq!(Capability::Install.as_str(), "install");
     }
 }

@@ -1,6 +1,6 @@
 #![no_std]
 
-//! Hardware-independent AMRN package formats and validation.
+//! Hardware-independent AMRN cartridge formats and validation.
 
 pub mod compatibility;
 mod legacy;

@@ -28,7 +28,7 @@ const _: () = assert!(TARGET_SLOT_CODE_ORIGIN != 0);
 ///
 /// # Safety
 ///
-/// The kernel invokes this symbol only after validating the AMRN package and
+/// The kernel invokes this symbol only after validating the AMRN cartridge and
 /// preparing the slot0 application PSP frame.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.amiran_entry")]

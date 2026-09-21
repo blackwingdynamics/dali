@@ -137,10 +137,10 @@ fn validate_sdk_directory(sdk_directory: &Path) -> Result<(), String> {
     let manifest = sdk_directory.join("Cargo.toml");
     let contents = fs::read_to_string(&manifest)
         .map_err(|error| format!("cannot read SDK manifest {}: {error}", manifest.display()))?;
-    let has_dali_package_name = contents
+    let has_dali_cartridge_name = contents
         .lines()
         .any(|line| line.trim() == "name = \"dali\"");
-    if !has_dali_package_name {
+    if !has_dali_cartridge_name {
         return Err(format!(
             "{SDK_PATH_FLAG} must point to a Cargo crate named `dali`: {}",
             sdk_directory.display()

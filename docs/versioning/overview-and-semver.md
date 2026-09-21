@@ -8,15 +8,15 @@ Dali OS has several versioned contracts. They must not be treated as one number 
 | --- | --- | --- |
 | Kernel | Semantic Versioning | Kernel runtime and service compatibility |
 | `dali` | Semantic Versioning | Application developer API |
-| `dali-cli` | Semantic Versioning | Package and device tooling |
-| `.amrn` format | Integer format version | Binary package parsing rules |
+| `dali-cli` | Semantic Versioning | Cartridge and device tooling |
+| `.amrn` format | Integer format version | Binary cartridge parsing rules |
 | Metadata wire format | Integer format version | Canonical repository metadata encoding |
 | Application ABI | Integer ABI version | Kernel-to-application entry contract |
-| Application package | Semantic Versioning | Application release identity |
+| Application cartridge | Semantic Versioning | Application release identity |
 
 ## 2. Semantic Versioning
 
-Kernel, SDK, CLI, and application packages follow:
+Kernel, SDK, CLI, and application cartridges follow:
 
 ```text
 MAJOR.MINOR.PATCH

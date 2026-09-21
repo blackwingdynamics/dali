@@ -36,7 +36,18 @@ pub(super) fn generate_registry(manifests: &[Manifest]) -> String {
         .map(|manifest| constant_name(&manifest.profile.name))
         .collect::<Vec<_>>()
         .join(", ");
+    let mut backends = manifests
+        .iter()
+        .map(|manifest| manifest.profile.backend.as_str())
+        .collect::<Vec<_>>();
+    backends.sort_unstable();
+    backends.dedup();
+    let backends = backends
+        .into_iter()
+        .map(crate::render::string_literal)
+        .collect::<Vec<_>>()
+        .join(", ");
     format!(
-        "{definitions}\n\n{capacities}\n\npub const ALL_TARGETS: &[TargetProfile] = &[{names}];\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{supported}];\n"
+        "{definitions}\n\n{capacities}\n\npub const ALL_TARGETS: &[TargetProfile] = &[{names}];\npub const SUPPORTED_TARGETS: &[TargetProfile] = &[{supported}];\n/// Backend identifiers generated from target manifests.\npub const SUPPORTED_BACKENDS: &[&str] = &[{backends}];\n"
     )
 }

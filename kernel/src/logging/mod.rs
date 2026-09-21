@@ -8,16 +8,13 @@ mod buffer {
     /// Defines the `LOG_LINE_CAPACITY` bound used by this subsystem.
     pub(crate) const LOG_LINE_CAPACITY: usize = 128;
     /// Defines the `LOG_QUEUE_CAPACITY` bound used by this subsystem.
-    pub(crate) const LOG_QUEUE_CAPACITY: usize = 32;
+    pub(crate) const LOG_QUEUE_CAPACITY: usize = 64;
     /// Names the bounded `LogLine` type used by this subsystem.
     pub(crate) type LogLine = dali_usb::LogLine<LOG_LINE_CAPACITY>;
     /// Names the bounded `LogQueue` type used by this subsystem.
     pub(crate) type LogQueue = dali_usb::LogQueue<LOG_LINE_CAPACITY, LOG_QUEUE_CAPACITY>;
 }
 mod rtt;
-#[cfg(feature = "usb-cdc")]
-pub(crate) mod usb_cdc;
-
 #[cfg(feature = "usb-cdc")]
 use buffer::{LogLine, LogQueue};
 
@@ -74,20 +71,20 @@ pub fn initialize() {
     rtt::initialize();
 }
 
-/// Initializes the optional USB CDC logging backend.
-#[cfg(feature = "usb-cdc")]
-pub(crate) fn initialize_usb(
-    resources: crate::platform::UsbResources,
-    force_reenumeration: bool,
-    delay: &mut dyn usb_cdc::UsbResetDelay,
-) {
-    usb_cdc::initialize(resources, force_reenumeration, delay);
-}
-
 /// Services the optional USB CDC device state machine from its interrupt.
 #[cfg(feature = "usb-cdc")]
 pub(crate) fn service_usb_irq() {
-    usb_cdc::service_irq(drain_usb_queue);
+    #[cfg(feature = "usb-install")]
+    crate::platform::service_installation_irq(drain_usb_queue, crate::installation::receive_bytes);
+    #[cfg(not(feature = "usb-install"))]
+    crate::platform::service_usb_irq(drain_usb_queue);
+}
+
+/// Entry point called by the selected board's USB interrupt wrapper.
+#[cfg(feature = "usb-cdc")]
+#[unsafe(export_name = "dali_kernel_service_usb_irq")]
+pub extern "C" fn dali_kernel_service_usb_irq() {
+    service_usb_irq();
 }
 
 /// Writes a structured, allocation-free message to the selected backend.
@@ -101,8 +98,8 @@ pub fn log(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
             subsystem,
             arguments
         )) {
-            cortex_m::interrupt::free(|_| {
-                // SAFETY: Main-context logging masks OTG_FS while updating the
+            critical_section::with(|_| {
+                // SAFETY: Main-context logging masks the USB interrupt while updating the
                 // queue, so the handler cannot observe a partial record.
                 unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).push(line) };
                 crate::platform::pend_usb_irq();
@@ -114,7 +111,7 @@ pub fn log(level: Level, subsystem: &'static str, arguments: Arguments<'_>) {
 #[cfg(feature = "usb-cdc")]
 /// Performs the `drain_usb_queue` operation for this subsystem.
 fn drain_usb_queue(link: dali_usb::LinkState, sink: &mut dyn dali_usb::ByteSink) {
-    // SAFETY: This runs in the OTG_FS handler while main-context queue updates
+    // SAFETY: This runs in the USB handler while main-context queue updates
     // are masked by the interrupt-free critical section.
     let report =
         unsafe { dali_usb::drain(&mut *core::ptr::addr_of_mut!(USB_LOG_QUEUE), link, sink) };
@@ -136,10 +133,10 @@ fn drain_usb_queue(link: dali_usb::LinkState, sink: &mut dyn dali_usb::ByteSink)
     {
         // The queue is empty after the first drain, so the warning remains
         // queued if the endpoint accepts only part of it or disconnects.
-        // SAFETY: This function runs only in the OTG_FS handler; main-context
+        // SAFETY: This function runs only in the USB handler; main-context
         // queue updates are masked while the handler cannot be preempted.
         unsafe { (*core::ptr::addr_of_mut!(USB_LOG_QUEUE)).push(warning) };
-        // SAFETY: The same OTG_FS ownership invariant applies while the
+        // SAFETY: The same USB ownership invariant applies while the
         // warning is drained immediately after it is queued.
         let queue = unsafe { &mut *core::ptr::addr_of_mut!(USB_LOG_QUEUE) };
         let report = dali_usb::drain(queue, link, sink);

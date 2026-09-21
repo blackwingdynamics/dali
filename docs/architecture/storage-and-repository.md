@@ -6,7 +6,7 @@ The storage subsystem is responsible for:
 - SD-card initialization at a safe low SPI frequency;
 - block reads;
 - FAT16/FAT32 read-only filesystem access;
-- root-directory package discovery;
+- root-directory cartridge discovery;
 - bounded reads into loader-owned buffers.
 
 The boot watchdog is deliberately installed immediately before the selected
@@ -44,9 +44,10 @@ observation; integrity and transport errors remain faults. Initialization and
 the first block read use a bounded reinitialization window before returning to
 the kernel recovery heartbeat. When recovery retains the SDIO reader, the
 heartbeat performs bounded presence probes and reinitializes the reader at the
-configured recovery interval; a successful probe transitions the runtime to
-`Ready`. The existing boot-only repository contract is unchanged, and a
-recovered card is not used to relaunch an application without a new boot.
+configured recovery interval. A successful probe re-enters the normal
+initialized-reader loading path, so a present cartridge can be verified and
+launched without a kernel reset. If no card is present, the kernel remains in
+its heartbeat and recovery state.
 
 ## Board-agnostic repository and durable-storage boundary
 
@@ -74,30 +75,53 @@ STM32F405 SDIO -> F405 block adapter -> FAT32 adapter -> logical storage traits
 
 The repository loader consumes `RepositoryStreamStorage` through bounded
 two-pass role verification. The complete Root -> Timestamp -> Snapshot ->
-Targets -> Delegation -> Revocation -> Package -> AMRN chain is assembled before
-the execution loader receives a package. The loader does not enumerate
-directories or choose packages from filenames. This keeps future board adapters
+Targets -> Delegation -> Revocation -> Cartridge -> AMRN chain is assembled before
+the execution loader receives a cartridge. The loader does not enumerate
+directories or choose cartridges from filenames. This keeps future board adapters
 replaceable without changing trust policy or loader logic.
 
 When the `repository-loader` feature is enabled, the F405 boot path constructs
 the concrete FAT adapter, requests the board target profile, selects every
 matching executable Binary v2 Targets record within the bounded execution
-capacity, opens each lowercase content-addressed `packages/<sha256>.amrn`
+capacity, opens each lowercase content-addressed `amrns/<sha256>.amrn`
 object, and passes the verified streams to the existing slot/relocation loader.
 The target memory contract is resolved from each manifest-owned slot at the
 dependency-injection boundary; the generic repository loader contains no F405
-or SDIO types. The default MVP build keeps the legacy root-package path because
+or SDIO types. The default MVP build keeps the legacy root-cartridge path because
 repository boot remains feature-gated. The Binary v2 repository path has F405
 development-profile hardware evidence, but it is not the default MVP profile.
 
 The concrete F405 adapter is `FatRepositoryStorage<D>`. Its constructor accepts
 an explicit `RepositoryMetadataFormat` (`JsonV1` or `BinaryV2`) and resolves the
 board-agnostic logical documents through `metadata/`,
-`metadata/delegat/`, and `packages/`, using FAT-compatible bounded directory names, while durable artifacts remain
+`metadata/delegat/`, and `amrns/`, using FAT-compatible bounded directory names, while durable artifacts remain
 the kernel-owned root files `DALI-ACT.BIN`, `DALI-CAN.BIN`, and `DALI-CMT.BIN`.
-The adapter also exposes `with_content_addressed_package()`, which opens only
-the lowercase SHA-256 package filename under `packages/` and hands the file to
+The adapter also exposes `with_content_addressed_cartridge()`, which opens only
+the lowercase SHA-256 cartridge filename under `amrns/` and hands the file to
 the existing bounded AMRN execution loaders.
+
+## Additional artifact sources
+
+SDIO is one storage adapter, not the kernel's permanent cartridge source. A
+future flash-backed artifact store, NVMe adapter, or other durable medium must
+implement the hardware-neutral `ArtifactSource` contract in
+`kernel/src/storage/repository.rs`. USB CDC is an installation transport only:
+it may deliver an AMRN artifact to a staged persistent-storage region, but it
+must not become a second loader policy or be mixed with the logging stream. The
+accepted architecture and staged rollout are recorded in
+[ADR-0001](adr/0001-multi-source-artifact-storage.md).
+
+The current F405 milestone deliberately narrows that future architecture to one
+Flash cartridge. The manifest-owned Flash region is limited to one AMRN of at
+most 64 KiB. Boot attempts that cartridge first; if the region is empty or the
+Flash source is unavailable, boot falls back to the SD repository. One boot
+cycle selects one source only. Simultaneous Flash-and-SD discovery, multiple
+Flash cartridges, and multi-source scheduling remain deferred until the single
+cartridge write, validation, replacement, and recovery lifecycle is stable.
+
+The public backend API also defines a bounded `ArtifactReader` contract for
+read-only byte-range access. It describes the transport boundary only; AMRN
+validation and execution remain owned by the kernel loader.
 
 The adapter now exposes the streaming contract directly. The shared Binary v2
 envelope parser validates fragmented envelopes without retaining their body;
@@ -108,20 +132,20 @@ kernel repository loader now also contains a bounded two-pass AMRN v5 validator
 under `loader/repository/amrn.rs`, a generic role-stream capture/replay helper
 under `loader/repository/chain.rs`, Root anchor membership wiring through the
 target manifest, and the board-agnostic `load_binary_repository()` chain
-assembler. `load_repository_package()` is the boot handoff: it injects the F405
-adapter into the generic chain and then opens only the digest-selected package
+assembler. `load_repository_cartridge()` is the boot handoff: it injects the F405
+adapter into the generic chain and then opens only the digest-selected cartridge
 for the existing execution pipeline.
 
 ## Production multi-application policy
 
 The legacy root-file path intentionally accepts exactly one root `.amrn`
-package and rejects ambiguous selection. The feature-gated Binary v2
+cartridge and rejects ambiguous selection. The feature-gated Binary v2
 repository path already selects multiple executable Targets records within a
-bounded capacity and maps each verified package to a manifest-owned slot.
+bounded capacity and maps each verified cartridge to a manifest-owned slot.
 The feature-gated runtime can execute declared contexts through its
 hardware-verified scheduler and MPU switching path, but it is not yet a
 general production multi-application policy. Dali must still define lifecycle,
 replacement, restart, recovery, and application-to-application behavior for
-missing, duplicate, incompatible, or already-reserved packages. The slot
+missing, duplicate, incompatible, or already-reserved cartridges. The slot
 manager must consume validated selection; it must not infer ownership from
-directory order or package names.
+directory order or cartridge names.

@@ -7,6 +7,6 @@ validation can be read independently.
 ## Prepared sections
 
 - [Overview and layout](overview-and-layout.md)
-- [Build, package, and inspect](build-package-and-inspect.md)
+- [Build, cartridge, and inspect](build-cartridge-and-inspect.md)
 - [CLI installation and deployment](cli-install-and-deploy.md)
 - [Boundaries and troubleshooting](boundaries-and-troubleshooting.md)

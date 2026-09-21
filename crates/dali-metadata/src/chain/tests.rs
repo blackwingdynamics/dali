@@ -35,20 +35,20 @@ struct Fixture {
     targets: Vec<u8>,
     revocations: Vec<u8>,
     delegation: Vec<u8>,
-    package: Vec<u8>,
-    package_id: PackageId,
+    cartridge: Vec<u8>,
+    cartridge_id: CartridgeId,
 }
 
 impl Fixture {
-    fn documents(&self) -> RepositoryPackageDocuments<'_> {
-        RepositoryPackageDocuments {
+    fn documents(&self) -> RepositoryCartridgeDocuments<'_> {
+        RepositoryCartridgeDocuments {
             root: envelope(&self.root, key_id(1), ROOT_SEED),
             timestamp: envelope(&self.timestamp, key_id(2), TIMESTAMP_SEED),
             snapshot: envelope(&self.snapshot, key_id(3), SNAPSHOT_SEED),
             targets: envelope(&self.targets, key_id(4), TARGETS_SEED),
             revocations: envelope(&self.revocations, key_id(6), REVOCATION_SEED),
             delegation: envelope(&self.delegation, key_id(5), DELEGATION_SEED),
-            package: &self.package,
+            cartridge: &self.cartridge,
         }
     }
 }
@@ -88,7 +88,7 @@ fn role(role: MetadataRole, key: KeyId) -> RoleDefinition {
 }
 
 fn fixture(revoked: bool) -> Fixture {
-    let package_id = PackageId([0xAA; crate::KEY_ID_LENGTH]);
+    let cartridge_id = CartridgeId([0xAA; crate::KEY_ID_LENGTH]);
     let mut unsigned = std::vec![0; v5::HEADER_SIZE + 4];
     let image = v5::Image {
         image: v3::Image {
@@ -102,8 +102,8 @@ fn fixture(revoked: bool) -> Fixture {
             relocations: &[],
         },
         metadata: v4::Metadata {
-            package_id: package_id.0,
-            package_version: v4::Version {
+            cartridge_id: cartridge_id.0,
+            cartridge_version: v4::Version {
                 major: 1,
                 minor: 0,
                 patch: 0,
@@ -119,19 +119,19 @@ fn fixture(revoked: bool) -> Fixture {
     };
     let unsigned_len = v5::encode_unsigned(image, CONTRACT, &mut unsigned).expect("AMRN encodes");
     unsigned.truncate(unsigned_len);
-    let mut package = std::vec![0; unsigned_len + v5::SIGNATURE_SIZE];
+    let mut cartridge = std::vec![0; unsigned_len + v5::SIGNATURE_SIZE];
     v5::append_signature(
         &unsigned,
         &key_id(9).0,
         &dali_crypto::sign(&DEVELOPER_SEED, &unsigned),
-        &mut package,
+        &mut cartridge,
     )
     .expect("AMRN signs");
-    package.truncate(unsigned_len + v5::SIGNATURE_SIZE);
+    cartridge.truncate(unsigned_len + v5::SIGNATURE_SIZE);
 
     let delegation = delegation_body();
     let revocations = revocation_body(revoked);
-    let target = target_record(package_id, &package);
+    let target = target_record(cartridge_id, &cartridge);
     let targets = targets_body(target);
     let snapshot = snapshot_body(&targets, &revocations, &delegation);
     let timestamp = timestamp_body(&snapshot);
@@ -143,8 +143,8 @@ fn fixture(revoked: bool) -> Fixture {
         targets,
         revocations,
         delegation,
-        package,
-        package_id,
+        cartridge,
+        cartridge_id,
     }
 }
 
@@ -262,9 +262,9 @@ fn revocation_body(revoked: bool) -> Vec<u8> {
     output
 }
 
-fn target_record(package_id: PackageId, package: &[u8]) -> TargetPackage {
-    TargetPackage {
-        package_id,
+fn target_record(cartridge_id: CartridgeId, cartridge: &[u8]) -> TargetCartridge {
+    TargetCartridge {
+        cartridge_id,
         namespace: text("developer/app"),
         developer_id: text("developer"),
         delegation_id: text("delegation-1"),
@@ -272,20 +272,20 @@ fn target_record(package_id: PackageId, package: &[u8]) -> TargetPackage {
         target_profile: text("f405"),
         amrn_format: 5,
         abi_version: 3,
-        package_version: text("1.0.0"),
+        cartridge_version: text("1.0.0"),
         minimum_kernel_version: text("0.1.0"),
-        length: package.len() as u32,
-        sha256: digest(package),
+        length: cartridge.len() as u32,
+        sha256: digest(cartridge),
         required_services: 1,
         slot_id: 1,
     }
 }
 
-fn targets_body(target: TargetPackage) -> Vec<u8> {
+fn targets_body(target: TargetCartridge) -> Vec<u8> {
     let mut delegations = [BoundedText::default(); MAX_DELEGATION_SCOPES];
     delegations[0] = text("delegation-1");
-    let mut packages = [TargetPackage::default(); crate::MAX_TARGET_RECORDS];
-    packages[0] = target;
+    let mut cartridges = [TargetCartridge::default(); crate::MAX_TARGET_RECORDS];
+    cartridges[0] = target;
     let metadata = TargetsMetadata {
         header: MetadataHeader {
             role: MetadataRole::Targets,
@@ -294,15 +294,15 @@ fn targets_body(target: TargetPackage) -> Vec<u8> {
         },
         delegations,
         delegation_count: 1,
-        packages,
-        package_count: 1,
+        cartridges,
+        cartridge_count: 1,
     };
     let mut output = std::vec![0; MAX_TARGETS_BYTES];
     let length = encode_targets_signed(
         &mut output,
         metadata.header,
         &metadata.delegations[..usize::from(metadata.delegation_count)],
-        &metadata.packages[..usize::from(metadata.package_count)],
+        &metadata.cartridges[..usize::from(metadata.cartridge_count)],
     )
     .expect("targets encodes");
     output.truncate(length);
@@ -363,9 +363,9 @@ fn timestamp_body(snapshot: &[u8]) -> Vec<u8> {
 fn verifies_the_complete_real_ed25519_chain() {
     let fixture = fixture(false);
     let verified =
-        verify_repository_package(fixture.documents(), fixture.package_id, CONTRACT, None)
+        verify_repository_cartridge(fixture.documents(), fixture.cartridge_id, CONTRACT, None)
             .expect("chain verifies");
-    assert_eq!(verified.target.package_id, fixture.package_id);
+    assert_eq!(verified.target.cartridge_id, fixture.cartridge_id);
 }
 
 #[test]
@@ -374,7 +374,7 @@ fn rejects_a_tampered_metadata_signature() {
     let mut documents = fixture.documents();
     documents.targets.signatures.records[0].signature.0[0] ^= 1;
     assert_eq!(
-        verify_repository_package(documents, fixture.package_id, CONTRACT, None),
+        verify_repository_cartridge(documents, fixture.cartridge_id, CONTRACT, None),
         Err(ChainVerificationError::Signature)
     );
 }
@@ -383,7 +383,7 @@ fn rejects_a_tampered_metadata_signature() {
 fn rejects_a_revoked_developer_key() {
     let fixture = fixture(true);
     assert_eq!(
-        verify_repository_package(fixture.documents(), fixture.package_id, CONTRACT, None),
+        verify_repository_cartridge(fixture.documents(), fixture.cartridge_id, CONTRACT, None),
         Err(ChainVerificationError::Authorization)
     );
 }
@@ -391,9 +391,9 @@ fn rejects_a_revoked_developer_key() {
 #[test]
 fn rejects_a_tampered_amrn_artifact() {
     let mut fixture = fixture(false);
-    fixture.package[v5::HEADER_SIZE] ^= 1;
+    fixture.cartridge[v5::HEADER_SIZE] ^= 1;
     assert_eq!(
-        verify_repository_package(fixture.documents(), fixture.package_id, CONTRACT, None,),
+        verify_repository_cartridge(fixture.documents(), fixture.cartridge_id, CONTRACT, None,),
         Err(ChainVerificationError::InvalidAmrn)
     );
 }

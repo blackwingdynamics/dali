@@ -4,7 +4,7 @@ The current loader is intentionally read-only and bounded:
 
 1. select exactly one root AMRN file;
 2. read and validate the fixed header;
-3. verify the declared package length;
+3. verify the declared cartridge length;
 4. stream the payload in bounded chunks;
 5. verify the CRC32;
 6. report success or a typed failure.
@@ -27,10 +27,10 @@ before the application is considered accepted.
 - `No storage medium detected; entering kernel heartbeat` means no configured
   storage medium is available; the kernel remains in its idle heartbeat state
   and does not expose a transport timeout as an application failure.
-- `Root scan found multiple AMRN file(s)` means the current exact-one-package
+- `Root scan found multiple AMRN file(s)` means the current exact-one-cartridge
   MVP policy was violated.
-- `AMRN validation failed` means the package header, bounds, entry metadata,
+- `AMRN validation failed` means the cartridge header, bounds, entry metadata,
   length, or CRC32 is invalid.
 
-Do not rename a source file to `.amrn`. The package must be produced from a
-linked native payload with `dali package`.
+Do not rename a source file to `.amrn`. The cartridge must be produced from a
+linked native payload with `dali cartridge`.

@@ -16,19 +16,19 @@ pub(super) fn run(arguments: &[String]) -> Result<(), String> {
         }
         _ => return Err(super::usage()),
     };
-    println!("{}", inspect_package(&input)?);
+    println!("{}", inspect_cartridge(&input)?);
     Ok(())
 }
 
 fn discover_default_input(directory: &Path) -> Result<PathBuf, String> {
     let manifest = directory.join(MANIFEST_FILE);
     if manifest.is_file() {
-        return manifest_package_path(directory);
+        return manifest_cartridge_path(directory);
     }
-    find_single_package(directory)
+    find_single_cartridge(directory)
 }
 
-fn manifest_package_path(directory: &Path) -> Result<PathBuf, String> {
+fn manifest_cartridge_path(directory: &Path) -> Result<PathBuf, String> {
     let contents = fs::read_to_string(directory.join(MANIFEST_FILE))
         .map_err(|error| format!("cannot read {MANIFEST_FILE}: {error}"))?;
     let name = manifest_value(&contents, "name")?;
@@ -50,8 +50,8 @@ fn manifest_package_path(directory: &Path) -> Result<PathBuf, String> {
         .join(format!("{name}.{AMRN_EXTENSION}")))
 }
 
-fn find_single_package(directory: &Path) -> Result<PathBuf, String> {
-    let mut packages = fs::read_dir(directory)
+fn find_single_cartridge(directory: &Path) -> Result<PathBuf, String> {
+    let mut cartridges = fs::read_dir(directory)
         .map_err(|error| format!("cannot scan {}: {error}", directory.display()))?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
@@ -59,13 +59,13 @@ fn find_single_package(directory: &Path) -> Result<PathBuf, String> {
             path.extension().and_then(|extension| extension.to_str()) == Some(AMRN_EXTENSION)
         })
         .collect::<Vec<_>>();
-    match packages.len() {
-        1 => Ok(packages.remove(0)),
+    match cartridges.len() {
+        1 => Ok(cartridges.remove(0)),
         0 => Err(format!(
-            "no `{AMRN_EXTENSION}` package found; pass {INPUT_FLAG} <package>"
+            "no `{AMRN_EXTENSION}` cartridge found; pass {INPUT_FLAG} <cartridge>"
         )),
         _ => Err(format!(
-            "multiple `{AMRN_EXTENSION}` packages found; pass {INPUT_FLAG} <package>"
+            "multiple `{AMRN_EXTENSION}` cartridges found; pass {INPUT_FLAG} <cartridge>"
         )),
     }
 }
@@ -81,9 +81,9 @@ fn manifest_value(contents: &str, key: &str) -> Result<String, String> {
         .ok_or_else(|| format!("{MANIFEST_FILE} is missing `{key}`"))
 }
 
-fn inspect_package(input: &Path) -> Result<String, String> {
-    let package = fs::read(input).map_err(|error| format!("cannot read input: {error}"))?;
-    inspect_bytes(&package)
+fn inspect_cartridge(input: &Path) -> Result<String, String> {
+    let cartridge = fs::read(input).map_err(|error| format!("cannot read input: {error}"))?;
+    inspect_bytes(&cartridge)
 }
 
 const MANIFEST_FILE: &str = "dali.toml";
@@ -93,34 +93,34 @@ const DEBUG_OUTPUT_DIRECTORY: &str = "debug";
 const RELEASE_PROFILE: &str = "release";
 const AMRN_EXTENSION: &str = "amrn";
 
-fn inspect_bytes(package: &[u8]) -> Result<String, String> {
-    if package.get(dali_amrn::v5::FORMAT_VERSION_OFFSET) == Some(&dali_amrn::v5::FORMAT_VERSION) {
-        return inspect_signed_package(package);
+fn inspect_bytes(cartridge: &[u8]) -> Result<String, String> {
+    if cartridge.get(dali_amrn::v5::FORMAT_VERSION_OFFSET) == Some(&dali_amrn::v5::FORMAT_VERSION) {
+        return inspect_signed_cartridge(cartridge);
     }
-    if package.get(4) == Some(&dali_amrn::v4::FORMAT_VERSION) {
-        return inspect_identity_package(package);
+    if cartridge.get(4) == Some(&dali_amrn::v4::FORMAT_VERSION) {
+        return inspect_identity_cartridge(cartridge);
     }
-    if package.get(4) == Some(&dali_amrn::v3::FORMAT_VERSION) {
-        return inspect_relocatable_package(package);
+    if cartridge.get(4) == Some(&dali_amrn::v3::FORMAT_VERSION) {
+        return inspect_relocatable_cartridge(cartridge);
     }
-    if package.get(4) == Some(&dali_amrn::v2::FORMAT_VERSION) {
-        return inspect_isolation_package(package);
+    if cartridge.get(4) == Some(&dali_amrn::v2::FORMAT_VERSION) {
+        return inspect_isolation_cartridge(cartridge);
     }
-    let header = dali_amrn::parse_header(package)
-        .map_err(|error| format!("invalid AMRN package: {error:?}"))?;
+    let header = dali_amrn::parse_header(cartridge)
+        .map_err(|error| format!("invalid AMRN cartridge: {error:?}"))?;
     let expected_size = dali_amrn::HEADER_SIZE
         .checked_add(header.payload_size as usize)
-        .ok_or_else(|| "package size overflow".to_owned())?;
-    if package.len() != expected_size {
+        .ok_or_else(|| "cartridge size overflow".to_owned())?;
+    if cartridge.len() != expected_size {
         return Err(format!(
-            "invalid AMRN package: file length is {}, expected {expected_size}",
-            package.len()
+            "invalid AMRN cartridge: file length is {}, expected {expected_size}",
+            cartridge.len()
         ));
     }
-    let parsed =
-        dali_amrn::parse(package).map_err(|error| format!("invalid AMRN package: {error:?}"))?;
+    let parsed = dali_amrn::parse(cartridge)
+        .map_err(|error| format!("invalid AMRN cartridge: {error:?}"))?;
     Ok(format!(
-        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\npayload_size: {}\nload_address: 0x{:08X}\nexecution_offset: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
+        "AMRN cartridge valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\npayload_size: {}\nload_address: 0x{:08X}\nexecution_offset: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
         header.format_version,
         header.target_id,
         header.header_size,
@@ -133,10 +133,10 @@ fn inspect_bytes(package: &[u8]) -> Result<String, String> {
     ))
 }
 
-fn inspect_signed_package(package: &[u8]) -> Result<String, String> {
-    let target_id = *package
+fn inspect_signed_cartridge(cartridge: &[u8]) -> Result<String, String> {
+    let target_id = *cartridge
         .get(dali_amrn::v5::TARGET_ID_OFFSET)
-        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+        .ok_or_else(|| "invalid AMRN cartridge: truncated target identifier".to_owned())?;
     let target = dali_targets::find_by_amrn_target_id(target_id)
         .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
     let isolation = target
@@ -153,7 +153,7 @@ fn inspect_signed_package(package: &[u8]) -> Result<String, String> {
             data_load_address: slot.data_origin,
             data_capacity: slot.data_length,
         };
-        match dali_amrn::v5::parse(package, contract) {
+        match dali_amrn::v5::parse(cartridge, contract) {
             Ok(value) => {
                 parsed = Some(value);
                 break;
@@ -161,17 +161,17 @@ fn inspect_signed_package(package: &[u8]) -> Result<String, String> {
             Err(error) => last_error = error,
         }
     }
-    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN cartridge: {last_error:?}"))?;
     let metadata = parsed.header.metadata;
     Ok(format!(
-        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\npackage_id: {:02X?}\npackage_version: {}.{}.{}\nminimum_kernel_version: {}.{}.{}\nrequired_services: 0x{:08X}\nslot_id: {}\ncode_size: {}\ndata_init_size: {}\nrelocation_count: {}\nabi_version: {}\npackage_crc32: 0x{:08X}\nsigning_key_id: {:02X?}",
+        "AMRN cartridge valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncartridge_id: {:02X?}\ncartridge_version: {}.{}.{}\nminimum_kernel_version: {}.{}.{}\nrequired_services: 0x{:08X}\nslot_id: {}\ncode_size: {}\ndata_init_size: {}\nrelocation_count: {}\nabi_version: {}\ncartridge_crc32: 0x{:08X}\nsigning_key_id: {:02X?}",
         dali_amrn::v5::FORMAT_VERSION,
         parsed.header.image.target_id,
         dali_amrn::v5::HEADER_SIZE,
-        metadata.package_id,
-        metadata.package_version.major,
-        metadata.package_version.minor,
-        metadata.package_version.patch,
+        metadata.cartridge_id,
+        metadata.cartridge_version.major,
+        metadata.cartridge_version.minor,
+        metadata.cartridge_version.patch,
         metadata.minimum_kernel_version.major,
         metadata.minimum_kernel_version.minor,
         metadata.minimum_kernel_version.patch,
@@ -181,15 +181,15 @@ fn inspect_signed_package(package: &[u8]) -> Result<String, String> {
         parsed.header.image.data_init_size,
         parsed.header.image.relocation_count,
         dali_amrn::v3::ABI_VERSION,
-        parsed.header.package_crc32,
+        parsed.header.cartridge_crc32,
         parsed.header.signature.key_id,
     ))
 }
 
-fn inspect_identity_package(package: &[u8]) -> Result<String, String> {
-    let target_id = *package
+fn inspect_identity_cartridge(cartridge: &[u8]) -> Result<String, String> {
+    let target_id = *cartridge
         .get(5)
-        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+        .ok_or_else(|| "invalid AMRN cartridge: truncated target identifier".to_owned())?;
     let target = dali_targets::find_by_amrn_target_id(target_id)
         .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
     let isolation = target
@@ -206,7 +206,7 @@ fn inspect_identity_package(package: &[u8]) -> Result<String, String> {
             data_load_address: slot.data_origin,
             data_capacity: slot.data_length,
         };
-        match dali_amrn::v4::parse(package, contract) {
+        match dali_amrn::v4::parse(cartridge, contract) {
             Ok(value) => {
                 parsed = Some(value);
                 break;
@@ -214,17 +214,17 @@ fn inspect_identity_package(package: &[u8]) -> Result<String, String> {
             Err(error) => last_error = error,
         }
     }
-    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN cartridge: {last_error:?}"))?;
     let metadata = parsed.header.metadata;
     Ok(format!(
-        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\npackage_id: {:02X?}\npackage_version: {}.{}.{}\nminimum_kernel_version: {}.{}.{}\nrequired_services: 0x{:08X}\nslot_id: {}\ncode_size: {}\ndata_init_size: {}\nrelocation_count: {}\nabi_version: {}\npackage_crc32: 0x{:08X}",
+        "AMRN cartridge valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncartridge_id: {:02X?}\ncartridge_version: {}.{}.{}\nminimum_kernel_version: {}.{}.{}\nrequired_services: 0x{:08X}\nslot_id: {}\ncode_size: {}\ndata_init_size: {}\nrelocation_count: {}\nabi_version: {}\ncartridge_crc32: 0x{:08X}",
         dali_amrn::v4::FORMAT_VERSION,
         parsed.header.image.target_id,
         dali_amrn::v4::HEADER_SIZE,
-        metadata.package_id,
-        metadata.package_version.major,
-        metadata.package_version.minor,
-        metadata.package_version.patch,
+        metadata.cartridge_id,
+        metadata.cartridge_version.major,
+        metadata.cartridge_version.minor,
+        metadata.cartridge_version.patch,
         metadata.minimum_kernel_version.major,
         metadata.minimum_kernel_version.minor,
         metadata.minimum_kernel_version.patch,
@@ -234,14 +234,14 @@ fn inspect_identity_package(package: &[u8]) -> Result<String, String> {
         parsed.header.image.data_init_size,
         parsed.header.image.relocation_count,
         dali_amrn::v4::ABI_VERSION,
-        parsed.header.package_crc32,
+        parsed.header.cartridge_crc32,
     ))
 }
 
-fn inspect_relocatable_package(package: &[u8]) -> Result<String, String> {
-    let target_id = *package
+fn inspect_relocatable_cartridge(cartridge: &[u8]) -> Result<String, String> {
+    let target_id = *cartridge
         .get(5)
-        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+        .ok_or_else(|| "invalid AMRN cartridge: truncated target identifier".to_owned())?;
     let target = dali_targets::find_by_amrn_target_id(target_id)
         .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
     let isolation = target
@@ -258,7 +258,7 @@ fn inspect_relocatable_package(package: &[u8]) -> Result<String, String> {
             data_load_address: slot.data_origin,
             data_capacity: slot.data_length,
         };
-        match dali_amrn::v3::parse(package, contract) {
+        match dali_amrn::v3::parse(cartridge, contract) {
             Ok(value) => {
                 parsed = Some(value);
                 break;
@@ -266,9 +266,9 @@ fn inspect_relocatable_package(package: &[u8]) -> Result<String, String> {
             Err(error) => last_error = error,
         }
     }
-    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN cartridge: {last_error:?}"))?;
     Ok(format!(
-        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\nlinked_code_base: 0x{:08X}\nlinked_data_base: 0x{:08X}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nrelocation_count: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
+        "AMRN cartridge valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\nlinked_code_base: 0x{:08X}\nlinked_data_base: 0x{:08X}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nrelocation_count: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
         dali_amrn::v3::FORMAT_VERSION,
         parsed.header.target_id,
         dali_amrn::v3::HEADER_SIZE,
@@ -292,10 +292,10 @@ fn inspect_relocatable_package(package: &[u8]) -> Result<String, String> {
     ))
 }
 
-fn inspect_isolation_package(package: &[u8]) -> Result<String, String> {
-    let target_id = *package
+fn inspect_isolation_cartridge(cartridge: &[u8]) -> Result<String, String> {
+    let target_id = *cartridge
         .get(5)
-        .ok_or_else(|| "invalid AMRN package: truncated target identifier".to_owned())?;
+        .ok_or_else(|| "invalid AMRN cartridge: truncated target identifier".to_owned())?;
     let target = dali_targets::find_by_amrn_target_id(target_id)
         .ok_or_else(|| format!("unsupported AMRN target identifier 0x{target_id:02X}"))?;
     let isolation = target
@@ -312,7 +312,7 @@ fn inspect_isolation_package(package: &[u8]) -> Result<String, String> {
             data_load_address: slot.data_origin,
             data_capacity: slot.data_length,
         };
-        match dali_amrn::v2::parse(package, contract) {
+        match dali_amrn::v2::parse(cartridge, contract) {
             Ok(value) => {
                 parsed = Some(value);
                 break;
@@ -320,9 +320,9 @@ fn inspect_isolation_package(package: &[u8]) -> Result<String, String> {
             Err(error) => last_error = error,
         }
     }
-    let parsed = parsed.ok_or_else(|| format!("invalid AMRN package: {last_error:?}"))?;
+    let parsed = parsed.ok_or_else(|| format!("invalid AMRN cartridge: {last_error:?}"))?;
     Ok(format!(
-        "AMRN package valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
+        "AMRN cartridge valid\nformat_version: {}\ntarget_id: 0x{:02X}\nheader_size: {}\ncode_size: {}\ndata_init_size: {}\ndata_zero_size: {}\nstack_size: {}\ncode_load_address: 0x{:08X}\ndata_load_address: 0x{:08X}\nexecution_offset: {}\nentry_address: 0x{:08X}\nabi_version: {}\ncrc32: 0x{:08X}",
         dali_amrn::v2::FORMAT_VERSION,
         parsed.header.target_id,
         dali_amrn::v2::HEADER_SIZE,
@@ -344,13 +344,13 @@ mod tests {
     use super::inspect_bytes;
 
     #[test]
-    fn inspect_reports_contract_fields_for_valid_package() {
-        let package = test_package();
-        let result = inspect_bytes(&package);
-        assert!(result.is_ok(), "package should inspect");
+    fn inspect_reports_contract_fields_for_valid_cartridge() {
+        let cartridge = test_cartridge();
+        let result = inspect_bytes(&cartridge);
+        assert!(result.is_ok(), "cartridge should inspect");
         let report = result.unwrap_or_default();
 
-        assert!(report.contains("AMRN package valid"));
+        assert!(report.contains("AMRN cartridge valid"));
         assert!(report.contains("target_id: 0x02"));
         assert!(report.contains("abi_version: 2"));
         assert!(report.contains("payload_size: 4"));
@@ -358,10 +358,10 @@ mod tests {
 
     #[test]
     fn inspect_rejects_trailing_bytes() {
-        let mut package = test_package();
-        package.push(0);
+        let mut cartridge = test_cartridge();
+        cartridge.push(0);
 
-        let result = inspect_bytes(&package);
+        let result = inspect_bytes(&cartridge);
         assert!(result.is_err(), "trailing data must fail");
         let error = match result {
             Ok(_) => String::new(),
@@ -371,14 +371,17 @@ mod tests {
         assert!(error.contains("file length"));
     }
 
-    fn test_package() -> Vec<u8> {
+    fn test_cartridge() -> Vec<u8> {
         let payload = [0x00, 0xBF, 0x00, 0xBF];
-        let mut package = vec![0; dali_amrn::HEADER_SIZE + payload.len()];
-        let result = dali_amrn::encode_package(&payload, 0, &mut package);
-        assert!(result.is_ok(), "test payload must produce a valid package");
+        let mut cartridge = vec![0; dali_amrn::HEADER_SIZE + payload.len()];
+        let result = dali_amrn::encode_cartridge(&payload, 0, &mut cartridge);
+        assert!(
+            result.is_ok(),
+            "test payload must produce a valid cartridge"
+        );
         let written = result.unwrap_or_default();
-        package.truncate(written);
-        package
+        cartridge.truncate(written);
+        cartridge
     }
 
     #[test]
@@ -391,11 +394,11 @@ mod tests {
             stack_size: 16,
             execution_offset: 0,
         };
-        let mut package = vec![0; dali_amrn::v2::HEADER_SIZE + 8];
-        let written = dali_amrn::v2::encode(image, contract, &mut package)
-            .expect("v2 test package should encode");
-        package.truncate(written);
-        let report = inspect_bytes(&package).expect("v2 package should inspect");
+        let mut cartridge = vec![0; dali_amrn::v2::HEADER_SIZE + 8];
+        let written = dali_amrn::v2::encode(image, contract, &mut cartridge)
+            .expect("v2 test cartridge should encode");
+        cartridge.truncate(written);
+        let report = inspect_bytes(&cartridge).expect("v2 cartridge should inspect");
         assert!(report.contains("format_version: 2"));
         assert!(report.contains("abi_version: 3"));
         assert!(report.contains("data_zero_size: 8"));
@@ -413,10 +416,10 @@ mod tests {
 
     #[test]
     fn inspect_reports_identity_fields() {
-        let package = identity_test_package();
-        let report = inspect_bytes(&package).expect("v4 package should inspect");
+        let cartridge = identity_test_cartridge();
+        let report = inspect_bytes(&cartridge).expect("v4 cartridge should inspect");
         assert!(report.contains("format_version: 4"));
-        assert!(report.contains("package_version: 1.2.3"));
+        assert!(report.contains("cartridge_version: 1.2.3"));
         assert!(report.contains("slot_id: 1"));
     }
 
@@ -441,8 +444,8 @@ mod tests {
                 relocations: &[],
             },
             metadata: dali_amrn::v4::Metadata {
-                package_id: [2; 16],
-                package_version: dali_amrn::v4::Version {
+                cartridge_id: [2; 16],
+                cartridge_version: dali_amrn::v4::Version {
                     major: 1,
                     minor: 0,
                     patch: 0,
@@ -467,26 +470,26 @@ mod tests {
             .expect("signed range should encode");
         signed.truncate(signed_size);
         let signature = dali_crypto::sign(&private_key, &signed);
-        let mut package = vec![0; signed_size + dali_amrn::v5::SIGNATURE_SIZE];
-        let package_size =
-            dali_amrn::v5::append_signature(&signed, &key_id, &signature, &mut package)
+        let mut cartridge = vec![0; signed_size + dali_amrn::v5::SIGNATURE_SIZE];
+        let cartridge_size =
+            dali_amrn::v5::append_signature(&signed, &key_id, &signature, &mut cartridge)
                 .expect("signature envelope should append");
-        package.truncate(package_size);
+        cartridge.truncate(cartridge_size);
 
-        let report = inspect_bytes(&package).expect("v5 package should inspect");
+        let report = inspect_bytes(&cartridge).expect("v5 cartridge should inspect");
         assert!(report.contains("format_version: 5"));
         assert!(report.contains("signing_key_id: [07"));
     }
 
     #[test]
-    fn inspect_rejects_a_corrupted_identity_package() {
-        let mut package = identity_test_package();
-        package[dali_amrn::v4::HEADER_SIZE] ^= 1;
-        let error = inspect_bytes(&package).expect_err("corrupted package must be rejected");
+    fn inspect_rejects_a_corrupted_identity_cartridge() {
+        let mut cartridge = identity_test_cartridge();
+        cartridge[dali_amrn::v4::HEADER_SIZE] ^= 1;
+        let error = inspect_bytes(&cartridge).expect_err("corrupted cartridge must be rejected");
         assert!(error.contains("CrcMismatch"));
     }
 
-    fn identity_test_package() -> Vec<u8> {
+    fn identity_test_cartridge() -> Vec<u8> {
         let contract = dali_amrn::v3::Contract {
             target_id: 2,
             code_load_address: 0x2001_0000,
@@ -506,8 +509,8 @@ mod tests {
                 relocations: &[],
             },
             metadata: dali_amrn::v4::Metadata {
-                package_id: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                package_version: dali_amrn::v4::Version {
+                cartridge_id: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                cartridge_version: dali_amrn::v4::Version {
                     major: 1,
                     minor: 2,
                     patch: 3,
@@ -521,11 +524,11 @@ mod tests {
                 slot_id: 1,
             },
         };
-        let mut package = vec![0; dali_amrn::v4::HEADER_SIZE + 4];
-        let size =
-            dali_amrn::v4::encode(image, contract, &mut package).expect("v4 package should encode");
-        package.truncate(size);
-        package
+        let mut cartridge = vec![0; dali_amrn::v4::HEADER_SIZE + 4];
+        let size = dali_amrn::v4::encode(image, contract, &mut cartridge)
+            .expect("v4 cartridge should encode");
+        cartridge.truncate(size);
+        cartridge
     }
 }
 

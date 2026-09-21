@@ -16,8 +16,8 @@ Additional rules:
 - Do not create circular module dependencies.
 - The parser must not depend on hardware.
 - The loader must not depend on filesystem internals.
-- Hardware-specific code must not leak into package-format logic.
-- Native application execution must remain separate from package parsing.
+- Hardware-specific code must not leak into cartridge-format logic.
+- Native application execution must remain separate from cartridge parsing.
 
 ## 11. Naming and data modeling
 

@@ -1,7 +1,7 @@
 # Dali CLI Documentation
 
 Dali is the host-side command-line tool for creating and validating Dali OS
-application cartridges. The Cargo package is named dali-cli; the installed
+application cartridges. The Cargo cartridge is named dali-cli; the installed
 executable is named dali.
 
 ## Supported commands
@@ -12,13 +12,13 @@ executable is named dali.
 | dali target list | List supported Dali application targets | Supported |
 | dali target info | Display target profile metadata | Supported |
 | dali target scaffold | Generate a reviewable target scaffold | Supported |
-| dali package | Wrap a linked native payload in an AMRN cartridge | Supported |
+| dali cartridge | Wrap a linked native payload in an AMRN cartridge | Supported |
 | dali inspect | Validate and display an AMRN cartridge | Supported |
 | dali key generate | Generate an Ed25519 release trust-anchor pair | Supported |
 | dali app new | Create a Dali application scaffold | Supported |
 | dali app init | Initialize the current directory as a Dali application | Supported |
 | dali app build | Build a native application payload | Supported |
-| dali app package | Package the built payload as AMRN | Supported |
+| dali app cartridge | Cartridge the built payload as AMRN | Supported |
 | dali device list | Discover host-visible devices | Supported |
 | dali device info | Display selected device and target metadata | Supported |
 | dali device attach | Start a debug-probe attachment | Supported |
@@ -39,29 +39,29 @@ commands read `dali.toml` and derive artifact names and paths automatically:
 dali app new <name> [--sdk-path <path>]
 dali app init [--sdk-path <path>]
 dali app build
-dali app package
+dali app cartridge
 ```
 
 `dali app build` produces both the native `.bin` payload and the `.amrn`
-package. `dali app package` repackages an existing payload without rebuilding
+cartridge. `dali app cartridge` recartridges an existing payload without rebuilding
 it.
 
 There is currently no separate `dali app inspect` command. Use the generic
 `dali inspect` command to validate the AMRN artifact.
 
-### Generic package operations
+### Generic cartridge operations
 
 Use the top-level commands when working with raw artifacts or paths outside an
 application project. They do not require application project context:
 
 ```text
-dali package --input <payload> --output <package> --entry-offset <bytes>
-dali inspect --input <package>
+dali cartridge --input <payload> --output <cartridge> --entry-offset <bytes>
+dali inspect --input <cartridge>
 ```
 
 `dali inspect` also supports discovery without `--input` when run from an
 application root or a directory containing exactly one `.amrn` file. An
-explicit `--input` is required for another location or when multiple packages
+explicit `--input` is required for another location or when multiple cartridges
 exist.
 
 ## Reproducible workflow map
@@ -70,7 +70,7 @@ Use these procedures as the canonical examples for the complete host and
 device workflow:
 
 - [Installation](INSTALLATION.md) — install and verify the CLI.
-- [Quickstart](QUICKSTART.md) — create, build, package, and inspect a cartridge.
+- [Quickstart](QUICKSTART.md) — create, build, cartridge, and inspect a cartridge.
 - [Key management](KEY_MANAGEMENT.md) — generate and use signing material.
 - [Binary v2 developer workflow](BINARY_V2_DEVELOPER_WORKFLOW.md) — authorize,
   sign, verify, copy, flash, and capture device evidence.
@@ -84,7 +84,7 @@ operation into hardware evidence.
 ## Documentation map
 
 - [Installation](INSTALLATION.md) — install and verify the executable.
-- [Quickstart](QUICKSTART.md) — first successful package workflow.
+- [Quickstart](QUICKSTART.md) — first successful cartridge workflow.
 - [Commands](COMMANDS.md) — command catalog and syntax.
 - [Doctor](commands/doctor.md) — host and toolchain diagnostics.
 - [Target list](commands/target-list.md) — supported target profiles.
@@ -111,12 +111,12 @@ operation into hardware evidence.
 
 Command-specific documentation lives in [commands/](commands/):
 
-- [package](commands/package.md)
+- [cartridge](commands/cartridge.md)
 - [inspect](commands/inspect.md)
 - [app new](commands/app-new.md)
 - [app init](commands/app-init.md)
 - [app build](commands/app-build.md)
-- [app package](commands/app-package.md)
+- [app cartridge](commands/app-cartridge.md)
 - [target info](commands/target-info.md)
 - [target scaffold](commands/target-scaffold.md)
 
@@ -132,7 +132,7 @@ existing directory is available through `dali app init`; it never overwrites
 existing managed files.
 
 `dali inspect` can derive the current application's AMRN path when run from
-its project root, or discover a single AMRN file in a package directory.
+its project root, or discover a single AMRN file in a cartridge directory.
 
 Target and board metadata is declared in repository-level `targets/*.toml`
 manifests. The `dali-targets` build script validates those manifests and

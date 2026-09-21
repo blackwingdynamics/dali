@@ -4,7 +4,7 @@ Add one manifest for each board profile. The profile must describe facts from
 the board and MCU documentation, not values guessed from another board.
 
 Adding a manifest alone does not add kernel support. An accepted board also
-requires a reviewed `kernel/src/platform/` backend, target checks, documentation,
+requires a reviewed `crates/dali-boards/<board-crate>/` backend, target checks, documentation,
 and hardware evidence. Do not copy values into CLI commands or ordinary
 implementation modules.
 
@@ -33,7 +33,8 @@ Every manifest contains:
 - `[i2c]` — I2C bus timing configuration;
 - `[display]` — optional I2C OLED controller and geometry configuration;
 - `[driver_probe]` — bounded hardware acceptance probe configuration;
-- `[memory]` — kernel, application, and runtime regions;
+- `[memory]` — physical flash, firmware, optional artifact, application, and
+  runtime regions;
 - `[status_led]` — logical status LED mapping;
 - `[user_key]` — board user-key mapping;
 - `[usb]` — USB FS controller and data pins.
@@ -41,3 +42,9 @@ Every manifest contains:
 `[storage]` is optional because a board profile may be described before its
 storage transport is supported. Storage must not be omitted from a profile
 that claims a kernel storage backend.
+
+The `[memory]` `flash` region describes the target's physical flash range.
+`firmware` is the linker-owned firmware range inside it. An optional
+`artifact` range is reserved for persistent AMRN data and must be disjoint
+from `firmware` and contained by `flash`. The firmware linker does not place
+ordinary code or data into the artifact range.

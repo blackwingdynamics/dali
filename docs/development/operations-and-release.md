@@ -53,8 +53,8 @@ Then stop distribution of the affected artifact, preserve the evidence, and
 select a previously validated revision or recovery procedure documented by the
 relevant subsystem.
 
-For cartridge or repository failures, use the [package distribution
-procedures](../package-distribution/README.md) and preserve the trust,
+For cartridge or repository failures, use the [cartridge distribution
+procedures](../cartridge-distribution/README.md) and preserve the trust,
 generation, and recovery records. For target boot or transport failures, use
 the [build, flash, and simulation](build-flash-and-simulation.md) and
 [debugging and troubleshooting](debugging-and-troubleshooting.md) procedures.

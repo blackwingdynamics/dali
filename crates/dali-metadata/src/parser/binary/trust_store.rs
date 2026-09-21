@@ -7,7 +7,7 @@ use crate::{
     validate_trust_store_payload,
 };
 
-/// Encodes the package-free Binary Metadata v2 recovery body.
+/// Encodes the cartridge-free Binary Metadata v2 recovery body.
 pub fn encode_binary_trust_store_body(
     metadata: TrustStorePayload,
     output: &mut [u8],
@@ -26,7 +26,7 @@ pub fn encode_binary_trust_store_body(
     Ok(writer.position())
 }
 
-/// Parses the package-free Binary Metadata v2 recovery body.
+/// Parses the cartridge-free Binary Metadata v2 recovery body.
 pub fn parse_binary_trust_store_body(bytes: &[u8]) -> Result<TrustStorePayload, DecodeError> {
     let mut reader = BodyReader::new(bytes);
     let header = read_header(&mut reader, MetadataRole::Recovery)?;
@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn round_trips_without_package_references() {
+    fn round_trips_without_cartridge_references() {
         let payload = payload();
         let mut buffer = [0; crate::MAX_TRUST_STORE_BYTES];
         let length = encode_binary_trust_store_body(payload, &mut buffer)
@@ -114,9 +114,9 @@ mod tests {
     }
 
     #[test]
-    fn rejects_package_reference() {
+    fn rejects_cartridge_reference() {
         let mut payload = payload();
-        payload.files[5].kind = BundleFileKind::Package;
+        payload.files[5].kind = BundleFileKind::Cartridge;
         let mut buffer = [0; crate::MAX_TRUST_STORE_BYTES];
         assert_eq!(
             encode_binary_trust_store_body(payload, &mut buffer),

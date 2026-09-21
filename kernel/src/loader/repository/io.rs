@@ -2,7 +2,7 @@
 
 use super::{RepositoryLoaderError, streaming::STREAMING_METADATA_CHUNK_BYTES};
 use crate::storage::repository::{
-    RepositoryDocument, RepositoryPackageDigest, RepositoryStreamStorage,
+    RepositoryCartridgeDigest, RepositoryDocument, RepositoryStreamStorage,
 };
 
 /// Internal helper for `read_metadata`.
@@ -45,10 +45,10 @@ where
     failure.map_or(Ok(offset), Err)
 }
 
-/// Internal helper for `read_package`.
-pub(super) fn read_package<S>(
+/// Internal helper for `read_cartridge`.
+pub(super) fn read_cartridge<S>(
     storage: &mut S,
-    digest: RepositoryPackageDigest,
+    digest: RepositoryCartridgeDigest,
     output: &mut [u8],
     chunk: &mut [u8; STREAMING_METADATA_CHUNK_BYTES],
 ) -> Result<usize, RepositoryLoaderError<S::Error>>
@@ -61,7 +61,7 @@ where
     let mut offset: usize = 0;
     let mut failure = None;
     let streamed = storage
-        .stream_package(digest, chunk, |part| {
+        .stream_cartridge(digest, chunk, |part| {
             if failure.is_some() {
                 return Ok(());
             }

@@ -2,19 +2,17 @@
 
 use crate::runtime::scheduling::{
     record::ScheduledContext,
-    saved_state::{CALLEE_SAVED_REGISTER_COUNT, SavedContext},
     scheduler::{Scheduler, SchedulerError},
     storage::{SchedulerStorage, SchedulerStorageError},
 };
 
 /// Scheduler type sized from the active platform context profile.
-type TargetScheduler = Scheduler<{ crate::platform::CONTEXT_CAPACITY }>;
+const MAX_CONTEXT_CAPACITY: usize = 2;
+/// Scheduler storage type selected by the active context capacity.
+type TargetScheduler = Scheduler<MAX_CONTEXT_CAPACITY>;
 
 /// Static scheduler storage used during the kernel lifecycle.
 static SCHEDULER_STORAGE: SchedulerStorage<TargetScheduler> = SchedulerStorage::new();
-
-#[cfg(feature = "abi-context-switch")]
-use cortex_m_rt::exception;
 
 /// Errors returned while initializing the target scheduler state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -34,12 +32,14 @@ pub(crate) enum SchedulerAccessError {
     Storage(SchedulerStorageError),
     /// The scheduler rejected the requested context transition.
     Scheduler(SchedulerError),
+    /// The architecture context capability was not registered.
+    MissingArchitectureContext,
 }
 
 /// Initializes scheduler state once from the selected target profile.
 pub(crate) fn initialize() -> Result<(), SchedulerInitializationError> {
     let profile =
-        crate::platform::SCHEDULER_PROFILE.ok_or(SchedulerInitializationError::MissingProfile)?;
+        crate::platform::scheduler_profile().ok_or(SchedulerInitializationError::MissingProfile)?;
     let scheduler = TargetScheduler::new(profile.quantum_ticks)
         .map_err(SchedulerInitializationError::Scheduler)?;
     SCHEDULER_STORAGE
@@ -65,15 +65,18 @@ fn with_scheduler<R>(
 
 /// Registers validated application launch contexts in manifest order.
 pub(crate) fn register_contexts(
-    contexts: impl IntoIterator<Item = ScheduledContext>,
+    contexts: impl IntoIterator<Item = Option<ScheduledContext>>,
 ) -> Result<(), SchedulerAccessError> {
-    with_scheduler(|scheduler| {
-        contexts
-            .into_iter()
-            .try_for_each(|context| scheduler.insert(context).map(|_| ()))
+    with_scheduler(|scheduler| -> Result<(), SchedulerAccessError> {
+        contexts.into_iter().try_for_each(|context| {
+            let context = context.ok_or(SchedulerAccessError::MissingArchitectureContext)?;
+            scheduler
+                .insert(context)
+                .map(|_| ())
+                .map_err(SchedulerAccessError::Scheduler)
+        })
     })
     .map_err(SchedulerAccessError::Storage)?
-    .map_err(SchedulerAccessError::Scheduler)
 }
 
 /// Activates the first registered context without performing an exception return.
@@ -97,14 +100,10 @@ pub(crate) fn recover_faulted_context() -> ! {
 
     match result {
         Ok(Ok(Some(()))) => {
-            cortex_m::peripheral::SCB::set_pendsv();
-            loop {
-                cortex_m::asm::wfi();
-            }
+            crate::platform::request_context_switch();
+            crate::platform::wait_for_registered_interrupt();
         }
-        _ => loop {
-            cortex_m::asm::wfi();
-        },
+        _ => crate::platform::wait_for_registered_interrupt(),
     }
 }
 
@@ -116,64 +115,38 @@ pub(crate) unsafe extern "C" fn prepare_pendsv(
     psp: u32,
     control: u32,
     exception_return: u32,
-) -> *const SavedContext {
-    let saved = unsafe {
-        // SAFETY: The naked PendSV wrapper passes a pointer to its aligned,
-        // complete `r4..r11` scratch area on the kernel MSP.
-        *(saved_registers as *const [u32; CALLEE_SAVED_REGISTER_COUNT])
-    };
+) -> *const u32 {
     let result = with_scheduler(|scheduler| {
         if let Some(incoming_id) = scheduler.take_recovery_target() {
             let incoming = scheduler.context(incoming_id)?;
             if !crate::platform::activate_application_regions(incoming.slot()) {
                 return Err(SchedulerError::ProtectionUnavailable);
             }
-            return scheduler.context_cpu_ptr(incoming_id);
+            return Ok(scheduler.context_cpu_ptr(incoming_id)? as *const u32);
         }
         let active = scheduler.active_context()?;
-        let saved_context = ScheduledContext::new(
-            SavedContext {
-                psp,
-                callee_saved: saved,
-                control,
-                exception_return,
-            },
-            active.slot(),
-        );
+        let saved_context = unsafe {
+            // SAFETY: The PendSV wrapper supplies the complete save area and
+            // the architecture port owns its interpretation.
+            crate::platform::capture_context(saved_registers, psp, control, exception_return)
+        }
+        .ok_or(SchedulerError::ProtectionUnavailable)
+        .map(|context| ScheduledContext::new(context, active.slot()))?;
         match scheduler.prepare_pendsv(saved_context)? {
             Some(selection) => {
                 let incoming = scheduler.context(selection.incoming)?;
                 if !crate::platform::activate_application_regions(incoming.slot()) {
                     return Err(SchedulerError::ProtectionUnavailable);
                 }
-                scheduler.context_cpu_ptr(selection.incoming)
+                Ok(scheduler.context_cpu_ptr(selection.incoming)? as *const u32)
             }
-            None => scheduler.active_cpu_ptr(),
+            None => Ok(scheduler.active_cpu_ptr()? as *const u32),
         }
     });
     match result {
         Ok(Ok(pointer)) => pointer,
         Ok(Err(_)) | Err(_) => crate::security::launch::recover(),
     }
-}
-
-/// Privileged PendSV wrapper for scheduler-owned save/select/restore.
-#[cfg(all(feature = "abi-context-switch", target_arch = "arm"))]
-#[unsafe(naked)]
-#[unsafe(export_name = "PendSV")]
-pub(crate) unsafe extern "C" fn pendsv_handler() -> ! {
-    core::arch::naked_asm!(
-        "stmdb sp!, {{r4-r11}}",
-        "mrs r1, psp",
-        "mrs r2, control",
-        "mov r3, lr",
-        "mov r0, sp",
-        "bl {prepare}",
-        "add sp, #32",
-        "b {restore}",
-        prepare = sym prepare_pendsv,
-        restore = sym crate::runtime::scheduling::context_switch::restore_selected,
-    );
 }
 
 /// Accounts for one target-provided SysTick interrupt.
@@ -183,10 +156,7 @@ pub(crate) unsafe extern "C" fn pendsv_handler() -> ! {
 /// attempting an exception return before application contexts are wired.
 #[cfg(feature = "abi-context-switch")]
 pub(crate) fn on_systick() {
-    if crate::platform::service_watchdog().is_err() {
-        // The watchdog service removes its runtime after a feed failure, so
-        // the armed hardware watchdog performs the bounded recovery reset.
-    }
+    crate::platform::service_watchdog_from_scheduler();
     let scheduler = unsafe {
         // SAFETY: SysTick is a single exception context. PendSV is the only
         // other scheduler access path and remains deferred until this handler
@@ -198,13 +168,13 @@ pub(crate) fn on_systick() {
     };
     scheduler.on_tick();
     if scheduler.switch_requested() {
-        cortex_m::peripheral::SCB::set_pendsv();
+        crate::platform::request_context_switch();
     }
 }
 
 #[cfg(feature = "abi-context-switch")]
 /// Dispatches the platform scheduler tick interrupt.
-#[exception]
-fn SysTick() {
+#[unsafe(export_name = "SysTick")]
+extern "C" fn systick_handler() {
     on_systick();
 }

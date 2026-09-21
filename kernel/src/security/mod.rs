@@ -1,7 +1,5 @@
 //! Kernel security boundaries that are disabled in the default MVP ABI.
 
-pub(crate) mod mpu;
-
 #[cfg(feature = "abi-current")]
 pub(crate) mod fault;
 
