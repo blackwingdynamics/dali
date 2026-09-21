@@ -37,7 +37,7 @@ Pre-release versions use identifiers such as:
 ```
 
 The first Dali OS MVP release used the pre-release version `0.1.0-alpha.1`.
-The current workspace release is `0.1.0-alpha.3`. It records the accepted
+The current workspace release is `0.1.0-alpha.4`. It records the accepted
 F405 MVP foundation; production hardening and post-MVP platform capabilities
 remain incomplete.
 GitHub Releases for `alpha`, `beta`, and `rc` versions must be marked as
