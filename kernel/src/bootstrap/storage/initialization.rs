@@ -176,6 +176,17 @@ where
                             crate::storage::durable::RecoveryDecision::DiscardPrepared,
                         )
                     }
+                    Err(super::acceptance::ArtifactTestError::CommitJournal(
+                        crate::storage::durable::JournalError::InvalidLength,
+                    )) => {
+                        logging::warn(
+                            logging::SECURITY_SUBSYSTEM,
+                            format_args!(
+                                "[RECOVERY] Invalid commit journal length; rebuilding provisioned test state"
+                            ),
+                        );
+                        super::acceptance::JournalRecovery::Missing
+                    }
                     Err(error) => {
                         logging::error(
                             logging::SECURITY_SUBSYSTEM,
