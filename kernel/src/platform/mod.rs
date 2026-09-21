@@ -126,11 +126,7 @@ where
     }
 
     /// Enables interrupts through the selected architecture backend.
-    #[cfg(any(
-        feature = "driver-hardware-test",
-        feature = "abi-context-switch",
-        feature = "usb-cdc"
-    ))]
+    #[cfg(any(feature = "driver-hardware-test", feature = "abi-context-switch"))]
     pub(crate) fn enable_interrupts()
     where
         B::Architecture: ArchitectureBackend,

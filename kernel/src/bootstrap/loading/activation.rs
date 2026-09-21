@@ -7,7 +7,9 @@ use crate::{logging, platform};
 /// Registers, protects, and launches the loaded application set.
 pub(super) fn activate<B>(
     cartridge: crate::loader::LoadedCartridges,
-    board: &mut platform::Platform<B>,
+    #[cfg(any(feature = "abi-mpu", feature = "abi-context-switch"))] board: &mut platform::Platform<
+        B,
+    >,
     #[cfg(feature = "abi-mpu")]
     context_owner: &mut crate::runtime::application::owner::ActiveContextOwner,
 ) -> status::StorageStatus
@@ -22,6 +24,8 @@ where
             cartridge.len()
         ),
     );
+    #[cfg(all(feature = "abi-mpu", not(feature = "abi-context-switch")))]
+    let _ = board;
     for application in cartridge.iter() {
         let slot = application.slot;
         logging::info(
@@ -54,7 +58,12 @@ where
         return status::StorageStatus::Failure;
     }
     #[cfg(feature = "abi-mpu")]
-    return activate_first(cartridge, board, context_owner);
+    return activate_first::<B>(
+        cartridge,
+        #[cfg(feature = "abi-context-switch")]
+        board,
+        context_owner,
+    );
     #[cfg(not(feature = "abi-mpu"))]
     {
         let _ = (cartridge, board);
@@ -66,7 +75,7 @@ where
 /// Performs the lifecycle and MPU transition for the first loaded context.
 fn activate_first<B>(
     cartridge: crate::loader::LoadedCartridges,
-    board: &mut platform::Platform<B>,
+    #[cfg(feature = "abi-context-switch")] board: &mut platform::Platform<B>,
     context_owner: &mut crate::runtime::application::owner::ActiveContextOwner,
 ) -> status::StorageStatus
 where
