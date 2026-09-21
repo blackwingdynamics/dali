@@ -10,16 +10,16 @@ build = "build.rs"
 default = []
 stm32f405 = ["dep:dali-board-stm32f405"]
 f405-minimal = ["stm32f405"]
-f405-development = [
+f405-mvp = [
     "stm32f405",
     "usb-cdc",
-    "artifact-flash",
     "abi-context-switch",
     "abi-relocation",
     "abi-authentication",
     "repository-loader",
     "storage-write",
 ]
+f405-development = ["f405-mvp", "artifact-flash"]
 usb-install = [
     "f405-development",
     "dali-kernel/usb-install",

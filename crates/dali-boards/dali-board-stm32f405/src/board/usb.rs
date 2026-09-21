@@ -121,7 +121,7 @@ pub(crate) fn initialize(board: &mut super::Board, force_reenumeration: bool) ->
 /// Services the board-owned USB state and invokes the kernel queue callback.
 pub(crate) fn service_irq(
     drain: fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink),
-    receive: dali_kernel_api::UsbInstallationReceive,
+    #[cfg(feature = "usb-install")] receive: dali_kernel_api::UsbInstallationReceive,
 ) {
     static mut SERIAL: Option<SerialPort<'static, stm32f4xx_hal::otg_fs::UsbBusType>> = None;
     #[cfg(feature = "usb-install")]
@@ -164,8 +164,6 @@ pub(crate) fn service_irq(
         let _ = device.poll(&mut [serial]);
         #[cfg(feature = "usb-install")]
         receive_installation_bytes(installation_serial, receive);
-        #[cfg(not(feature = "usb-install"))]
-        let _ = receive;
         let link = dali_usb::LinkState::from_configured_and_open(
             device.state() == UsbDeviceState::Configured,
             serial.dtr(),

@@ -35,7 +35,11 @@ pub(crate) use registry::target_profile;
 #[cfg(feature = "abi-authentication")]
 pub(crate) use registry::trust_anchors;
 #[cfg(feature = "usb-cdc")]
-pub(crate) use usb::{pend_irq as pend_usb_irq, service_irq as service_usb_irq};
+pub(crate) use usb::pend_irq as pend_usb_irq;
+#[cfg(feature = "usb-install")]
+pub(crate) use usb::service_installation_irq;
+#[cfg(all(feature = "usb-cdc", not(feature = "usb-install")))]
+pub(crate) use usb::service_irq as service_usb_irq;
 
 use dali_kernel_api::{ArchitectureBackend, BoardBackend, BoardError, ResetCause, WatchdogBackend};
 

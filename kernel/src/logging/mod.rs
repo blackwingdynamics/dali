@@ -74,7 +74,10 @@ pub fn initialize() {
 /// Services the optional USB CDC device state machine from its interrupt.
 #[cfg(feature = "usb-cdc")]
 pub(crate) fn service_usb_irq() {
-    crate::platform::service_usb_irq(drain_usb_queue, crate::installation::receive_bytes);
+    #[cfg(feature = "usb-install")]
+    crate::platform::service_installation_irq(drain_usb_queue, crate::installation::receive_bytes);
+    #[cfg(not(feature = "usb-install"))]
+    crate::platform::service_usb_irq(drain_usb_queue);
 }
 
 /// Entry point called by the selected board's USB interrupt wrapper.

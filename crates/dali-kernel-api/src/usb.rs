@@ -17,7 +17,12 @@ pub type UsbLogDrain = fn(dali_usb::LinkState, &mut dyn dali_usb::ByteSink);
 /// Kernel callback used to receive bounded bytes from the installer CDC.
 pub type UsbInstallationReceive = fn(&[u8]);
 
+/// Board callback used to service the log-only CDC channel.
+#[cfg(not(feature = "usb-install"))]
+pub type UsbService = fn(UsbLogDrain);
+
 /// Board callback used to service both CDC channels when installation is enabled.
+#[cfg(feature = "usb-install")]
 pub type UsbService = fn(UsbLogDrain, UsbInstallationReceive);
 
 /// Board operation used to force host-visible USB re-enumeration.
