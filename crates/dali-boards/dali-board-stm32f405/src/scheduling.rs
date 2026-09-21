@@ -1,6 +1,9 @@
 //! Cortex-M context-switch exception entry for the F405 backend.
 
 #[cfg(feature = "abi-context-switch")]
+use dali_kernel_api::ArchitectureBackend;
+
+#[cfg(feature = "abi-context-switch")]
 use crate::architecture::CortexMArchitecture;
 
 #[cfg(feature = "abi-context-switch")]
