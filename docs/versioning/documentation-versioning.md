@@ -33,5 +33,7 @@ replace missing hardware evidence. Breaking behavior requires migration notes;
 unsupported behavior requires an explicit boundary and recovery guidance.
 
 Generated changelogs are derived from commit history and must not be edited
-manually. Release tags and compatibility decisions follow the [release tag
-policy](release-tags-and-breaking-changes.md).
+manually. The release archive range begins at the most recent release that has
+an archived changelog, so a tag without a published archive cannot hide the
+commits since the previous archived release. Release tags and compatibility
+decisions follow the [release tag policy](release-tags-and-breaking-changes.md).
