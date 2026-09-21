@@ -10,5 +10,6 @@ No manual entries are maintained here. Changes are collected from commit history
 
 ## Releases
 
+- [v0.1.0-alpha.4](docs/changelog/v0.1.0-alpha.4.md)
 - [v0.1.0-alpha.2](docs/changelog/v0.1.0-alpha.2.md)
 - [v0.1.0-alpha.1](docs/changelog/v0.1.0-alpha.1.md)
