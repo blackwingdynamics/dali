@@ -35,6 +35,42 @@ run-specific metadata and status.
 
 ## Boot, storage, and application path
 
+### Repeated MVP reboot stability — 2026-09-21
+
+The already-installed F405 MVP image from source revision `ef39ddb` was
+restarted five times without reflashing. The board was reset through an
+ST-LINK/V3SET SWD probe, and the target output was captured through the
+probe-rs RTT attachment. The SD card remained inserted and contained the
+known Binary v2 repository and AMRN cartridge.
+
+Each reset completed the same boot path: system initialization, SDIO
+initialization, repository loading, AMRN validation and signature
+verification, application slot loading, and transition to the Running state.
+Each run produced exactly one application marker:
+
+```text
+[INFO][SECURITY] [SECURITY] Active application context: Running
+[INFO][APP] Hello World from AMRN
+```
+
+Result: **PASS — 5/5 repeated reset cycles**. No `HardFault`, `BusFault`,
+`Watchdog`, panic, exception, or storage recovery fault was observed in the
+firmware output. This is physical F405 evidence for repeatable reboot and
+AMRN relaunch of the current MVP image.
+
+```text
+Date: 2026-09-21
+Board and MCU: WeAct Studio STM32F405RGT6 Core Board, STM32F405RGT6
+Probe: ST-LINK/V3SET over SWD
+Firmware revision: ef39ddb
+Flash operation: None during the five-cycle run; existing image was reused
+Storage: Inserted FAT32 SD card with the known Binary v2 repository and AMRN
+Verification method: Five reset and RTT-capture cycles
+Observed result: 5/5 Running states and 5/5 `Hello World from AMRN` markers
+Limitations: This does not prove power-loss recovery, USB CDC enumeration, or
+  AMRN installation into the Flash artifact region.
+```
+
 ### Latest F405 signed-cartridge regression — 2026-08-29
 
 The release F405 image built from source revision `0cfa1dd` was flashed with
