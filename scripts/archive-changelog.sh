@@ -17,7 +17,29 @@ case "$version" in
 esac
 
 mkdir -p "$archive_dir"
-git-cliff --tag "$version" --latest --output "$archive_file"
+
+# Use the most recent archived release as the range boundary. A version tag
+# may exist without a published archive when release validation fails; using
+# git-cliff's implicit previous tag would silently omit all commits before it.
+previous_tag=""
+while IFS= read -r file; do
+    candidate=$(basename "$file" .md)
+    if [ "$candidate" = "$version" ]; then
+        continue
+    fi
+    if git rev-parse --verify --quiet "${candidate}^{commit}" >/dev/null; then
+        previous_tag="$candidate"
+        break
+    fi
+done <<EOF
+$(find "$archive_dir" -maxdepth 1 -type f -name 'v*.md' -print | sort -Vr)
+EOF
+
+if [ -n "$previous_tag" ]; then
+    git-cliff --tag "$version" --ignore-tags '^v[0-9].*$' "${previous_tag}..${version}" --output "$archive_file"
+else
+    git-cliff --tag "$version" --output "$archive_file"
+fi
 
 {
     printf '%s\n\n' '# Archived Dali OS Changelogs'
