@@ -3,7 +3,12 @@
 This file is the roadmap gateway. Each phase has its own status, scope,
 acceptance boundary, and backlog.
 
-## Current status — 2026-08-28
+## Current status — 2026-09-21
+
+The F405 MVP foundation has been merged into `main` at merge commit
+`4d247f270dd14e6b0c74665b8de03e49451f9ab7`. The workspace remains on the
+`kernel-foundation` development branch for the next foundation milestones;
+the corresponding next release tag has not yet been created.
 
 | Phase | Status | Scope |
 | --- | --- | --- |
@@ -12,11 +17,12 @@ acceptance boundary, and backlog.
 | [03 — System GUI and Launcher](03-system-gui-and-launcher.md) | **Future — Dali BIOS backlog** | Full launcher and GUI architecture; the separate I2C OLED diagnostics console is tracked under the hardware-driver roadmap |
 | [04 — First-Stage Bootloader](04-first-stage-bootloader.md) | **Future** | Pre-reset kernel-image verification and FSBL/ROM handoff |
 
-## Current execution roadmap
+## Driver roadmap and remaining validation
 
-The active driver branch follows these four phases. The order is intentional:
-hardware acceptance closes the existing F405 contracts before a new bus or
-display backend is introduced.
+These driver phases record the completed and remaining driver validation work.
+They are subordinate to the active [kernel foundation roadmap](00-kernel-foundation.md):
+hardware acceptance closes existing F405 contracts before a new bus or display
+backend is introduced.
 
 ### Phase 1 — F405 bounded-timeout acceptance
 
